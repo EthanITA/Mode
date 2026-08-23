@@ -1,0 +1,672 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+AUTO = "auto"
+OFF = "off"
+AXES = ("mode", "style")
+BOOLEANS = ("enter-never", "no-dispatch-without-approval", "no-implement")
+FALSEY = {"false", "no", "off", "n", "0"}
+FOLDER = {"mode": "modes", "style": "styles"}
+STANDING = "standing reminder"
+# A hook repeats this every turn, so each axis is capped and the pair still fits in eight lines.
+STANDING_LINES = 4
+COLORS = {"red": "31", "green": "32", "yellow": "33", "blue": "34",
+          "magenta": "35", "cyan": "36", "grey": "90"}
+RESET = "\x1b[0m"
+DEFAULT_USER = "the user"
+USER_TOKEN = "{{USER}}"
+# Silence here would leave the status-line chip naming a contract whose rules nobody can read.
+UNREADABLE = ("Its contract could not be read, so the file for '%s' is missing or has no standing "
+              "reminder. Say so rather than improvising what it asks for.")
+
+
+def die(msg: str, code: int = 1):
+    print(msg, file=sys.stderr)
+    raise SystemExit(code)
+
+
+# ---------------------------------------------------------------- locations
+
+def plugin_root() -> Path:
+    override = os.environ.get("MODE_PLUGIN_ROOT")
+    if override:
+        return Path(override)
+    # The platform sets this per hook, so it is only ours when it carries our skill.
+    plugin = os.environ.get("CLAUDE_PLUGIN_ROOT", "")
+    if plugin and (Path(plugin) / "skills" / "mode").is_dir():
+        return Path(plugin)
+    # Resolved, not raw, so the plugin folders are found through a symlinked bin/mode.
+    return Path(__file__).resolve().parent.parent
+
+
+def config_home() -> Path:
+    return Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")) / "mode"
+
+
+def state_home() -> Path:
+    """Session state sits one level down, so it can never be mistaken for a contract folder."""
+    return config_home() / "state"
+
+
+def contract_dirs(axis: str) -> list[Path]:
+    """Shipped first, the user's own second, so a plugin update cannot delete somebody's contract."""
+    return [plugin_root() / "skills" / "mode" / FOLDER[axis], config_home() / FOLDER[axis]]
+
+
+def names(axis: str) -> list[str]:
+    found: set[str] = set()
+    for d in contract_dirs(axis):
+        if d.is_dir():
+            found.update(p.stem for p in d.glob("*.md"))
+    return sorted(found)
+
+
+def contract_file(axis: str, name: str) -> Path | None:
+    for d in reversed(contract_dirs(axis)):
+        p = d / f"{name}.md"
+        if p.is_file():
+            return p
+    return None
+
+
+def available(axis: str) -> str:
+    found = names(axis)
+    if not found:
+        return f"no {FOLDER[axis]} in {' or '.join(str(d) for d in contract_dirs(axis))}"
+    return f"available {FOLDER[axis]}:\n  " + "\n  ".join(found)
+
+
+# -------------------------------------------------------------- state files
+
+def session_key(sid: str | None) -> str:
+    return (sid or os.environ.get("CLAUDE_CODE_SESSION_ID", ""))[:8]
+
+
+def state_path(sid: str | None, suffix: str) -> Path | None:
+    key = session_key(sid)
+    return state_home() / f"session-{key}{suffix}" if key else None
+
+
+def require(path: Path | None) -> Path:
+    if not path:
+        die("no session id: pass --session ID or set CLAUDE_CODE_SESSION_ID")
+    return path
+
+
+def read_state(path: Path | None) -> str:
+    if not path or not path.is_file():
+        return ""
+    for line in path.read_text(errors="replace").splitlines():
+        if line.strip():
+            return line.strip()
+    return ""
+
+
+def write_state(path: Path, value: str):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(value + "\n")
+
+
+def held(axis: str, sid: str | None) -> str:
+    # One small file read and nothing else, because the status line calls this on every render.
+    return read_state(state_path(sid, f".{axis}"))
+
+
+def is_chosen(axis: str, sid: str | None) -> bool:
+    name = held(axis, sid)
+    return bool(name) and read_state(state_path(sid, f".{axis}.chosen")) == name
+
+
+def drop_slot(axis: str, sid: str | None):
+    for suffix in (f".{axis}", f".{axis}.chosen", f".{axis}.announced", f".{axis}.done"):
+        p = state_path(sid, suffix)
+        if p:
+            p.unlink(missing_ok=True)
+    # An approval outlives its mode only as a gate nobody meant to leave open.
+    if axis == "mode":
+        p = state_path(sid, ".approved")
+        if p:
+            p.unlink(missing_ok=True)
+
+
+def stamp(name: str, value: str) -> str:
+    """A record carries the mode it was made under, so one mode's record cannot satisfy another."""
+    return f"{value}\t{name}"
+
+
+def under(name: str, line: str) -> str:
+    value, _, mode = line.partition("\t")
+    return value.strip() if mode.strip() == name else ""
+
+
+def approved_slug(sid: str | None, any_mode: bool = False) -> str:
+    f = state_path(sid, ".approved")
+    if not f or not f.is_file():
+        return ""
+    name = held("mode", sid)
+    for line in f.read_text(errors="replace").splitlines():
+        if line.strip():
+            # Ignoring the stamp answers "was anything ever approved", which is a different question
+            # from "may this mode dispatch" and the only way to tell the two denials apart.
+            return line.partition("\t")[0].strip() if any_mode else under(name, line)
+    return ""
+
+
+def declared(axis: str, sid: str | None) -> set[str]:
+    f = state_path(sid, f".{axis}.done")
+    if not f or not f.is_file():
+        return set()
+    name = held(axis, sid)
+    lines = f.read_text(errors="replace").splitlines()
+    return {r.lower() for r in (under(name, l) for l in lines if l.strip()) if r}
+
+
+# Observed reasons read state that already exists; every other reason waits for `done`.
+OBSERVED = {"approved": lambda sid: bool(approved_slug(sid))}
+# A hook injects this into a sentence a person reads, so the token itself would be machine talk.
+PHRASES = {"approved": lambda sid: f"{user_name()} approved {approved_slug(sid) or 'the spec'}",
+           "mr-opened": lambda sid: "the merge request is open"}
+
+
+# ------------------------------------------------------------- contract text
+
+def trim(lines: list[str]) -> str:
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    while lines and not lines[-1].strip():
+        lines.pop()
+    return "\n".join(lines)
+
+
+def unquote(value: str) -> str:
+    value = value.strip()
+    if len(value) > 1 and value[0] == value[-1] and value[0] in "\"'":
+        return value[1:-1]
+    return value
+
+
+def split_front_matter(text: str) -> tuple[dict, str]:
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return {}, trim(lines)
+    meta, end = {}, None
+    for i, line in enumerate(lines[1:], 1):
+        if line.strip() == "---":
+            end = i
+            break
+        k, sep, v = line.partition(":")
+        if sep:
+            meta[k.strip()] = unquote(v)
+    # An unterminated fence is body text that happens to open with a rule, not front matter.
+    if end is None:
+        return {}, trim(lines)
+    return meta, trim(lines[end + 1:])
+
+
+def read_contract(axis: str, name: str) -> tuple[dict, str]:
+    path = contract_file(axis, name) if name and name != AUTO else None
+    if not path:
+        return {}, ""
+    return split_front_matter(path.read_text(errors="replace"))
+
+
+def meta_of(axis: str, name: str) -> dict:
+    return read_contract(axis, name)[0]
+
+
+def summary(axis: str, name: str) -> str:
+    return meta_of(axis, name).get("summary", "")
+
+
+def standing_block(text: str) -> str:
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith("## ") and line[3:].strip().lower() == STANDING:
+            out = []
+            for rest in lines[i + 1:]:
+                if rest.startswith("## "):
+                    break
+                out.append(rest)
+            return trim(out)
+    return ""
+
+
+def alternatives(meta: dict, key: str) -> list[str]:
+    """A pipe-separated value, lowercased so matching ignores case on both sides."""
+    return [p.strip().lower() for p in meta.get(key, "").split("|") if p.strip()]
+
+
+def hits(text: str, phrases: list[str]) -> bool:
+    # Leading boundary only: `build the` must miss `rebuild the`, while `fail` still catches `failures`.
+    return any(re.search(r"\b" + re.escape(p), text) for p in phrases)
+
+
+def truthy(meta: dict, key: str) -> bool:
+    # The same rule as hooks/_shared.flag, so one contract cannot mean two things depending on which
+    # layer read it. Nobody writes an opt-in restriction meaning to leave it off, so only a no is off.
+    value = meta.get(key, "").strip().strip("\"'").lower()
+    return bool(value) and value not in FALSEY
+
+
+def never_auto(meta: dict) -> bool:
+    return truthy(meta, "enter-never")
+
+
+def user_name() -> str:
+    f = config_home() / "config.json"
+    if f.is_file():
+        try:
+            data = json.loads(f.read_text(errors="replace"))
+        except ValueError:
+            data = {}
+        if isinstance(data, dict) and str(data.get("user", "")).strip():
+            return str(data["user"]).strip()
+    return DEFAULT_USER
+
+
+def substitute(text: str) -> str:
+    return text.replace(USER_TOKEN, user_name())
+
+
+# ----------------------------------------------------------------- commands
+
+def cmd_set(args):
+    axis = args.axis
+    require(state_path(args.session, f".{axis}"))
+    if args.name == OFF:
+        drop_slot(axis, args.session)
+        print(f"{axis} set to off")
+        return
+    # auto is a slot value, not a contract, so it has no file to validate against.
+    if args.name != AUTO and args.name not in names(axis):
+        die(f"no {axis} named '{args.name}'. {available(axis)}", 2)
+    write_state(state_path(args.session, f".{axis}"), args.name)
+    mark = state_path(args.session, f".{axis}.chosen")
+    # Typing the name is the normal case, so an unflagged set is what drops the mark.
+    if args.chosen:
+        write_state(mark, args.name)
+    else:
+        mark.unlink(missing_ok=True)
+    print(f"{axis} set to {args.name}")
+
+
+def cmd_get(args):
+    axis = args.axis
+    name = held(axis, args.session)
+    if args.chip:
+        # Always three fields: a caller splitting on tabs cannot tell a missing one from an empty one.
+        color = COLORS.get(meta_of(axis, name).get("color", ""), "") if name else ""
+        print(f"{name}\t{color}\t{'chosen' if is_chosen(axis, args.session) else ''}")
+        return
+    if name:
+        print(name)
+
+
+def cmd_chips(args):
+    parts = []
+    for axis in AXES:
+        name = held(axis, args.session)
+        if not name:
+            continue
+        label = ("~" if is_chosen(axis, args.session) else "") + name
+        color = COLORS.get(meta_of(axis, name).get("color", ""), "")
+        parts.append(f"\x1b[{color}m{label}{RESET}" if color else label)
+    if parts:
+        print(" ".join(parts))
+
+
+def cmd_choose(args):
+    """The contract a message asks for, but only while that slot is on auto."""
+    axis = args.axis
+    # A value set by hand is a decision the user made, and no message overrides it.
+    if held(axis, args.session) != AUTO:
+        return
+    text = args.message.lower()
+    found = []
+    for name in names(axis):
+        meta = meta_of(axis, name)
+        if never_auto(meta):
+            continue
+        if hits(text, alternatives(meta, "enter-when")):
+            found.append(name)
+    # Two readings of one message is a wrong reading, so choosing nothing beats guessing between them.
+    if len(found) == 1:
+        print(found[0])
+
+
+def cmd_standing(args):
+    out: list[str] = []
+    for axis in AXES:
+        body = read_contract(axis, held(axis, args.session))[1]
+        block = standing_block(body)
+        if block:
+            out.extend(block.splitlines()[:STANDING_LINES])
+    if out:
+        print(substitute("\n".join(out)))
+
+
+def cmd_list(args):
+    axes = [args.axis] if args.axis else list(AXES)
+    if args.tsv:
+        for axis in axes:
+            current = held(axis, args.session)
+            for name in names(axis):
+                print(f"{axis}\t{name}\t{summary(axis, name)}\t{'active' if name == current else ''}")
+        return
+    first = True
+    for axis in axes:
+        found = names(axis)
+        if not found:
+            continue
+        if not first:
+            print()
+        first = False
+        print(FOLDER[axis])
+        current = held(axis, args.session)
+        w = max(len(n) for n in found)
+        for name in found:
+            print(f"{'*' if name == current else ' '} {name:<{w}}  {summary(axis, name)}".rstrip())
+
+
+def show_named(args):
+    """A contract read by name rather than by what is held, which is how a gate inspects one."""
+    for axis in AXES:
+        if args.axis in names(axis):
+            meta, body = read_contract(axis, args.axis)
+            text = "\n".join(f"{k}: {v}" for k, v in meta.items()) if args.meta else body
+            if not text:
+                die(f"no contract file for '{args.axis}' could be read", 1)
+            print(text)
+            return
+    die(f"nothing named '{args.axis}'. {available('mode')}", 2)
+
+
+def cmd_show(args):
+    # A positional that is not an axis names a contract, so `show debug --meta` reads one by name.
+    if args.axis and args.axis not in AXES:
+        return show_named(args)
+    axes = [args.axis] if args.axis else list(AXES)
+    blocks, unreadable = [], []
+    for axis in axes:
+        name = held(axis, args.session)
+        if not name or name == AUTO:
+            continue
+        meta, body = read_contract(axis, name)
+        text = "\n".join(f"{k}: {v}" for k, v in meta.items()) if args.meta else body
+        if not text:
+            unreadable.append(f"{axis} holds '{name}' but no contract file for it could be read")
+            continue
+        # Labelled only when the caller named no axis, since two unlabelled bodies read as one.
+        blocks.append(f"{axis}: {name}\n\n{text}" if not args.axis else text)
+    if not blocks:
+        die("\n".join(unreadable) if unreadable else f"nothing held for {' or '.join(axes)}", 1)
+    print("\n\n".join(blocks))
+
+
+def cmd_announce(args):
+    """What a hook injects: the whole contract on the turn it is entered, the reminder after."""
+    blocks = []
+    for axis in AXES:
+        name = held(axis, args.session)
+        # auto holds no contract, so announcing it would inject the unreadable sentence forever.
+        if not name or name == AUTO:
+            continue
+        meta, body = read_contract(axis, name)
+        block = standing_block(body)
+        head = f"Active {axis}: {name}"
+        if not block:
+            # Marking an unreadable contract announced would swallow the long version for good.
+            blocks.append(f"{head}\n\n{UNREADABLE % name}")
+            continue
+        marker = state_path(args.session, f".{axis}.announced")
+        if marker and read_state(marker) == name:
+            blocks.append(f"{head}\n\n" + "\n".join(block.splitlines()[:STANDING_LINES]))
+            continue
+        blocks.append(f"{head}\n\n{body}")
+        if marker:
+            write_state(marker, name)
+    if blocks:
+        print(substitute("\n\n".join(blocks)))
+
+
+def cmd_approve(args):
+    """Records the artifact the user approved, under the mode they approved it in."""
+    if args.slug:
+        write_state(require(state_path(args.session, ".approved")),
+                    stamp(held("mode", args.session), args.slug))
+        print(args.slug)
+        return
+    slug = approved_slug(args.session, args.any_mode)
+    if not slug:
+        raise SystemExit(1)
+    print(slug)
+
+
+def cmd_done(args):
+    """Records something the held contract waits on. Unknown reasons record too: the match decides."""
+    f = require(state_path(args.session, f".{args.axis}.done"))
+    f.parent.mkdir(parents=True, exist_ok=True)
+    with f.open("a") as fh:
+        fh.write(stamp(held(args.axis, args.session), args.reason) + "\n")
+    print(f"recorded {args.reason}")
+
+
+def cmd_expired(args):
+    axis = args.axis
+    name = held(axis, args.session)
+    if not name or name == AUTO:
+        raise SystemExit(1)
+    done = declared(axis, args.session)
+    for reason in alternatives(meta_of(axis, name), "exit-when"):
+        # manual is the contract saying only the user ends it, so nothing recorded can satisfy it.
+        if reason == "manual":
+            continue
+        observed = OBSERVED.get(reason)
+        if (observed and observed(args.session)) or reason in done:
+            said = PHRASES.get(reason)
+            print(said(args.session) if said else reason)
+            return
+    raise SystemExit(1)
+
+
+def cmd_exit(args):
+    axis = args.axis
+    name = held(axis, args.session)
+    if not name or name == AUTO:
+        raise SystemExit(1)
+    # A chosen slot returns to auto, because a slot that emptied itself would only ever choose once.
+    back = AUTO if is_chosen(axis, args.session) else OFF
+    drop_slot(axis, args.session)
+    if back == AUTO:
+        write_state(require(state_path(args.session, f".{axis}")), AUTO)
+    print(f"{axis} set to {back}")
+
+
+def cmd_clear(args):
+    if args.announced:
+        for axis in AXES:
+            p = state_path(args.session, f".{axis}.announced")
+            if p:
+                p.unlink(missing_ok=True)
+        return
+    for axis in AXES:
+        drop_slot(axis, args.session)
+
+
+def cmd_init(args):
+    path = config_home() / "config.json"
+    data = {}
+    if path.is_file():
+        try:
+            loaded = json.loads(path.read_text(errors="replace"))
+        except ValueError:
+            loaded = {}
+        if isinstance(loaded, dict):
+            data = loaded
+    data["user"] = args.user or data.get("user") or git_name() or os.environ.get("USER") or DEFAULT_USER
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + "\n")
+    print(path)
+
+
+def git_name() -> str:
+    try:
+        out = subprocess.run(["git", "config", "--global", "user.name"],
+                             capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return out.stdout.strip()
+
+
+def check_flags():
+    """Nudges toward one spelling without refusing the file, since the readers accept it and a lint
+    that rejects what runtime honours would make a contract mean two things at once."""
+    for axis in AXES:
+        for name in names(axis):
+            meta = meta_of(axis, name)
+            for key in BOOLEANS:
+                value = meta.get(key, "").strip()
+                if value and value not in ("true", "false"):
+                    state = "on" if truthy(meta, key) else "off"
+                    print(f"warning: {axis}/{name}.md has {key}: {value}. It is read as {state}, and "
+                          "lowercase true or false is the spelling to keep.", file=sys.stderr)
+
+
+def cmd_sync(args):
+    """Rewrite the skill's registries from the folders, since front matter cannot compute itself."""
+    check_flags()
+    skill = plugin_root() / "skills" / "mode" / "SKILL.md"
+    if not skill.is_file():
+        die(f"no skill file at {skill}")
+    text = skill.read_text()
+    written, missing = 0, []
+    for axis in AXES:
+        folder, found = FOLDER[axis], names(axis)
+        joined = ", ".join(found)
+        # Every occurrence, since the phrase sits in the front matter description and in the body.
+        text, n = re.subn(rf"({folder.capitalize()} available: )[^.]*\.",
+                          lambda m: m.group(1) + joined + ".", text)
+        written += n
+        if not n:
+            missing.append(f"{folder.capitalize()} available:")
+        text, n = re.subn(rf"(?m)^{folder}:[ \t]*.*$", lambda m: f"{folder}: {joined}", text, count=1)
+        written += n
+        rows = [f"| `{name}` | `{folder}/{name}.md` | {summary(axis, name)} |" for name in found]
+        # off and auto have no file of their own, so the folder cannot describe them and this does.
+        rows.append(f"| `off` | none | Not a {axis}. `mode {axis} set off` empties the slot. |")
+        rows.append(f"| `auto` | none | Not a {axis}. `mode {axis} set auto` matches each message "
+                    f"against every `enter-when` and enters the winner. |")
+        table = "| Name | File | Summary |\n|---|---|---|\n" + "\n".join(rows)
+        text, n = re.subn(rf"(<!-- {folder}:start -->\n).*?(<!-- {folder}:end -->)",
+                          lambda m: m.group(1) + table + "\n" + m.group(2), text, count=1, flags=re.S)
+        written += n
+        if not n:
+            missing.append(f"<!-- {folder}:start --> ... <!-- {folder}:end -->")
+    if not written:
+        die(f"{skill} has none of the generated regions, so nothing was rewritten")
+    skill.write_text(text)
+    for region in missing:
+        print(f"warning: no {region} region in {skill.name}", file=sys.stderr)
+
+
+# --------------------------------------------------------------------- CLI
+
+def main():
+    common = argparse.ArgumentParser(add_help=False)
+    # SUPPRESS so a --session given higher up survives the subparser's own default.
+    common.add_argument("--session", metavar="ID", default=argparse.SUPPRESS,
+                        help="the conversation to act on (defaults to the current one)")
+
+    ap = argparse.ArgumentParser(
+        prog="mode", description="Track the mode and the style a conversation is working in.")
+    ap.add_argument("--session", metavar="ID", default=None,
+                    help="the conversation to act on (defaults to the current one)")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    def add(name, fn, helptext):
+        p = sub.add_parser(name, parents=[common], help=helptext)
+        p.set_defaults(fn=fn)
+        return p
+
+    for axis in AXES:
+        other = "style" if axis == "mode" else "mode"
+        ap_axis = sub.add_parser(axis, parents=[common], help=f"the {axis} slot, independent of the {other}")
+        ap_axis.set_defaults(axis=axis)
+        slot = ap_axis.add_subparsers(dest="slotcmd", required=True)
+
+        def slot_add(name, fn, helptext, _slot=slot, _axis=axis):
+            p = _slot.add_parser(name, parents=[common], help=helptext)
+            p.set_defaults(fn=fn, axis=_axis)
+            return p
+
+        p = slot_add("set", cmd_set, "hold a contract, or auto to choose per message, or off")
+        p.add_argument("name")
+        p.add_argument("--chosen", action="store_true",
+                       help="a pattern picked it rather than the user typing it")
+
+        p = slot_add("get", cmd_get, "print what the slot holds")
+        p.add_argument("--chip", action="store_true",
+                       help="name, ANSI colour and chosen mark as three tab-separated fields")
+
+        p = slot_add("done", cmd_done, "record something the held contract waits on, such as mr-opened")
+        p.add_argument("reason")
+
+        slot_add("expired", cmd_expired, "print why the held contract is over, or exit 1 while it stands")
+        slot_add("exit", cmd_exit, "end the held contract: back to auto when chosen, off when typed")
+
+    add("chips", cmd_chips, "both chips with colour, ready to paste into a status line")
+
+    p = add("choose", cmd_choose, "the contract a message asks for, while that slot is on auto")
+    p.add_argument("--axis", required=True, choices=AXES)
+    p.add_argument("--message", required=True, metavar="TEXT",
+                   help="the message to match against every enter-when on that axis")
+
+    add("standing", cmd_standing, "both standing reminders, mode first")
+
+    p = add("list", cmd_list, "every contract with its summary, marking the held one")
+    p.add_argument("axis", nargs="?", choices=AXES)
+    p.add_argument("--tsv", action="store_true", help="axis, name, summary and active per line")
+
+    p = add("show", cmd_show, "the full contract of what is held, or of a contract named outright")
+    p.add_argument("axis", nargs="?", metavar="mode|style|<name>")
+    p.add_argument("--meta", action="store_true", help="the front matter instead of the body")
+
+    add("announce", cmd_announce, "the whole contract on the turn it is entered, the reminder after")
+
+    p = add("approve", cmd_approve, "record the artifact the user approved, or print the recorded one")
+    p.add_argument("slug", nargs="?")
+    p.add_argument("--any-mode", action="store_true",
+                   help="read an approval whichever mode stamped it, to tell a wrong-mode deny from no yes at all")
+
+    p = add("clear", cmd_clear, "empty both slots")
+    p.add_argument("--announced", action="store_true",
+                   help="drop only the announced markers, so the next announce is the long one again")
+
+    add("sync", cmd_sync, "rewrite the skill's registries from the contract folders")
+
+    p = add("init", cmd_init, "write the identity config")
+    p.add_argument("--user", metavar="NAME", help="the name {{USER}} stands for")
+
+    # A status line that exits non-zero loses the whole line, so chips never parses strictly and never fails.
+    if sys.argv[1:2] == ["chips"]:
+        rest = sys.argv[2:]
+        at = rest.index("--session") + 1 if "--session" in rest else 0
+        try:
+            cmd_chips(argparse.Namespace(session=rest[at] if 0 < at < len(rest) else None))
+        except Exception:
+            pass
+        return
+    args = ap.parse_args()
+    args.fn(args)
+
+
+if __name__ == "__main__":
+    main()

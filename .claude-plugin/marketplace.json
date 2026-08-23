@@ -1,0 +1,14 @@
+{
+  "$schema": "https://code.claude.com/schemas/marketplace.json",
+  "name": "mode",
+  "owner": {
+    "name": "Marco Dong"
+  },
+  "plugins": [
+    {
+      "name": "mode",
+      "source": "./",
+      "description": "Two slots per session, the way you work and the way the assistant talks, switched deterministically before the model reads your message."
+    }
+  ]
+}
