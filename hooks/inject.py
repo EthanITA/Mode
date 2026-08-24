@@ -16,7 +16,9 @@ ENDED = (
 )
 
 # Anchored, so a quoted "/approve x" changes nothing; the prefix is optional since only /mode runs bare.
-COMMAND = re.compile(r"^/(?:mode:)?(mode|style|approve)\b[ \t]*(\S*)")
+COMMAND = re.compile(r"^/(?:mode:)?(mode|style|approve)\b[ \t]*(\S*)[ \t]*(\S*)")
+# Not contract names, so they act on the axis of the command they were typed on.
+SLOT_WORDS = ("off", "auto")
 # A slash command can arrive as these tags rather than as the literal text that was typed.
 TAGGED = re.compile(
     r"^\s*<command-name>\s*/(\S+)\s*</command-name>"
@@ -38,17 +40,22 @@ def obey(message, session):
     found = COMMAND.match(message)
     if not found:
         return set()
-    verb, arg = found.group(1), found.group(2)
+    verb, first, second = found.group(1), found.group(2), found.group(3)
     if verb == "approve":
         # Read only from the typed message: anything an agent can reach could approve its own spec.
-        if arg:
-            ask("approve", arg, *sid(session))
+        if first:
+            ask("approve", first, *sid(session))
         return set()
-    if not arg:
-        return set()
-    # Failure is the answer for an unknown name: nothing switches and the skill lists the real ones.
-    ask(verb, "set", arg, *sid(session))
-    return {verb}
+
+    done = set()
+    for arg in (first, second):
+        if not arg:
+            continue
+        # So /mode maintainer reaches the style slot instead of failing quietly against the mode one.
+        axis = verb if arg in SLOT_WORDS else (ask("axis", arg) or verb)
+        ask(axis, "set", arg, *sid(session))
+        done.add(axis)
+    return done
 
 
 def expire(axis, session):

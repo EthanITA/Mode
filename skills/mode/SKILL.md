@@ -33,8 +33,9 @@ The switch is not yours to perform. A `UserPromptSubmit` hook reads the message 
 
 | {{USER}} types | The hook already did | You do |
 |---|---|---|
-| `/mode <name>` | Ran `mode mode set <name>`, and injected the whole contract into this very prompt | Follow it from here on, and say in one line what is active and what changes. Do not run the set yourself. |
-| `/style <name>` | The same on the style slot | The same, except write that line in the style you just picked, so the change shows rather than being announced |
+| `/mode <name>` | Looked up which axis owns that name and set it there, then injected the whole contract into this very prompt | Follow it from here on, and say in one line what is active and what changes. Do not run the set yourself. |
+| `/mode <name> <name>` | The same for both, in either order, so `/mode tdd maintainer` fills the mode and the style at once | Confirm both, and write the line in the style if one was set |
+| `/style <name>` | The same on the style slot, named outright | The same, except write that line in the style you just picked, so the change shows rather than being announced |
 | `/mode` or `/style`, with no name | Nothing, because there is no name to act on | Run `mode list` for both, or `mode list style` for one, and show what exists and what is held |
 | `/mode auto` or `/style auto` | Set that slot to `auto`, so a contract gets chosen from what gets written | Say the slot is on auto, and name what it holds right now if it holds anything |
 | `/mode off` or `/style off` | Emptied that slot, and the mode one also dropped the recorded approval | Confirm which slot is empty. The other slot is untouched. |

@@ -161,6 +161,29 @@ with tempfile.TemporaryDirectory() as tmp:
            "entered=%d settled=%d. The full contract is either never sent or sent on every turn."
            % (len(context(second)), len(context(third))))
 
+        section("/mode routes a name to the axis that owns it")
+        # Distinct in the first eight characters, which is all the session key keeps.
+        for s, label, typed, want_mode, want_style in (
+            ("rt1", "both, mode first", "/mode tdd maintainer", "tdd", "maintainer"),
+            ("rt2", "both, either order", "/mode maintainer tdd", "tdd", "maintainer"),
+            ("rt3", "a style name alone", "/mode maintainer", "", "maintainer"),
+            ("rt4", "a mode name alone", "/mode tdd", "tdd", ""),
+            ("rt5", "an unknown name moves nothing", "/mode nonsense", "", ""),
+        ):
+            fire("inject.py", prompt_payload(s, typed), config)
+            got = (out(mode(s, "get")), out(style(s, "get")))
+            ok("%s: %s" % (label, typed), got == (want_mode, want_style),
+               "got mode=%r style=%r, wanted %r and %r. A name typed on /mode has to reach its own "
+               "slot, or it fails silently and reads as though it worked."
+               % (got[0], got[1], want_mode, want_style))
+
+        fire("inject.py", prompt_payload("h-route-off", "/mode copilot edu"), config)
+        fire("inject.py", prompt_payload("h-route-off", "/mode off"), config)
+        ok("/mode off empties the mode and leaves the style alone",
+           (out(mode("h-route-off", "get")), out(style("h-route-off", "get"))) == ("", "edu"),
+           "mode=%r style=%r. off belongs to the axis it was typed on, since it names no contract."
+           % (out(mode("h-route-off", "get")), out(style("h-route-off", "get"))))
+
         section("inject.py switches the slot the human named")
         mode("h-switch", "set", "copilot")
         style("h-switch", "set", "edu")

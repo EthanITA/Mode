@@ -353,6 +353,15 @@ def cmd_standing(args):
         print(substitute("\n".join(out)))
 
 
+def cmd_axis(args):
+    # So a caller can route a bare name without keeping its own copy of which contracts exist.
+    for axis in AXES:
+        if args.name in names(axis):
+            print(axis)
+            return
+    raise SystemExit(1)
+
+
 def cmd_list(args):
     axes = [args.axis] if args.axis else list(AXES)
     if args.tsv:
@@ -630,6 +639,9 @@ def main():
                    help="the message to match against every enter-when on that axis")
 
     add("standing", cmd_standing, "both standing reminders, mode first")
+
+    p = add("axis", cmd_axis, "which axis owns a contract name, so a bare name can be routed")
+    p.add_argument("name")
 
     p = add("list", cmd_list, "every contract with its summary, marking the held one")
     p.add_argument("axis", nargs="?", choices=AXES)
