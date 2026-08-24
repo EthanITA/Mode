@@ -10,8 +10,8 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
-from support import (COLORS, crashed, fixture_root, flag_fixtures, ok, out, report, require_tool,
-                     run, section, skip, write)
+from support import (COLORS, crashed, fixture_root, flag_fixtures, live, ok, out, report,
+                     require_tool, run, section, skip, write)
 
 LEAD = """---
 name: lead
@@ -815,6 +815,42 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("init prints a path, exit 0",
        p.returncode == 0 and out(p) and os.sep in out(p),
        "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
+
+    # ------------------------------------------------------------------ version
+
+    section("version, the only way to tell whether an update landed")
+
+    vroot = fixture_root(tmp, "vroot", modes=clean, styles={"brisk": BRISK})
+    write(os.path.join(vroot, ".claude-plugin", "plugin.json"),
+          '{"name": "mode", "version": "9.9.9"}\n')
+    p = run(vroot, config, "version", "--session", "s-ver")
+    ok("version prints what the manifest says, exit 0",
+       p.returncode == 0 and out(p) == "9.9.9",
+       "rc=%s out=%r. It has to read the copy it is running from, or it cannot answer the "
+       "question it exists for." % (p.returncode, p.stdout))
+
+    p = run(vroot, config, "version")
+    ok("and it needs no session, since a clone nobody has run yet still has a version",
+       p.returncode == 0 and out(p) == "9.9.9",
+       "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
+
+    noman = fixture_root(tmp, "noman", modes=clean)
+    p = run(noman, config, "version")
+    ok("a missing manifest is a sentence and not a traceback",
+       p.returncode != 0 and not crashed(p) and p.stderr.strip(),
+       "rc=%s err=%r" % (p.returncode, p.stderr[-200:]))
+
+    unver = fixture_root(tmp, "unver", modes=clean)
+    write(os.path.join(unver, ".claude-plugin", "plugin.json"), '{"name": "mode"}\n')
+    p = run(unver, config, "version")
+    ok("a manifest with no version says so, and says what it would cost",
+       p.returncode != 0 and not crashed(p) and "unknown" in p.stderr,
+       "rc=%s err=%r. Without a version an install lands in a directory called unknown and "
+       "every later update overwrites it, so the message has to name that." % (p.returncode, p.stderr))
+
+    ok("the shipped manifest carries a version, so real installs are version-keyed",
+       out(live(config, "version")) != "",
+       "the shipped .claude-plugin/plugin.json has no readable version")
 
     # ------------------------------------------------------------------ robustness
 

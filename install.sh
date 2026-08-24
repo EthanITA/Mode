@@ -119,6 +119,11 @@ USER_COMMANDS=$CONFIG_DIR/commands
 say "Installing the mode plugin."
 say "  plugin        $PLUGIN_ROOT"
 say "  config        $CONFIG_DIR"
+# Printed here so a re-run after an update shows at a glance which copy was just wired up.
+if [ -x "$MODE_BIN" ]; then
+  VERSION=$("$MODE_BIN" version 2>/dev/null) || VERSION=""
+  [ -n "$VERSION" ] && say "  version       $VERSION"
+fi
 
 # ---------------------------------------------------------------- 1. identity
 
@@ -500,14 +505,18 @@ emit_alias_style() {
   cat <<'EOF'
 ---
 description: Set the style slot for this conversation.
-argument-hint: "[<name>|auto|off]"
+argument-hint: "<style> [mode] | auto | off"
 disable-model-invocation: true
 ---
 
-Shorthand for `/mode:style`. A UserPromptSubmit hook has already read this message and set the
-style slot, so do not run `mode style set` over it.
+Shorthand for `/mode:style`. A UserPromptSubmit hook has already read this message and performed
+the switch, so do not run `mode style set` over it.
 
-Say in one line which style is active now and what changes because of it.
+A name goes to whichever axis owns it, so this is not limited to the style slot. `/style tdd`
+fills the mode slot, and `/style tdd maintainer` fills both. Only `auto` and `off` stay tied to
+this command. Read what is in your context rather than assuming a style was set.
+
+Say in one line what is active now and what changes because of it.
 EOF
 }
 
@@ -580,6 +589,11 @@ if [ -n "$TOUCHED" ]; then
 else
   say "  nothing, everything was already in place"
 fi
+
+say ""
+say "To update later, see Updating in README.md. Which commands you need depends on whether you"
+say "installed through a marketplace or as a skills directory, and \`claude plugin list\` says which."
+say "\`$MODE_BIN version\` prints what this copy is, to check an update landed."
 
 say ""
 say "Restart Claude Code, or start a new conversation, for the status line to pick this up."

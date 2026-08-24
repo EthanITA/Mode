@@ -1,6 +1,7 @@
 {
   "$schema": "https://code.claude.com/schemas/marketplace.json",
   "name": "mode",
+  "description": "The mode plugin on its own. One entry, so adding this marketplace adds nothing you did not ask for.",
   "owner": {
     "name": "Marco Dong"
   },

@@ -362,6 +362,19 @@ def cmd_axis(args):
     raise SystemExit(1)
 
 
+def cmd_version(args):
+    # Reads the copy that is actually running, which is the only way to tell an update landed.
+    path = plugin_root() / ".claude-plugin" / "plugin.json"
+    try:
+        data = json.loads(path.read_text(errors="replace"))
+    except (OSError, ValueError):
+        die("No readable manifest at %s, so this copy cannot say what version it is." % path)
+    if not isinstance(data, dict) or not data.get("version"):
+        die("%s carries no version, so an install of it would land in a directory named "
+            "'unknown' and every later update would overwrite it." % path)
+    print(data["version"])
+
+
 def cmd_list(args):
     axes = [args.axis] if args.axis else list(AXES)
     if args.tsv:
@@ -663,6 +676,8 @@ def main():
                    help="drop only the announced markers, so the next announce is the long one again")
 
     add("sync", cmd_sync, "rewrite the skill's registries from the contract folders")
+
+    add("version", cmd_version, "the version of the copy that is running, to check an update took")
 
     p = add("init", cmd_init, "write the identity config")
     p.add_argument("--user", metavar="NAME", help="the name {{USER}} stands for")
