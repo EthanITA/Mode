@@ -23,7 +23,7 @@ This skill drives the switching and nothing else. The state lives in `${CLAUDE_P
 | Applies to | The shape of the turn | Every step of whatever mode is running |
 | Example | `copilot` stops on a question before dispatching a team | `fast` makes that question two lines instead of ten |
 
-The split is what keeps the file count down. Five modes and five styles cover twenty-five combinations, so a new way of talking costs one file rather than five rewrites.
+The split is what keeps the file count down. Seven modes and five styles cover thirty-five combinations, so a new way of talking costs one file rather than seven rewrites.
 
 The test for which folder a new contract belongs in is whether it has an order. If it says do this, then that, and stop here, it is a mode. If it only changes the texture of whatever you were already doing, it is a style.
 
@@ -144,9 +144,9 @@ Written by the same command, from `styles/`, under the same rule.
 | `auto` | none | Not a style. `mode style set auto` matches each message against every `enter-when` and enters the winner. |
 <!-- styles:end -->
 
-## Adding an eleventh contract
+## Adding a thirteenth contract
 
-One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the existing ten use. Which folder it goes in is decided by the question in *Two axes* above: an order of operations makes it a mode, and a texture makes it a style.
+One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the existing twelve use. Which folder it goes in is decided by the question in *Two axes* above: an order of operations makes it a mode, and a texture makes it a style.
 
 - Front matter with `name`, matching the filename stem, and a one-line `summary`. The summary is what `mode list` prints and what the status line chip shows.
 - `enter-when`, `enter-never` and `exit-when`, per the table above. A contract with no `enter-when` can only be typed, and one with no `exit-when` behaves as `manual`. Write the line anyway, because an implied contract is one nobody can read off the file.

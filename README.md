@@ -26,7 +26,7 @@ They live on separate axes because one slot cannot say what people actually want
 ```
 
 Fold those two into a single setting and you are made to pick, so you lose whichever mattered less
-that morning. Kept apart, they compose, and the twenty five combinations are all just things you can
+that morning. Kept apart, they compose, and the thirty five combinations are all just things you can
 ask for.
 
 Here is the question set that decides which axis something belongs on. It is worth reading before
@@ -63,8 +63,12 @@ block that repeats is rationed.
 You need `python3` and `jq` on your path. The installer checks for both and tells you which is
 missing rather than failing somewhere in the middle.
 
-Clone the repository somewhere it can stay, because the status line will end up pointing at this
-copy:
+There are two ways in, and the one you pick decides how you update later, so it is worth thirty
+seconds of thought rather than copying the first block you see.
+
+### Route one: as a marketplace plugin
+
+This is the normal route, and the one to take if you just want the thing installed.
 
 ```bash
 git clone <this-repo> ~/src/mode
@@ -82,6 +86,30 @@ ever one copy on disk:
 
 Restart Claude Code, or open a new conversation, and the status line picks it up.
 
+Claude Code copies the plugin into its own cache when you install it, into a directory named after
+the version. So the clone you made is the marketplace source, and the copy that actually runs lives
+somewhere else. That distinction is invisible until you try to update, which is why the next
+section exists.
+
+### Route two: as a skills directory
+
+Claude Code loads any directory under `~/.claude/skills/` as a plugin in its own right, hooks and
+commands included. Point that name at your clone and there is no cache copy at all:
+
+```bash
+git clone <this-repo> ~/src/mode
+ln -s ~/src/mode ~/.claude/skills/mode
+cd ~/src/mode
+./install.sh
+```
+
+It shows up as `mode@skills-dir`, and Claude Code reads your working tree directly. Take this route
+if you plan to write contracts of your own, or change the plugin itself, because an edit is live in
+the next session with nothing to reinstall. The cost is that you are now responsible for keeping
+the clone current, since nothing will offer to update it for you.
+
+Either way, `claude plugin list` tells you which one you ended up with.
+
 ### What the installer does, and why it is a separate step
 
 Four things, and not one of them is something a plugin can do for itself.
@@ -97,12 +125,12 @@ yourself. More on those below.
 
 **It wires the status line.** This is the awkward one. A status line is a single setting, so a
 plugin that installed its own would silently wipe whatever you already had. So this plugin emits and
-does not own. Running `mode chips` prints the two coloured chips and nothing else, and your existing
+does not own. `bin/mode chips` prints the two coloured chips and nothing else, and your existing
 line calls it.
 
 | What you have | What the installer does |
 |---|---|
-| No status line at all | Writes a small one whose only job is to call `mode chips`. |
+| No status line at all | Writes a small one whose only job is to print the chips. |
 | A status line already | Never overwrites it. Shows you the block to add, offers to append it, and shows the diff before writing. |
 | A settings file that is a symlink | Resolves it and writes through it, so the link stays a link. |
 
@@ -123,6 +151,88 @@ If you would rather be walked through it, ask Claude to set up the mode plugin o
 That loads the plugin's init skill, which asks the same questions in conversation and then calls the
 same script. It never edits `settings.json` itself, for the symlink reason above.
 
+## Updating
+
+Start by finding out where you are. These two answer different questions and it is worth running
+both:
+
+```bash
+claude plugin list          # the version Claude Code is loading, and from which route
+./bin/mode version          # the version of the clone you are standing in
+```
+
+Nothing puts `mode` on your path, so that second one is always a path to the script. From outside
+the clone it is `~/src/mode/bin/mode version`.
+
+When those two disagree, the update has not landed yet. That is the single most useful check on
+this page, because every failure mode below shows up as exactly that disagreement.
+
+### If you installed as a marketplace plugin
+
+Two steps, because the marketplace and the plugin are separate things. The first re-reads the
+source to find out what is on offer, and the second installs it:
+
+```bash
+claude plugin marketplace update mode
+claude plugin update mode@mode
+```
+
+If your marketplace source is a local clone, `git pull` in that clone first, otherwise the
+marketplace update re-reads the same commit it read last time and reports that nothing changed.
+
+Then restart Claude Code. The command says so itself and it is not a formality: hooks and commands
+are read once when a session starts, so a running session keeps the old copy until it ends.
+
+### If you installed as a skills directory
+
+Pull, and restart:
+
+```bash
+cd ~/src/mode && git pull
+```
+
+There is no install step and no `claude plugin update` to run, because there is no second copy to
+bring into line. This route is not listed in `installed_plugins.json` at all, so anything that
+works off that file has nothing to say about it.
+
+### Why the version number matters more than it looks
+
+A marketplace install unpacks into `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>`. The
+version is part of the path, so a bumped number means a new directory and the old one stays where
+it is until you clean it up. A plugin whose `plugin.json` carries no version at all installs into a
+directory called `unknown` and every future update overwrites it in place, which is a good way to
+end up with two versions blended together. This plugin carries a real version, and `bin/mode
+version` prints it.
+
+That same fact is why the status line keeps working across an update. The chips are printed by a
+small script the installer puts in your own config directory, and it re-resolves where the plugin
+lives on every render rather than baking in today's path. Bake the path in and the chips go quiet
+after the first update, with no error anywhere to explain it.
+
+### What an update will not touch
+
+Contracts you wrote yourself, in `~/.claude/mode/modes/` and `~/.claude/mode/styles/`. They sit
+outside the plugin directory on purpose. Your identity config stays too, so nothing asks your name
+a second time. Anything you edited **inside** the plugin directory is a different story: on the
+marketplace route it is in a cache directory that the next version simply stops using, and on the
+skills-dir route `git pull` will conflict with it. Keep your own work in the user contracts
+directory and neither happens.
+
+### Reading what changed
+
+`CHANGELOG.md` carries it, newest first. Versions are the number in `plugin.json`, this project is
+pre-1.0, and a minor bump means new contracts or changed behaviour rather than a stable promise.
+
+### Cutting a release, if you are the one publishing
+
+```bash
+claude plugin tag --dry-run     # check plugin.json and the marketplace entry agree
+claude plugin tag --push        # create mode--v<version> and push it
+```
+
+It refuses on a dirty working tree, and it refuses if the two manifests disagree about the version,
+which is the mistake worth being stopped for.
+
 ## Using it
 
 ```
@@ -134,6 +244,20 @@ same script. It never edits `settings.json` itself, for the symlink reason above
 /mode:style fast
 /mode:style off
 ```
+
+**A bare name goes to whichever axis owns it, so you do not have to remember which is which.**
+`/mode maintainer` fills the style slot, because `maintainer` is a style and there is no mode by
+that name. Typing it on the wrong command used to fail quietly, which looked like it had worked.
+
+You can also set both at once, in either order:
+
+```
+/mode tdd maintainer     # a mode and a style in one go
+/mode maintainer tdd     # the same thing
+```
+
+Only `auto` and `off` stay tied to the command you typed them on, since neither one names a
+contract. `/mode off` empties the mode slot and leaves the style alone, which is what you want.
 
 **A word on that colon.** Claude Code namespaces the commands a plugin brings, so the style and
 approval commands arrive as `/mode:style` and `/mode:approve`. The installer offers to drop two
@@ -153,15 +277,23 @@ tells you the chooser filled the slot while plain `debug` means you typed it.
 
 ## The contracts
 
-Five modes:
+Seven modes:
 
 | Mode | What it is |
 |---|---|
 | `copilot` | You refine the work together, then a team of agents builds it while you watch. |
 | `autopilot` | You want a result and you are away. Every decision is Claude's, and one report waits for you. |
 | `debug` | Find it, prove it reproduces, fix it, and draw why it happened. |
+| `prove` | Nothing is claimed working until a channel that can disagree with you says so. |
 | `studio` | Think something through together on one artifact, and it grows while you talk. |
 | `tdd` | No implementation line exists before a test that fails for the right reason. |
+| `tester` | Work out what to test and how to reach it, run it for real, report a verdict, fix nothing. |
+
+Three of those are about correctness and they are genuinely different jobs, which is worth a line
+because the names blur together. `tdd` writes the test before the code exists. `prove` takes one
+change you just made and refuses to call it working until something outside your own head agrees.
+`tester` takes a feature somebody else built and sweeps it, then hands you a verdict without
+touching the code.
 
 Five styles:
 
@@ -183,7 +315,7 @@ approved the spec it wrote, and `/approve <slug>` is how you say yes:
 That one is deliberately yours alone. It carries `disable-model-invocation: true`, so Claude cannot
 run it on your behalf, which is the point of having a gate at all.
 
-Twenty five pairs are possible and most of them compose without comment. A few are worth knowing
+Thirty five pairs are possible and most of them compose without comment. A few are worth knowing
 about. Holding `tdd` and `ship` together asks for a failing test before every line and also for
 tests to be skipped, so there is no order of operations that satisfies both. Holding `studio` with
 `ship` is similar, since studio deliberately ships nothing. On the productive side, `debug` with
@@ -225,12 +357,20 @@ The keys:
 | `summary` | One line, and keep it under 80 characters. It is what the listing prints and what the status line chip shows, so a long one wraps the line. |
 | `color` | One of red, green, yellow, blue, magenta, cyan, grey. |
 | `enter-when` | Alternatives split on a vertical bar, matched at a word boundary. Only consulted while the slot holds `auto`. |
-| `enter-never` | Set to a literal `true` to make a contract typed-only, never picked for you. |
+| `enter-never` | Present, and not explicitly switched off, makes a contract typed-only and never picked for you. |
 | `exit-when` | `manual`, `approved`, or `mr-opened`. Leave it out and the contract behaves as `manual`. |
 
-Two details save you a debugging session. Anything other than a literal `true` counts as false, so a
-half-written key never quietly turns a rule on. And an unknown key is ignored rather than being an
-error, which is what lets a file written for a later version still load here.
+Two details save you a debugging session.
+
+**A flag is on whenever the key is there and does not say no.** So `true`, `yes`, `1` and even a
+typo all count as on. It is off only when the key is absent, empty, or set to one of `false`, `no`,
+`off`, `n` or `0`, in any case and with quotes stripped. That direction is deliberate. Every flag
+here is an opt-in restriction, nobody writes one meaning to leave it off, so a value that cannot be
+read lands with the restriction **on** rather than silently off. Setting `enter-never: false` is
+the way to turn it off, and deleting the line does the same.
+
+And an unknown key is ignored rather than being an error, which is what lets a file written for a
+later version still load here.
 
 **The four-line cap on `## Standing reminder` is real.** It is the only part of your file that
 repeats, and it repeats on every prompt for as long as the slot is held. Write each line as a rule
@@ -259,9 +399,11 @@ contract that outlives the work it was set for is worse than no contract.
 a teammate until you have approved a spec. That is the entirety of the enforcement in this release.
 `tdd` is the clearest gap, since the rule it wants would refuse an edit to an implementation file
 while no failing test is on record, and that hook is designed but not built. So `tdd` here is a
-discipline and not a fence. Two contracts also carry a `no-implement` flag that no shipped hook
-reads. Take every mode except `copilot` as a written agreement that Claude is reminded of on every
-turn, which is genuinely useful and is not the same thing as a guarantee.
+discipline and not a fence. `tester` wants the mirror image of that rule, refusing an edit to the
+code under test while a sweep is running, and it does not have it either. Two contracts also carry
+a `no-implement` flag that no shipped hook reads. Take every mode except `copilot` as a written
+agreement that Claude is reminded of on every turn, which is genuinely useful and is not the same
+thing as a guarantee.
 
 **The one gate that exists checks that you approved, not that there was anything to approve.**
 `copilot` refuses to spawn a team until an approval is on record, and that part works. What it never
@@ -278,12 +420,19 @@ today is one hardcoded flag read by one hook, so the rule has no name and there 
 it from a file of your own. This is the largest gap between what the system is and what it should
 be.
 
-**Only some pairs have been reasoned about.** Twenty five combinations exist and the contradictory
+**Only some pairs have been reasoned about.** Thirty five combinations exist and the contradictory
 ones are documented above rather than refused. Nothing stops you holding `tdd` and `ship` together.
 You will get incoherent behaviour and no warning.
 
 **The `auto` slot matches on plain substrings at a word boundary.** It is deliberately simple and it
 will sometimes pick wrong. If that bothers you, leave the slots on manual and type the name.
+
+There is one miss worth naming, because it is the most obvious phrase in the whole catalogue.
+Typing "write a failing test" with the mode slot on `auto` selects nothing at all. `tdd` matches
+the phrase and `debug` matches `fail` inside "failing", and a message that matches two contracts
+deliberately chooses neither. The rule doing that is the right rule, and the collision is real, so
+the fix is either a narrower stem for `debug`, which would lose "failed" and "failure", or a
+tie-break on specificity. Until one of those lands, type `/mode tdd`.
 
 ## Licence
 

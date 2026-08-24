@@ -1,6 +1,6 @@
 ---
 name: init
-description: Set up the mode plugin on this machine. Writes the installer's name into the identity config, offers to wire the status line, and creates a directory for contracts they write themselves. Load when someone types /init for this plugin, asks to install or set up mode, or when a mode command reports that no identity config exists yet.
+description: Set up or update the mode plugin on this machine. Writes the installer's name into the identity config, offers to wire the status line, and creates a directory for contracts they write themselves. Load when someone types /init for this plugin, asks to install, set up, update or upgrade mode, asks which version of it they are running, or when a mode command reports that no identity config exists yet.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -9,7 +9,7 @@ disable-model-invocation: false
 
 A session holds one **mode**, a way of working, and one **style**, how Claude talks. Two independent slots, both keyed to the conversation, both gone when it ends.
 
-Three things a plugin cannot do for itself, which is the whole reason this skill exists:
+Four things a plugin cannot do for itself, which is the whole reason this skill exists:
 
 | What | Why it needs a person |
 |---|---|
@@ -76,7 +76,7 @@ That restraint is the point. A real status line already carries other things: a 
 | A `statusLine` already set | Nothing. Printed the block to add and where it goes | Show them the block, then ask |
 | Settings file is a symlink | Resolved it and wrote through it, so it is still a symlink | Mention it once, then move on |
 
-In both cases it writes `chips.sh` into the user's own config directory, and that file is what finds the plugin. It re-resolves the install path on every render by reading `plugins/installed_plugins.json`, because a plugin lives at a hash-versioned cache path that changes on every update. A status line pointing straight at today's path would work at install and then go quiet after the first update, with no error anywhere. Worth one sentence to them, since it is the kind of thing that otherwise looks like a bug much later.
+In both cases it writes `chips.sh` into the user's own config directory, and that file is what finds the plugin. It re-resolves the install path on every render rather than baking in today's one, trying three sources in order: the pointer file a `SessionStart` hook writes, then `plugins/installed_plugins.json`, then the clone the installer itself ran from. That order matters because the three install routes populate different sources. A marketplace install lands in a cache directory named after the version, so the path genuinely changes on every update. A skills-directory install never appears in `installed_plugins.json` at all, and is found by the pointer or the fallback. A status line pointing straight at one of those paths would work at install and then go quiet later, with no error anywhere to explain it. Worth one sentence to them, since it otherwise looks like a bug much later.
 
 When a status line already exists, show the block `install.sh` printed and ask with `AskUserQuestion`, giving them a real choice:
 
@@ -90,6 +90,46 @@ Never append to someone's status line script without asking. It is their file, a
 `install.sh --aliases` writes `style.md` and `approve.md` into the user's own commands directory, so `/style edu` and `/approve <slug>` work as typed instead of `/mode:style` and `/mode:approve`. The stubs exist only so Claude Code accepts the command, because an unknown slash command is rejected before any hook runs. The hook then does the real work by reading the raw prompt text.
 
 Offer it, never assume it. Someone may already have a `/style` of their own, and the namespaced forms work regardless. The installer refuses to overwrite an existing file of either name and says so. `approve.md` carries `disable-model-invocation: true`, which is what keeps approving a human act rather than something you can do for yourself.
+
+## Updating an install that already exists
+
+If they came here to update rather than to install, the first job is working out which route they
+took, because the two have nothing in common. Do not guess it, read it:
+
+```
+claude plugin list
+```
+
+A row reading `mode@skills-dir` with a `Path` means Claude Code is reading a directory directly.
+Updating is a `git pull` in that directory and a restart. There is no `claude plugin update` to
+run, and running one does nothing useful, because this route is not in `installed_plugins.json`.
+
+Any other row means a marketplace install, and the plugin that runs is a copy in a version-named
+cache directory rather than the clone they made. That takes two commands, since the marketplace and
+the plugin are separate things:
+
+```
+claude plugin marketplace update mode
+claude plugin update mode@mode
+```
+
+When the marketplace source is a local clone, `git pull` in it first, or the marketplace update
+re-reads the same commit and truthfully reports that nothing changed.
+
+Either way it needs a restart, which is worth saying plainly rather than leaving in a footnote:
+hooks and commands are read once when a session starts, so the session they are talking to you in
+keeps the old copy until it ends.
+
+Then confirm it landed. These answer different questions and disagreeing is the whole signal:
+
+```
+claude plugin list          # what Claude Code loads
+<plugin root>/bin/mode version   # what the clone on disk says
+```
+
+Nothing they need doing by hand survives an update. Contracts they wrote live in `~/.claude/mode/`
+and sit outside the plugin, and the identity config is there too, so nothing asks their name twice.
+`CHANGELOG.md` in the plugin root says what changed.
 
 ## Close by showing what they have
 
