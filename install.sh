@@ -254,7 +254,8 @@ mode_bin=""
 
 # The SessionStart hook is the only thing that genuinely knows the plugin root, so it wins.
 if [ -r "\$pointer" ]; then
-  root=\$(head -1 "\$pointer" 2>/dev/null | tr -d '[:space:]')
+  IFS= read -r root < "\$pointer" || root=""
+  root=\${root%\$'\r'}
   if [ -n "\$root" ] && [ -x "\$root/bin/mode" ]; then mode_bin=\$root/bin/mode; fi
 fi
 
@@ -500,6 +501,7 @@ emit_alias_style() {
 ---
 description: Set the style slot for this conversation.
 argument-hint: "[<name>|auto|off]"
+disable-model-invocation: true
 ---
 
 Shorthand for `/mode:style`. A UserPromptSubmit hook has already read this message and set the
