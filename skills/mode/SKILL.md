@@ -1,7 +1,7 @@
 ---
 name: mode
 description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, prove, studio, tdd. Styles available: edu, fast, maintainer, native, ship. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", and when they ask what is currently active.
-user-invocable: false
+user-invocable: true
 disable-model-invocation: false
 args: "[<name>|auto|off]"
 modes: autopilot, copilot, debug, prove, studio, tdd
