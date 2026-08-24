@@ -260,6 +260,26 @@ with tempfile.TemporaryDirectory() as tmp:
                p.returncode == 0 and not p.stdout.strip() and not p.stderr.strip(),
                "rc=%s out=%r err=%r" % (p.returncode, p.stdout[:200], p.stderr[:200]))
 
+        section("a gate that cannot read its inputs lets work through")
+        # A crash exits 1, the same code approve uses for a deliberate no.
+        BROKEN = "#!/usr/bin/env python3\nprint('noise')\nraise SystemExit(3)\n"
+        CRASHING = "#!/usr/bin/env python3\nraise RuntimeError('state unreadable')\n"
+        for label, body in (("bin/mode absent", None), ("bin/mode failing", BROKEN),
+                            ("bin/mode crashing", CRASHING)):
+            hurt = os.path.join(tmp, "hurt-%s" % label.split("/")[-1].replace(" ", "-"))
+            shutil.copytree(PLUGIN, hurt, ignore=shutil.ignore_patterns(".git", "tests"))
+            target = os.path.join(hurt, "bin", "mode")
+            os.remove(target)
+            if body is not None:
+                with open(target, "w") as f:
+                    f.write(body)
+                os.chmod(target, 0o755)
+            p = fire("gate.py", agent_payload("h-hurt"), config, root=hurt)
+            ok("%s permits the dispatch rather than denying it" % label,
+               p.returncode == 0 and not p.stdout.strip(),
+               "rc=%s denied with %r. A gate that cannot read the mode must not invent a refusal."
+               % (p.returncode, decision(p)[1][:200]))
+
         source = ""
         with open(os.path.join(HOOKS, "gate.py")) as f:
             source = f.read()

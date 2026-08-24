@@ -159,6 +159,33 @@ for axis, folder in axes.items():
     print("  taken: " + ", ".join("%s=%s" % (c, "+".join(sorted(n))) for c, n in sorted(taken.items())))
     print("  free:  " + ", ".join(sorted(set(COLORS) - set(taken))))
 
+section("colours across the two axes")
+# Seven colours over ten contracts forces three collisions. Inlined rather than parsed out of the
+# catalogue, which lives outside this repo and would not ship to a stranger.
+RELATED = {
+    ("autopilot", "socratic"), ("recon", "ship"), ("studio", "ship"), ("tdd", "ship"),
+    ("tdd", "socratic"), ("autopilot", "edu"), ("autopilot", "plain"), ("copilot", "fast"),
+    ("debug", "maintainer"), ("debug", "ship"), ("harden", "ship"), ("incident", "maintainer"),
+    ("migrate", "ship"), ("refactor", "ship"), ("release", "ship"), ("review", "ship"),
+    ("studio", "fast"), ("studio", "native"), ("tdd", "fast"),
+}
+
+mode_colour = {s: m.get("color") for s, (m, _, _) in loaded["mode"].items()}
+style_colour = {s: m.get("color") for s, (m, _, _) in loaded["style"].items()}
+collisions = sorted((m, s) for m, mc in mode_colour.items()
+                    for s, sc in style_colour.items() if mc and mc == sc)
+for m, s in collisions:
+    print("  %-10s + %-11s %s" % (m, s, mode_colour[m]))
+ok("every shared colour falls on a pair the catalogue already calls related",
+   all(pair in RELATED for pair in collisions),
+   "%r. Two chips in the same colour read as one setting, so the pairs that share one have to be "
+   "pairs whose combination is already meaningful."
+   % [p for p in collisions if p not in RELATED])
+ok("exactly three colours are shared, which is the arithmetic of seven over ten",
+   len(collisions) == 3,
+   "%d collisions. More than three means an axis is wasting a free colour."
+   % len(collisions))
+
 section("flags that belong to one contract only")
 gate = sorted(s for s, (m, _, _) in loaded["mode"].items()
               if m.get("no-dispatch-without-approval") == "true")

@@ -739,12 +739,29 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("approving twice keeps the later slug", out(call("s-app2", "approve")) == "second-slug",
        repr(call("s-app2", "approve").stdout))
 
+    # The gate falls through to this only on exit 1, to tell a foreign yes from no yes at all.
     mode("s-app", "set", "maker")
     p = call("s-app", "approve", "--any-mode")
     ok("--any-mode reads an approval given under a different mode",
        p.returncode == 0 and out(p) == "trade-brief",
-       "rc=%s out=%r. The escape exists so a reader that does not care which mode was held can "
-       "still find the yes." % (p.returncode, p.stdout))
+       "rc=%s out=%r" % (p.returncode, p.stdout))
+
+    p = call("s-app", "approve")
+    ok("and the plain read under that mode still exits 1",
+       p.returncode == 1 and not out(p),
+       "rc=%s out=%r. The flag widens the read rather than weakening the scoping, so if this ever "
+       "passes then --any-mode has quietly become the default and approvals cross modes."
+       % (p.returncode, p.stdout))
+
+    p = call("s-app-none", "approve", "--any-mode")
+    ok("--any-mode on a conversation that never approved anything still exits 1",
+       p.returncode == 1 and not out(p),
+       "rc=%s out=%r. The flag widens which mode counts, not whether a yes is needed."
+       % (p.returncode, p.stdout))
+
+    p = run(root, config, "approve", "--any-mode", "--session", sid("s-app-bare"))
+    ok("--any-mode against a conversation with no state at all does not crash",
+       p.returncode == 1 and not crashed(p), "rc=%s err=%r" % (p.returncode, p.stderr[-200:]))
 
     # ------------------------------------------------------------------ clear
 
