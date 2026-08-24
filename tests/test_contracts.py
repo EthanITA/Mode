@@ -77,7 +77,7 @@ for axis, folder in axes.items():
            "%s is missing, so every check on this axis below is unrunnable" % folder)
         continue
     names = sorted(n for n in os.listdir(folder) if n.endswith(".md"))
-    expected = 6 if folder.endswith("modes") else 5
+    expected = 7 if folder.endswith("modes") else 5
     ok("%s/ holds %d contracts" % (os.path.relpath(folder, PLUGIN), expected),
        len(names) == expected, "found %d: %r" % (len(names), names))
 
@@ -171,6 +171,8 @@ RELATED = {
     ("studio", "fast"), ("studio", "native"), ("tdd", "fast"),
     # edu wants the least text that does the job; prove wants the raw output pasted whole.
     ("prove", "edu"), ("prove", "ship"),
+    # maintainer leaves the codebase better; tester is forbidden from touching it at all.
+    ("tester", "maintainer"), ("tester", "ship"),
 }
 
 mode_colour = {s: m.get("color") for s, (m, _, _) in loaded["mode"].items()}
@@ -184,10 +186,12 @@ ok("every shared colour falls on a pair the catalogue already calls related",
    "%r. Two chips in the same colour read as one setting, so the pairs that share one have to be "
    "pairs whose combination is already meaningful."
    % [p for p in collisions if p not in RELATED])
-ok("exactly four colours are shared, which is the arithmetic of seven over eleven",
-   len(collisions) == 4,
-   "%d collisions. More than the arithmetic forces means an axis is wasting a free colour."
-   % len(collisions))
+# Seven modes take all seven colours, so every style now shares with one.
+ok("every style shares a colour, since the modes have taken all seven",
+   len(collisions) == len(style_colour),
+   "%d collisions against %d styles. Fewer means an axis is wasting a free colour; more means a "
+   "colour is repeated inside one axis, which the check above should already have caught."
+   % (len(collisions), len(style_colour)))
 
 section("flags that belong to one contract only")
 gate = sorted(s for s, (m, _, _) in loaded["mode"].items()

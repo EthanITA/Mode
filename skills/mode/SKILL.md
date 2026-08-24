@@ -1,10 +1,10 @@
 ---
 name: mode
-description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, prove, studio, tdd. Styles available: edu, fast, maintainer, native, ship. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", and when they ask what is currently active.
+description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, prove, studio, tdd, tester. Styles available: edu, fast, maintainer, native, ship. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", and when they ask what is currently active.
 user-invocable: true
 disable-model-invocation: false
 args: "[<name>|auto|off]"
-modes: autopilot, copilot, debug, prove, studio, tdd
+modes: autopilot, copilot, debug, prove, studio, tdd, tester
 styles: edu, fast, maintainer, native, ship
 ---
 
@@ -46,7 +46,7 @@ All three are registered commands under `commands/`, because Claude Code rejects
 
 Both spellings reach the same slot, because the hook reads the raw prompt before any command resolution happens and its pattern treats the `mode:` prefix as optional. So `/mode:style edu` and `/style edu` do the identical thing.
 
-This skill is deliberately **not** user-invocable. `commands/mode.md` owns `/mode`, which keeps one entry in the help list instead of two and gives the command somewhere to carry its argument hint. The skill still loads whenever the model needs it, which is what `disable-model-invocation: false` above keeps open.
+Both this skill and `commands/mode.md` answer to the name, and which one a bare `/mode` reaches depends on how the plugin was installed. Loaded as a plugin the skill is namespaced to `/mode:mode`, leaving the command to take the bare form. Loaded as a plain skill folder it takes the bare form itself and shadows the command. Either way the hook has already switched the slot, because it reads the raw prompt before any of that resolution happens, so both paths end in the same contract.
 
 Read the contract once, at the moment of the switch. It runs to whatever length it needs. From then on the standing reminder carries it.
 
@@ -123,6 +123,7 @@ Both this table and the `Modes available:` list in the front matter are written 
 | `prove` | `modes/prove.md` | Nothing is claimed working until a real channel says so, run before and after the change. |
 | `studio` | `modes/studio.md` | Think together on one artifact, and it grows while you talk. |
 | `tdd` | `modes/tdd.md` | No implementation line exists before a test that fails for the right reason. |
+| `tester` | `modes/tester.md` | Work out what to test and how to reach it, run it for real, and report a verdict without fixing anything. |
 | `off` | none | Not a mode. `mode mode set off` empties the slot. |
 | `auto` | none | Not a mode. `mode mode set auto` matches each message against every `enter-when` and enters the winner. |
 <!-- modes:end -->
