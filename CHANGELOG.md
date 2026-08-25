@@ -7,6 +7,34 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.3.0
+
+The command palette.
+
+### Added
+
+- **A shortcut per contract.** Type `/mode:` and every contract is listed, rather than typing
+  `/mode ` and recalling what exists. A mode is its own name and a style carries its axis, so
+  `/mode:tdd` and `/mode:style:ship`. The files are written by `mode sync` from the contract
+  folders, so a new contract arrives with its shortcut already in place and a deleted one takes its
+  shortcut with it.
+- **The hook understands the colon spelling.** `/mode:tdd`, `/mode:style:ship` and `/mode:approve`
+  previously matched nothing and switched nothing, so a shortcut would have autocompleted and then
+  done nothing at all. One parser now covers the colon and spaced forms together.
+
+### Fixed
+
+- **Two components no longer answer to `mode`.** The skill and `commands/mode.md` both carried the
+  name, which put two identical entries in the palette with nothing to tell them apart. The command
+  is gone and the skill keeps the name.
+
+### Known limits
+
+- A style's command file has a colon in its filename, which Windows does not permit, so those five
+  files will not check out there. Renaming them to `style-ship.md` gives `/mode:style-ship`.
+- The twelve shortcuts add roughly 250 tokens to the always-on cost of every session, taking the
+  plugin from about 300 to about 550.
+
 ## 0.2.0
 
 Two new modes, and one change to how a slot is filled.
