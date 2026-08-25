@@ -15,8 +15,10 @@ ENDED = (
     "normal way until another one is set."
 )
 
-# Anchored, so a quoted "/approve x" changes nothing; the prefix is optional since only /mode runs bare.
-COMMAND = re.compile(r"^/(?:mode:)?(mode|style|approve)\b[ \t]*(\S*)[ \t]*(\S*)")
+# Anchored, so a quoted "/approve x" changes nothing. One token, then whatever was typed after it.
+COMMAND = re.compile(r"^/(\S+)((?:[ \t]+\S+)*)")
+VERBS = ("mode", "style", "approve")
+PREFIX = "mode"
 # Not contract names, so they act on the axis of the command they were typed on.
 SLOT_WORDS = ("off", "auto")
 # A slash command can arrive as these tags rather than as the literal text that was typed.
@@ -34,23 +36,38 @@ def typed(data):
     return "/%s %s" % (found.group(1), (found.group(2) or "").strip()) if found else text
 
 
+def parse(message):
+    found = COMMAND.match(message)
+    if not found:
+        return None
+    parts = [p for p in found.group(1).split(":") if p]
+    if not parts:
+        return None
+    namespaced = len(parts) > 1 and parts[0] == PREFIX
+    if namespaced:
+        parts = parts[1:]
+    # Otherwise this is somebody else's slash command and claiming it would switch an unasked slot.
+    if not namespaced and parts[0] not in VERBS:
+        return None
+    verb = parts[0] if parts[0] in VERBS else None
+    return (verb or PREFIX), parts[(1 if verb else 0):] + found.group(2).split()
+
+
 def obey(message, session):
     """The switch itself, so a slot changes because someone typed it rather than because the model felt
     like it. Answers which axes were set by hand, since the chooser must never overrule one."""
-    found = COMMAND.match(message)
-    if not found:
+    parsed = parse(message)
+    if not parsed:
         return set()
-    verb, first, second = found.group(1), found.group(2), found.group(3)
+    verb, names = parsed
     if verb == "approve":
         # Read only from the typed message: anything an agent can reach could approve its own spec.
-        if first:
-            ask("approve", first, *sid(session))
+        if names:
+            ask("approve", names[0], *sid(session))
         return set()
 
     done = set()
-    for arg in (first, second):
-        if not arg:
-            continue
+    for arg in names:
         # So /mode maintainer reaches the style slot instead of failing quietly against the mode one.
         axis = verb if arg in SLOT_WORDS else (ask("axis", arg) or verb)
         ask(axis, "set", arg, *sid(session))

@@ -34,6 +34,7 @@ The switch is not yours to perform. A `UserPromptSubmit` hook reads the message 
 | {{USER}} types | The hook already did | You do |
 |---|---|---|
 | `/mode <name>` | Looked up which axis owns that name and set it there, then injected the whole contract into this very prompt | Follow it from here on, and say in one line what is active and what changes. Do not run the set yourself. |
+| `/mode:<name>` or `/mode:style:<name>` | The same, from the per-contract shortcut rather than an argument | The same. The two spellings are one code path, so nothing here depends on which was typed. |
 | `/mode <name> <name>` | The same for both, in either order, so `/mode tdd maintainer` fills the mode and the style at once | Confirm both, and write the line in the style if one was set |
 | `/style <name>` | The same on the style slot, named outright | The same, except write that line in the style you just picked, so the change shows rather than being announced |
 | `/mode` or `/style`, with no name | Nothing, because there is no name to act on | Run `mode list` for both, or `mode list style` for one, and show what exists and what is held |
@@ -46,7 +47,9 @@ All three are registered commands under `commands/`, because Claude Code rejects
 
 Both spellings reach the same slot, because the hook reads the raw prompt before any command resolution happens and its pattern treats the `mode:` prefix as optional. So `/mode:style edu` and `/style edu` do the identical thing.
 
-Both this skill and `commands/mode.md` answer to the name, and which one a bare `/mode` reaches depends on how the plugin was installed. Loaded as a plugin the skill is namespaced to `/mode:mode`, leaving the command to take the bare form. Loaded as a plain skill folder it takes the bare form itself and shadows the command. Either way the hook has already switched the slot, because it reads the raw prompt before any of that resolution happens, so both paths end in the same contract.
+This skill is the only thing answering to the name. There was a `commands/mode.md` beside it once, and having two components called `mode` put two identical entries in the command palette with nothing to tell them apart, so the command went and the skill kept the name.
+
+Every contract also has a command file of its own, written by `mode sync` from the folders, so the palette hints the names rather than asking anyone to recall them. A mode is its own name and a style carries its axis: `/mode:tdd`, `/mode:style:ship`. The colon in a style's filename is what puts `style` in the command name, since Claude Code namespaces a plugin command under its plugin and every contract would otherwise arrive as `/mode:<name>` with nothing saying which slot it fills.
 
 Read the contract once, at the moment of the switch. It runs to whatever length it needs. From then on the standing reminder carries it.
 
@@ -161,4 +164,4 @@ The standing block is injected into your own prompt, so write it in the voice th
 
 Use `{{USER}}` wherever the person is named, and write around a pronoun for them where you can. Where you cannot, use they and them. The installer's pronouns are not something the setup should have to ask for.
 
-Then run `mode sync`. It rewrites both registries and both front matter lists from the folders, so neither can drift from what is on disk. `mode list` reads the folder directly and needs nothing.
+Then run `mode sync`. It rewrites both registries and both front matter lists from the folders, and writes the contract's own command file into `commands/`, so none of the three can drift from what is on disk. A mode gets `commands/<name>.md` and a style gets `commands/style:<name>.md`, which is what puts the axis in the palette entry. Deleting a contract and syncing takes its command with it, so no shortcut is ever left pointing at a contract that is gone. `mode list` reads the folder directly and needs nothing.

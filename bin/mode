@@ -597,6 +597,44 @@ def cmd_sync(args):
     skill.write_text(text)
     for region in missing:
         print(f"warning: no {region} region in {skill.name}", file=sys.stderr)
+    write_shortcuts()
+
+
+SHORTCUT = """---
+description: {summary}
+argument-hint: ""
+disable-model-invocation: true
+---
+
+A hook read this message and set the {axis} slot to `{name}` before it reached you, so do not run
+`mode {axis} set` over it. The contract is in your context above.
+
+Confirm the switch in one line, then work the way it asks.
+"""
+# A colon in the filename is what puts the axis in the command name, since Claude Code namespaces a
+# plugin command by its plugin and would otherwise offer every style as /mode:<name>.
+SHORTCUT_STEM = {"mode": "%s", "style": "style:%s"}
+
+
+def write_shortcuts():
+    """One command file per contract, so the palette hints the names instead of asking people to recall
+    them. Generated rather than hand-written, or a new contract would ship without its shortcut."""
+    folder = plugin_root() / "commands"
+    if not folder.is_dir():
+        return
+    keep = {"approve.md", "style.md"}
+    for axis in AXES:
+        for name in names(axis):
+            path = folder / (SHORTCUT_STEM[axis] % name + ".md")
+            keep.add(path.name)
+            body = SHORTCUT.format(summary=summary(axis, name) or f"Hold the {name} {axis}.",
+                                   axis=axis, name=name)
+            if not path.is_file() or path.read_text() != body:
+                path.write_text(body)
+    for stale in folder.glob("*.md"):
+        # A renamed or deleted contract would otherwise leave a command that switches to nothing.
+        if stale.name not in keep:
+            stale.unlink()
 
 
 # --------------------------------------------------------------------- CLI

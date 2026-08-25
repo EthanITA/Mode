@@ -177,6 +177,35 @@ with tempfile.TemporaryDirectory() as tmp:
                "slot, or it fails silently and reads as though it worked."
                % (got[0], got[1], want_mode, want_style))
 
+        section("the per-contract shortcuts reach the same slots")
+        # The palette offers these as commands, so they have to switch as surely as the spaced form.
+        for s, label, typed, want_mode, want_style in (
+            ("sc1", "a mode shortcut", "/mode:tdd", "tdd", ""),
+            ("sc2", "a style shortcut carries its axis", "/mode:style:ship", "", "ship"),
+            ("sc3", "a style named on the mode prefix still routes", "/mode:edu", "", "edu"),
+            ("sc4", "the bare style spelling", "/style:ship", "", "ship"),
+            ("sc5", "auto is not a contract, so it stays on its axis", "/mode:auto", "auto", ""),
+            ("sc6", "somebody else's command is left alone", "/commit a message", "", ""),
+            ("sc7", "and a bare contract name is not ours to claim", "/tdd", "", ""),
+        ):
+            fire("inject.py", prompt_payload(s, typed), config)
+            got = (out(mode(s, "get")), out(style(s, "get")))
+            ok("%s: %s" % (label, typed), got == (want_mode, want_style),
+               "got mode=%r style=%r, wanted %r and %r. A shortcut the palette hints has to switch, "
+               "and a command belonging to another plugin has to be left untouched."
+               % (got[0], got[1], want_mode, want_style))
+
+        # The namespaced spelling is the one the palette offers, and dropping the prefix here would
+        # read the slug as a contract name and record no approval at all.
+        mode("sc8-appr", "set", "copilot")
+        fire("inject.py", prompt_payload("sc8-appr", "/mode:approve a-real-spec"), config)
+        recorded = out(live(config, "approve", "--session", "sc8-appr"))
+        ok("the namespaced approve records the slug, not a contract name",
+           recorded == "a-real-spec",
+           "recorded %r, wanted 'a-real-spec'. /mode:approve is what the palette hints, so if the "
+           "prefix is read as the verb the slug never reaches the record and the gate stays shut."
+           % recorded)
+
         fire("inject.py", prompt_payload("h-route-off", "/mode copilot edu"), config)
         fire("inject.py", prompt_payload("h-route-off", "/mode off"), config)
         ok("/mode off empties the mode and leaves the style alone",
