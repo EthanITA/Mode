@@ -15,11 +15,11 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
-from support import (HOOKS, MODES, PLUGIN, crashed, flag_fixtures, live, ok, out, report,
+from support import (HOOKS, MODES, PLUGIN, crashed, flag_fixtures, live, ok, out, report, write,
                      require_tool, section, skip)
 
 EVENTS = ("UserPromptSubmit", "SessionStart", "PostToolUse", "PreToolUse", "SessionEnd",
-          "Stop", "SubagentStop", "PreCompact", "Notification")
+          "Stop", "SubagentStop", "PreCompact", "Notification", "TaskCreated")
 
 HOME_PATH = re.compile(r"/Users/|/home/[a-z]|\$HOME|~/")
 
@@ -482,5 +482,34 @@ with tempfile.TemporaryDirectory() as tmp:
         ok("sync rewrote the copy's registry from both contract folders",
            "copilot" in registry and "edu" in registry,
            "%r. Saving a contract no longer refreshes what the manual lists." % registry[:400])
+
+    # -------------------------------------------------------------- guards
+
+    section("the guards, and the switch that disarms them")
+    import glob as _glob
+    for path in sorted(_glob.glob(os.path.join(HOOKS, "guards", "*.py"))):
+        stem = os.path.basename(path)
+        if stem.startswith("_"):
+            continue
+        p = subprocess.run([sys.executable, path], input="not json", capture_output=True,
+                           text=True, env=hook_env(PLUGIN, config))
+        ok("guards/%s survives junk stdin, exit 0" % stem,
+           p.returncode == 0 and "Traceback" not in p.stderr,
+           "rc=%s err=%r" % (p.returncode, p.stderr[:200]))
+
+    swg = os.path.join(HOOKS, "guards", "shell-write-guard.py")
+    blockable = json.dumps({"session_id": "h-guard", "hook_event_name": "PreToolUse",
+                            "tool_name": "Bash", "tool_input": {"command": "cat notes.txt"}})
+    p = subprocess.run([sys.executable, swg], input=blockable, capture_output=True,
+                       text=True, env=hook_env(PLUGIN, config))
+    ok("an armed guard denies the read-through-shell it exists to catch",
+       '"permissionDecision": "deny"' in p.stdout, "out=%r" % p.stdout[:200])
+
+    write(os.path.join(config, "mode", "config.json"), '{"guards": "off"}\n')
+    p = subprocess.run([sys.executable, swg], input=blockable, capture_output=True,
+                       text=True, env=hook_env(PLUGIN, config))
+    ok("guards off in config.json disarms it: same payload, silence",
+       p.returncode == 0 and not p.stdout.strip(), "rc=%s out=%r" % (p.returncode, p.stdout[:200]))
+    os.remove(os.path.join(config, "mode", "config.json"))
 
 report()
