@@ -111,6 +111,14 @@ Ground rules have no slot, no chip and no palette entry, because there is nothin
 
 The point of the tier is migration. Standing text that lives in a CLAUDE.md is paid for on every request of every session; a ground rule costs one injection per conversation. Anything in a personal rule file that is not machine-specific belongs here eventually.
 
+A rules file may also carry a `when:` pattern, alternatives split on a vertical bar exactly as `enter-when` is. Such a scoped rule stays out of the first prompt and injects once, in the same conversation-long voice, on the first prompt that matches it. The shipped `artifact` rule works this way: the HTML theming contract arrives the first time a page is asked for, and never costs a token in a conversation that builds none.
+
+## The guards
+
+The rules are fenced as well as stated. `hooks/guards/` holds the enforcement hooks: the board fences, the prose fence, the comment, null and shell-write guards, the memory guard, and an X/Y/Z read fence that stands only while the `xyz` style is held. Each one interrupts the specific violation it names, which is what makes a rule a mechanism rather than a request.
+
+One switch disarms them all: `"guards": "off"` in `~/.claude/mode/config.json`. Absent means armed, matching the flag philosophy above, and the ground rules keep injecting either way, so switching the guards off changes what gets enforced and never what gets said.
+
 ## What the contracts assume about your setup
 
 Three things appear across the files and mean the same thing everywhere.

@@ -89,6 +89,14 @@ This tier exists for one economic reason. A rule in a `CLAUDE.md` is paid for on
 every session, while a ground rule costs one injection per conversation. Standing behaviour that is
 not machine-specific migrates here.
 
+A rules file may also carry a `when:` pattern. Such a scoped rule waits, and injects once on the
+first prompt that matches it: the shipped `artifact` rule delivers the HTML theming contract the
+first time a page is asked for, and costs nothing in a conversation that builds none.
+
+The rules are fenced, not only stated. `hooks/guards/` ships enforcement hooks, board, prose,
+comment, null and shell-write among them, each interrupting the violation it names. One switch
+disarms the lot: `"guards": "off"` in `~/.claude/mode/config.json`, with absent meaning armed.
+
 That is also why a standing reminder is capped at four lines. Two slots can be held at once, giving
 eight lines injected per turn, and that is roughly the ceiling before a standing block reads as
 background noise and stops being seen at all. A contract can run to any length in its body. Only the
