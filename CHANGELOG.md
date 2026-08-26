@@ -7,6 +7,26 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.4.0
+
+The ship and fast split.
+
+### Changed
+
+- **`ship` no longer means hurry.** It is the quality-shipping contract now: shipped code is code
+  somebody maintains, so the style optimises for the next developer. Readability, real names,
+  grouping by domain, explicit types on the exported surface, and refactoring a touched file that
+  has outgrown itself. Its centre is an inner compass: a repo's habits are followed when they
+  amount to a standard, and where they do not, our standard applies instead of mirroring the mess.
+- **`fast` carries the economy `ship` used to.** Make it work, prove it ran, polish nothing:
+  no tests, no comments, no naming care, no reuse, no weighing of dependencies. The reply rules it
+  already had stay, and so do the floors, since ugly is allowed and wrong is not, and speed is
+  never bought from data loss, secrets or irreversibility.
+- **The trigger phrases moved with the meaning.** `just ship`, `hotfix`, `quick and dirty` and
+  `make it work` now select `fast`; `ship this`, `ship it`, `get it out` and `ready to ship`
+  select `ship`. A message carrying both, like "just ship it", is ambiguous on purpose and
+  selects nothing.
+
 ## 0.3.0
 
 The command palette.
