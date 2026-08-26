@@ -7,6 +7,20 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.6.0
+
+A sixth style.
+
+### Added
+
+- **`xyz` style.** Every substantive reply opens with a three-line read before any work happens:
+  X what was typed, Y what was actually meant, inferred from the repo and the conversation rather
+  than asked, and Z the adjacent work those two force into existence. A Z inside the topic that the
+  user would ask for anyway gets done in the same turn and reported; examples are treated as
+  illustration to complete, never as the spec; open questions are resolved by lookups instead of
+  being handed back. Red chip, paired with `autopilot` in the colour map, since being away makes
+  the read the only interpretation pass the work gets.
+
 ## 0.5.0
 
 The clean palette, and an eighth mode.
