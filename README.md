@@ -34,7 +34,7 @@ They live on separate axes because one slot cannot say what people actually want
 ```
 
 Fold those two into a single setting and you are made to pick, so you lose whichever mattered less
-that morning. Kept apart, they compose, and the thirty five combinations are all just things you can
+that morning. Kept apart, they compose, and the forty-eight combinations are all just things you can
 ask for.
 
 Here is the question set that decides which axis something belongs on. It is worth reading before
@@ -385,11 +385,12 @@ change you just made and refuses to call it working until something outside your
 `tester` takes a feature somebody else built and sweeps it, then hands you a verdict without
 touching the code.
 
-Five styles:
+Six styles:
 
 | Style | What it is |
 |---|---|
 | `edu` | Teaching. Overview first, then a simple example, carried by visuals rather than walls of prose. |
+| `xyz` | Every reply opens with the read: X what you typed, Y what you meant, Z the adjacent work that forces. Inferred from the repo, not asked. |
 | `fast` | You are in a hurry. It gets made to work and nothing gets polished: no tests, no naming care, no abstraction, and the answer is short. |
 | `maintainer` | Other people depend on this. Tests, README, API docs and changelog move with the code. |
 | `ship` | It is going out, so it has to be maintainable: readable, well named, grouped by domain, with our own standard applied where the repo has none. |
@@ -405,7 +406,7 @@ approved the spec it wrote, and `/approve <slug>` is how you say yes:
 That one is deliberately yours alone. It carries `disable-model-invocation: true`, so Claude cannot
 run it on your behalf, which is the point of having a gate at all.
 
-Thirty five pairs are possible and most of them compose without comment. A few are worth knowing
+Forty-eight pairs are possible and most of them compose without comment. A few are worth knowing
 about. Holding `tdd` and `fast` together asks for a failing test before every line and also for
 tests to be skipped, so there is no order of operations that satisfies both. Holding `studio` with
 `ship` fights itself too, since studio deliberately ships nothing. On the productive side, `debug`
@@ -510,7 +511,7 @@ today is one hardcoded flag read by one hook, so the rule has no name and there 
 it from a file of your own. This is the largest gap between what the system is and what it should
 be.
 
-**Only some pairs have been reasoned about.** Thirty five combinations exist and the contradictory
+**Only some pairs have been reasoned about.** Forty-eight combinations exist and the contradictory
 ones are documented above rather than refused. Nothing stops you holding `tdd` and `ship` together.
 You will get incoherent behaviour and no warning.
 
