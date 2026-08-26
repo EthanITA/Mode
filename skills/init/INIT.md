@@ -1,6 +1,6 @@
 ---
 name: init
-description: Set up or update the mode plugin on this machine. Writes the installer's name into the identity config, offers to wire the status line, and creates a directory for contracts they write themselves. Load when someone types /init for this plugin, asks to install, set up, update or upgrade mode, asks which version of it they are running, or when a mode command reports that no identity config exists yet.
+description: Set up or update the mode plugin on this machine. Offers to wire the status line, writes the bare commands, and creates a directory for contracts they write themselves. Load when someone types /init for this plugin, asks to install, set up, update or upgrade mode, or asks which version of it they are running.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -9,11 +9,10 @@ disable-model-invocation: false
 
 A session holds one **mode**, a way of working, and one **style**, how Claude talks. Two independent slots, both keyed to the conversation, both gone when it ends.
 
-Four things a plugin cannot do for itself, which is the whole reason this skill exists:
+Three things a plugin cannot do for itself, which is the whole reason this walkthrough exists:
 
 | What | Why it needs a person |
 |---|---|
-| The identity config | Contracts ship with a literal `{{USER}}` placeholder so no name is baked in. The tool substitutes it at injection time, and something has to write the name down first. |
 | The status line | `statusLine` is a key in the user's `settings.json`. No plugin can set it. |
 | The user contracts directory | Somewhere under the Claude config dir that a plugin update never overwrites, so a contract someone wrote themselves survives. |
 | The bare command names | Plugin commands are namespaced, so a plugin cannot register `/mode`, `/style` or `/approve` at all. Three small files in the user's own commands directory carry them, and `mode sync` puts the per-style shortcuts (`style:<name>.md`) beside them for the same reason. |
@@ -26,23 +25,15 @@ That file is very often a symlink into a dotfiles repo. A write that creates a t
 
 So this skill holds the conversation and `install.sh` does the writing. Do not reimplement it.
 
-## Ask two things at most
+## Ask one thing at most
 
 Everything else is answerable from the filesystem. Answer it there.
 
-**One: their name.** Do not open with a blank question. Look first, propose, and let them correct:
-
-```
-git config user.name
-```
-
-Then ask once, in the shape of a confirmation: "Contracts will call you Marco Dong. Good, or something else?" If git gives nothing, ask plainly. The name is the only thing the plugin genuinely cannot work out.
-
-**Two: the status line, and only if they already have one.** Covered below.
+**The status line, and only if they already have one.** Covered below. Nobody's name is needed: contracts say "the user", and Claude already knows who it is talking to.
 
 Do not ask about the contracts directory, the config location, or whether they want the plugin installed. They ran the skill.
 
-The short command names are a third question, but a cheap one, so fold it into the closing rather than asking up front. Details below.
+The short command names are a second question, but a cheap one, so fold it into the closing rather than asking up front. Details below.
 
 ## Run it
 
@@ -57,14 +48,14 @@ command -v python3 jq
 Then, from the plugin root:
 
 ```
-./install.sh --name "<their name>" --yes
+./install.sh --yes
 ```
 
 `--yes` means it never blocks on a prompt, which matters because you are running it, not them. It also never touches an existing status line on its own, which is the behaviour you want.
 
 ## The status line
 
-`bin/mode chips` prints both chips with their colour, and prints nothing at all when both slots are clear. That is all the plugin provides. **The plugin emits, it does not own the line.**
+`bin/mode chips` prints one entry per axis with its colour, `off` in an empty slot. That is all the plugin provides. **The plugin emits, it does not own the line.**
 
 That restraint is the point. A real status line already carries other things: a task board, rate limit bars, a context gauge. An installer that writes its own line wipes all of it.
 
@@ -128,7 +119,7 @@ claude plugin list          # what Claude Code loads
 ```
 
 Nothing they need doing by hand survives an update. Contracts they wrote live in `~/.claude/mode/`
-and sit outside the plugin, and the identity config is there too, so nothing asks their name twice.
+and sit outside the plugin.
 `CHANGELOG.md` in the plugin root says what changed.
 
 ## Close by showing what they have

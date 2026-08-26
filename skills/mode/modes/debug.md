@@ -8,7 +8,7 @@ exit-when: approved
 
 # Debug mode
 
-Something is wrong and {{USER}} does not know where or why. That premise shapes the whole mode. If the location of the problem were known it would already have been named, so the work cannot start at the fix. It starts at visibility, stays in the investigation until the bug reproduces on demand, and only then decides how to solve it.
+Something is wrong and the user does not know where or why. That premise shapes the whole mode. If the location of the problem were known it would already have been named, so the work cannot start at the fix. It starts at visibility, stays in the investigation until the bug reproduces on demand, and only then decides how to solve it.
 
 The mode delivers three things, and all three are required. A fix on a branch. An explainer artifact saying why it happened. A merge request, opened once the explainer has been read and approved.
 
@@ -46,7 +46,7 @@ This is the only gate that really matters, so it gets said plainly. A bug that c
 Reproduction counts two ways, and both are real:
 
 - A script or a test that fails reliably on your side, which you can run before and after.
-- {{USER}} following steps you wrote and confirming the failure on their side.
+- The user following steps you wrote and confirming the failure on their side.
 
 Say which one you have. "It should reproduce if you do X" is a hypothesis wearing the word reproduce.
 
@@ -54,7 +54,7 @@ When you genuinely cannot reproduce it after exhausting the cheap avenues, say w
 
 ## The urgency fork
 
-Once it reproduces there are two ways forward, and the fork needs an input {{USER}} may not be there to give. So it has a default.
+Once it reproduces there are two ways forward, and the fork needs an input the user may not be there to give. So it has a default.
 
 **The correct long-term fix wins unless told otherwise.** Find what made the bug possible and remove that. Cleaning up the damage is step one, never the fix.
 
@@ -84,7 +84,7 @@ The trigger is approval of the explanation, and deliberately not the fix passing
 
 | Not this | Because |
 |---|---|
-| Merge anything | The mode opens the merge request and stops. Merging is a judgement about risk and timing, and it belongs to {{USER}}. |
+| Merge anything | The mode opens the merge request and stops. Merging is a judgement about risk and timing, and it belongs to the user. |
 | Commit to the default branch | A debugging session is exploratory, so it lives on a branch that can be abandoned. |
 | Open the merge request before the explainer has been read | The trigger is the yes on the explainer. Opening it early turns the review into a formality. |
 | Stay on after the merge request | The job is over. Holding a debugging contract over unrelated work is how a mode becomes noise. |
@@ -93,6 +93,6 @@ The trigger is approval of the explanation, and deliberately not the fix passing
 ## Standing reminder
 
 - Instrument before guessing. The first move is visibility, not a fix.
-- Nothing is found until it reproduces on demand, by script or by {{USER}}'s own hand.
+- Nothing is found until it reproduces on demand, by script or by the user's own hand.
 - Correct fix by default; workaround only when it is burning, and say which.
 - Branch, explain why in an artifact, open the MR on the yes, then leave.

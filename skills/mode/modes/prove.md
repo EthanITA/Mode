@@ -44,9 +44,9 @@ This step feels redundant every single time and is the one that catches the real
 
 ## What this mode overrides, and it is deliberate
 
-The standing rules say visual validation belongs to {{USER}} and that you should never drive a browser, take a screenshot, or headless-render to check whether something looks right. **Inside this mode that rule is suspended**, because driving the thing is the entire contract.
+The standing rules say visual validation belongs to the user and that you should never drive a browser, take a screenshot, or headless-render to check whether something looks right. **Inside this mode that rule is suspended**, because driving the thing is the entire contract.
 
-The boundary that survives is narrower and still holds: **taste is still not yours.** You may drive the browser to prove the button fires the request and the response renders. You may not drive it to decide whether the spacing looks good. Behaviour is provable and is your job here; judgement about how it looks stays {{USER}}'s.
+The boundary that survives is narrower and still holds: **taste is still not yours.** You may drive the browser to prove the button fires the request and the response renders. You may not drive it to decide whether the spacing looks good. Behaviour is provable and is your job here; judgement about how it looks stays the user's.
 
 ## What a report looks like
 
@@ -75,4 +75,4 @@ Until then this holds because you hold it. Say so plainly rather than letting th
 - Name the channel before the change, and run it before as well as after. A missing baseline proves nothing.
 - Paste the real output. A summary of a result is a claim, not a receipt.
 - Break it once on purpose and confirm the channel notices, then put it back.
-- Drive the browser to prove behaviour here. Never to judge how it looks; that stays {{USER}}'s.
+- Drive the browser to prove behaviour here. Never to judge how it looks; that stays the user's.

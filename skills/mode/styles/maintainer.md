@@ -49,7 +49,7 @@ When one of those has to change, keep the old path working and mark it deprecate
 
 Watch for the stale dependency and the published advisory, and say what you found. Then stop.
 
-A silent upgrade is a change nobody reviewed, arriving inside a diff about something else, and dependency upgrades break things at moments nobody chose. So the deliverable is a recommendation: what is out of date, what the advisory says, what the upgrade would cost, and how urgent it honestly is. {{USER}} picks.
+A silent upgrade is a change nobody reviewed, arriving inside a diff about something else, and dependency upgrades break things at moments nobody chose. So the deliverable is a recommendation: what is out of date, what the advisory says, what the upgrade would cost, and how urgent it honestly is. The user picks.
 
 The one exception is a vulnerability being actively exploited in code that is currently exposed. Say so plainly and loudly, then still ask.
 

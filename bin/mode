@@ -175,7 +175,7 @@ def declared(axis: str, sid: str | None) -> set[str]:
 # Observed reasons read state that already exists; every other reason waits for `done`.
 OBSERVED = {"approved": lambda sid: bool(approved_slug(sid))}
 # A hook injects this into a sentence a person reads, so the token itself would be machine talk.
-PHRASES = {"approved": lambda sid: f"{user_name()} approved {approved_slug(sid) or 'the spec'}",
+PHRASES = {"approved": lambda sid: f"the user approved {approved_slug(sid) or 'the spec'}",
            "mr-opened": lambda sid: "the merge request is open"}
 
 
@@ -263,20 +263,9 @@ def never_auto(meta: dict) -> bool:
     return truthy(meta, "enter-never")
 
 
-def user_name() -> str:
-    f = config_home() / "config.json"
-    if f.is_file():
-        try:
-            data = json.loads(f.read_text(errors="replace"))
-        except ValueError:
-            data = {}
-        if isinstance(data, dict) and str(data.get("user", "")).strip():
-            return str(data["user"]).strip()
-    return DEFAULT_USER
-
-
 def substitute(text: str) -> str:
-    return text.replace(USER_TOKEN, user_name())
+    # Compatibility only: a user-authored contract from before 0.8.0 may still carry the token.
+    return text.replace(USER_TOKEN, DEFAULT_USER)
 
 
 # ----------------------------------------------------------------- commands
@@ -562,31 +551,6 @@ def cmd_clear(args):
         drop_slot(axis, args.session)
 
 
-def cmd_init(args):
-    path = config_home() / "config.json"
-    data = {}
-    if path.is_file():
-        try:
-            loaded = json.loads(path.read_text(errors="replace"))
-        except ValueError:
-            loaded = {}
-        if isinstance(loaded, dict):
-            data = loaded
-    data["user"] = args.user or data.get("user") or git_name() or os.environ.get("USER") or DEFAULT_USER
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + "\n")
-    print(path)
-
-
-def git_name() -> str:
-    try:
-        out = subprocess.run(["git", "config", "--global", "user.name"],
-                             capture_output=True, text=True, timeout=5)
-    except (OSError, subprocess.SubprocessError):
-        return ""
-    return out.stdout.strip()
-
-
 def check_flags():
     """Nudges toward one spelling without refusing the file, since the readers accept it and a lint
     that rejects what runtime honours would make a contract mean two things at once."""
@@ -769,9 +733,6 @@ def main():
     add("sync", cmd_sync, "rewrite the skill's registries from the contract folders")
 
     add("version", cmd_version, "the version of the copy that is running, to check an update took")
-
-    p = add("init", cmd_init, "write the identity config")
-    p.add_argument("--user", metavar="NAME", help="the name {{USER}} stands for")
 
     # A status line that exits non-zero loses the whole line, so chips never parses strictly and never fails.
     if sys.argv[1:2] == ["chips"]:

@@ -63,7 +63,7 @@ Follow the repo's standard when it has one worth the name. Most repos do not. Th
 
 ## It does not open any gate
 
-A style modulates how the work is written. It never removes what a mode requires, and none of the rules above override an instruction {{USER}} actually gave.
+A style modulates how the work is written. It never removes what a mode requires, and none of the rules above override an instruction the user actually gave.
 
 ## Standing reminder
 

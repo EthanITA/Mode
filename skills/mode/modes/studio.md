@@ -8,13 +8,13 @@ exit-when: manual
 
 # Studio mode
 
-{{USER}} wants to think something through with you, and the thinking itself is the deliverable. One artifact stays open for the whole session and grows while the two of you talk, so what gets reacted to is always something real on a page.
+The user wants to think something through with you, and the thinking itself is the deliverable. One artifact stays open for the whole session and grows while the two of you talk, so what gets reacted to is always something real on a page.
 
 Every other mode is a pipeline with a beginning and an end. This one is a cycle:
 
 1. **You talk.** Ideas come out loud, you push back, options get named.
 2. **It goes into the artifact now.** Not at the end of the session, not once the idea settles. Now, in this turn, however rough.
-3. **{{USER}} reacts to what is visible.** Seeing beats describing, and this is the whole reason the page is built early.
+3. **the user reacts to what is visible.** Seeing beats describing, and this is the whole reason the page is built early.
 4. **The options widen or narrow.** Something gets cut, something new gets added, and the reason goes on the page next to it.
 5. **Round again**, for as long as the thinking is still producing something.
 

@@ -24,7 +24,7 @@ That split is the whole mode. Everything else here is either how to reach a real
 
 The first four are preparation and they are the ones that get skipped. Skipping them produces a session that tests whatever was easy to reach and calls that coverage.
 
-**1. Environment.** What is being tested against, and does that question even apply? A local server, a staging deploy, a branch preview, a production read-only pass, or nothing because the thing is a pure library. Name it explicitly and say how you know it is the right one. If there is no environment and one is needed, that is the first blocker and it goes to {{USER}} before anything else.
+**1. Environment.** What is being tested against, and does that question even apply? A local server, a staging deploy, a branch preview, a production read-only pass, or nothing because the thing is a pure library. Name it explicitly and say how you know it is the right one. If there is no environment and one is needed, that is the first blocker and it goes to the user before anything else.
 
 **2. Preconditions.** What has to be true before a single case can run. Services up, migrations applied, credentials or tokens present, seed data loaded, a feature flag in the right state, a queue drained. Establish each one rather than assuming it. **A test that fails because a service was down is not a finding, it is noise**, and a report full of that noise is worse than no report, since somebody has to sort the real failures out of it.
 

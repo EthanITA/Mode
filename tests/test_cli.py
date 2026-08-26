@@ -784,7 +784,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
     # ------------------------------------------------------------------ sync and init
 
-    section("sync and init")
+    section("sync")
     # Its own root: the folder above carries flags written wrong on purpose, which sync now rejects.
     clean = {"maker": MAKER, "shipper": SHIPPER}
     syncroot = fixture_root(tmp, "syncroot", modes=clean, styles={"brisk": BRISK}, skill=SKILL)
@@ -860,11 +860,6 @@ with tempfile.TemporaryDirectory() as tmp:
     p = run(syncroot, config, "rules", "--session", sid("s-rules-none"))
     ok("no rules anywhere is a silent exit 1",
        p.returncode == 1 and not p.stdout, "rc=%s out=%r" % (p.returncode, p.stdout))
-
-    p = call("s-init", "init")
-    ok("init prints a path, exit 0",
-       p.returncode == 0 and out(p) and os.sep in out(p),
-       "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
 
     # ------------------------------------------------------------------ version
 

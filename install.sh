@@ -26,12 +26,13 @@ usage() {
 Install the mode plugin.
 
 A session holds one mode, which is a way of working, and one style, which is how Claude talks.
-This script sets up the three things the plugin cannot do for itself: your name, the status line,
+This script sets up what the plugin cannot do for itself: the bare commands, the status line,
 and a directory for contracts you write yourself.
 
 Usage: ./install.sh [options]
 
-  --name NAME        The name the contracts should call you. Prompted for if not given.
+  --name NAME        Accepted for compatibility and ignored: contracts say "the user", and
+                     Claude already knows who it is talking to.
   --config-dir DIR   Claude config directory. Defaults to CLAUDE_CONFIG_DIR, then ~/.claude.
   --insert-chips     If a status line already exists, append the chips block to its script.
                      Off by default, because that file is yours and not the installer's.
@@ -41,7 +42,7 @@ Usage: ./install.sh [options]
                      these three files the bare commands do not exist at all.
   --no-aliases       Skip them.
   --force            Overwrite a status line script this installer wrote that has since changed.
-  --yes              Do not ask anything. Needs --name. Never implies --insert-chips.
+  --yes              Do not ask anything. Never implies --insert-chips.
   --help             This text.
 
 Running it twice is safe. The second run reports what is already in place and changes nothing.
@@ -126,45 +127,16 @@ if [ -x "$MODE_BIN" ]; then
   [ -n "$VERSION" ] && say "  version       $VERSION"
 fi
 
-# ---------------------------------------------------------------- 1. identity
+# ---------------------------------------------------------------- sanity
 
-step "1. Who the contracts should call you"
-
-if [ -z "$NAME" ]; then
-  if [ "$ASSUME_YES" -eq 1 ]; then
-    die "--yes was given without --name, and the name cannot be guessed."
-  fi
-  if [ ! -t 0 ]; then
-    die "No name given and nothing to prompt on. Pass --name \"Your Name\"."
-  fi
-  say "Contracts are written with a placeholder rather than a baked-in name."
-  say "Whatever you type here is what the plugin substitutes when it talks to Claude."
-  printf 'Your name: '
-  read -r NAME || die "No name read."
+[ -x "$MODE_BIN" ] || die "No executable at $MODE_BIN. Run this script from inside the plugin directory."
+if [ -n "$NAME" ]; then
+  say "Note: --name is no longer needed. Contracts say \"the user\", and Claude already knows who that is."
 fi
 
-[ -n "$NAME" ] || die "The name cannot be empty."
+# ---------------------------------------------------------------- 1. your own contracts
 
-if [ -x "$MODE_BIN" ]; then
-  # bin/mode owns the config format, so the installer asks for the write rather than doing it.
-  if config_path=$("$MODE_BIN" init --user "$NAME" 2>&1); then
-    say "Identity written for $NAME."
-    if [ -n "$config_path" ]; then
-      say "  $config_path"
-      touched "$config_path: identity config, names you as $NAME"
-    fi
-  else
-    warn "bin/mode init failed and said:"
-    warn "$config_path"
-    die "Stopping here, because without the identity config the contracts keep the placeholder."
-  fi
-else
-  die "No executable at $MODE_BIN. Run this script from inside the plugin directory."
-fi
-
-# ---------------------------------------------------------------- 2. your own contracts
-
-step "2. A place for contracts you write yourself"
+step "1. A place for contracts you write yourself"
 
 for sub in modes styles rules; do
   target=$USER_CONTRACTS/$sub
@@ -181,7 +153,7 @@ say "Anything you drop in there wins over a plugin file of the same name, and su
 say "update. A contract needs front matter with name, summary, color and enter-when; a rules file"
 say "needs only name and summary, and an empty body silences the shipped rule of the same name."
 
-# ---------------------------------------------------------------- 3. the status line
+# ---------------------------------------------------------------- 2. the status line
 
 read_statusline() {
   python3 -c '
@@ -435,7 +407,7 @@ handle_existing_statusline() {
   touched "$host_script: chips block appended at the end"
 }
 
-step "3. The status line"
+step "2. The status line"
 
 if [ "$SKIP_STATUSLINE" -eq 1 ]; then
   say "Skipped, because --no-status-line was given."
@@ -501,7 +473,7 @@ elif isinstance(v, str):
   fi
 fi
 
-# ---------------------------------------------------------------- 4. bare command aliases
+# ---------------------------------------------------------------- 3. bare command aliases
 
 # Greppable ownership mark, so a re-run can refresh a file it wrote and must leave yours alone.
 ALIAS_MARKER="mode-plugin:alias"
@@ -581,7 +553,7 @@ write_alias() {
   touched "$target: the bare /$1 command"
 }
 
-step "4. The bare commands: /mode, /style and /approve"
+step "3. The bare commands: /mode, /style and /approve"
 
 say "A plugin cannot register an un-namespaced command, so these three live as small files in"
 say "your own commands directory. Without them the bare names do not exist."
@@ -594,9 +566,9 @@ else
   write_alias approve
 fi
 
-# ---------------------------------------------------------------- 5. the per-contract shortcuts
+# ---------------------------------------------------------------- 4. the per-contract shortcuts
 
-step "5. The per-contract shortcuts"
+step "4. The per-contract shortcuts"
 
 say "mode sync writes one palette entry per contract: /mode:<name> for a mode inside the plugin,"
 say "and style:<name>.md in your commands directory, so a style arrives bare as /style:<name>."

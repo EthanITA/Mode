@@ -148,16 +148,11 @@ Either way, `claude plugin list` tells you which one you ended up with.
 
 ### What the installer does, and why it is a separate step
 
-Four things, and not one of them is something a plugin can do for itself.
+Three things, and not one of them is something a plugin can do for itself. It never asks your
+name: contracts say "the user", and Claude already knows who it is talking to.
 
-**It asks your name.** The contracts refer to you through a `{{USER}}` placeholder, substituted at
-injection time. This matters more than it looks. A line like "the user speaks only to you, and no
-teammate writes to them" is load-bearing about which direction the rule runs, and the standing block
-is read by the model rather than by you. Get the voice wrong and the sentence states the opposite
-rule.
-
-**It creates `~/.claude/mode/modes/` and `~/.claude/mode/styles/`** for contracts you write
-yourself. More on those below.
+**It creates `~/.claude/mode/modes/`, `~/.claude/mode/styles/` and `~/.claude/mode/rules/`** for
+contracts and rules you write yourself. More on those below.
 
 **It wires the status line.** This is the awkward one. A status line is a single setting, so a
 plugin that installed its own would silently wipe whatever you already had. So this plugin emits and
@@ -255,9 +250,8 @@ after the first update, with no error anywhere to explain it.
 
 ### What an update will not touch
 
-Contracts you wrote yourself, in `~/.claude/mode/modes/` and `~/.claude/mode/styles/`. They sit
-outside the plugin directory on purpose. Your identity config stays too, so nothing asks your name
-a second time. Anything you edited **inside** the plugin directory is a different story: on the
+Contracts and rules you wrote yourself, under `~/.claude/mode/`. They sit outside the plugin
+directory on purpose. Anything you edited **inside** the plugin directory is a different story: on the
 marketplace route it is in a cache directory that the next version simply stops using, and on the
 skills-dir route `git pull` will conflict with it. Keep your own work in the user contracts
 directory and neither happens.

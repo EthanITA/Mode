@@ -10,7 +10,7 @@ styles: edu, fast, maintainer, native, ship, xyz
 
 # Mode
 
-A session carries two slots, and each one holds a contract until {{USER}} drops it. Setting either changes how you work on every turn that follows, not only on the turn that set it.
+A session carries two slots, and each one holds a contract until the user drops it. Setting either changes how you work on every turn that follows, not only on the turn that set it.
 
 This manual drives the switching and nothing else. It is deliberately not a registered skill: a plugin skill would sit in the palette as `mode:mode`, so the palette entry for `/mode` is a user command instead and this file stays the maintainer's reference. The state lives in `${CLAUDE_PLUGIN_ROOT}/bin/mode`, keyed on the conversation. What each contract asks of you lives in its own file, under `modes/` or `styles/`.
 
@@ -31,7 +31,7 @@ The test for which folder a new contract belongs in is whether it has an order. 
 
 The switch is not yours to perform. A `UserPromptSubmit` hook reads the message and does it before you see anything, so by the time you are reading this the slot is already set and the contract is already in your context.
 
-| {{USER}} types | The hook already did | You do |
+| The user types | The hook already did | You do |
 |---|---|---|
 | `/mode <name>` | Looked up which axis owns that name and set it there, then injected the whole contract into this very prompt | Follow it from here on, and say in one line what is active and what changes. Do not run the set yourself. |
 | `/mode:<name>` or `/style:<name>` | The same, from the per-contract shortcut rather than an argument | The same. The two spellings are one code path, so nothing here depends on which was typed. |
@@ -43,7 +43,7 @@ The switch is not yours to perform. A `UserPromptSubmit` hook reads the message 
 | `/approve <slug>` | Recorded the yes against that slug, stamped with whichever mode is active | Say what it unblocks. The record already exists, so do not run `mode approve` over it. |
 | a name that does not exist | Nothing switched, because `mode <axis> set` refuses a name with no file behind it | Run `mode list` and show the real names rather than guessing which one was meant |
 
-Every typed form is a registered command, because Claude Code rejects an unknown slash command before any hook runs. The palette holds exactly three shapes and nothing else: `mode`, `mode:<mode name>` and `style:<style name>`. The bare `/mode`, `/style` and `/approve` are files the installer writes into the user commands directory, since a plugin cannot register an un-namespaced name. Each one carries `disable-model-invocation: true`, which is what keeps them {{USER}}'s alone.
+Every typed form is a registered command, because Claude Code rejects an unknown slash command before any hook runs. The palette holds exactly three shapes and nothing else: `mode`, `mode:<mode name>` and `style:<style name>`. The bare `/mode`, `/style` and `/approve` are files the installer writes into the user commands directory, since a plugin cannot register an un-namespaced name. Each one carries `disable-model-invocation: true`, which is what keeps them the user's alone.
 
 Every spelling reaches the same slot, because the hook reads the raw prompt before any command resolution happens. So `/style edu`, `/style:edu` and `/mode edu` do the identical thing.
 
@@ -95,7 +95,7 @@ A chosen contract is marked as such. The status line writes a tilde in front of 
 
 **An approval is scoped to the mode it was given under.** Two readers consult the same record. Copilot's dispatch gate asks whether a spec was approved, and debug's exit asks whether its explainer was. Leave the record shared and approving a debug explainer would open the dispatch gate against a spec nobody saw. So the record stores the active mode beside the slug, and each reader requires its own name to match.
 
-When a contract clears itself, say so in that turn. One that ends in silence is one {{USER}} has to guess about.
+When a contract clears itself, say so in that turn. One that ends in silence is one the user has to guess about.
 
 ## It sticks by mechanism, not by memory
 
@@ -115,9 +115,9 @@ The point of the tier is migration. Standing text that lives in a CLAUDE.md is p
 
 Three things appear across the files and mean the same thing everywhere.
 
-- **An artifact** is a self-contained page written to a file, which {{USER}} can open, keep and re-read. If this setup carries a skill for building one, use it. If not, a document in the repo does the job.
+- **An artifact** is a self-contained page written to a file, which the user can open, keep and re-read. If this setup carries a skill for building one, use it. If not, a document in the repo does the job.
 - **A definition of done** is whatever the project's own `CLAUDE.md` states as the bar for delivery: pushed, merged, or committed. Read it rather than assuming one. Where no bar is written down, say so instead of inventing one.
-- **`{{USER}}`** is a placeholder. The tool substitutes the installed name when it injects a contract, so it never appears literally in what you read.
+- **"The user"** means whoever is running the session. Claude already knows who that is from its own context, so contracts name no one: a legacy `the user` token in a user-authored contract is still substituted to "the user" for compatibility.
 
 ## The mode registry
 
@@ -168,8 +168,8 @@ One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the exist
 
 Two things about the writing catch people out.
 
-The standing block is injected into your own prompt, so write it in the voice that reads correctly there. "{{USER}} speaks only to you, and no teammate writes to them" is a rule. The same sentence turned around states the opposite one.
+The standing block is injected into your own prompt, so write it in the voice that reads correctly there. "The user speaks only to you, and no teammate writes to them" is a rule. The same sentence turned around states the opposite one.
 
-Use `{{USER}}` wherever the person is named, and write around a pronoun for them where you can. Where you cannot, use they and them. The installer's pronouns are not something the setup should have to ask for.
+Use `the user` wherever the person is named, and write around a pronoun for them where you can. Where you cannot, use they and them. The installer's pronouns are not something the setup should have to ask for.
 
 Then run `mode sync`. It rewrites both registries and both front matter lists from the folders, and writes the contract's own command file, so none of the three can drift from what is on disk. A mode gets `commands/<name>.md` inside the plugin and a style gets `style:<name>.md` in the user commands directory, which is what keeps a style out of the `mode:` namespace. Deleting a contract and syncing takes its command with it, so no shortcut is ever left pointing at a contract that is gone; the sweep only ever deletes a file carrying the generated sentence, so a hand-written command in the same folder is safe. `mode list` reads the folder directly and needs nothing.

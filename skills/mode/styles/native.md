@@ -63,7 +63,7 @@ Say what you found, where it is, and what you would do. Do not bundle a fix for 
 
 Matching the idiom is not a lower bar. The change still has to be correct, still has to pass their suite, still has to come with tests written the way they write tests, and still has to follow whatever their process asks for, sign-off included.
 
-One thing stays yours: the reply to {{USER}} keeps its normal register. What gets matched is everything that lands in their repository.
+One thing stays yours: the reply to the user keeps its normal register. What gets matched is everything that lands in their repository.
 
 ## Standing reminder
 
