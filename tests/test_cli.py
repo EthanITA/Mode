@@ -861,6 +861,21 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("no rules anywhere is a silent exit 1",
        p.returncode == 1 and not p.stdout, "rc=%s out=%r" % (p.returncode, p.stdout))
 
+    SCOPED = "---\nname: pages\nsummary: scoped\nwhen: mockup|landing page\n---\n\nEvery page ships the toggle.\n"
+    ruleroot2 = fixture_root(tmp, "ruleroot2", modes=clean, styles={"brisk": BRISK}, skill=SKILL,
+                             rules={"law": LAW, "pages": SCOPED})
+    p = run(ruleroot2, config, "rules", "--session", sid("s-scope"), "--message", "carry on")
+    ok("a scoped rule stays out of the first prompt while its trigger is absent",
+       p.returncode == 0 and "toggle" not in p.stdout and "receipt" in p.stdout,
+       "rc=%s out=%r" % (p.returncode, p.stdout[:200]))
+    p = run(ruleroot2, config, "rules", "--session", sid("s-scope"), "--message", "a mockup of settings")
+    ok("and fires alone when a later prompt matches its when pattern",
+       p.returncode == 0 and "toggle" in p.stdout and "receipt" not in p.stdout,
+       "rc=%s out=%r" % (p.returncode, p.stdout[:200]))
+    p = run(ruleroot2, config, "rules", "--session", sid("s-scope"), "--message", "another mockup")
+    ok("then never again in the same conversation",
+       p.returncode == 1 and not p.stdout, "rc=%s out=%r" % (p.returncode, p.stdout))
+
     # ------------------------------------------------------------------ version
 
     section("version, the only way to tell whether an update landed")

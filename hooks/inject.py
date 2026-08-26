@@ -116,8 +116,8 @@ try:
         if axis not in handled and holding(axis, session) == AUTO:
             enter(axis, message, session)
 
-    # Once per conversation, so the ground rules land ahead of any contract on the first prompt.
-    told = ask("rules", *sid(session))
+    # Once per conversation each: base rules on the first prompt, scoped ones when their trigger shows.
+    told = ask("rules", "--message", message, *sid(session))
     if told:
         blocks.insert(0, told)
 

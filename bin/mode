@@ -459,27 +459,42 @@ def rules_dirs() -> list[Path]:
 
 
 def cmd_rules(args):
-    """The ground rules, whole, on the first prompt of a conversation and exit 1 ever after. A user
-    file sharing a shipped stem replaces that rule, and an empty body silences it."""
-    marker = state_path(args.session, ".rules")
+    """The ground rules, whole, each injected once per conversation and exit 1 when nothing is due.
+    A rule with no `when:` fires on the first prompt; one carrying a `when:` pattern waits for a
+    prompt that matches it. A user file sharing a shipped stem replaces that rule, and an empty
+    body silences it."""
+    base_marker = state_path(args.session, ".rules")
     # No session means no way to remember they were told, and telling every turn is the one failure
     # this command exists to prevent.
-    if not marker or marker.is_file():
+    if not base_marker:
         raise SystemExit(1)
     picked: dict[str, Path] = {}
     for d in rules_dirs():
         if d.is_dir():
             for p in d.glob("*.md"):
                 picked[p.stem] = p
+    message = (args.message or "").lower()
     bodies = []
+    base_due = not base_marker.is_file()
+    told_base = False
     for stem in sorted(picked):
-        _, body = split_front_matter(picked[stem].read_text(errors="replace"))
-        if body.strip():
+        meta, body = split_front_matter(picked[stem].read_text(errors="replace"))
+        if not body.strip():
+            continue
+        when = alternatives(meta, "when")
+        if when:
+            marker = state_path(args.session, f".rule-{stem}")
+            if marker.is_file() or not message or not hits(message, when):
+                continue
+            write_state(marker, "told")
             bodies.append(body.strip())
+        elif base_due:
+            bodies.append(body.strip())
+            told_base = True
+    if told_base:
+        write_state(base_marker, "told")
     if not bodies:
         raise SystemExit(1)
-    if marker:
-        write_state(marker, "told")
     print(substitute(GROUNDED + "\n\n" + "\n\n".join(bodies)))
 
 
@@ -546,6 +561,8 @@ def cmd_clear(args):
         p = state_path(args.session, ".rules")
         if p:
             p.unlink(missing_ok=True)
+            for scoped in state_home().glob(f"{p.name}".replace(".rules", ".rule-") + "*"):
+                scoped.unlink(missing_ok=True)
         return
     for axis in AXES:
         drop_slot(axis, args.session)
@@ -706,7 +723,9 @@ def main():
 
     add("standing", cmd_standing, "both standing reminders, mode first")
 
-    add("rules", cmd_rules, "the ground rules, once per conversation, exit 1 ever after")
+    p = add("rules", cmd_rules, "each ground rule once per conversation, exit 1 when nothing is due")
+    p.add_argument("--message", default="", metavar="TEXT",
+                   help="the prompt text, matched against every scoped rule's when pattern")
 
     p = add("axis", cmd_axis, "which axis owns a contract name, so a bare name can be routed")
     p.add_argument("name")
