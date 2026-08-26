@@ -9,6 +9,14 @@ nobody is following it. The usual fix is to repeat yourself, which works until y
 This plugin gives a session two slots that hold, and it holds them with a hook rather than with
 Claude's goodwill.
 
+<p align="center">
+  <img src="assets/statusline.svg" alt="A status line with one chip per axis: the mode chip holding ~debug, the style chip holding ship. A second row shows both slots reading off." width="560">
+</p>
+
+That is the whole surface: one chip per axis in your status line, `🎚` for the mode and `💬` for
+the style, showing `off` when a slot is empty and a leading `~` when a contract was chosen for you
+rather than typed.
+
 ## The two axes
 
 A **mode** is a way of working. It is a procedure: steps, gates, and a point where you can say it
@@ -20,7 +28,7 @@ of whatever mode is running. `fast` is one, and it means do the single thing and
 
 They live on separate axes because one slot cannot say what people actually want:
 
-```
+```text
 /mode tdd      # no implementation line before a test that fails for the right reason
 /style fast    # and say almost nothing while doing it
 ```
@@ -51,6 +59,19 @@ A `UserPromptSubmit` hook runs before Claude reads your message. It does two job
 First it performs the switch, so by the time Claude sees anything the slot is already set. Then it
 injects a short standing reminder from each held contract into the prompt itself.
 
+```mermaid
+sequenceDiagram
+    participant You
+    participant Hook as UserPromptSubmit hook
+    participant Tool as bin/mode
+    participant Claude
+    You->>Hook: any message, /mode tdd included
+    Hook->>Tool: expire, switch, choose
+    Tool-->>Hook: what each slot now holds
+    Hook->>Claude: your message, plus each contract's standing reminder
+    Note over Claude: never remembers the mode,<br/>gets told again every turn
+```
+
 So Claude is never remembering which mode it is in. Every single turn, it gets told again.
 
 That is also why a standing reminder is capped at four lines. Two slots can be held at once, giving
@@ -79,7 +100,7 @@ cd ~/src/mode
 Then register it with Claude Code, using that same clone as the marketplace source so there is only
 ever one copy on disk:
 
-```
+```text
 /plugin marketplace add ~/src/mode
 /plugin install mode@mode
 ```
@@ -135,10 +156,11 @@ existing line embeds that output as it is.
 | A status line already | Never overwrites it. Shows you the block to add, offers to append it, and shows the diff before writing. |
 | A settings file that is a symlink | Resolves it and writes through it, so the link stays a link. |
 
-That last row is not hypothetical. Claude Code replaces `settings.json` with a regular file whenever
-it writes a setting, and if yours is a symlink into a dotfiles repo, the repo copy quietly stops
-being the live one with nothing to tell you. The installer takes a timestamped backup first and
-prints every path it touched.
+> [!WARNING]
+> That last row is not hypothetical. Claude Code replaces `settings.json` with a regular file
+> whenever it writes a setting, and if yours is a symlink into a dotfiles repo, the repo copy
+> quietly stops being the live one with nothing to tell you. The installer takes a timestamped
+> backup first and prints every path it touched.
 
 **It writes the bare command names**: `/mode`, `/style` and `/approve` are three small files in
 your own commands directory, because a plugin cannot register an un-namespaced command. It then
@@ -168,8 +190,9 @@ claude plugin list          # the version Claude Code is loading, and from which
 Nothing puts `mode` on your path, so that second one is always a path to the script. From outside
 the clone it is `~/src/mode/bin/mode version`.
 
-When those two disagree, the update has not landed yet. That is the single most useful check on
-this page, because every failure mode below shows up as exactly that disagreement.
+> [!TIP]
+> When those two disagree, the update has not landed yet. That is the single most useful check on
+> this page, because every failure mode below shows up as exactly that disagreement.
 
 ### If you installed as a marketplace plugin
 
@@ -184,8 +207,10 @@ claude plugin update mode@mode
 If your marketplace source is a local clone, `git pull` in that clone first, otherwise the
 marketplace update re-reads the same commit it read last time and reports that nothing changed.
 
-Then restart Claude Code. The command says so itself and it is not a formality: hooks and commands
-are read once when a session starts, so a running session keeps the old copy until it ends.
+> [!IMPORTANT]
+> Then restart Claude Code. The command says so itself and it is not a formality: hooks and
+> commands are read once when a session starts, so a running session keeps the old copy until it
+> ends.
 
 ### If you installed as a skills directory
 
@@ -239,7 +264,7 @@ which is the mistake worth being stopped for.
 
 ## Using it
 
-```
+```text
 /mode              # list what is available, and say what is held
 /mode debug        # hold debug
 /mode off          # empty the mode slot
@@ -255,7 +280,7 @@ that name. Typing it on the wrong command used to fail quietly, which looked lik
 
 You can also set both at once, in either order:
 
-```
+```text
 /mode tdd maintainer     # a mode and a style in one go
 /mode maintainer tdd     # the same thing
 ```
@@ -268,7 +293,7 @@ contract. `/mode off` empties the mode slot and leaves the style alone, which is
 Typing `/mode ` and remembering what exists is the slow path, so each contract is also a command in
 its own right, and the palette holds exactly three shapes:
 
-```
+```text
 /mode                  # the bare command, plus /style and /approve beside it
 /mode:tdd              # one entry per mode, namespaced under the plugin
 /mode:tester
@@ -287,13 +312,28 @@ The bare `/mode`, `/style` and `/approve` live in that same directory, written b
 because a plugin cannot register an un-namespaced command at all. Skip them and those three names
 do not resolve.
 
+```mermaid
+flowchart LR
+    subgraph plugin["inside the plugin, commands/"]
+        tddmd["tdd.md"]
+    end
+    subgraph user["your own commands directory"]
+        modemd["mode.md"]
+        shipmd["style:ship.md"]
+    end
+    tddmd -- "namespaced under the plugin" --> a(["/mode:tdd"])
+    modemd -- "bare, written by the installer" --> b(["/mode"])
+    shipmd -- "bare, written by mode sync" --> c(["/style:ship"])
+```
+
 All of it is generated: `mode sync` rewrites the shortcuts from the contract folders, so writing a
 new contract gives it a palette entry with no second step, and deleting one takes its entry away.
 The shortcuts do exactly what the longer spelling does, and the hook treats them as one code path.
 
-**One caveat if you are on Windows.** A style's shortcut has a colon in its filename, which is
-legal on macOS and Linux and illegal on Windows, so those files cannot be created there. If that
-affects you, the spaced spellings `/style ship` and `/mode tdd` do the identical thing.
+> [!WARNING]
+> On Windows a style's shortcut cannot exist: the colon in its filename is legal on macOS and
+> Linux and illegal there. The spaced spellings `/style ship` and `/mode tdd` do the identical
+> thing.
 
 The two slots are independent. Setting one never touches the other, and `off` on one leaves the
 other exactly as it was.
@@ -304,6 +344,25 @@ contract. Three restraints keep this from being annoying. A contract you set by 
 overridden by a pattern. A message matching two patterns picks neither and leaves the slot alone.
 And a contract picked for you is marked as such in the status line with a leading tilde, so `~debug`
 tells you the chooser filled the slot while plain `debug` means you typed it.
+
+One slot's whole life, and the tilde is the difference between the two held states:
+
+```mermaid
+stateDiagram-v2
+    [*] --> empty
+    empty --> held: you type a name
+    empty --> auto: /mode auto
+    auto --> chosen: an enter-when matches
+    chosen --> auto: its exit condition is met
+    auto --> held: you type a name
+    held --> empty: /mode off
+    chosen --> empty: /mode off
+    auto --> empty: /mode off
+    note right of chosen
+        shown with a tilde,
+        as in ~debug
+    end note
+```
 
 ## The contracts
 
@@ -339,7 +398,7 @@ Five styles:
 One mode brings a third command with it. `copilot` will not spawn a team of agents until you have
 approved the spec it wrote, and `/approve <slug>` is how you say yes:
 
-```
+```text
 /approve payments-refactor
 ```
 

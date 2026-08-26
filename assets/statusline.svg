@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 100" role="img" aria-label="A status line with one chip per axis: the mode chip holding ~debug in yellow, the style chip holding ship in green. A second row shows both slots reading off.">
+  <rect x="1" y="1" width="558" height="98" rx="8" fill="#16181d" stroke="#2a2e37"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13">
+    <text x="24" y="40" fill="#c9d1d9">🤖 Fable  📁 mode (main)  💰 $0.42  🎚 <tspan fill="#e5c07b">~debug</tspan>  💬 <tspan fill="#98c379">ship</tspan></text>
+    <text x="24" y="72" fill="#c9d1d9">🤖 Fable  📁 mode (main)  💰 $0.42  🎚 <tspan fill="#6b7280">off</tspan>  💬 <tspan fill="#6b7280">off</tspan></text>
+  </g>
+</svg>
