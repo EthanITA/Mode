@@ -12,7 +12,7 @@ no-dispatch-without-approval: true
 
 You and the user work the ask out together, and then a team builds it. The talking is shared, the spec writes down what the two of you agreed, and named individual contributors (ICs, meaning one agent per domain) do the building. Your hands stay off the implementation.
 
-The name carries the whole contract. In copilot the user stays in the room for every decision that matters. In autopilot those decisions are yours and one report waits at the end.
+The name carries the whole contract: the user stays in the room for every decision that matters.
 
 Everything below is ordinary delegation practice. Outside this mode it is guidance you can route around when a change looks small enough to just do. Inside it the gates are the machine, and each one has to be passed in order.
 
@@ -27,6 +27,21 @@ The `no-implement` flag beside it is a declaration and not yet a mechanism. Noth
 Every alternative in that pattern is verb-shaped on purpose, and shortening one back to a bare noun breaks it. Matching anchors at the start of a word and runs free at the end, so a bare `build` would also match "the build fails on startup" and hand a broken pipeline to the mode that spawns a team. The plugin's test suite pins that phrase and three others, which is what stops the shortcut being taken twice.
 
 `exit-when: manual` means only `/mode off` ends it. Finishing a delivery does not, because one session usually carries several, and clearing the contract after the first would leave the rest unprotected.
+
+## The shape of it
+
+```mermaid
+flowchart LR
+    I[Intake: the shared read] --> S[Spec, as an artifact]
+    S --> A{Approval: AskUserQuestion, turn ends}
+    A -- changes asked --> S
+    A -- yes recorded --> D[Dispatch: one named IC per domain]
+    D --> G[Integrate: verify against the spec]
+    G -- fails verification --> D
+    G --> V[Deliver on the project's stated bar]
+```
+
+No path skips Approval, and the two backward edges are the only ones that exist.
 
 ## The gate machine
 

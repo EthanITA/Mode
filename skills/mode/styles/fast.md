@@ -62,7 +62,7 @@ And speed is never bought from safety: nothing that can lose data, nothing that 
 
 ## It does not open any gate
 
-A style modulates how a mode talks. It never removes what a mode requires. Copilot's approval gate still ends the turn on a question, debug still needs the bug to reproduce, TDD still needs the red. Fast makes each of those shorter, and none of them optional.
+A style modulates how a mode talks. It never removes what a mode requires: an approval gate still ends its turn on the question, a reproduction gate still holds, a red-first gate still wants its failing test. Fast makes each of those shorter, and none of them optional.
 
 ## Standing reminder
 

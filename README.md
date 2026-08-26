@@ -380,7 +380,7 @@ Eight modes:
 | Mode | What it is |
 |---|---|
 | `copilot` | You refine the work together, then a team of agents builds it while you watch. |
-| `ic` | Copilot without the spec. You refine the work together, then Claude builds it himself: no team, no approval gate, forks asked as they appear. |
+| `ic` | The all-rounder default. One senior contributor runs the whole loop alone, borrowing each specialist's discipline without its ceremony, while you watch and take the real forks. |
 | `autopilot` | You want a result and you are away. Every decision is Claude's, and one report waits for you. |
 | `debug` | Find it, prove it reproduces, fix it, and draw why it happened. |
 | `prove` | Nothing is claimed working until a channel that can disagree with you says so. |

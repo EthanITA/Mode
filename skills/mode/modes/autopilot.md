@@ -11,22 +11,38 @@ no-implement: true
 
 The user has named the outcome and then walked away. Nobody is reading the turns, nobody is going to answer a question, and every decision between here and the merge request is yours to make and to write down.
 
-Mechanically this is `copilot` with the human gate taken out. Read `modes/copilot.md` for the pipeline itself, because it is the same one: understand the ask, decompose it into domains, dispatch one named teammate per domain, integrate what comes back, deliver. Only three things differ, and all three follow from there being nobody in the room.
+The pipeline is a lead's: understand the ask, decompose it into domains where one domain is one future agent, dispatch one named teammate per domain in a single parallel batch, each carrying enough context to start completely cold, verify and integrate what comes back, and deliver on a branch that ends in a merge request. Your own work is never delegated: the read of the goal, the decomposition, the decisions and the verification stay yours, and the `no-implement` flag above means the team builds while your hands stay off the implementation.
 
-| In copilot | In autopilot |
+What makes it this mode rather than any supervised one is that nobody is in the room:
+
+| With someone in the room | Here |
 |---|---|
-| You talk the ask through with the user | You read the goal and start. There is nobody to talk to. |
-| A spec artifact that can be re-read, then a question | A plan you write for your own use, and no question |
-| Dispatch waits for approval | Dispatch happens immediately |
+| The ask gets talked through | You read the goal and start. There is nobody to talk to. |
+| A spec that can be re-read, then a question | A plan you write for your own use, and no question |
+| Dispatch waits for a yes | Dispatch happens immediately |
 | Ambiguity goes back as a fork | You resolve it, and the choice goes in the report |
-| The user watches it happen | The user reads one report when it is over |
-| It holds until it is cleared | It clears itself once the merge request is open and waiting |
+| The work is watched as it happens | One report is read when it is over |
+| The contract holds until it is cleared | It clears itself once the merge request is open and waiting |
+
+## The shape of it
+
+```mermaid
+flowchart LR
+    R[Read the goal, nobody to ask] --> P[Plan, written for your own use]
+    P --> D[Dispatch immediately, one IC per domain]
+    D --> I[Integrate and verify]
+    I --> M[Open the merge request]
+    M --> X[mode mode done mr-opened, slot clears]
+    I -. undecidable, or destructive beyond the MR .-> S[Stop, say why, leave the state readable]
+```
+
+Every ambiguity is resolved in flight and lands in the one report; only the dotted edge stops the run.
 
 ## Why the dispatch gate is deliberately absent
 
 Note what this front matter does **not** carry: `no-dispatch-without-approval`. That is not an oversight, and adding it would break the mode outright.
 
-Copilot's dispatch gate refuses to spawn a teammate until a stamped spec has been approved. Put that flag here and the mode jams the moment the user leaves. No approval can arrive, because the whole premise is that nobody is there. No teammate can spawn without one. The user comes back to nothing at all.
+That flag makes a hook refuse to spawn a teammate until a stamped spec has been approved. Put it here and the mode jams the moment the user leaves. No approval can arrive, because the whole premise is that nobody is there. No teammate can spawn without one. The user comes back to nothing at all.
 
 So the gate is off, and that is exactly why `enter-never: true` is on. The two go together. A mode that decides on someone's behalf, with no brake in front of the decision, has to be entered by a decision they actually made. Either `/mode autopilot` gets typed or the mode never runs. No pattern in a message selects it, not even while the slot is set to `auto`.
 

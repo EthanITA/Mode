@@ -129,7 +129,7 @@ Both this table and the `Modes available:` list in the front matter are written 
 | `autopilot` | `modes/autopilot.md` | The user wants X and is away. Every decision is Claude's, one report waits. |
 | `copilot` | `modes/copilot.md` | Refine it together, then a team builds it while the user watches. |
 | `debug` | `modes/debug.md` | Find it, prove it reproduces, fix it, and draw why it happened. |
-| `ic` | `modes/ic.md` | Copilot without the spec. Work it out together, then build it yourself. |
+| `ic` | `modes/ic.md` | The all-rounder default. One senior contributor runs the whole loop, the user watches. |
 | `prove` | `modes/prove.md` | Nothing is claimed working until a real channel says so, run before and after the change. |
 | `studio` | `modes/studio.md` | Think together on one artifact, and it grows while you talk. |
 | `tdd` | `modes/tdd.md` | No implementation line exists before a test that fails for the right reason. |

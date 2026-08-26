@@ -20,6 +20,18 @@ Reading the code is not a channel. Neither is reasoning about what the code woul
 
 **If no channel exists, building one is the first piece of work**, before the change. A throwaway script that calls the endpoint and prints the response is a channel. So is a one-line log statement added for the occasion and removed afterwards. The cost of building one is almost always smaller than the cost of being confidently wrong.
 
+## The shape of it
+
+```mermaid
+flowchart LR
+    N[Name the channel, before touching anything] --> B[Baseline: run it before]
+    B --> C[Change]
+    C --> P[Prove: run it after, paste the real output]
+    P --> K[Once per behaviour: break it, watch the channel notice, put it back]
+```
+
+Three of the four steps are worthless out of order, which is why the arrows only run one way.
+
 ## The lap
 
 Every change goes through the same four steps, in this order. The order is the point: three of the four are worthless out of sequence.

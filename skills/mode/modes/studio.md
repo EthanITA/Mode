@@ -18,6 +18,19 @@ Every other mode is a pipeline with a beginning and an end. This one is a cycle:
 4. **The options widen or narrow.** Something gets cut, something new gets added, and the reason goes on the page next to it.
 5. **Round again**, for as long as the thinking is still producing something.
 
+## The shape of it
+
+```mermaid
+flowchart TD
+    T[Talk: options out loud, argued] --> U[Into the artifact now, however rough]
+    U --> R[React to what is visible]
+    R --> W[Widen or narrow, rejected options stay on the page]
+    W --> T
+    W -. something is ready to build .-> H[Hand over to a building mode, explicitly]
+```
+
+A cycle rather than a pipeline, and only the dotted edge ever leaves it.
+
 ## What changes, turn to turn
 
 | Ordinarily | In this mode |
@@ -50,7 +63,7 @@ Most of the value of a brainstorm a month later is in what was considered and dr
 
 The artifact is a thinking surface. Nothing here becomes real work.
 
-That boundary is deliberate. When something on the page is ready to be built, leaving for `copilot` or `autopilot` is the move, and the handover is explicit: say that the thinking is done and what would carry it forward. A brainstorm that quietly slides into an implementation loses the record of everything it rejected on the way, which was the reason for holding the session in the first place.
+That boundary is deliberate. When something on the page is ready to be built, leaving for a mode that builds is the move, and the handover is explicit: say that the thinking is done and what would carry it forward. A brainstorm that quietly slides into an implementation loses the record of everything it rejected on the way, which was the reason for holding the session in the first place.
 
 ## Why it never exits on its own
 

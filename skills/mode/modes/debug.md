@@ -12,6 +12,24 @@ Something is wrong and the user does not know where or why. That premise shapes 
 
 The mode delivers three things, and all three are required. A fix on a branch. An explainer artifact saying why it happened. A merge request, opened once the explainer has been read and approved.
 
+## The shape of it
+
+```mermaid
+flowchart TD
+    V[Instrument: make the failure observable] --> H[Hypothesis, with the result that would kill it]
+    H --> E[One experiment, one change]
+    E -- does not reproduce --> V
+    E -- reproduces on demand --> F{Burning?}
+    F -- no, the default --> C[Correct fix, on a branch]
+    F -- production or hotfix words --> W[Workaround, follow-up written down]
+    C --> X[Explainer artifact: why it happened]
+    W --> X
+    X --> A{/approve its slug}
+    A -- yes --> M[Open the MR, mode ends]
+```
+
+The only gate that matters is the reproduce edge: nothing moves forward on a bug never seen failing.
+
 ## When it starts and when it ends
 
 `enter-when` matches a symptom report while the slot is set to `auto`. The pattern says `fail` rather than listing every ending, because matching anchors at the start of a word and runs free at the end, so one stem covers fails, failed, failing and failure. Spelling those out again would only narrow it.
@@ -20,7 +38,7 @@ The two error alternatives are written as phrases for the same reason in reverse
 
 Two further signals are worth knowing about even though they are the hook's business rather than yours: a second failed attempt on the same file, and the same complaint arriving twice. Both mean the ordinary approach has already been tried and did not work, which is precisely when this contract earns its place.
 
-`exit-when: approved` reads the approval record. The record remembers which mode was active when the yes was given, so an approval recorded here satisfies this mode and nothing else. That scoping matters. Without it, approving a debug explainer would quietly open the dispatch gate that `copilot` guards, and a teammate could be spawned against a spec nobody ever saw.
+`exit-when: approved` reads the approval record. The record remembers which mode was active when the yes was given, so an approval recorded here satisfies this mode and nothing else. That scoping matters. Without it, approving this mode's explainer would quietly satisfy a gate some other contract guards, and unlock work against a plan nobody ever saw.
 
 ## Instrument before guessing
 

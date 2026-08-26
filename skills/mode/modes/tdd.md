@@ -14,9 +14,24 @@ Everything below exists to make that rule mean something. Written loosely it deg
 
 ## When it starts and when it ends
 
-`enter-when` matches somebody asking for the discipline by name. The alternatives are the term of art and the phrases people actually type, and none of them is a bare `test` or `tests`. That omission is deliberate twice over. "The tests fail" is a symptom report and belongs to `debug`. "Add tests for the parser" may be a backfill over code that already works, which is useful but is not this.
+`enter-when` matches somebody asking for the discipline by name. The alternatives are the term of art and the phrases people actually type, and none of them is a bare `test` or `tests`. That omission is deliberate twice over. "The tests fail" is a symptom report, which is debugging work rather than this. "Add tests for the parser" may be a backfill over code that already works, which is useful but is not this either.
 
 `exit-when: manual`, so only `/mode off` ends it. One session usually carries several behaviours, and a contract that cleared itself on the first green would leave every later lap unprotected.
+
+## The shape of it
+
+```mermaid
+flowchart TD
+    E[Enumerate: cases from structure, not memory] --> Rd[Reduce to the minimum set]
+    Rd --> Di[Direction: grep for an existing caller]
+    Di --> R[Red: watch the assertion fail]
+    R -- import error or typo, a broken test --> R
+    R -- failed on the assertion --> G[Green: the least code]
+    G --> F[Refactor, suite staying green]
+    F -- next behaviour --> R
+```
+
+The three gates run once per behaviour; the lap at the bottom runs until the behaviours run out.
 
 ## The three gates, then the cycle
 
@@ -89,7 +104,7 @@ The failure message is part of the test. A stranger reading only that line shoul
 
 A hook called `no-code-without-red` was designed for this mode. It would have refused an edit to an implementation file until a test had been observed failing in the same turn. It is deliberately not in v1.
 
-So this mode ships as a contract with nothing behind it. Exactly one gate in this plugin has a mechanism, and it is copilot's dispatch gate, which refuses to spawn a teammate until a spec has been approved. Every other rule here rests on being followed, this one included.
+So this mode ships as a contract with nothing behind it, resting on being followed rather than on a hook.
 
 Be concrete about what that costs. Nothing stops you writing the implementation first and backfilling a test that passes immediately. Nothing catches a green that came from an assertion pinning nothing. The failure here is silent, which is exactly the failure a hook would have caught.
 

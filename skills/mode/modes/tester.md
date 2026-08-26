@@ -14,11 +14,24 @@ That split is the whole mode. Everything else here is either how to reach a real
 
 ## What this is not
 
-**It is not debug.** Debug starts from one symptom somebody already noticed and narrows until it reproduces. This starts from a surface nobody has checked and finds out what is broken on it. Debug ends in a fix; this ends in a verdict.
+**It is not fault-chasing.** That starts from one symptom somebody already noticed and narrows until it reproduces, ending in a fix. This starts from a surface nobody has checked and finds out what is broken on it, ending in a verdict.
 
 **It is not code review.** Reading the source is allowed and it is a source of hints, never a source of evidence. "This branch looks wrong" is a case to go and try, not a finding. A finding is something that happened when you ran it.
 
-**It is not `prove`.** That contract validates a change you just made, through one channel, per change. This one validates features somebody else built, across a whole surface, and its output is a document rather than a receipt in a turn.
+**It is not validating your own change.** Proving one change you just made, through one channel, is a different job. This one validates features somebody else built, across a whole surface, and its output is a document rather than a receipt in a turn.
+
+## The shape of it
+
+```mermaid
+flowchart LR
+    E[Environment] --> P[Preconditions, established not assumed]
+    P --> S[Surface: enumerate by reading, not recall]
+    S --> C[Cases: induction over each surface item]
+    C --> X[Execute for real, every case observed]
+    X --> R[Report: verdict first, fix nothing]
+```
+
+The first four boxes are the preparation that gets skipped, which is why they come first here.
 
 ## The six phases
 
@@ -58,7 +71,7 @@ State confidence honestly per finding: executed, observed once, intermittent, or
 
 ## When it starts and when it ends
 
-`enter-when` matches somebody asking for a feature or a surface to be checked, rather than asking why one thing broke, which belongs to `debug`.
+`enter-when` matches somebody asking for a feature or a surface to be checked, rather than asking why one thing broke, which is a different job.
 
 `exit-when: manual`, so only `/mode off` ends it. Delivering one report is not the end of testing: the usual next sentence names another feature, and a contract that cleared itself on the first artifact would leave that one unprotected.
 
