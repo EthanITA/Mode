@@ -1,5 +1,5 @@
 ---
-description: Get it out today. Skip the ceremony on purpose and write down every skip.
+description: Ship it properly. Readable, well named, grouped by domain, and our standard where the repo has none.
 argument-hint: ""
 disable-model-invocation: true
 ---

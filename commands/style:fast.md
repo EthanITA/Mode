@@ -1,5 +1,5 @@
 ---
-description: The user is in a hurry. Do the one thing and say done.
+description: The user is in a hurry. Make it work, say done, polish nothing.
 argument-hint: ""
 disable-model-invocation: true
 ---

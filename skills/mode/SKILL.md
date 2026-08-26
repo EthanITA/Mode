@@ -139,10 +139,10 @@ Written by the same command, from `styles/`, under the same rule.
 | Name | File | Summary |
 |---|---|---|
 | `edu` | `styles/edu.md` | Teach it top down, in plain words, carried by pictures rather than prose. |
-| `fast` | `styles/fast.md` | The user is in a hurry. Do the one thing and say done. |
+| `fast` | `styles/fast.md` | The user is in a hurry. Make it work, say done, polish nothing. |
 | `maintainer` | `styles/maintainer.md` | Other people depend on this. Docs, tests and the changelog move with the code. |
 | `native` | `styles/native.md` | Somebody else's house. Match the neighbours and add none of your own idiom. |
-| `ship` | `styles/ship.md` | Get it out today. Skip the ceremony on purpose and write down every skip. |
+| `ship` | `styles/ship.md` | Ship it properly. Readable, well named, grouped by domain, and our standard where the repo has none. |
 | `off` | none | Not a style. `mode style set off` empties the slot. |
 | `auto` | none | Not a style. `mode style set auto` matches each message against every `enter-when` and enters the winner. |
 <!-- styles:end -->

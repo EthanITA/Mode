@@ -327,9 +327,9 @@ Five styles:
 | Style | What it is |
 |---|---|
 | `edu` | Teaching. Overview first, then a simple example, carried by visuals rather than walls of prose. |
-| `fast` | You are in a hurry. The one thing gets done and the answer is short. |
+| `fast` | You are in a hurry. It gets made to work and nothing gets polished: no tests, no naming care, no abstraction, and the answer is short. |
 | `maintainer` | Other people depend on this. Tests, README, API docs and changelog move with the code. |
-| `ship` | Get it out today. Tests, docs and ceremony are skipped on purpose, and the debt is named. |
+| `ship` | It is going out, so it has to be maintainable: readable, well named, grouped by domain, with our own standard applied where the repo has none. |
 | `native` | Somebody else's codebase. Match the local idiom exactly and contribute none of your own. |
 
 One mode brings a third command with it. `copilot` will not spawn a team of agents until you have
@@ -343,11 +343,11 @@ That one is deliberately yours alone. It carries `disable-model-invocation: true
 run it on your behalf, which is the point of having a gate at all.
 
 Thirty five pairs are possible and most of them compose without comment. A few are worth knowing
-about. Holding `tdd` and `ship` together asks for a failing test before every line and also for
+about. Holding `tdd` and `fast` together asks for a failing test before every line and also for
 tests to be skipped, so there is no order of operations that satisfies both. Holding `studio` with
-`ship` is similar, since studio deliberately ships nothing. On the productive side, `debug` with
-`ship` picks the workaround over the durable fix, which is what you want while production is
-burning, and `debug` with `maintainer` picks the other half of that same fork.
+`ship` fights itself too, since studio deliberately ships nothing. On the productive side, `debug`
+with `fast` picks the workaround over the durable fix, which is what you want while production is
+burning, and `debug` with `ship` or `maintainer` picks the other half of that same fork.
 
 ## Writing your own
 
