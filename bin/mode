@@ -27,6 +27,8 @@ USER_TOKEN = "{{USER}}"
 # Silence here would leave the status-line chip naming a contract whose rules nobody can read.
 UNREADABLE = ("Its contract could not be read, so the file for '%s' is missing or has no standing "
               "reminder. Say so rather than improvising what it asks for.")
+GROUNDED = ("# Ground rules\n\nThese rules hold for this entire conversation. They are injected "
+            "once, here, and never repeated, so keep applying them without being reminded.")
 
 
 def die(msg: str, code: int = 1):
@@ -462,6 +464,36 @@ def cmd_announce(args):
         print(substitute("\n\n".join(blocks)))
 
 
+def rules_dirs() -> list[Path]:
+    """Shipped first, the user's own second, mirroring the contract folders."""
+    return [plugin_root() / "skills" / "mode" / "rules", config_home() / "rules"]
+
+
+def cmd_rules(args):
+    """The ground rules, whole, on the first prompt of a conversation and exit 1 ever after. A user
+    file sharing a shipped stem replaces that rule, and an empty body silences it."""
+    marker = state_path(args.session, ".rules")
+    # No session means no way to remember they were told, and telling every turn is the one failure
+    # this command exists to prevent.
+    if not marker or marker.is_file():
+        raise SystemExit(1)
+    picked: dict[str, Path] = {}
+    for d in rules_dirs():
+        if d.is_dir():
+            for p in d.glob("*.md"):
+                picked[p.stem] = p
+    bodies = []
+    for stem in sorted(picked):
+        _, body = split_front_matter(picked[stem].read_text(errors="replace"))
+        if body.strip():
+            bodies.append(body.strip())
+    if not bodies:
+        raise SystemExit(1)
+    if marker:
+        write_state(marker, "told")
+    print(substitute(GROUNDED + "\n\n" + "\n\n".join(bodies)))
+
+
 def cmd_approve(args):
     """Records the artifact the user approved, under the mode they approved it in."""
     if args.slug:
@@ -521,6 +553,10 @@ def cmd_clear(args):
             p = state_path(args.session, f".{axis}.announced")
             if p:
                 p.unlink(missing_ok=True)
+        # A resume or a compact drops the injected ground rules exactly as it drops a contract.
+        p = state_path(args.session, ".rules")
+        if p:
+            p.unlink(missing_ok=True)
         return
     for axis in AXES:
         drop_slot(axis, args.session)
@@ -705,6 +741,8 @@ def main():
                    help="the message to match against every enter-when on that axis")
 
     add("standing", cmd_standing, "both standing reminders, mode first")
+
+    add("rules", cmd_rules, "the ground rules, once per conversation, exit 1 ever after")
 
     p = add("axis", cmd_axis, "which axis owns a contract name, so a bare name can be routed")
     p.add_argument("name")

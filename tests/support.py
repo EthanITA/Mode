@@ -86,7 +86,7 @@ def write(path, text):
         f.write(text)
 
 
-def fixture_root(tmp, name, modes=None, styles=None, skill=None):
+def fixture_root(tmp, name, modes=None, styles=None, skill=None, rules=None):
     """A plugin tree holding a copy of the real tool and contracts nobody ships.
 
     Fixture names deliberately differ from the shipped ones, so a test cannot pass by reading
@@ -100,6 +100,8 @@ def fixture_root(tmp, name, modes=None, styles=None, skill=None):
         os.makedirs(os.path.join(root, "skills", "mode", axis), exist_ok=True)
         for stem, text in contracts.items():
             write(os.path.join(root, "skills", "mode", axis, "%s.md" % stem), text)
+    for stem, text in (rules or {}).items():
+        write(os.path.join(root, "skills", "mode", "rules", "%s.md" % stem), text)
     if skill is not None:
         write(os.path.join(root, "skills", "mode", "MANUAL.md"), skill)
     return root

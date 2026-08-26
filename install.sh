@@ -166,7 +166,7 @@ fi
 
 step "2. A place for contracts you write yourself"
 
-for sub in modes styles; do
+for sub in modes styles rules; do
   target=$USER_CONTRACTS/$sub
   if [ -d "$target" ]; then
     say "Already there: $target"
@@ -177,8 +177,9 @@ for sub in modes styles; do
   fi
 done
 
-say "Anything you drop in there wins over a plugin contract of the same name, and survives"
-say "a plugin update. A file needs front matter with name, summary, color and enter-when."
+say "Anything you drop in there wins over a plugin file of the same name, and survives a plugin"
+say "update. A contract needs front matter with name, summary, color and enter-when; a rules file"
+say "needs only name and summary, and an empty body silences the shipped rule of the same name."
 
 # ---------------------------------------------------------------- 3. the status line
 

@@ -103,6 +103,14 @@ The same `UserPromptSubmit` hook injects what is held into every prompt. On the 
 
 That is why a standing block is capped at four lines. Two slots means up to eight injected lines per turn, which is the ceiling before a standing block reads as background and stops being seen. One rule per symptom, because a wall of doctrine is a wall.
 
+## The ground rules, a third kind of file
+
+Beside the two slots sits a set that is not switched at all. `skills/mode/rules/*.md`, layered under `~/.claude/mode/rules/` exactly as contracts are, is injected whole on the first prompt of every conversation, ahead of any contract, and then never again. The injected block says so itself, so keep applying those rules without being reminded. A resume or a compact drops the injected text, and the same `clear --announced` the resume hook already runs re-arms it.
+
+Ground rules have no slot, no chip and no palette entry, because there is nothing to choose: they are always on. A rules file carries front matter with only `name` and `summary`. A user file sharing a shipped stem replaces that rule, and one with an empty body silences it, which is the supported way to opt out of a shipped rule without touching the plugin.
+
+The point of the tier is migration. Standing text that lives in a CLAUDE.md is paid for on every request of every session; a ground rule costs one injection per conversation. Anything in a personal rule file that is not machine-specific belongs here eventually.
+
 ## What the contracts assume about your setup
 
 Three things appear across the files and mean the same thing everywhere.

@@ -74,6 +74,21 @@ sequenceDiagram
 
 So Claude is never remembering which mode it is in. Every single turn, it gets told again.
 
+### The ground rules
+
+A third kind of file is not switched at all. Anything in `skills/mode/rules/`, layered under
+`~/.claude/mode/rules/`, is injected whole on the first prompt of every conversation, ahead of any
+contract, and then never repeated. A resume or a compact re-arms it, since either one drops the
+injected block. No slot, no chip, no palette entry: ground rules are always on.
+
+Five ship with the plugin: an evidence bar, scope discipline, a live task board, collaboration
+defaults, and a prose register. Replace one by dropping a file with the same name in your own rules
+directory, or silence it with a same-named file whose body is empty.
+
+This tier exists for one economic reason. A rule in a `CLAUDE.md` is paid for on every request of
+every session, while a ground rule costs one injection per conversation. Standing behaviour that is
+not machine-specific migrates here.
+
 That is also why a standing reminder is capped at four lines. Two slots can be held at once, giving
 eight lines injected per turn, and that is roughly the ceiling before a standing block reads as
 background noise and stops being seen at all. A contract can run to any length in its body. Only the

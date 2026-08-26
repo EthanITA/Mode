@@ -160,6 +160,24 @@ for axis, folder in axes.items():
     print("  taken: " + ", ".join("%s=%s" % (c, "+".join(sorted(n))) for c, n in sorted(taken.items())))
     print("  free:  " + ", ".join(sorted(set(COLORS) - set(taken))))
 
+section("the rules folder, injected once per conversation")
+RULES = os.path.join(os.path.dirname(MODES), "rules")
+if os.path.isdir(RULES):
+    for filename in sorted(n for n in os.listdir(RULES) if n.endswith(".md")):
+        with open(os.path.join(RULES, filename)) as f:
+            rtext = f.read()
+        rmeta, rbody = split_front_matter(rtext)
+        stem = filename[:-3]
+        ok("%s: name matches the filename and a summary exists" % filename,
+           rmeta.get("name") == stem and bool(rmeta.get("summary")),
+           "name=%r summary=%r" % (rmeta.get("name"), rmeta.get("summary")))
+        ok("%s: carries a body to inject" % filename, bool(rbody.strip()),
+           "an empty shipped rule is dead weight; empty is the user-layer silencing idiom")
+        hits = prose_dashes(rtext)
+        ok("%s: no em dash and no spaced clause dash" % filename, not hits, " // ".join(hits[:3]))
+else:
+    ok("skills/mode/rules/ exists", False, "the rules tier shipped in 0.7.0 and the folder is gone")
+
 section("colours across the two axes")
 # Seven colours over eleven contracts forces four collisions. Inlined rather than parsed out of the
 # catalogue, which lives outside this repo and would not ship to a stranger.

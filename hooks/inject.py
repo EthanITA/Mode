@@ -116,6 +116,11 @@ try:
         if axis not in handled and holding(axis, session) == AUTO:
             enter(axis, message, session)
 
+    # Once per conversation, so the ground rules land ahead of any contract on the first prompt.
+    told = ask("rules", *sid(session))
+    if told:
+        blocks.insert(0, told)
+
     # One call, because bin/mode owns whether this prompt gets the whole contract or the reminder.
     announced = ask("announce", *sid(session))
     if announced:

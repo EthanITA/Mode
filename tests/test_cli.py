@@ -830,6 +830,37 @@ with tempfile.TemporaryDirectory() as tmp:
        "%r. Without all three the author cannot tell which line to change, nor which way the "
        "tool took it." % said)
 
+    # ------------------------------------------------------------------ rules
+
+    section("ground rules, once per conversation")
+    LAW = "---\nname: law\nsummary: a fixture rule\n---\n\nAlways hand {{USER}} the receipt.\n"
+    AXIOM = "---\nname: axiom\nsummary: another\n---\n\nNever guess a checkable fact.\n"
+    ruleroot = fixture_root(tmp, "ruleroot", modes=clean, styles={"brisk": BRISK}, skill=SKILL,
+                            rules={"law": LAW, "axiom": AXIOM})
+    p = run(ruleroot, config, "rules", "--session", sid("s-rules"))
+    ok("the first call prints every rule body under one heading, exit 0",
+       p.returncode == 0 and "Ground rules" in p.stdout
+       and "receipt" in p.stdout and "Never guess" in p.stdout,
+       "rc=%s out=%r" % (p.returncode, p.stdout[:300]))
+    ok("and the placeholder is substituted", "{{" not in p.stdout, repr(p.stdout[:200]))
+    p = run(ruleroot, config, "rules", "--session", sid("s-rules"))
+    ok("the second call prints nothing, exit 1, so a hook injects once",
+       p.returncode == 1 and not p.stdout, "rc=%s out=%r" % (p.returncode, p.stdout))
+    run(ruleroot, config, "clear", "--announced", "--session", sid("s-rules"))
+    p = run(ruleroot, config, "rules", "--session", sid("s-rules"))
+    ok("clear --announced re-arms them, which is what a resume runs",
+       p.returncode == 0 and "Ground rules" in p.stdout, "rc=%s" % p.returncode)
+    write(os.path.join(config, "mode", "rules", "law.md"),
+          "---\nname: law\nsummary: silenced\n---\n")
+    p = run(ruleroot, config, "rules", "--session", sid("s-rules-mute"))
+    ok("a user file sharing a shipped stem with an empty body silences that rule only",
+       p.returncode == 0 and "receipt" not in p.stdout and "Never guess" in p.stdout,
+       "%r" % p.stdout[:300])
+    os.remove(os.path.join(config, "mode", "rules", "law.md"))
+    p = run(syncroot, config, "rules", "--session", sid("s-rules-none"))
+    ok("no rules anywhere is a silent exit 1",
+       p.returncode == 1 and not p.stdout, "rc=%s out=%r" % (p.returncode, p.stdout))
+
     p = call("s-init", "init")
     ok("init prints a path, exit 0",
        p.returncode == 0 and out(p) and os.sep in out(p),

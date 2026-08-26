@@ -133,10 +133,19 @@ with tempfile.TemporaryDirectory() as tmp:
 
     if present["inject.py"]:
         section("inject.py, UserPromptSubmit")
+        first = fire("inject.py", prompt_payload("h-quiet", "carry on"), config)
+        ok("the first prompt of a conversation carries the ground rules, exit 0",
+           first.returncode == 0 and "Ground rules" in context(first),
+           "rc=%s out=%r err=%r" % (first.returncode, first.stdout[:200], first.stderr[:200]))
         p = fire("inject.py", prompt_payload("h-quiet", "carry on"), config)
-        ok("nothing held is silent, exit 0",
+        ok("after that, nothing held is silent, exit 0",
            p.returncode == 0 and not p.stdout.strip(),
            "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
+        fire("resume.py", prompt_payload("h-quiet"), config)
+        p = fire("inject.py", prompt_payload("h-quiet", "carry on"), config)
+        ok("a resume re-arms the ground rules, since a compact drops the injected block",
+           p.returncode == 0 and "Ground rules" in context(p),
+           "rc=%s out=%r" % (p.returncode, p.stdout[:200]))
 
         mode("h-inject", "set", "copilot")
         p = fire("inject.py", prompt_payload("h-inject", "carry on"), config)
