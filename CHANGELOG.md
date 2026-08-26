@@ -7,6 +7,35 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.8.0
+
+The plugin becomes the whole system.
+
+### Added
+
+- **The guards.** Eleven enforcement hooks move into `hooks/guards/`: the board fences (category,
+  keep, deliver, check, done), the prose fence, the comment, null and shell-write guards, the
+  memory guard, and an X/Y/Z read fence that stands only while the `xyz` style is held. One switch
+  disarms them all, `"guards": "off"` in `~/.claude/mode/config.json`, with absent meaning armed.
+  Their messages cite the rule they enforce rather than a file on one person's machine.
+- **Scoped ground rules.** A rules file may carry a `when:` pattern; it stays out of the first
+  prompt and injects once on the first prompt that matches. The new `artifact` rule ships this
+  way, delivering the HTML theming contract the first time a page is asked for.
+- **Every mode draws its shape.** Each contract now carries a mermaid diagram of its own
+  procedure, readable in the file and rendered wherever the repo is browsed.
+
+### Changed
+
+- **`ic` is the flagship default.** Rewritten from a thin sketch into the all-rounder contract:
+  one senior contributor runs the whole loop, read, ground, build, verify, deliver, borrowing each
+  specialist discipline without its ceremony, asking only the forks whose wrong guess wastes the
+  task, and offering a team mode when independent domains pile up.
+- **Contracts are isolated.** No mode or style names another. Each file stands alone, and
+  cross-catalogue comparisons live only in the README and the manual.
+- **Nobody's name.** The identity config, `mode init`, the installer's name prompt and the
+  `{{USER}}` machinery are gone: contracts say "the user", and Claude already knows who that is. A
+  legacy token in a user-authored contract is still substituted for compatibility.
+
 ## 0.7.0
 
 The ground rules.

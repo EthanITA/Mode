@@ -1,6 +1,6 @@
 {
   "name": "mode",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Give a session a way of working and a way of speaking. Two independent slots, switched by a hook before the model reads your message, so the contract holds by mechanism instead of by the model remembering it.",
   "author": {
     "name": "Marco Dong"
