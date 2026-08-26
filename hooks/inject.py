@@ -4,7 +4,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _shared import ask, payload, sid
+from _shared import ask, payload, run, sid
 
 AXES = ("mode", "style")
 # Not a contract but an empty slot with permission to fill itself, which is what the chooser acts on.
@@ -70,8 +70,12 @@ def obey(message, session):
     for arg in names:
         # So /mode maintainer reaches the style slot instead of failing quietly against the mode one.
         axis = verb if arg in SLOT_WORDS else (ask("axis", arg) or verb)
-        ask(axis, "set", arg, *sid(session))
-        done.add(axis)
+        # The first name per axis wins, so names can arrive in any order and a duplicate is noise.
+        if axis in done:
+            continue
+        code, _ = run(axis, "set", arg, *sid(session))
+        if code == 0:
+            done.add(axis)
     return done
 
 

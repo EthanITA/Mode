@@ -169,6 +169,10 @@ with tempfile.TemporaryDirectory() as tmp:
             ("rt3", "a style name alone", "/mode maintainer", "", "maintainer"),
             ("rt4", "a mode name alone", "/mode tdd", "tdd", ""),
             ("rt5", "an unknown name moves nothing", "/mode nonsense", "", ""),
+            ("rt6", "two mode names keep the first", "/mode tdd debug", "tdd", ""),
+            ("rt7", "two style names keep the first", "/style maintainer edu", "", "maintainer"),
+            ("rt8", "a duplicate is noise, the other axis still fills", "/mode tdd tdd maintainer",
+             "tdd", "maintainer"),
         ):
             fire("inject.py", prompt_payload(s, typed), config)
             got = (out(mode(s, "get")), out(style(s, "get")))
@@ -464,10 +468,10 @@ with tempfile.TemporaryDirectory() as tmp:
            "%r. Running the suite edited another agent's files, so a test run is no longer safe."
            % touched)
 
-        with open(os.path.join(copy, "skills", "mode", "SKILL.md")) as f:
+        with open(os.path.join(copy, "skills", "mode", "MANUAL.md")) as f:
             registry = f.read()
         ok("sync rewrote the copy's registry from both contract folders",
            "copilot" in registry and "edu" in registry,
-           "%r. Saving a contract no longer refreshes what the skill lists." % registry[:400])
+           "%r. Saving a contract no longer refreshes what the manual lists." % registry[:400])
 
 report()
