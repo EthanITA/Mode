@@ -1,10 +1,10 @@
 ---
 name: mode
-description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, prove, studio, tdd, tester. Styles available: edu, fast, maintainer, native, ship. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", and when they ask what is currently active.
+description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, ic, prove, studio, tdd, tester. Styles available: edu, fast, maintainer, native, ship. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", and when they ask what is currently active.
 user-invocable: true
 disable-model-invocation: false
 args: "[<name>|auto|off]"
-modes: autopilot, copilot, debug, prove, studio, tdd, tester
+modes: autopilot, copilot, debug, ic, prove, studio, tdd, tester
 styles: edu, fast, maintainer, native, ship
 ---
 
@@ -12,7 +12,7 @@ styles: edu, fast, maintainer, native, ship
 
 A session carries two slots, and each one holds a contract until {{USER}} drops it. Setting either changes how you work on every turn that follows, not only on the turn that set it.
 
-This skill drives the switching and nothing else. The state lives in `${CLAUDE_PLUGIN_ROOT}/bin/mode`, keyed on the conversation. What each contract asks of you lives in its own file, under `modes/` or `styles/`.
+This manual drives the switching and nothing else. It is deliberately not a registered skill: a plugin skill would sit in the palette as `mode:mode`, so the palette entry for `/mode` is a user command instead and this file stays the maintainer's reference. The state lives in `${CLAUDE_PLUGIN_ROOT}/bin/mode`, keyed on the conversation. What each contract asks of you lives in its own file, under `modes/` or `styles/`.
 
 ## Two axes, and what belongs on each
 
@@ -23,7 +23,7 @@ This skill drives the switching and nothing else. The state lives in `${CLAUDE_P
 | Applies to | The shape of the turn | Every step of whatever mode is running |
 | Example | `copilot` stops on a question before dispatching a team | `fast` makes that question two lines instead of ten |
 
-The split is what keeps the file count down. Seven modes and five styles cover thirty-five combinations, so a new way of talking costs one file rather than seven rewrites.
+The split is what keeps the file count down. Eight modes and five styles cover forty combinations, so a new way of talking costs one file rather than eight rewrites.
 
 The test for which folder a new contract belongs in is whether it has an order. If it says do this, then that, and stop here, it is a mode. If it only changes the texture of whatever you were already doing, it is a style.
 
@@ -34,7 +34,7 @@ The switch is not yours to perform. A `UserPromptSubmit` hook reads the message 
 | {{USER}} types | The hook already did | You do |
 |---|---|---|
 | `/mode <name>` | Looked up which axis owns that name and set it there, then injected the whole contract into this very prompt | Follow it from here on, and say in one line what is active and what changes. Do not run the set yourself. |
-| `/mode:<name>` or `/mode:style:<name>` | The same, from the per-contract shortcut rather than an argument | The same. The two spellings are one code path, so nothing here depends on which was typed. |
+| `/mode:<name>` or `/style:<name>` | The same, from the per-contract shortcut rather than an argument | The same. The two spellings are one code path, so nothing here depends on which was typed. |
 | `/mode <name> <name>` | The same for both, in either order, so `/mode tdd maintainer` fills the mode and the style at once | Confirm both, and write the line in the style if one was set |
 | `/style <name>` | The same on the style slot, named outright | The same, except write that line in the style you just picked, so the change shows rather than being announced |
 | `/mode` or `/style`, with no name | Nothing, because there is no name to act on | Run `mode list` for both, or `mode list style` for one, and show what exists and what is held |
@@ -43,13 +43,11 @@ The switch is not yours to perform. A `UserPromptSubmit` hook reads the message 
 | `/approve <slug>` | Recorded the yes against that slug, stamped with whichever mode is active | Say what it unblocks. The record already exists, so do not run `mode approve` over it. |
 | a name that does not exist | Nothing switched, because `mode <axis> set` refuses a name with no file behind it | Run `mode list` and show the real names rather than guessing which one was meant |
 
-All three are registered commands under `commands/`, because Claude Code rejects an unknown slash command before any hook runs. The plugin is named `mode`, so they arrive namespaced as `/mode`, `/mode:style` and `/mode:approve`, and bare `/style` and `/approve` work too wherever the installer wired them. Each one carries `disable-model-invocation: true`, which is what keeps them {{USER}}'s alone.
+Every typed form is a registered command, because Claude Code rejects an unknown slash command before any hook runs. The palette holds exactly three shapes and nothing else: `mode`, `mode:<mode name>` and `style:<style name>`. The bare `/mode`, `/style` and `/approve` are files the installer writes into the user commands directory, since a plugin cannot register an un-namespaced name. Each one carries `disable-model-invocation: true`, which is what keeps them {{USER}}'s alone.
 
-Both spellings reach the same slot, because the hook reads the raw prompt before any command resolution happens and its pattern treats the `mode:` prefix as optional. So `/mode:style edu` and `/style edu` do the identical thing.
+Every spelling reaches the same slot, because the hook reads the raw prompt before any command resolution happens. So `/style edu`, `/style:edu` and `/mode edu` do the identical thing.
 
-This skill is the only thing answering to the name. There was a `commands/mode.md` beside it once, and having two components called `mode` put two identical entries in the command palette with nothing to tell them apart, so the command went and the skill kept the name.
-
-Every contract also has a command file of its own, written by `mode sync` from the folders, so the palette hints the names rather than asking anyone to recall them. A mode is its own name and a style carries its axis: `/mode:tdd`, `/mode:style:ship`. The colon in a style's filename is what puts `style` in the command name, since Claude Code namespaces a plugin command under its plugin and every contract would otherwise arrive as `/mode:<name>` with nothing saying which slot it fills.
+Every contract also has a command file of its own, written by `mode sync` from the folders, so the palette hints the names rather than asking anyone to recall them. A mode ships inside the plugin's `commands/` and arrives as `/mode:tdd`. A style cannot: the plugin namespace would offer it as `/mode:style:ship`, which is exactly the palette noise this layout removes, so sync writes styles into the user commands directory as `style:<name>.md` and they arrive bare, as `/style:ship`.
 
 Read the contract once, at the moment of the switch. It runs to whatever length it needs. From then on the standing reminder carries it.
 
@@ -123,6 +121,7 @@ Both this table and the `Modes available:` list in the front matter are written 
 | `autopilot` | `modes/autopilot.md` | The user wants X and is away. Every decision is Claude's, one report waits. |
 | `copilot` | `modes/copilot.md` | Refine it together, then a team builds it while the user watches. |
 | `debug` | `modes/debug.md` | Find it, prove it reproduces, fix it, and draw why it happened. |
+| `ic` | `modes/ic.md` | Copilot without the spec. Work it out together, then build it yourself. |
 | `prove` | `modes/prove.md` | Nothing is claimed working until a real channel says so, run before and after the change. |
 | `studio` | `modes/studio.md` | Think together on one artifact, and it grows while you talk. |
 | `tdd` | `modes/tdd.md` | No implementation line exists before a test that fails for the right reason. |
@@ -154,7 +153,7 @@ One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the exist
 - Front matter with `name`, matching the filename stem, and a one-line `summary`. The summary is what `mode list` prints and what the status line chip shows.
 - `enter-when`, `enter-never` and `exit-when`, per the table above. A contract with no `enter-when` can only be typed, and one with no `exit-when` behaves as `manual`. Write the line anyway, because an implied contract is one nobody can read off the file.
 - Any flag the contract declares, such as `no-implement: true` or `no-dispatch-without-approval: true`. A flag is **on** whenever the key is present and not explicitly switched off, so `true`, `yes`, `1` and even a typo all count as on. It is off only when the key is absent, empty, or set to one of `false`, `no`, `off`, `n` or `0`, in any case and with quotes stripped. These flags are opt-in restrictions and nobody writes one meaning to leave it off, so a misread lands with the gate closed rather than open. Only `no-dispatch-without-approval` currently has a hook behind it; `no-implement` is a declaration that no hook reads yet.
-- An optional `color`, one of red, green, yellow, blue, magenta, cyan or grey, which is what the status line chip uses.
+- An optional `color`, one of red, green, yellow, blue, magenta, cyan, grey or pink, which is what the status line chip uses.
 - A body carrying the full contract, at whatever length it needs.
 - A `## Standing reminder` heading as the last section, holding at most four lines, where every line is a rule that binds in the moment.
 
@@ -164,4 +163,4 @@ The standing block is injected into your own prompt, so write it in the voice th
 
 Use `{{USER}}` wherever the person is named, and write around a pronoun for them where you can. Where you cannot, use they and them. The installer's pronouns are not something the setup should have to ask for.
 
-Then run `mode sync`. It rewrites both registries and both front matter lists from the folders, and writes the contract's own command file into `commands/`, so none of the three can drift from what is on disk. A mode gets `commands/<name>.md` and a style gets `commands/style:<name>.md`, which is what puts the axis in the palette entry. Deleting a contract and syncing takes its command with it, so no shortcut is ever left pointing at a contract that is gone. `mode list` reads the folder directly and needs nothing.
+Then run `mode sync`. It rewrites both registries and both front matter lists from the folders, and writes the contract's own command file, so none of the three can drift from what is on disk. A mode gets `commands/<name>.md` inside the plugin and a style gets `style:<name>.md` in the user commands directory, which is what keeps a style out of the `mode:` namespace. Deleting a contract and syncing takes its command with it, so no shortcut is ever left pointing at a contract that is gone; the sweep only ever deletes a file carrying the generated sentence, so a hand-written command in the same folder is safe. `mode list` reads the folder directly and needs nothing.

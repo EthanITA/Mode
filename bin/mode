@@ -19,8 +19,9 @@ STANDING = "standing reminder"
 # A hook repeats this every turn, so each axis is capped and the pair still fits in eight lines.
 STANDING_LINES = 4
 COLORS = {"red": "31", "green": "32", "yellow": "33", "blue": "34",
-          "magenta": "35", "cyan": "36", "grey": "90"}
+          "magenta": "35", "cyan": "36", "grey": "90", "pink": "95"}
 RESET = "\x1b[0m"
+CHIP_ICON = {"mode": "\U0001f39a", "style": "\U0001f4ac"}
 DEFAULT_USER = "the user"
 USER_TOKEN = "{{USER}}"
 # Silence here would leave the status-line chip naming a contract whose rules nobody can read.
@@ -314,13 +315,15 @@ def cmd_chips(args):
     parts = []
     for axis in AXES:
         name = held(axis, args.session)
-        if not name:
-            continue
-        label = ("~" if is_chosen(axis, args.session) else "") + name
-        color = COLORS.get(meta_of(axis, name).get("color", ""), "")
-        parts.append(f"\x1b[{color}m{label}{RESET}" if color else label)
-    if parts:
-        print(" ".join(parts))
+        if name:
+            label = ("~" if is_chosen(axis, args.session) else "") + name
+            color = COLORS.get(meta_of(axis, name).get("color", ""), "")
+            label = f"\x1b[{color}m{label}{RESET}" if color else label
+        else:
+            # An empty slot renders as off rather than vanishing, so the line always has both entries.
+            label = OFF
+        parts.append(f"{CHIP_ICON[axis]} {label}")
+    print("  ".join(parts))
 
 
 def cmd_choose(args):
@@ -563,11 +566,11 @@ def check_flags():
 
 
 def cmd_sync(args):
-    """Rewrite the skill's registries from the folders, since front matter cannot compute itself."""
+    """Rewrite the manual's registries from the folders, since front matter cannot compute itself."""
     check_flags()
-    skill = plugin_root() / "skills" / "mode" / "SKILL.md"
+    skill = plugin_root() / "skills" / "mode" / "MANUAL.md"
     if not skill.is_file():
-        die(f"no skill file at {skill}")
+        die(f"no manual at {skill}")
     text = skill.read_text()
     written, missing = 0, []
     for axis in AXES:
@@ -611,30 +614,42 @@ A hook read this message and set the {axis} slot to `{name}` before it reached y
 
 Confirm the switch in one line, then work the way it asks.
 """
-# A colon in the filename is what puts the axis in the command name, since Claude Code namespaces a
-# plugin command by its plugin and would otherwise offer every style as /mode:<name>.
-SHORTCUT_STEM = {"mode": "%s", "style": "style:%s"}
+# The ownership mark: only a file carrying this sentence is ever deleted by the stale sweep below.
+SENTINEL = "A hook read this message and set the"
+SHORTCUT_STEM = {"mode": "%s.md", "style": "style:%s.md"}
+
+
+def user_commands_dir() -> Path:
+    return Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")) / "commands"
 
 
 def write_shortcuts():
     """One command file per contract, so the palette hints the names instead of asking people to recall
     them. Generated rather than hand-written, or a new contract would ship without its shortcut."""
-    folder = plugin_root() / "commands"
-    if not folder.is_dir():
-        return
-    keep = {"approve.md", "style.md"}
+    # Modes stay plugin commands and arrive as /mode:<name>. Styles cannot: the plugin namespace would
+    # offer them as /mode:style:<name>, so they land in the user commands folder and arrive bare.
+    targets = {"mode": plugin_root() / "commands", "style": user_commands_dir()}
     for axis in AXES:
+        folder = targets[axis]
+        folder.mkdir(parents=True, exist_ok=True)
+        keep = set()
         for name in names(axis):
-            path = folder / (SHORTCUT_STEM[axis] % name + ".md")
+            path = folder / (SHORTCUT_STEM[axis] % name)
             keep.add(path.name)
             body = SHORTCUT.format(summary=summary(axis, name) or f"Hold the {name} {axis}.",
                                    axis=axis, name=name)
             if not path.is_file() or path.read_text() != body:
                 path.write_text(body)
-    for stale in folder.glob("*.md"):
-        # A renamed or deleted contract would otherwise leave a command that switches to nothing.
-        if stale.name not in keep:
-            stale.unlink()
+        pattern = "style:*.md" if axis == "style" else "*.md"
+        for stale in folder.glob(pattern):
+            if stale.name in keep:
+                continue
+            try:
+                # The sentinel gate: the user commands folder holds files this tool never wrote.
+                if SENTINEL in stale.read_text():
+                    stale.unlink()
+            except OSError:
+                pass
 
 
 # --------------------------------------------------------------------- CLI
@@ -682,7 +697,7 @@ def main():
         slot_add("expired", cmd_expired, "print why the held contract is over, or exit 1 while it stands")
         slot_add("exit", cmd_exit, "end the held contract: back to auto when chosen, off when typed")
 
-    add("chips", cmd_chips, "both chips with colour, ready to paste into a status line")
+    add("chips", cmd_chips, "one chip per axis with colour, ready to paste into a status line")
 
     p = add("choose", cmd_choose, "the contract a message asks for, while that slot is on auto")
     p.add_argument("--axis", required=True, choices=AXES)

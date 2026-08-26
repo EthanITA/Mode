@@ -36,9 +36,10 @@ Usage: ./install.sh [options]
   --insert-chips     If a status line already exists, append the chips block to its script.
                      Off by default, because that file is yours and not the installer's.
   --no-status-line   Skip the status line entirely.
-  --aliases          Write /style and /approve into your commands directory, so you can type
-                     those instead of the namespaced /mode:style and /mode:approve.
-  --no-aliases       Do not offer them.
+  --aliases          Write /mode, /style and /approve into your commands directory. This is the
+                     default: the plugin cannot register an un-namespaced command, so without
+                     these three files the bare commands do not exist at all.
+  --no-aliases       Skip them.
   --force            Overwrite a status line script this installer wrote that has since changed.
   --yes              Do not ask anything. Needs --name. Never implies --insert-chips.
   --help             This text.
@@ -501,35 +502,63 @@ fi
 
 # ---------------------------------------------------------------- 4. bare command aliases
 
+# Greppable ownership mark, so a re-run can refresh a file it wrote and must leave yours alone.
+ALIAS_MARKER="mode-plugin:alias"
+
+emit_alias_mode() {
+  cat <<EOF
+---
+description: Set the mode for this conversation, or list what exists.
+argument-hint: "[mode] [style] | auto | off"
+disable-model-invocation: true
+---
+
+<!-- $ALIAS_MARKER -->
+A UserPromptSubmit hook has already read this message and performed any switch it names, so never
+run \`mode mode set\` or \`mode style set\` over it.
+
+- A name was given: the slot is set and its contract is in your context. Confirm in one line what
+  is active and what changes. Two names fill both axes in either order, and the first name given
+  for an axis wins.
+- No name: run \`$MODE_BIN list\` and show what exists and what is held.
+- \`auto\`: say the slot now chooses per message, and name what it holds right now.
+- \`off\`: confirm which slot is empty. The other one is untouched.
+- An unknown name: nothing switched, so show the real names rather than guessing.
+EOF
+}
+
 emit_alias_style() {
-  cat <<'EOF'
+  cat <<EOF
 ---
 description: Set the style slot for this conversation.
 argument-hint: "<style> [mode] | auto | off"
 disable-model-invocation: true
 ---
 
-Shorthand for `/mode:style`. A UserPromptSubmit hook has already read this message and performed
-the switch, so do not run `mode style set` over it.
+<!-- $ALIAS_MARKER -->
+A UserPromptSubmit hook has already read this message and performed the switch, so do not run
+\`mode style set\` over it.
 
-A name goes to whichever axis owns it, so this is not limited to the style slot. `/style tdd`
-fills the mode slot, and `/style tdd maintainer` fills both. Only `auto` and `off` stay tied to
-this command. Read what is in your context rather than assuming a style was set.
+A name goes to whichever axis owns it, so this is not limited to the style slot. \`/style tdd\`
+fills the mode slot, and \`/style tdd maintainer\` fills both, the first name per axis winning.
+Only \`auto\` and \`off\` stay tied to this command. Read what is in your context rather than
+assuming a style was set.
 
 Say in one line what is active now and what changes because of it.
 EOF
 }
 
 emit_alias_approve() {
-  cat <<'EOF'
+  cat <<EOF
 ---
 description: Record approval for a named plan or spec.
 argument-hint: "<slug>"
 disable-model-invocation: true
 ---
 
-Shorthand for `/mode:approve`. A UserPromptSubmit hook has already recorded the approval against
-the slug, scoped to whichever mode is active, so do not run `mode approve` over it.
+<!-- $ALIAS_MARKER -->
+A UserPromptSubmit hook has already recorded the approval against the slug, scoped to whichever
+mode is active, so do not run \`mode approve\` over it.
 
 Say what the approval unblocks.
 EOF
@@ -537,32 +566,44 @@ EOF
 
 write_alias() {
   target=$USER_COMMANDS/$1.md
-  if [ -e "$target" ]; then
-    say "Left alone, a file already exists: $target"
+  mkdir -p "$USER_COMMANDS"
+  if [ -e "$target" ] && ! grep -q "$ALIAS_MARKER\|Shorthand for \`/mode:" "$target" 2>/dev/null; then
+    say "Left alone, a file this installer did not write: $target"
     return 0
   fi
-  mkdir -p "$USER_COMMANDS"
+  if [ -e "$target" ] && "emit_alias_$1" | diff -q - "$target" >/dev/null 2>&1; then
+    say "Already there: $target"
+    return 0
+  fi
   "emit_alias_$1" > "$target"
-  say "Created: $target"
-  touched "$target: lets you type /$1 instead of /mode:$1"
+  say "Wrote: $target"
+  touched "$target: the bare /$1 command"
 }
 
-step "4. Short names for the two commands"
+step "4. The bare commands: /mode, /style and /approve"
 
-say "Plugin commands are namespaced, so out of the box they are /mode:style and /mode:approve."
-say "Two small files in your own commands directory let you type /style and /approve instead."
+say "A plugin cannot register an un-namespaced command, so these three live as small files in"
+say "your own commands directory. Without them the bare names do not exist."
 
-if [ "$WRITE_ALIASES" -eq 1 ]; then
-  write_alias style
-  write_alias approve
-elif [ "$SKIP_ALIASES" -eq 1 ]; then
-  say "Skipped, because --no-aliases was given."
-elif ask_yes_no "Create them?"; then
-  write_alias style
-  write_alias approve
+if [ "$SKIP_ALIASES" -eq 1 ]; then
+  say "Skipped, because --no-aliases was given. /mode, /style and /approve will not resolve."
 else
-  say "Skipped. The namespaced /mode:style and /mode:approve work either way."
-  say "Re-run with --aliases to add them later."
+  write_alias mode
+  write_alias style
+  write_alias approve
+fi
+
+# ---------------------------------------------------------------- 5. the per-contract shortcuts
+
+step "5. The per-contract shortcuts"
+
+say "mode sync writes one palette entry per contract: /mode:<name> for a mode inside the plugin,"
+say "and style:<name>.md in your commands directory, so a style arrives bare as /style:<name>."
+
+if "$MODE_BIN" sync 2>&1; then
+  say "Synced."
+else
+  warn "mode sync failed, so the per-contract shortcuts may be stale. Run it by hand."
 fi
 
 # ---------------------------------------------------------------- what you have now
@@ -580,7 +621,7 @@ fi
 say ""
 say "A mode changes how the work is done. A style changes how Claude talks. The two slots are"
 say "set independently, and neither outlives the conversation."
-say "Type /mode or /mode:style to pick one, or just ask for it by name."
+say "Type /mode or /style to pick one, or just ask for it by name."
 
 say ""
 say "Paths this touched:"

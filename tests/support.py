@@ -17,7 +17,7 @@ MODES = os.path.join(SKILL_DIR, "modes")
 STYLES = os.path.join(SKILL_DIR, "styles")
 HOOKS = os.path.join(PLUGIN, "hooks")
 
-COLORS = ("red", "green", "yellow", "blue", "magenta", "cyan", "grey")
+COLORS = ("red", "green", "yellow", "blue", "magenta", "cyan", "grey", "pink")
 EXITS = ("manual", "approved", "mr-opened")
 
 ABSENT = None
@@ -101,7 +101,7 @@ def fixture_root(tmp, name, modes=None, styles=None, skill=None):
         for stem, text in contracts.items():
             write(os.path.join(root, "skills", "mode", axis, "%s.md" % stem), text)
     if skill is not None:
-        write(os.path.join(root, "skills", "mode", "SKILL.md"), skill)
+        write(os.path.join(root, "skills", "mode", "MANUAL.md"), skill)
     return root
 
 

@@ -418,17 +418,18 @@ with tempfile.TemporaryDirectory() as tmp:
 
     section("chips, which a status line drops in whole")
     p = call("s-chips-none", "chips")
-    ok("both slots clear prints nothing at all, exit 0",
-       p.returncode == 0 and p.stdout.strip() == "",
-       "rc=%s out=%r. A status line calling this renders a stray separator on every turn where no "
-       "mode is held, which is most of them." % (p.returncode, p.stdout))
+    ok("both slots clear prints one off entry per axis, exit 0",
+       p.returncode == 0 and p.stdout.strip() == "\U0001f39a off  \U0001f4ac off",
+       "rc=%s out=%r. An empty slot has to read as off rather than vanish, or the line jumps "
+       "around as slots fill." % (p.returncode, p.stdout))
 
     mode("s-chips", "set", "lead")
     p = call("s-chips", "chips")
-    ok("one slot held prints that chip", p.returncode == 0 and "lead" in p.stdout, repr(p.stdout))
-    ok("and does not lead or trail with a separator",
-       p.stdout.strip("\n") == p.stdout.strip(),
-       "%r. The half-empty case is where a separator leaks." % p.stdout)
+    ok("one slot held prints its name and the other stays off",
+       p.returncode == 0 and "lead" in p.stdout and "\U0001f4ac off" in p.stdout, repr(p.stdout))
+    ok("the two entries are separated by exactly two spaces",
+       "  \U0001f4ac" in p.stdout and "   " not in p.stdout.strip(),
+       "%r. The half-empty case is where spacing leaks." % p.stdout)
 
     style("s-chips", "set", "teach")
     p = call("s-chips", "chips")
@@ -791,12 +792,30 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("sync prints nothing, exit 0, no traceback",
        p.returncode == 0 and not p.stdout and not p.stderr and not crashed(p),
        "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
-    with open(os.path.join(syncroot, "skills", "mode", "SKILL.md")) as f:
+    with open(os.path.join(syncroot, "skills", "mode", "MANUAL.md")) as f:
         synced = f.read()
     ok("sync rewrote the registry from the folder and dropped what was there",
        "maker" in synced and "brisk" in synced and "old junk" not in synced,
        "%r. The spec fixes the verb but not the marker names, so a mismatch here is a marker "
-       "disagreement between the tool and the skill, not a broken rewrite." % synced[:400])
+       "disagreement between the tool and the manual, not a broken rewrite." % synced[:400])
+
+    ok("sync wrote a mode shortcut into the plugin, where it arrives as /mode:<name>",
+       os.path.isfile(os.path.join(syncroot, "commands", "maker.md")),
+       "commands/maker.md is missing, so the palette has no entry for the mode")
+    ok("and a style shortcut into the user commands folder, where it arrives bare as /style:<name>",
+       os.path.isfile(os.path.join(config, "commands", "style:brisk.md")),
+       "config commands/style:brisk.md is missing. Inside the plugin it would be namespaced to "
+       "/mode:style:brisk, which is the palette noise this placement removes.")
+
+    write(os.path.join(config, "commands", "style:gone.md"),
+          "A hook read this message and set the style slot to `gone`.\n")
+    write(os.path.join(config, "commands", "style:mine.md"), "my own command, hands off\n")
+    p = run(syncroot, config, "sync", "--session", sid("s-sync"))
+    ok("a stale generated shortcut is swept and a hand-written one survives",
+       p.returncode == 0
+       and not os.path.exists(os.path.join(config, "commands", "style:gone.md"))
+       and os.path.isfile(os.path.join(config, "commands", "style:mine.md")),
+       "The sweep must key on the generated sentence, or it deletes files it never wrote.")
 
     badroot = fixture_root(tmp, "badroot", modes=dict(clean, future=FUTURE),
                            styles={"brisk": BRISK}, skill=SKILL)

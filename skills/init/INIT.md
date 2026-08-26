@@ -16,7 +16,7 @@ Four things a plugin cannot do for itself, which is the whole reason this skill 
 | The identity config | Contracts ship with a literal `{{USER}}` placeholder so no name is baked in. The tool substitutes it at injection time, and something has to write the name down first. |
 | The status line | `statusLine` is a key in the user's `settings.json`. No plugin can set it. |
 | The user contracts directory | Somewhere under the Claude config dir that a plugin update never overwrites, so a contract someone wrote themselves survives. |
-| Short command names | Plugin commands are namespaced. `/mode` works bare because the file is named after the plugin, but style and approve arrive as `/mode:style` and `/mode:approve`. Two small files in the user's own commands directory give them the short forms. |
+| The bare command names | Plugin commands are namespaced, so a plugin cannot register `/mode`, `/style` or `/approve` at all. Three small files in the user's own commands directory carry them, and `mode sync` puts the per-style shortcuts (`style:<name>.md`) beside them for the same reason. |
 
 ## The one rule that outranks the rest
 
@@ -85,11 +85,11 @@ When a status line already exists, show the block `install.sh` printed and ask w
 
 Never append to someone's status line script without asking. It is their file, and the plugin is a guest in it.
 
-## Offer the short command names
+## The bare command names
 
-`install.sh --aliases` writes `style.md` and `approve.md` into the user's own commands directory, so `/style edu` and `/approve <slug>` work as typed instead of `/mode:style` and `/mode:approve`. The stubs exist only so Claude Code accepts the command, because an unknown slash command is rejected before any hook runs. The hook then does the real work by reading the raw prompt text.
+The installer writes `mode.md`, `style.md` and `approve.md` into the user's own commands directory by default, because a plugin cannot register an un-namespaced command and without these files `/mode`, `/style` and `/approve` do not resolve at all. The stubs exist only so Claude Code accepts the command, because an unknown slash command is rejected before any hook runs. The hook then does the real work by reading the raw prompt text. It then runs `mode sync`, which puts one `style:<name>.md` per style beside them, so the palette offers `/style:edu` and friends.
 
-Offer it, never assume it. Someone may already have a `/style` of their own, and the namespaced forms work regardless. The installer refuses to overwrite an existing file of either name and says so. `approve.md` carries `disable-model-invocation: true`, which is what keeps approving a human act rather than something you can do for yourself.
+The installer refreshes only files it wrote (they carry a marker) and refuses to touch a `/style` someone already had. `approve.md` carries `disable-model-invocation: true`, which is what keeps approving a human act rather than something you can do for yourself.
 
 ## Updating an install that already exists
 
@@ -142,7 +142,7 @@ bin/mode list
 Then show what they can type:
 
 - `/mode` to see the modes and pick one, `/mode <name>` to set it directly, `/mode off` to drop it.
-- `/mode:style` for the style slot, or `/style` if they took the aliases.
+- `/style` for the style slot, and the palette shortcuts `/mode:<mode>` and `/style:<style>` per contract.
 
 Say plainly that the two slots are independent, that asking for a mode by name in ordinary conversation works too, and that neither slot outlives the conversation.
 
