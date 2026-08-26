@@ -7,6 +7,26 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.7.0
+
+The ground rules.
+
+### Added
+
+- **A third kind of file: ground rules.** `skills/mode/rules/*.md`, layered under
+  `~/.claude/mode/rules/` the way contracts are. Their bodies are injected whole on the first
+  prompt of every conversation, ahead of any contract, and never repeated; a resume or a compact
+  re-arms them, since either drops the injected block. No slot, no chip, no palette entry: they
+  are always on. A user file sharing a shipped stem replaces that rule, and an empty body silences
+  it. Five ship, extracted from a working setup: an evidence bar, scope discipline, a live task
+  board, collaboration defaults, and a prose register. The point is economics: a rule in a
+  CLAUDE.md is paid for on every request of every session, and a ground rule costs one injection
+  per conversation.
+- **`mode rules`**, the command behind it. It prints once per session and exits 1 ever after,
+  refuses to print at all without a session to remember by, and is re-armed by the same
+  `clear --announced` the resume hook already runs.
+- The installer creates the user rules directory beside modes and styles.
+
 ## 0.6.0
 
 A sixth style.
