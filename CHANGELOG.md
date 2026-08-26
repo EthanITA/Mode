@@ -7,6 +7,47 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.5.0
+
+The clean palette, and an eighth mode.
+
+### Added
+
+- **`ic` mode.** Copilot with the spec step removed: the same shared intake, then Claude builds it
+  himself. No spec artifact, no approval gate, no team; a real fork is asked as it appears, and the
+  board is the record. A read-only search agent is fine, but the moment an agent writes code the
+  contract says to offer copilot instead. It takes the new `pink` chip colour, since the eight
+  modes outgrew the seven-colour set.
+
+### Changed
+
+- **The palette holds three shapes and nothing else: `mode`, `mode:<mode>` and `style:<style>`.**
+  The skill that sat in the palette as `mode:mode` is `MANUAL.md` now, deliberately unregistered,
+  and the init skill is `INIT.md` for the same reason. `/mode`, `/style` and `/approve` are small
+  files the installer writes into the user commands directory, because a plugin cannot register an
+  un-namespaced command. The style shortcuts moved out of the plugin too: inside it they arrived as
+  `/mode:style:<name>`, so `mode sync` now writes `style:<name>.md` beside the bare files and they
+  arrive as `/style:<name>`. Always-on token cost fell from about 556 to about 154 per session.
+- **`ship` stands alone and carries the whole standard.** Every reference to the fast style is
+  gone, and the contract now spells out the rules it holds work to: comments that say why or
+  nothing, names that mean something, grouping by domain, explicit types on the exported surface,
+  reuse before building, splitting a touched file that outgrew itself, tests where the risk is
+  real, and one-line commits by logical group. Written out in full because an install has none of
+  the private rule files the old summary leaned on.
+- **The first name per axis wins.** `/mode tdd debug` holds `tdd`, and `/mode tdd tdd maintainer`
+  fills each slot once. Names can arrive in any order, and a duplicate is noise rather than an
+  overwrite.
+- **The status line gets one chip per axis.** `mode chips` always prints two entries, `🎚` for the
+  mode and `💬` for the style, with `off` in an empty slot, so the segment never vanishes and the
+  spacing never jumps. The host line embeds the output raw and adds nothing.
+- **The installer writes the bare commands by default** and refreshes only files carrying its own
+  marker, then runs `mode sync` so a fresh install gets the per-style shortcuts immediately.
+
+### Fixed
+
+- **The stale-shortcut sweep is sentinel-gated.** Sync deletes only a file carrying its generated
+  sentence, so a hand-written command sitting in the same folder can never be swept.
+
 ## 0.4.0
 
 The ship and fast split.
