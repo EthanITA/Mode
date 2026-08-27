@@ -7,6 +7,17 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.8.2
+
+### Fixed
+
+- **Two commands in one prompt both land.** `/mode:debug /style:edu` set only the mode: the whole
+  prompt was read as a single command, so the second command became an argument of the first,
+  failed the name lookup, and was dropped in silence. The parser now splits a prompt into command
+  chunks and obeys each, in any order, while a single command with words after it (`/mode ic fix`)
+  is still one command. Another plugin's command sitting between two of ours is skipped rather
+  than swallowing what follows.
+
 ## 0.8.1
 
 ### Fixed
