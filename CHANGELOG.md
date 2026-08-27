@@ -7,6 +7,31 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.9.0
+
+The artifact rule becomes a contract about interactivity.
+
+### Changed
+
+- **An artifact is operated, not read.** The `artifact` ground rule grew from a theming note into
+  the full contract, folding in the method from a vendor artifact skill and two of our own best
+  pages. It now fixes what the reader must be able to *do* per subject: reproduce the bug, switch
+  the mockup variants, run the backend scenario, explore the real rows. Two tests decide whether it
+  shipped: strip every control and see whether the page still says the same thing, then ask whether
+  a reader can reach a conclusion nobody wrote into it.
+- **Sources are links, not labels.** Every load-bearing claim carries a clickable receipt that
+  resolves outside the page, to a repository permalink pinned at the line, an observability query
+  already filtered, the ticket or the pipeline. Monospace `file:line` text is not a source.
+- **No tab bars, and every visual is data-driven.** A wall of text behind five tabs is five walls
+  with a nav in front, so the shape is a hero and scroll chapters, each carrying a figure the
+  reader operates. Scenes are rendered from exported records rather than invented shapes.
+- **Light stays the default, explicitly.** The rule now says so against any vendor convention that
+  defaults to a dark showcase, and adds the standing bar against wearing another organisation's
+  brand on work that is not theirs: take the method, run it on the design system the work belongs
+  to.
+- **Verification splits behaviour from taste.** Proving the controls work is required and is done
+  headlessly; judging how it looks stays the user's, so no browser is driven for appearance.
+
 ## 0.8.2
 
 ### Fixed
