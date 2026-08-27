@@ -1,11 +1,11 @@
 ---
 name: mode
-description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, ic, prove, studio, tdd, tester. Styles available: edu, fast, maintainer, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", and when they ask what is currently active.
+description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, ic, prove, studio, tdd, tester. Styles available: creative, edu, fast, maintainer, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", and when they ask what is currently active.
 user-invocable: true
 disable-model-invocation: false
 args: "[<name>|auto|off]"
 modes: autopilot, copilot, debug, ic, prove, studio, tdd, tester
-styles: edu, fast, maintainer, native, ship, xyz
+styles: creative, edu, fast, maintainer, native, ship, xyz
 ---
 
 # Mode
@@ -23,7 +23,7 @@ This manual drives the switching and nothing else. It is deliberately not a regi
 | Applies to | The shape of the turn | Every step of whatever mode is running |
 | Example | `copilot` stops on a question before dispatching a team | `fast` makes that question two lines instead of ten |
 
-The split is what keeps the file count down. Eight modes and six styles cover forty-eight combinations, so a new way of talking costs one file rather than eight rewrites.
+The split is what keeps the file count down. Eight modes and seven styles cover fifty-six combinations, so a new way of talking costs one file rather than eight rewrites.
 
 The test for which folder a new contract belongs in is whether it has an order. If it says do this, then that, and stop here, it is a mode. If it only changes the texture of whatever you were already doing, it is a style.
 
@@ -153,6 +153,7 @@ Written by the same command, from `styles/`, under the same rule.
 <!-- styles:start -->
 | Name | File | Summary |
 |---|---|---|
+| `creative` | `styles/creative.md` | Go wide. Several real options, boldness spent in one place, nothing sanded down. |
 | `edu` | `styles/edu.md` | Teach it top down, in plain words, carried by pictures rather than prose. |
 | `fast` | `styles/fast.md` | The user is in a hurry. Make it work, say done, polish nothing. |
 | `maintainer` | `styles/maintainer.md` | Other people depend on this. Docs, tests and the changelog move with the code. |

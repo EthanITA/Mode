@@ -77,7 +77,7 @@ for axis, folder in axes.items():
            "%s is missing, so every check on this axis below is unrunnable" % folder)
         continue
     names = sorted(n for n in os.listdir(folder) if n.endswith(".md"))
-    expected = 8 if folder.endswith("modes") else 6
+    expected = 8 if folder.endswith("modes") else 7
     ok("%s/ holds %d contracts" % (os.path.relpath(folder, PLUGIN), expected),
        len(names) == expected, "found %d: %r" % (len(names), names))
 
@@ -191,6 +191,8 @@ RELATED = {
     ("prove", "edu"), ("prove", "ship"),
     # away means the X/Y/Z read is the only interpretation pass the work gets.
     ("autopilot", "xyz"),
+    # the everyday all-rounder with the imagination turned up.
+    ("ic", "creative"),
     # maintainer leaves the codebase better; tester is forbidden from touching it at all.
     ("tester", "maintainer"), ("tester", "ship"),
 }
