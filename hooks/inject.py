@@ -21,19 +21,21 @@ VERBS = ("mode", "style", "approve")
 PREFIX = "mode"
 # Not contract names, so they act on the axis of the command they were typed on.
 SLOT_WORDS = ("off", "auto")
-# A slash command can arrive as these tags rather than as the literal text that was typed.
-TAGGED = re.compile(
-    r"^\s*<command-name>\s*/(\S+)\s*</command-name>"
-    r"(?:.*?<command-args>\s*(.*?)\s*</command-args>)?",
-    re.S,
-)
+# A plugin command leads with <command-message>, so anchoring on <command-name> missed it entirely.
+NAME_TAG = re.compile(r"<command-name>\s*/?([^<]*?)\s*</command-name>")
+MSG_TAG = re.compile(r"<command-message>\s*/?([^<]*?)\s*</command-message>")
+ARGS_TAG = re.compile(r"<command-args>\s*(.*?)\s*</command-args>", re.S)
 
 
 def typed(data):
     prompt = data.get("prompt")
     text = prompt.strip() if isinstance(prompt, str) else ""
-    found = TAGGED.match(text)
-    return "/%s %s" % (found.group(1), (found.group(2) or "").strip()) if found else text
+    # command-name carries the slash form everywhere seen; command-message is the fallback.
+    found = NAME_TAG.search(text) or MSG_TAG.search(text)
+    if found:
+        args = ARGS_TAG.search(text)
+        return "/%s %s" % (found.group(1).strip(), args.group(1).strip() if args else "")
+    return text
 
 
 def parse(message):

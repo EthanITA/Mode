@@ -208,6 +208,27 @@ with tempfile.TemporaryDirectory() as tmp:
                "and a command belonging to another plugin has to be left untouched."
                % (got[0], got[1], want_mode, want_style))
 
+        section("a command arrives as tags, message-first, and still switches")
+        # This message-first tag shape is what a real invocation sends, and the shape that silently failed.
+        def tagged(name, args=""):
+            body = "<command-message>%s</command-message>\n<command-name>/%s</command-name>" % (name, name)
+            if args:
+                body += "\n<command-args>%s</command-args>" % args
+            return body
+        for s, label, blob, want_mode, want_style in (
+            ("tg1", "a bare plugin mode command", tagged("mode:tester"), "tester", ""),
+            ("tg2", "a bare user style command", tagged("style:edu"), "", "edu"),
+            ("tg3", "a plugin command carrying args", tagged("mode:tdd", "go ahead now"), "tdd", ""),
+            ("tg4", "the style-axis namespaced form", tagged("mode:style:ship"), "", "ship"),
+            ("tg5", "another plugin's tagged command is left alone", tagged("commit", "a message"), "", ""),
+        ):
+            fire("inject.py", prompt_payload(s, blob), config)
+            got = (out(mode(s, "get")), out(style(s, "get")))
+            ok("%s: %s" % (label, blob.split(chr(10))[1]), got == (want_mode, want_style),
+               "got mode=%r style=%r, wanted %r and %r. The tag form led by command-message is what a "
+               "real invocation sends; missing it leaves the slot silently unchanged."
+               % (got[0], got[1], want_mode, want_style))
+
         # The namespaced spelling is the one the palette offers, and dropping the prefix here would
         # read the slug as a contract name and record no approval at all.
         mode("sc8-appr", "set", "copilot")
