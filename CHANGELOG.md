@@ -7,6 +7,33 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.10.0
+
+A seventh style, and the deliverable stops being implicit.
+
+### Added
+
+- **`creative` style.** The failure it exists to stop is the average answer: the first plausible
+  approach, competently built, that nobody would have missed. It widens the search before anything
+  gets built, asks for several genuinely different options rather than one and its variations,
+  spends the boldness in one place and names what that risk cost, and keeps the rejected idea
+  visible with its reason. One boundary is absolute: creativity lives in the approach and never in
+  the facts, so the grounding rules bind exactly as hard here as anywhere. Pink chip, paired with
+  `ic` in the colour map, since the everyday all-rounder with the imagination turned up is a pair
+  that means something.
+- **`deliverable` ground rule.** What lands was previously welded into each mode, which is why
+  there was no way to ask for one mode's rigour with a different output. The rule names the four
+  forms, chat, artifact, merge request and MVP, requires the form to be stated before it is
+  produced, and routes each one: an artifact always goes through the `create-artifact` skill, a
+  merge request follows the outbound-writing rules, an MVP is code that was run once for real.
+  Several at once is ordinary. Whatever the form, grounding, sources, prose and scope still bind.
+
+### Known limits
+
+- The deliverable is routed but not pinnable: there is no slot holding it for a whole session, so
+  a mode whose exit depends on its own output keeps that dependency. Whether it becomes a third
+  slot, or a `delivers:` key each mode declares, is open.
+
 ## 0.9.0
 
 The artifact rule becomes a contract about interactivity.
