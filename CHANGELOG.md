@@ -7,6 +7,17 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.8.1
+
+### Fixed
+
+- **A slash command led by `<command-message>` now switches the slot.** A real invocation reaches
+  the hook as tags in no fixed order, and a plugin command leads with `<command-message>`, so the
+  parser, which anchored on `<command-name>` first, saw nothing and left the slot unchanged. This
+  is why `/mode:tester` silently did not switch while a differently-shaped `/style:edu` did. The
+  parser now finds the command name in either tag, in either order. Restart or a new conversation
+  is needed, since a running session cached the old hook.
+
 ## 0.8.0
 
 The plugin becomes the whole system.
