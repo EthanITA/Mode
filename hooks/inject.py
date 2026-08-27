@@ -17,6 +17,8 @@ ENDED = (
 
 # Anchored, so a quoted "/approve x" changes nothing. One token, then whatever was typed after it.
 COMMAND = re.compile(r"^/(\S+)((?:[ \t]+\S+)*)")
+# Two commands in one prompt stay two: read as one, the later became a bogus argument and vanished.
+CHUNK = re.compile(r"/\S+(?:[ \t]+(?!/)\S+)*")
 VERBS = ("mode", "style", "approve")
 PREFIX = "mode"
 # Not contract names, so they act on the axis of the command they were typed on.
@@ -58,26 +60,27 @@ def parse(message):
 def obey(message, session):
     """The switch itself, so a slot changes because someone typed it rather than because the model felt
     like it. Answers which axes were set by hand, since the chooser must never overrule one."""
-    parsed = parse(message)
-    if not parsed:
-        return set()
-    verb, names = parsed
-    if verb == "approve":
-        # Read only from the typed message: anything an agent can reach could approve its own spec.
-        if names:
-            ask("approve", names[0], *sid(session))
-        return set()
-
     done = set()
-    for arg in names:
-        # So /mode maintainer reaches the style slot instead of failing quietly against the mode one.
-        axis = verb if arg in SLOT_WORDS else (ask("axis", arg) or verb)
-        # The first name per axis wins, so names can arrive in any order and a duplicate is noise.
-        if axis in done:
+    for chunk in CHUNK.findall(message) or [message]:
+        parsed = parse(chunk)
+        if not parsed:
             continue
-        code, _ = run(axis, "set", arg, *sid(session))
-        if code == 0:
-            done.add(axis)
+        verb, names = parsed
+        if verb == "approve":
+            # Read only from the typed message: anything an agent can reach could approve its own spec.
+            if names:
+                ask("approve", names[0], *sid(session))
+            continue
+
+        for arg in names:
+            # So /mode maintainer reaches the style slot instead of failing quietly against the mode one.
+            axis = verb if arg in SLOT_WORDS else (ask("axis", arg) or verb)
+            # The first name per axis wins, so names can arrive in any order and a duplicate is noise.
+            if axis in done:
+                continue
+            code, _ = run(axis, "set", arg, *sid(session))
+            if code == 0:
+                done.add(axis)
     return done
 
 

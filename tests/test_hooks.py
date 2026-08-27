@@ -229,6 +229,23 @@ with tempfile.TemporaryDirectory() as tmp:
                "real invocation sends; missing it leaves the slot silently unchanged."
                % (got[0], got[1], want_mode, want_style))
 
+        section("two commands in one prompt both land")
+        for s, label, blob, want_mode, want_style in (
+            ("mc1", "mode then style", "/mode:debug /style:edu", "debug", "edu"),
+            ("mc2", "style then mode", "/style:ship /mode:ic", "ic", "ship"),
+            ("mc3", "each carrying its own words", "/mode:ic fix this /style:ship now",
+             "ic", "ship"),
+            ("mc4", "a stranger's command between ours", "/mode:tdd /commit a message /style:fast",
+             "tdd", "fast"),
+            ("mc5", "one command with words is still one", "/mode ic fix", "ic", ""),
+        ):
+            fire("inject.py", prompt_payload(s, blob), config)
+            got = (out(mode(s, "get")), out(style(s, "get")))
+            ok("%s: %s" % (label, blob), got == (want_mode, want_style),
+               "got mode=%r style=%r, wanted %r and %r. Reading a multi-command prompt as one command "
+               "turns every later command into a bogus argument, which is dropped in silence."
+               % (got[0], got[1], want_mode, want_style))
+
         # The namespaced spelling is the one the palette offers, and dropping the prefix here would
         # read the slug as a contract name and record no approval at all.
         mode("sc8-appr", "set", "copilot")
