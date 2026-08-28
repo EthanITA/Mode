@@ -1,10 +1,10 @@
 ---
 name: mode
-description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, ic, prove, studio, tdd, tester. Styles available: creative, edu, fast, maintainer, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", and when they ask what is currently active.
+description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, ic, prove, studio, swarm, tdd, tester. Styles available: creative, edu, fast, maintainer, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", and when they ask what is currently active.
 user-invocable: true
 disable-model-invocation: false
 args: "[<name>|auto|off]"
-modes: autopilot, copilot, debug, ic, prove, studio, tdd, tester
+modes: autopilot, copilot, debug, ic, prove, studio, swarm, tdd, tester
 styles: creative, edu, fast, maintainer, native, ship, xyz
 ---
 
@@ -23,7 +23,7 @@ This manual drives the switching and nothing else. It is deliberately not a regi
 | Applies to | The shape of the turn | Every step of whatever mode is running |
 | Example | `copilot` stops on a question before dispatching a team | `fast` makes that question two lines instead of ten |
 
-The split is what keeps the file count down. Eight modes and seven styles cover fifty-six combinations, so a new way of talking costs one file rather than eight rewrites.
+The split is what keeps the file count down. Nine modes and seven styles cover sixty-three combinations, so a new way of talking costs one file rather than nine rewrites.
 
 The test for which folder a new contract belongs in is whether it has an order. If it says do this, then that, and stop here, it is a mode. If it only changes the texture of whatever you were already doing, it is a style.
 
@@ -140,6 +140,7 @@ Both this table and the `Modes available:` list in the front matter are written 
 | `ic` | `modes/ic.md` | The all-rounder default. One senior contributor runs the whole loop, the user watches. |
 | `prove` | `modes/prove.md` | Nothing is claimed working until a real channel says so, run before and after the change. |
 | `studio` | `modes/studio.md` | Think together on one artifact, and it grows while you talk. |
+| `swarm` | `modes/swarm.md` | A gateway, not a builder. Route every ask to the owner of that domain, and hire one when none fits. |
 | `tdd` | `modes/tdd.md` | No implementation line exists before a test that fails for the right reason. |
 | `tester` | `modes/tester.md` | Work out what to test and how to reach it, run it for real, and report a verdict without fixing anything. |
 | `off` | none | Not a mode. `mode mode set off` empties the slot. |
@@ -164,14 +165,14 @@ Written by the same command, from `styles/`, under the same rule.
 | `auto` | none | Not a style. `mode style set auto` matches each message against every `enter-when` and enters the winner. |
 <!-- styles:end -->
 
-## Adding a thirteenth contract
+## Adding another contract
 
-One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the existing twelve use. Which folder it goes in is decided by the question in *Two axes* above: an order of operations makes it a mode, and a texture makes it a style.
+One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the shipped ones use. The heading carries no count on purpose, since a number here goes stale on the next contract and nobody notices. Which folder it goes in is decided by the question in *Two axes* above: an order of operations makes it a mode, and a texture makes it a style.
 
 - Front matter with `name`, matching the filename stem, and a one-line `summary`. The summary is what `mode list` prints and what the status line chip shows.
 - `enter-when`, `enter-never` and `exit-when`, per the table above. A contract with no `enter-when` can only be typed, and one with no `exit-when` behaves as `manual`. Write the line anyway, because an implied contract is one nobody can read off the file.
 - Any flag the contract declares, such as `no-implement: true` or `no-dispatch-without-approval: true`. A flag is **on** whenever the key is present and not explicitly switched off, so `true`, `yes`, `1` and even a typo all count as on. It is off only when the key is absent, empty, or set to one of `false`, `no`, `off`, `n` or `0`, in any case and with quotes stripped. These flags are opt-in restrictions and nobody writes one meaning to leave it off, so a misread lands with the gate closed rather than open. Only `no-dispatch-without-approval` currently has a hook behind it; `no-implement` is a declaration that no hook reads yet.
-- An optional `color`, one of red, green, yellow, blue, magenta, cyan, grey or pink, which is what the status line chip uses.
+- An optional `color`, one of red, green, yellow, blue, magenta, cyan, grey, sky or pink, which is what the status line chip uses. No two contracts on the same axis may share one, and the nine modes now hold all nine, so a tenth mode means a tenth colour in `bin/mode` and in the test that lists them.
 - A body carrying the full contract, at whatever length it needs.
 - A `## Standing reminder` heading as the last section, holding at most four lines, where every line is a rule that binds in the moment.
 

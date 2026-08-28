@@ -77,7 +77,7 @@ for axis, folder in axes.items():
            "%s is missing, so every check on this axis below is unrunnable" % folder)
         continue
     names = sorted(n for n in os.listdir(folder) if n.endswith(".md"))
-    expected = 8 if folder.endswith("modes") else 7
+    expected = 9 if folder.endswith("modes") else 7
     ok("%s/ holds %d contracts" % (os.path.relpath(folder, PLUGIN), expected),
        len(names) == expected, "found %d: %r" % (len(names), names))
 
@@ -179,7 +179,7 @@ else:
     ok("skills/mode/rules/ exists", False, "the rules tier shipped in 0.7.0 and the folder is gone")
 
 section("colours across the two axes")
-# Seven colours over eleven contracts forces four collisions. Inlined rather than parsed out of the
+# Nine colours over sixteen contracts forces seven collisions. Inlined rather than parsed out of the
 # catalogue, which lives outside this repo and would not ship to a stranger.
 RELATED = {
     ("autopilot", "socratic"), ("recon", "ship"), ("studio", "ship"), ("tdd", "ship"),
@@ -208,8 +208,8 @@ ok("every shared colour falls on a pair the catalogue already calls related",
    "%r. Two chips in the same colour read as one setting, so the pairs that share one have to be "
    "pairs whose combination is already meaningful."
    % [p for p in collisions if p not in RELATED])
-# Seven modes take all seven colours, so every style now shares with one.
-ok("every style shares a colour, since the modes have taken all seven",
+# Nine modes take all nine colours, so every style still shares with one.
+ok("every style shares a colour, since the modes have taken all nine",
    len(collisions) == len(style_colour),
    "%d collisions against %d styles. Fewer means an axis is wasting a free colour; more means a "
    "colour is repeated inside one axis, which the check above should already have caught."
