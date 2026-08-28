@@ -18,8 +18,9 @@ FOLDER = {"mode": "modes", "style": "styles"}
 STANDING = "standing reminder"
 # A hook repeats this every turn, so each axis is capped and the pair still fits in eight lines.
 STANDING_LINES = 4
+# One colour per mode, so a ninth mode needed a ninth name rather than a repeated chip.
 COLORS = {"red": "31", "green": "32", "yellow": "33", "blue": "34",
-          "magenta": "35", "cyan": "36", "grey": "90", "pink": "95"}
+          "magenta": "35", "cyan": "36", "grey": "90", "sky": "94", "pink": "95"}
 RESET = "\x1b[0m"
 CHIP_ICON = {"mode": "\U0001f39a", "style": "\U0001f4ac"}
 DEFAULT_USER = "the user"
