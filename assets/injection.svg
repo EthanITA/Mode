@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" width="900" height="380" role="img" aria-label="What the hook adds to a prompt. On the first prompt of a conversation Claude receives the ground rules once, the whole contract of any slot just set, and the message. On every later turn it receives only each held contract's four-line standing reminder and the message.">
+<style>
+  .bg{fill:none}
+  .lbl{font:600 13px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#1f2328}
+  .sub{font:11px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#656d76}
+  .mono{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#656d76}
+  .box{fill:#ffffff;stroke:#d0d7de;stroke-width:1.5;rx:8}
+  .ln{stroke:#8c959f;stroke-width:1.5;fill:none}
+  .rules{fill:#fff8c5;stroke:#9a6700}
+  .mode{fill:#fbefff;stroke:#8250df}
+  .style{fill:#e6f6eb;stroke:#1f883d}
+  .rules-t{fill:#7d4e00}.mode-t{fill:#6639ba}.style-t{fill:#1a7f37}
+  .once{font:600 10px ui-sans-serif,sans-serif}
+  @media (prefers-color-scheme: dark){
+    .lbl{fill:#e6edf3}.sub,.mono{fill:#9198a1}
+    .box{fill:#151b23;stroke:#3d444d}
+    .ln{stroke:#6e7681}
+    .rules{fill:#2b2412;stroke:#d4a72c}.mode{fill:#231c33;stroke:#a371f7}.style{fill:#12261e;stroke:#3fb950}
+    .rules-t{fill:#e3b341}.mode-t{fill:#c297ff}.style-t{fill:#56d364}
+  }
+</style>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8c959f"/></marker></defs>
+
+<text class="lbl" x="20" y="26">First prompt of a conversation</text>
+<rect class="box" x="20" y="40" width="132" height="46"/>
+<text class="sub" x="86" y="62" text-anchor="middle">your message</text>
+<text class="mono" x="86" y="77" text-anchor="middle">/mode debug</text>
+<path class="ln" d="M156 63 H196" marker-end="url(#a)"/>
+<rect class="box" x="200" y="40" width="126" height="46"/>
+<text class="sub" x="263" y="62" text-anchor="middle">the hook</text>
+<text class="mono" x="263" y="77" text-anchor="middle">UserPromptSubmit</text>
+<path class="ln" d="M330 63 H370" marker-end="url(#a)"/>
+
+<rect class="box rules" x="374" y="18" width="240" height="40"/>
+<text class="lbl rules-t" x="386" y="35">Ground rules</text>
+<text class="sub rules-t" x="386" y="50">all seven, whole</text>
+<text class="once rules-t" x="602" y="35" text-anchor="end">ONCE</text>
+
+<rect class="box mode" x="374" y="64" width="240" height="40"/>
+<text class="lbl mode-t" x="386" y="81">The debug contract</text>
+<text class="sub mode-t" x="386" y="96">every word of the file</text>
+<text class="once mode-t" x="602" y="81" text-anchor="end">ON SWITCH</text>
+
+<rect class="box" x="374" y="110" width="240" height="34"/>
+<text class="sub" x="386" y="131">your message</text>
+
+<path class="ln" d="M618 81 H660" marker-end="url(#a)"/>
+<rect class="box" x="664" y="52" width="120" height="58"/>
+<text class="lbl" x="724" y="78" text-anchor="middle">Claude</text>
+<text class="sub" x="724" y="95" text-anchor="middle">reads all of it</text>
+
+<line x1="20" y1="182" x2="880" y2="182" stroke="#d0d7de" stroke-width="1" class="ln"/>
+
+<text class="lbl" x="20" y="216">Every later turn</text>
+<rect class="box" x="20" y="230" width="132" height="46"/>
+<text class="sub" x="86" y="257" text-anchor="middle">your message</text>
+<path class="ln" d="M156 253 H196" marker-end="url(#a)"/>
+<rect class="box" x="200" y="230" width="126" height="46"/>
+<text class="sub" x="263" y="252" text-anchor="middle">the hook</text>
+<text class="mono" x="263" y="267" text-anchor="middle">UserPromptSubmit</text>
+<path class="ln" d="M330 253 H370" marker-end="url(#a)"/>
+
+<rect class="box mode" x="374" y="208" width="240" height="40"/>
+<text class="lbl mode-t" x="386" y="225">debug standing reminder</text>
+<text class="sub mode-t" x="386" y="240">4 lines, no more</text>
+
+<rect class="box style" x="374" y="254" width="240" height="40"/>
+<text class="lbl style-t" x="386" y="271">style standing reminder</text>
+<text class="sub style-t" x="386" y="286">4 lines, no more</text>
+
+<rect class="box" x="374" y="300" width="240" height="34"/>
+<text class="sub" x="386" y="321">your message</text>
+
+<path class="ln" d="M618 271 H660" marker-end="url(#a)"/>
+<rect class="box" x="664" y="242" width="120" height="58"/>
+<text class="lbl" x="724" y="268" text-anchor="middle">Claude</text>
+<text class="sub" x="724" y="285" text-anchor="middle">told again</text>
+
+<text class="sub" x="800" y="271">never</text>
+<text class="sub" x="800" y="286">remembering</text>
+</svg>
