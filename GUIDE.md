@@ -2,6 +2,8 @@
 
 A guide for someone meeting this for the first time. It assumes you have it installed; if not, the [README](README.md#install) covers that in about two minutes.
 
+Every diagram below is a committed SVG that follows your system theme, so it reads on a light or a dark GitHub.
+
 ---
 
 ## The big picture
@@ -20,50 +22,29 @@ Those are the two dials. A session holds one of each, and each one holds until y
 
 A **mode** answers *how the work runs*: it has steps, gates and a point where you can say it finished. A **style** answers *how it sounds while running*: it has no steps at all, and instead changes the texture of whatever mode is going.
 
-<p align="center">
-  <img src="assets/axes.svg" alt="A grid of eight modes down the side against seven styles across the top, making fifty-six combinations, with the cell where debug meets edu highlighted." width="620">
-</p>
+<p align="center"><img src="assets/axes.svg" alt="A grid of eight modes down the side against seven styles across the top, making fifty-six combinations, with the cell where debug meets edu highlighted." width="620"></p>
 
-Keeping them apart is what keeps the file count down. Eight modes and seven styles cover fifty-six combinations, so a new way of talking costs one file rather than eight rewrites. Fold them into one setting and you would be forced to pick, losing whichever mattered less that morning.
+Keeping them apart is what keeps the file count down. Eight modes and seven styles cover fifty-six combinations, so a new way of talking costs one file rather than eight rewrites.
 
 **The test for which one a new idea is:** does it have an order of operations? If it says do this, then that, and stop here, it is a mode. If it only changes the texture of what you were already doing, it is a style.
 
-| Ask | A mode answers | A style answers |
-|---|---|---|
-| Does it have steps and gates? | Yes, a procedure with a beginning and an end | No, none of its own |
-| Does it have a definition of done? | Yes, you can say when it finished | No, it is held until dropped |
-| What does it change? | What Claude does next | How Claude talks to you |
-
-That second row does most of the sorting. "Write tests first" is an instruction you could just type; `tdd` earns a mode because it is a procedure with a gate in it. "Document as you go" changes what every other procedure leaves behind, which is why it is the `maintainer` style rather than a `docs` mode.
+That test is why the diagrams below come in two shapes. Every mode is drawn as a pipeline, because it has one. Every style is drawn as a transformation of the same reply, because a style has no steps and drawing it as a flow would misrepresent what it is.
 
 ---
 
 ## How it actually holds
 
-This is the mechanism, and it is worth understanding because it explains the shape of everything else.
+A `UserPromptSubmit` hook runs *before* Claude reads your message. It performs any switch you asked for, so the slot is already set by the time Claude sees anything, then injects the contract text into the prompt itself.
 
-A `UserPromptSubmit` hook runs *before* Claude reads your message. It does two jobs in that moment: it performs any switch you asked for, so the slot is already set by the time Claude sees anything, and it injects the contract text into the prompt itself.
+<p align="center"><img src="assets/hook-sequence.svg" alt="The hook intercepts your message before Claude sees it, asks bin/mode to expire, switch and choose, receives what each slot now holds, and passes Claude the message together with the contract text." width="660"></p>
 
-<p align="center">
-  <img src="assets/injection.svg" alt="What the hook adds to a prompt. On the first prompt of a conversation Claude receives the ground rules once, the whole contract of any slot just set, and the message. On every later turn it receives only each held contract's four-line standing reminder and the message." width="900">
-</p>
+What gets injected depends on whether this is the first prompt or a later one:
+
+<p align="center"><img src="assets/injection.svg" alt="On the first prompt of a conversation Claude receives the ground rules once, the whole contract of any slot just set, and the message. On every later turn it receives only each held contract's four-line standing reminder and the message." width="900"></p>
 
 So Claude is never remembering which mode it is in. **Every single turn, it gets told again.**
 
-That is also why a standing reminder is capped at four lines. Two slots can be held at once, giving eight injected lines per turn, and that is roughly the ceiling before a standing block reads as background noise and stops being seen at all. A contract can run to any length in its body, because the body is read once. Only the block that repeats is rationed.
-
-```mermaid
-sequenceDiagram
-    participant You
-    participant Hook as UserPromptSubmit hook
-    participant Tool as bin/mode
-    participant Claude
-    You->>Hook: any message, /mode tdd included
-    Hook->>Tool: expire, switch, choose
-    Tool-->>Hook: what each slot now holds
-    Hook->>Claude: your message, plus the contract text
-    Note over Claude: holds by mechanism,<br/>not by remembering
-```
+That is why a standing reminder is capped at four lines. Two slots held at once give eight injected lines per turn, which is roughly the ceiling before a standing block reads as background noise and stops being seen. A contract body can run to any length, because it is read once. Only the block that repeats is rationed.
 
 ---
 
@@ -71,17 +52,7 @@ sequenceDiagram
 
 Beside the two slots sits a set of files that are not switched at all. They live in `skills/mode/rules/`, layered under `~/.claude/mode/rules/`, and they are **always on**.
 
-They are injected whole on the first prompt of a conversation, ahead of any contract, and then never repeated. The injected block says so itself, so the rules keep applying without being restated. A resume or a compact re-arms them, since either one drops the injected text.
-
-```mermaid
-flowchart TD
-    A[First prompt of a conversation] --> B[Ground rules, whole, once]
-    A --> C{A slot just set?}
-    C -- yes --> D[That contract, every word]
-    C -- no --> E[Nothing extra]
-    F[Every later prompt] --> G[Standing reminders only, 4 lines each]
-    H[Resume or compact] --> I[Re-arm: the ground rules go again]
-```
+<p align="center"><img src="assets/rules-tiers.svg" alt="A rules file with no when pattern is injected whole on the first prompt of every conversation. A rules file carrying a when pattern waits and costs nothing until a message matches it. A resume or a compact re-arms both." width="620"></p>
 
 Seven ship with the plugin:
 
@@ -93,27 +64,19 @@ Seven ship with the plugin:
 | `collaboration` | Execute what is reversible, escalate what is genuinely yours, challenge by default |
 | `prose` | Write the sentence you would say aloud; no em dashes; no symbols in prose |
 | `deliverable` | Name what will land before producing it, then route it |
-| `artifact` | Scoped: fires only when a page is on the way, and carries the theming and interactivity contract |
+| `artifact` | Scoped: fires only when a page is on the way, carrying the theming and interactivity contract |
 
-**Why this tier exists is economic.** A rule in a `CLAUDE.md` is paid for on every request of every session. A ground rule costs one injection per conversation. Standing behaviour that is not machine-specific belongs here.
+**Why this tier exists is economic.** A rule in a `CLAUDE.md` is paid for on every request of every session. A ground rule costs one injection per conversation.
 
 A rules file needs only `name` and `summary` in its front matter. Drop a file with the same name into your own rules directory to replace a shipped one, or one with an empty body to silence it.
-
-### Scoped rules
-
-A rules file can also carry a `when:` pattern, in the same vertical-bar form as `enter-when`. Such a rule stays out of the first prompt and injects once, later, on the first message that matches it.
-
-The shipped `artifact` rule works this way: the theming and interactivity contract arrives the first time you ask for a page, and costs nothing at all in a conversation that never builds one.
 
 ---
 
 ## The deliverable
 
-Here is something that took a while to see clearly. What *lands* at the end of a piece of work varies independently of how the work ran, but until recently it was welded into each mode: `debug` always ended in an explainer plus a merge request, `tester` always ended in a report.
+What *lands* at the end varies independently of how the work ran, but it used to be welded into each mode: `debug` always ended in an explainer plus a merge request, `tester` always in a report. So there was no way to ask for one mode's rigour with a different ending.
 
-So there was no way to ask for one mode's rigour with a different ending.
-
-The `deliverable` ground rule names the forms and routes each one:
+The `deliverable` ground rule names the forms and routes each:
 
 | Form | What it means | Where it goes |
 |---|---|---|
@@ -128,23 +91,9 @@ Several at once is ordinary. The rule requires the form to be *stated* before it
 
 ## Starting and stopping without typing
 
-Typing a name is not the only way in, and `off` is not the only way out. Every contract declares both ends in its own front matter.
+Typing a name is not the only way in, and `off` is not the only way out.
 
-```mermaid
-stateDiagram-v2
-    [*] --> empty
-    empty --> held: you type a name
-    empty --> auto: /mode auto
-    auto --> chosen: an enter-when pattern matches
-    chosen --> auto: its exit condition is met
-    auto --> held: you type a name
-    held --> empty: /mode off
-    chosen --> empty: /mode off
-    note right of chosen
-        shown with a tilde,
-        as in ~debug
-    end note
-```
+<p align="center"><img src="assets/slot-lifecycle.svg" alt="A slot moves between empty, held when you type a name, and auto. While on auto a matching pattern moves it to chosen, marked with a tilde in the status line, and its exit condition returns it to auto rather than to empty." width="660"></p>
 
 | Key | Means |
 |---|---|
@@ -156,11 +105,107 @@ stateDiagram-v2
 
 Matching anchors at the **start** of a word and runs free at the end. So `fail` covers fails, failed, failing and failure, while `build the` never matches "rebuild the". That missing trailing boundary is deliberate, and it is why every alternative has to be verb-shaped: a bare `build` would fire on "the build fails on startup" and hand a broken pipeline to the mode that spawns a team.
 
-Three restraints keep automatic selection from being annoying:
+---
 
-1. A contract you set by hand is **never** overridden by a pattern.
-2. A message matching two patterns on the same axis chooses **neither**, and leaves the slot as it was.
-3. Anything chosen for you is marked with a tilde in the status line, so `~debug` says the chooser filled the slot and plain `debug` says you typed it.
+## The eight modes
+
+Each one is a pipeline. A yellow box is a gate, meaning the work genuinely stops there. A dashed line is a loop back.
+
+### `ic`
+
+The default, and the one to hold when no specialist fits. One senior pair of hands runs the whole loop while you stay in the room, borrowing each specialist's discipline without the ceremony.
+
+<p align="center"><img src="assets/mode-ic.svg" alt="IC mode runs one loop: read the ask, ground it in the repo, build, verify through something that can disagree, deliver. A failed verification returns to building." width="820"></p>
+
+### `copilot`
+
+For work that splits into several independent domains. You refine it together, then a team builds it while you watch. This is the one mode with a real enforced gate.
+
+<p align="center"><img src="assets/mode-copilot.svg" alt="Copilot runs intake with the user, writes a spec artifact, then stops at an approval gate. Only a recorded yes opens dispatch to a team, whose work is verified and integrated." width="820"></p>
+
+### `autopilot`
+
+You want a result and you are walking away. It is the same pipeline with the human gate removed, which is exactly why it can never be chosen for you and has to be typed.
+
+<p align="center"><img src="assets/mode-autopilot.svg" alt="Autopilot has no approval gate because nobody is present to give one. It reads the goal, plans for itself, dispatches, integrates and opens the merge request, which is also where it ends." width="820"></p>
+
+### `debug`
+
+Something is broken and nobody knows where. The gate is the important part: nothing moves forward on a bug that has not been seen failing.
+
+<p align="center"><img src="assets/mode-debug.svg" alt="Debug makes the failure observable first, then holds at a gate until it reproduces on demand. Only then does it fix the cause, write the explainer and open the merge request." width="820"></p>
+
+### `tdd`
+
+No implementation line exists before a test that failed for the right reason. Red means the assertion fired, not that the file failed to import.
+
+<p align="center"><img src="assets/mode-tdd.svg" alt="TDD enumerates cases from structure, reduces them to a minimum set, then loops: a test that fails on its assertion, the least code that passes it, then refactoring while green." width="820"></p>
+
+### `prove`
+
+For when you do not trust that a change works. A channel is anything that can disagree with you: a response body, a log line, an exit code. Reading the code is not one.
+
+<p align="center"><img src="assets/mode-prove.svg" alt="Prove names the channel that could disagree, records a baseline before the change, proves it after, then deliberately breaks the thing once to confirm the channel actually notices." width="820"></p>
+
+### `tester`
+
+A feature somebody else built needs sweeping. It ends in a verdict and fixes nothing, because a tester who fixes is reporting on their own work.
+
+<p align="center"><img src="assets/mode-tester.svg" alt="Tester establishes the environment and preconditions, enumerates the surface by reading rather than recall, generates cases from structure, runs them for real and reports a verdict. It fixes nothing." width="820"></p>
+
+### `studio`
+
+Thinking something through, where the thinking itself is the deliverable. The only mode that is a cycle rather than a pipeline.
+
+<p align="center"><img src="assets/mode-studio.svg" alt="Studio is a cycle rather than a pipeline: talk, put it on the page immediately, react to what is visible, widen or narrow, and go round again. Rejected options stay on the page with their reasons." width="670"></p>
+
+---
+
+## The seven styles
+
+A style has no steps, so each is drawn as what it does to the same reply: on the left what it would have been, on the right what it becomes.
+
+### `edu`
+
+You want to understand rather than be updated.
+
+<p align="center"><img src="assets/style-edu.svg" alt="The edu style turns a correct wall of prose into a picture followed by plain words, ordered top down and closing on a recap." width="620"></p>
+
+### `fast`
+
+You are in a hurry. Note the third line: fewer words never means less work.
+
+<p align="center"><img src="assets/style-fast.svg" alt="The fast style strips preamble, plan and recap down to the one thing and a statement that it is done, without skipping any of the actual work." width="620"></p>
+
+### `ship`
+
+It is going out, so somebody has to maintain it.
+
+<p align="center"><img src="assets/style-ship.svg" alt="The ship style turns code that merely works into code the next developer can maintain: readable, named, grouped by domain and typed at its edges." width="620"></p>
+
+### `maintainer`
+
+Other people depend on this, so the change cannot travel alone.
+
+<p align="center"><img src="assets/style-maintainer.svg" alt="The maintainer style makes the change arrive with its tests, docs and changelog in the same diff, and names the blast radius of anything that could surprise a dependent." width="620"></p>
+
+### `native`
+
+Somebody else's codebase, where your conventions are not welcome.
+
+<p align="center"><img src="assets/style-native.svg" alt="The native style drops your own conventions and matches the ones already in the file, so a contribution to somebody else's repository reads as theirs." width="620"></p>
+
+### `creative`
+
+The safe first answer is not good enough. The last line is the boundary that keeps it usable.
+
+<p align="center"><img src="assets/style-creative.svg" alt="The creative style replaces the first safe answer with several genuinely different options, spending boldness in one place and naming what it cost, while leaving the facts untouched." width="620"></p>
+
+### `xyz`
+
+You write short and expect the rest inferred.
+
+<p align="center"><img src="assets/style-xyz.svg" alt="The xyz style opens every reply with a three line read, stating what was typed, what was actually meant, and the adjacent work that follows, before doing anything." width="620"></p>
 
 ---
 
@@ -172,14 +217,7 @@ Say you want a careful debugging session, explained as you go, because you are l
 /mode:debug /style:edu
 ```
 
-Both land in one message. Here is what Claude receives on that prompt:
-
-1. **The ground rules**, all seven, whole. This is the first prompt of the conversation.
-2. **The whole `debug` contract**, every word of the file: instrument before guessing, reproduce before fixing, the urgency fork, the explainer artifact.
-3. **The whole `edu` contract**: teach top down, pictures over prose, close on what was covered.
-4. Your message.
-
-On the next turn, and every turn after, it receives only this:
+Both land in one message. On that prompt Claude receives the ground rules whole, the entire `debug` contract, the entire `edu` contract, and your message. On every turn after, it receives only this:
 
 ```text
 Active mode: debug
@@ -203,29 +241,29 @@ When you eventually type `/approve <slug>` on the explainer, `debug` reaches its
 
 ## What is actually enforced
 
-Worth being blunt about, because a contract that only asks politely and a gate that refuses are different things.
+Worth being blunt, because a contract that asks politely and a gate that refuses are different things.
 
 | | Enforced by a hook | Held by agreement |
 |---|---|---|
 | Which | `copilot` refuses to spawn a teammate until a spec is approved | Every other rule in every other contract |
 
-The honest position: one gate has a mechanism, and everything else rests on Claude being reminded every single turn, which is genuinely useful and is not a guarantee. `tdd` is the clearest gap, since the rule it wants would refuse an edit to an implementation file while no failing test is on record. That hook is designed and not built.
+One gate has a mechanism. Everything else rests on Claude being reminded every single turn, which is genuinely useful and is not a guarantee. `tdd` is the clearest gap, since the rule it wants would refuse an edit to an implementation file while no failing test is on record. That hook is designed and not built.
 
-Separately, a set of **guards** ships in `hooks/guards/`, fencing the ground rules: the board fences, the prose fence, comment, null and shell-write guards. One switch disarms them all, `"guards": "off"` in `~/.claude/mode/config.json`, with absent meaning armed.
+Separately, **guards** ship in `hooks/guards/`, fencing the ground rules: the board fences, the prose fence, comment, null and shell-write guards. One switch disarms them all, `"guards": "off"` in `~/.claude/mode/config.json`, with absent meaning armed.
 
 ---
 
 ## Writing your own contract
 
-One markdown file, dropped in `~/.claude/mode/modes/` or `~/.claude/mode/styles/`. Live as soon as you save it, because the tool reads the folder rather than a registry you have to keep in step.
-
-Two things catch people out.
+One markdown file in `~/.claude/mode/modes/` or `~/.claude/mode/styles/`, live as soon as you save it. The [README](README.md#writing-your-own) has the front matter table. Two things catch people out.
 
 **A flag is on whenever the key is there and does not say no.** So `true`, `yes`, `1` and even a typo all count as on. It is off only when absent, empty, or one of `false`, `no`, `off`, `n`, `0`. That direction is deliberate: every flag is an opt-in restriction, nobody writes one meaning to leave it off, so a value that cannot be read lands with the restriction **on** rather than silently off.
 
 **Write the standing block in the voice it is read in.** It gets injected into Claude's own prompt, so "the user speaks only to you, and no teammate writes to them" is a rule, while the same sentence turned around states the opposite one.
 
-Then run `mode sync`. It rewrites the registries and writes the contract's palette entry, so none of them can drift from what is on disk.
+Then run `mode sync`, which rewrites the registries and writes the contract's palette entry so none of them drift from what is on disk.
+
+The diagrams in this guide are generated by `scripts/draw-contracts.py`, so adding a contract means adding its entry there and re-running it.
 
 ---
 
@@ -233,9 +271,9 @@ Then run `mode sync`. It rewrites the registries and writes the contract's palet
 
 - **Two slots**, one for how the work runs and one for how it sounds, independent in both directions.
 - **A hook, not memory.** The contract is injected into every prompt: whole on the turn you switch, then four standing lines forever after.
-- **A third tier**, ground rules, always on and injected once per conversation, because a rule in a `CLAUDE.md` is paid for on every request instead.
+- **A third tier**, ground rules, always on and injected once per conversation.
 - **`auto`** lets contracts be chosen from what you write, with a tilde marking anything you did not type yourself.
 
 If you remember one thing: **it holds by mechanism rather than by the model remembering it**, and that single property is what makes the contract still true on turn forty.
 
-Next, the [README](README.md#the-modes) has the full table of what each mode and style is for.
+Next, the [README](README.md#the-modes) has the quick table of what each mode and style is for.
