@@ -4,7 +4,7 @@ summary: No implementation line exists before a test that fails for the right re
 color: green
 enter-when: tdd|test-driven|test driven|test first|test-first|write a failing test|write the test first|write tests first
 exit-when: manual
-steps: cases, reduce, direction, red?@test, green@test, refactor
+steps: cases, reduce, direction, red?@test-fail, green@test, refactor
 loops: refactor>red
 ---
 

@@ -231,7 +231,7 @@ ok("neither modes-only flag appears on a style",
 section("the pipeline a mode declares")
 
 # Inlined, not read from the recorder's published catalogue: that file is outside this repo.
-EVENTS = ("artifact", "approve", "agent", "question", "commit", "test")
+EVENTS = ("artifact", "approve", "agent", "question", "commit", "test", "test-fail")
 COLUMNS = 78
 STEP = re.compile(r"^([a-z][a-z0-9-]*)(\?)?(?:@([a-z][a-z0-9-]*))?$")
 
