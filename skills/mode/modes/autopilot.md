@@ -5,6 +5,7 @@ color: red
 enter-never: true
 exit-when: mr-opened
 no-implement: true
+steps: read, plan, dispatch@agent, integrate@test, mr
 ---
 
 # Autopilot mode

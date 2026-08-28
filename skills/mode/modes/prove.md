@@ -4,6 +4,7 @@ summary: Nothing is claimed working until a real channel says so, run before and
 color: cyan
 enter-when: prove it|verify it|did it actually|does it actually|are you sure it works|check it really|show me it works
 exit-when: manual
+steps: channel, before@test, change, after@test, break@test
 ---
 
 # Prove mode

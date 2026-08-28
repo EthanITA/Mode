@@ -4,6 +4,8 @@ summary: The all-rounder default. One senior contributor runs the whole loop, th
 color: pink
 enter-when: build it yourself|do it yourself|write it yourself|no team|ic mode
 exit-when: manual
+steps: read, fork?@question, ground, shape?, build, verify@test, deliver@commit
+loops: verify>build
 ---
 
 # IC mode

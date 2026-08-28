@@ -4,6 +4,8 @@ summary: Think together on one artifact, and it grows while you talk.
 color: blue
 enter-when: brainstorm|explore|what if|ideas for|think through|think about
 exit-when: manual
+steps: talk, page@artifact, react, widen, handoff
+loops: widen>talk
 ---
 
 # Studio mode

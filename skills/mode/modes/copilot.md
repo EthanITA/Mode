@@ -6,6 +6,8 @@ enter-when: build me|build the|build a|implement the|implement it|implement this
 exit-when: manual
 no-implement: true
 no-dispatch-without-approval: true
+steps: intake, spec@artifact, approval?@approve, dispatch@agent, integrate, deliver@commit
+loops: approval>spec, integrate>dispatch
 ---
 
 # Copilot mode

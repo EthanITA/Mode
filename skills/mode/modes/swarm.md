@@ -5,6 +5,8 @@ color: sky
 enter-when: swarm|fan out|fan it out|spin up agents|spawn agents|one owner per
 exit-when: manual
 no-implement: true
+steps: triage?, match?, handoff@agent, verify@test, deliver@commit, retire
+loops: verify>handoff
 ---
 
 # Swarm mode

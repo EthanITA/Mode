@@ -228,6 +228,77 @@ ok("neither modes-only flag appears on a style",
         if m.get("no-implement") or m.get("no-dispatch-without-approval")],
    "a style declaring a modes-only flag reads as enforcement that never runs")
 
+section("the pipeline a mode declares")
+
+# Inlined, not read from the recorder's published catalogue: that file is outside this repo.
+EVENTS = ("artifact", "approve", "agent", "question", "commit", "test")
+COLUMNS = 78
+STEP = re.compile(r"^([a-z][a-z0-9-]*)(\?)?(?:@([a-z][a-z0-9-]*))?$")
+
+
+def listed(meta, key):
+    return [e.strip() for e in meta.get(key, "").split(",") if e.strip()]
+
+
+def drawn_width(labels):
+    """Every shape is its label plus a border and a space each side, and every gap costs two."""
+    return sum(len(l) + 4 for l in labels) + 2 * (len(labels) - 1)
+
+
+for stem in sorted(loaded["mode"]):
+    meta = loaded["mode"][stem][0]
+    entries = listed(meta, "steps")
+    if not entries:
+        skip("%s.md: declares a pipeline" % stem,
+             "no steps key. The key is optional and the row falls back to the board bar, so this "
+             "is a gap rather than a fault.")
+        continue
+
+    parsed = [STEP.match(e) for e in entries]
+    malformed = [e for e, m in zip(entries, parsed) if m is None]
+    ok("%s.md: every step is a lowercase name, with an optional ? gate and @event" % stem,
+       not malformed,
+       "%r. The drawing takes the name as a label and the event as the hook's key, so anything "
+       "else is drawn raw or recorded against nothing." % malformed)
+    if malformed:
+        continue
+
+    labels = [m.group(1) for m in parsed]
+    repeated = sorted({n for n in labels if labels.count(n) > 1})
+    ok("%s.md: no step name is used twice" % stem, not repeated,
+       "%r. A loops entry resolves a step by name, so a repeat makes one of the two edges point "
+       "at whichever end the reader happens to pick." % repeated)
+
+    stray = sorted({m.group(3) for m in parsed if m.group(3)} - set(EVENTS))
+    ok("%s.md: every @event is one the recorder publishes" % stem, not stray,
+       "%r, expected one of %s. An event nothing emits leaves the step waiting forever, which "
+       "reads as a pipeline stalled rather than one nobody watches."
+       % (stray, ", ".join(EVENTS)))
+
+    width = drawn_width(labels)
+    ok("%s.md: the drawing fits %d columns" % (stem, COLUMNS), width <= COLUMNS,
+       "%d columns over %d steps. The status line wraps past that, and a wrapped pipeline costs "
+       "the row it was drawn on." % (width, len(labels)))
+
+    unknown = []
+    shaped = []
+    for edge in listed(meta, "loops"):
+        src, sep, dst = edge.partition(">")
+        if not sep:
+            shaped.append(edge)
+        elif src.strip() not in labels or dst.strip() not in labels:
+            unknown.append(edge)
+    ok("%s.md: every loop is written from>to" % stem, not shaped,
+       "%r. Without the arrow there is no way to tell which end the edge runs back from." % shaped)
+    ok("%s.md: every loop names two of its own steps" % stem, not unknown,
+       "%r against %r. A backward edge onto a step that is not in the pipeline draws an arc "
+       "between two columns that are not there." % (unknown, labels))
+
+ok("no style declares a pipeline",
+   not [s for s, (m, _, _) in loaded["style"].items() if m.get("steps") or m.get("loops")],
+   "a style is a texture and has no order of operations, so a pipeline on one draws a progress "
+   "bar through something that never progresses")
+
 section("tdd ships without the gate behind it")
 tdd = loaded["mode"].get("tdd")
 if tdd is None:
