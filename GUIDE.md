@@ -22,9 +22,9 @@ Those are the two dials. A session holds one of each, and each one holds until y
 
 A **mode** answers *how the work runs*: it has steps, gates and a point where you can say it finished. A **style** answers *how it sounds while running*: it has no steps at all, and instead changes the texture of whatever mode is going.
 
-<p align="center"><img src="assets/axes.svg" alt="A grid of eight modes down the side against seven styles across the top, making fifty-six combinations, with the cell where debug meets edu highlighted." width="620"></p>
+<p align="center"><img src="assets/axes.svg" alt="A grid of nine modes down the side against seven styles across the top, making sixty-three combinations, with the cell where debug meets edu highlighted." width="620"></p>
 
-Keeping them apart is what keeps the file count down. Eight modes and seven styles cover fifty-six combinations, so a new way of talking costs one file rather than eight rewrites.
+Keeping them apart is what keeps the file count down. Nine modes and seven styles cover sixty-three combinations, so a new way of talking costs one file rather than nine rewrites.
 
 **The test for which one a new idea is:** does it have an order of operations? If it says do this, then that, and stop here, it is a mode. If it only changes the texture of what you were already doing, it is a style.
 
@@ -107,7 +107,7 @@ Matching anchors at the **start** of a word and runs free at the end. So `fail` 
 
 ---
 
-## The eight modes
+## The nine modes
 
 Each one is a pipeline. A yellow box is a gate, meaning the work genuinely stops there. A dashed line is a loop back.
 
@@ -122,6 +122,12 @@ The default, and the one to hold when no specialist fits. One senior pair of han
 For work that splits into several independent domains. You refine it together, then a team builds it while you watch. This is the one mode with a real enforced gate.
 
 <p align="center"><img src="assets/mode-copilot.svg" alt="Copilot runs intake with the user, writes a spec artifact, then stops at an approval gate. Only a recorded yes opens dispatch to a team, whose work is verified and integrated." width="820"></p>
+
+### `swarm`
+
+The same team, reached without a spec. Instead of agreeing a plan and dispatching against it, you keep a standing roster of owners, one per domain, and every ask is routed to whoever owns that domain. When nobody does, one is hired. The gate that replaces the approval is triage: an ask too unclear to route is refused rather than guessed at, since with no spec there is nothing to catch a wrong read before the work starts.
+
+<p align="center"><img src="assets/mode-swarm.svg" alt="Swarm holds at a triage gate, where an unclear ask is rejected rather than routed. A clear one is matched against a roster of owners, handed to the owner of that domain or to one hired for it, verified on the way back, and owners whose domain has closed are retired." width="820"></p>
 
 ### `autopilot`
 

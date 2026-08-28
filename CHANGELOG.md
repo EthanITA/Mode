@@ -7,6 +7,34 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.11.0
+
+A ninth mode: the team, reached without a spec.
+
+### Added
+
+- **`swarm` mode.** Copilot's team with the spec and the approval removed, which leaves a gateway
+  rather than a lead. It keeps a standing roster of owners, one per domain, held on the board so it
+  survives the turn that built it, and routes each ask to whoever owns that domain. Nobody owning it
+  means one gets hired, chartered by the files it takes, and there is no cap on how many. What
+  replaces the approval gate is triage: an ask unclear on something that would change what gets
+  built is refused in one line rather than guessed at, because with no spec there is nothing else
+  standing between a wrong read and a fleet building the wrong thing. The register is close to
+  silent, normally one or two lines a turn naming who got the work, and the file is explicit that
+  terseness removes the narration and never the verification. One rule carries the whole design: a
+  domain is a set of files no other owner writes to, which is what stops a swarm degrading into one
+  agent per file. Sky chip, `no-implement` declared, no dispatch gate.
+- **A ninth chip colour, `sky`.** The eight modes already held all eight colours, and no two
+  contracts on one axis may share one, so a ninth mode needed a ninth name. ANSI 94, bright blue,
+  distinct from `blue` on both light and dark terminals. The manual now says out loud that the modes
+  have taken the whole palette again, so a tenth mode means a tenth colour.
+
+### Changed
+
+- **The manual's "Adding a thirteenth contract" heading loses its count.** It had already drifted by
+  three, since nothing recomputes a number written into a heading. It is "Adding another contract"
+  now, and the numbers that remain are the ones a reader would notice going wrong.
+
 ## 0.10.0
 
 A seventh style, and the deliverable stops being implicit.

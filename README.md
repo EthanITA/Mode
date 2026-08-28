@@ -145,6 +145,7 @@ A **mode** is how the work runs: steps, gates, and a point where you can say it 
 |---|---|---|
 | `ic` | **The default.** Any ask, one pair of hands, you in the room. Borrows each specialist's discipline without the ceremony. | you say so |
 | `copilot` | The work splits into several independent domains and you want a team to build it while you watch | you say so |
+| `swarm` | The same team without the spec. A standing roster of owners, each holding one domain, and every ask routed to whoever owns it | you say so |
 | `autopilot` | You want a result and you are walking away. Every decision is Claude's, one report waits. Typed only, never auto-chosen. | the MR opens |
 | `debug` | Something is broken and nobody knows where. Instrument, reproduce, fix the cause, explain why. | you approve the explainer |
 | `tdd` | You want the test to exist before the code, failing for the right reason | you say so |
@@ -204,7 +205,7 @@ The full contract, at whatever length it needs. Read once, at the switch.
 |---|---|
 | `name` | Must equal the filename without its extension |
 | `summary` | One line, under 80 characters. It is what the listing prints and the chip shows |
-| `color` | One of red, green, yellow, blue, magenta, cyan, grey, pink |
+| `color` | One of red, green, yellow, blue, magenta, cyan, grey, sky, pink |
 | `enter-when` | Alternatives split on a vertical bar, matched at a word boundary. Only consulted while the slot holds `auto` |
 | `exit-when` | `manual`, `approved`, or `mr-opened` |
 
