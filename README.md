@@ -135,6 +135,8 @@ Every contract also has its own palette entry, so you can type `/mode:` or `/sty
 
 The slots are independent. Setting one never touches the other, and `off` on one leaves the other exactly as it was.
 
+**A message that is only a switch never reaches the model.** The hook does the switch, prints the chips back, and ends the turn, so it costs no tokens and answers immediately. Add anything else and the turn runs as usual: `/mode debug fix the parser` sets the slot and then gets to work.
+
 Both also accept `auto`, which lets a contract be picked from what you write. A contract you set by hand is never overridden, a message matching two contracts picks neither, and anything chosen for you is marked with a leading tilde in the status line, so `~debug` means the chooser filled the slot and plain `debug` means you typed it.
 
 ### The modes

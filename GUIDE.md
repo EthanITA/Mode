@@ -46,6 +46,14 @@ So Claude is never remembering which mode it is in. **Every single turn, it gets
 
 That is why a standing reminder is capped at four lines. Two slots held at once give eight injected lines per turn, which is roughly the ceiling before a standing block reads as background noise and stops being seen. A contract body can run to any length, because it is read once. Only the block that repeats is rationed.
 
+### A switch on its own never reaches Claude
+
+Type `/mode debug` and nothing else, and the hook does the switch, prints the chips back to you, and ends the turn there. No request is made, so it costs nothing and answers in about a quarter of a second. A bare `/mode` or `/style` answers with that axis's contracts instead, the way `/model` lists models.
+
+The moment your message carries anything beyond the switch, the turn runs normally. `/mode debug fix the parser` sets the slot and then goes to work, and so does a message with another plugin's command in it. The rule is simply whether a word is left over that only Claude can answer.
+
+The contract is not spent on the turn that never ran. `/mode debug` on its own defers the whole contract to your next real message, which is the first turn that has any use for it.
+
 ---
 
 ## Ground rules, the third kind of file

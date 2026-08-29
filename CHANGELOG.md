@@ -7,6 +7,36 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.12.0
+
+Switching stops costing a turn.
+
+### Added
+
+- **A message that is only a switch ends in the hook.** `/mode debug`, `/mode:debug /style:edu` and
+  `/mode off` now do the switch, print the chips back, and stop there. Claude Code's
+  `UserPromptSubmit` hook can block a prompt, and a blocked prompt is never sent, so the turn costs
+  no tokens and answers in roughly a quarter of a second instead of a request's worth of latency.
+  This is what the mode commands were already reaching for: each one's body said "confirm the switch
+  in one line", which is a whole model turn spent writing a sentence a script can print. The
+  confirmation is the same chips the status line shows, with each held contract's summary under
+  them, so what you read after switching matches what you look at while working.
+- **A bare `/mode` or `/style` answers with that axis's contracts.** Naming an axis with nothing
+  after it is a question rather than a switch, and it is answered the way `/model` answers, by
+  listing what you could pick. The slot is left untouched.
+
+### Changed
+
+- **The whole contract now lands on the first prompt that has a use for it.** It used to be spent on
+  the turn you switched, which was usually a turn that did no work. A switch-only message leaves the
+  announcement unspent, so the next real message is the one that carries the contract. Nothing
+  changes for a message that switches and asks in the same breath.
+- **A switch carrying real words still runs.** `/mode debug fix the parser` sets the slot and then
+  goes to work, and so does a message with another plugin's command in it. The rule is whether a
+  word is left over that only the model can answer, which is why an unrecognised word after the
+  contract name is enough to keep the turn. `/mode:approve` is untouched and still runs a turn,
+  since an approval exists to let work continue rather than to record a fact.
+
 ## 0.11.0
 
 A ninth mode: the team, reached without a spec.
