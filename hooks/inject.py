@@ -27,6 +27,7 @@ SLOT_WORDS = ("off", "auto")
 NAME_TAG = re.compile(r"<command-name>\s*/?([^<]*?)\s*</command-name>")
 MSG_TAG = re.compile(r"<command-message>\s*/?([^<]*?)\s*</command-message>")
 ARGS_TAG = re.compile(r"<command-args>\s*(.*?)\s*</command-args>", re.S)
+ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def typed(data):
@@ -54,34 +55,49 @@ def parse(message):
     if not namespaced and parts[0] not in VERBS:
         return None
     verb = parts[0] if parts[0] in VERBS else None
-    return (verb or PREFIX), parts[(1 if verb else 0):] + found.group(2).split()
+    return (verb or PREFIX), parts[(1 if verb else 0):], found.group(2).split()
 
 
 def obey(message, session):
     """The switch itself, so a slot changes because someone typed it rather than because the model felt
-    like it. Answers which axes were set by hand, since the chooser must never overrule one."""
-    done = set()
-    for chunk in CHUNK.findall(message) or [message]:
-        parsed = parse(chunk)
+    like it. Answers which axes were set by hand, since the chooser must never overrule one, plus what
+    the message still asks for once the switch is taken out of it, and which axes were named bare."""
+    done, bare, spare = set(), [], []
+    end = 0
+    for found in CHUNK.finditer(message):
+        spare.append(message[end:found.start()])
+        end = found.end()
+        parsed = parse(found.group(0))
         if not parsed:
+            spare.append(found.group(0))
             continue
-        verb, names = parsed
+        verb, named, words = parsed
         if verb == "approve":
             # Read only from the typed message: anything an agent can reach could approve its own spec.
-            if names:
-                ask("approve", names[0], *sid(session))
+            if named + words:
+                ask("approve", (named + words)[0], *sid(session))
+            spare.extend((named + words)[1:])
+            continue
+        if not named and not words:
+            bare.append(verb if verb in AXES else PREFIX)
             continue
 
-        for arg in names:
+        for index, arg in enumerate(named + words):
+            owner = ask("axis", arg)
             # So /mode maintainer reaches the style slot instead of failing quietly against the mode one.
-            axis = verb if arg in SLOT_WORDS else (ask("axis", arg) or verb)
+            axis = verb if arg in SLOT_WORDS else (owner or verb)
+            known = bool(owner) or arg in SLOT_WORDS
             # The first name per axis wins, so names can arrive in any order and a duplicate is noise.
-            if axis in done:
-                continue
-            code, _ = run(axis, "set", arg, *sid(session))
-            if code == 0:
-                done.add(axis)
-    return done
+            if axis not in done:
+                code, _ = run(axis, "set", arg, *sid(session))
+                if code == 0:
+                    done.add(axis)
+                    known = True
+            # A word the tool cannot place is the ask, not an argument, so the turn still owes an answer.
+            if not known and index >= len(named):
+                spare.append(arg)
+    spare.append(message[end:])
+    return done, bare, " ".join(spare).strip()
 
 
 def expire(axis, session):
@@ -101,6 +117,17 @@ def holding(axis, session):
     return row[0].strip()
 
 
+def settled(bare, session):
+    """What a person reads when the turn ends in the hook: the choices for an axis named with nothing
+    after it, otherwise the same chips the status line shows with each held contract's line under them."""
+    listed = [ask("list", axis, *sid(session)) for axis in bare]
+    if any(listed):
+        return "\n\n".join(block for block in listed if block)
+    rows = (row.split("\t") for row in (ask("list", "--tsv", *sid(session)) or "").splitlines())
+    held = ["%s: %s" % (row[1], row[2]) for row in rows if len(row) > 3 and row[3] == "active"]
+    return "\n".join([ANSI.sub("", ask("chips", *sid(session)) or "")] + held).strip()
+
+
 def enter(axis, message, session):
     name = ask("choose", "--axis", axis, "--message", message, *sid(session))
     if name:
@@ -116,7 +143,24 @@ try:
     # Judged before the switch, so an exit condition retires the contract the turn began in.
     blocks = [line for line in (expire(axis, session) for axis in AXES) if line]
 
-    handled = obey(message, session)
+    handled, bare, spare = obey(message, session)
+
+    # Leaving rules and announce uncalled is the point: the contract still lands on the first real ask.
+    if not blocks and not spare and (handled or bare):
+        print(
+            json.dumps(
+                {
+                    "decision": "block",
+                    "reason": settled(bare, session),
+                    "hookSpecificOutput": {
+                        "hookEventName": "UserPromptSubmit",
+                        "suppressOriginalPrompt": True,
+                    },
+                }
+            )
+        )
+        sys.exit(0)
+
     for axis in AXES:
         if axis not in handled and holding(axis, session) == AUTO:
             enter(axis, message, session)

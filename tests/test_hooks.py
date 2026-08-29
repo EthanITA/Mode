@@ -64,6 +64,16 @@ def decision(p):
     return block.get("permissionDecision", ""), block.get("permissionDecisionReason", "")
 
 
+def ended(p):
+    if not p.stdout.strip():
+        return "", False
+    body = json.loads(p.stdout)
+    if body.get("decision") != "block":
+        return "", False
+    suppressed = body.get("hookSpecificOutput", {}).get("suppressOriginalPrompt", False)
+    return body.get("reason", ""), suppressed
+
+
 require_tool()
 
 # ------------------------------------------------------------------ the manifest
@@ -283,6 +293,55 @@ with tempfile.TemporaryDirectory() as tmp:
         ok("/mode off empties only the mode",
            not out(mode("h-switch", "get")) and out(style("h-switch", "get")) == "native",
            "mode=%r style=%r" % (out(mode("h-switch", "get")), out(style("h-switch", "get"))))
+
+        section("a message that is only the switch ends in the hook, at no model cost")
+        for s, label, typed, want in (
+            ("be1", "one switch", "/mode debug", True),
+            ("be2", "both axes at once", "/mode:debug /style:edu", True),
+            ("be3", "a slot word", "/mode off", True),
+            ("be4", "an axis named bare", "/mode", True),
+            ("be5", "a switch carrying a real ask", "/mode debug fix the parser", False),
+            ("be6", "another plugin's command alongside", "/mode:tdd /commit a message", False),
+            ("be7", "no command at all", "carry on", False),
+        ):
+            reason, suppressed = ended(fire("inject.py", prompt_payload(s, typed), config))
+            ok("%s: %s" % (label, typed), bool(reason) == want and (suppressed or not want),
+               "reason=%r suppressed=%s, wanted blocked=%s. A message asking for nothing but the "
+               "switch has no answer left for the model to write, and one carrying real words does."
+               % (reason[:80], suppressed, want))
+
+        for s, label, blob, want in (
+            ("bt1", "a bare shortcut, as the palette sends it", tagged("mode:tester"), True),
+            ("bt2", "the same shortcut carrying words", tagged("mode:tdd", "go ahead now"), False),
+            ("bt3", "another plugin's shortcut", tagged("commit", "a message"), False),
+        ):
+            reason, _ = ended(fire("inject.py", prompt_payload(s, blob), config))
+            ok("%s: %s" % (label, blob.split(chr(10))[1]), bool(reason) == want,
+               "reason=%r, wanted blocked=%s. A shortcut typed in the palette arrives as tags, so "
+               "reading only the bare slash form would leave every one of them costing a turn."
+               % (reason[:80], want))
+
+        reason, _ = ended(fire("inject.py", prompt_payload("be8", "/mode debug"), config))
+        ok("the block reads back what the slot now holds",
+           "debug" in reason and "🧭" in reason,
+           "reason=%r. This text is the whole answer the person gets, so it has to name the contract "
+           "and show the same chip the status line does." % reason[:160])
+
+        listed, _ = ended(fire("inject.py", prompt_payload("be9", "/mode"), config))
+        ok("a bare axis answers with its contracts instead of switching",
+           "autopilot" in listed and "tester" in listed and not out(mode("be9", "get")),
+           "reason=%r slot=%r. Naming an axis with nothing after it is a question, not a switch."
+           % (listed[:120], out(mode("be9", "get"))))
+
+        # The turn that costs nothing must not spend the announcement, or the contract is never read.
+        fire("inject.py", prompt_payload("be10", "/mode tdd"), config)
+        after = context(fire("inject.py", prompt_payload("be10", "now start"), config))
+        later = context(fire("inject.py", prompt_payload("be10", "keep going"), config))
+        ok("the whole contract still reaches the first real prompt after a blocked switch",
+           "Active mode: tdd" in after and len(after) > len(later) * 2,
+           "first=%d chars, second=%d. Blocking must leave announce uncalled, otherwise the long "
+           "contract is delivered to a turn that never runs and only the reminder survives."
+           % (len(after), len(later)))
 
         section("inject.py never breaks a turn")
         for label, payload in (("junk on stdin", "not json"), ("empty stdin", ""),
