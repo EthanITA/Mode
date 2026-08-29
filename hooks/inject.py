@@ -15,8 +15,7 @@ ENDED = (
     "normal way until another one is set."
 )
 
-# Claude Code redraws the status line off the model's own reply, which a turn ending here never writes.
-LAGGING = "The status line redraws on your next message, so it still shows the chips from before this switch."
+SET = "Set. The status line catches up when the conversation continues."
 
 # Anchored, so a quoted "/approve x" changes nothing. One token, then whatever was typed after it.
 COMMAND = re.compile(r"^/(\S+)((?:[ \t]+\S+)*)")
@@ -129,7 +128,7 @@ def settled(bare, session):
     rows = (row.split("\t") for row in (ask("list", "--tsv", *sid(session)) or "").splitlines())
     held = ["%s: %s" % (row[1], row[2]) for row in rows if len(row) > 3 and row[3] == "active"]
     chips = ANSI.sub("", ask("chips", *sid(session)) or "")
-    return "\n".join([chips] + held + ["", LAGGING]).strip()
+    return "\n".join([chips] + held + ["", SET]).strip()
 
 
 def enter(axis, message, session):

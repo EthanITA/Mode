@@ -20,11 +20,12 @@ Switching stops costing a turn.
   This is what the mode commands were already reaching for: each one's body said "confirm the switch
   in one line", which is a whole model turn spent writing a sentence a script can print. The
   confirmation is the same chips the status line shows, with each held contract's summary under
-  them, so what you read after switching matches what you look at while working. It closes by saying
-  the status line has not caught up: Claude Code redraws that line off the model's own reply, and a
-  turn ending in the hook never writes one, so the chips there stay a switch behind until your next
-  message. The alternative was `statusLine.refreshInterval`, which buys a two-second correction for a
-  180 ms subprocess every two seconds in every open session. Saying it plainly is cheaper.
+  them, so what you read after switching matches what you look at while working. It closes on "Set.
+  The status line catches up when the conversation continues." Claude Code redraws that line off the
+  model's own reply and a turn ending in the hook never writes one, so the chips there are a switch
+  behind until your next message. The line says the outcome and when the surface follows, which is
+  what someone actually wants to know; `statusLine.refreshInterval` would redraw it on a timer, at a
+  180 ms subprocess every interval in every open session, and is not worth that.
 - **A bare `/mode` or `/style` answers with that axis's contracts.** Naming an axis with nothing
   after it is a question rather than a switch, and it is answered the way `/model` answers, by
   listing what you could pick. The slot is left untouched.

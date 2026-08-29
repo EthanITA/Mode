@@ -327,10 +327,10 @@ with tempfile.TemporaryDirectory() as tmp:
            "reason=%r. This text is the whole answer the person gets, so it has to name the contract "
            "and show the same chip the status line does." % reason[:160])
 
-        ok("and says why the status line has not caught up yet",
-           "status line redraws on your next message" in reason,
-           "reason=%r. The line redraws off the model's reply, which this turn never writes, so the "
-           "stale chip has to be explained where it is noticed." % reason[:200])
+        ok("and closes on what happened, not on why a surface lags",
+           reason.rstrip().endswith("Set. The status line catches up when the conversation continues."),
+           "reason=%r. This line is read on every switch, so it says the outcome and when the chip "
+           "follows, rather than explaining Claude Code's redraw rule." % reason[:200])
 
         listed, _ = ended(fire("inject.py", prompt_payload("be9", "/mode"), config))
         ok("a bare axis answers with its contracts instead of switching",
