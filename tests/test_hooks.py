@@ -327,6 +327,11 @@ with tempfile.TemporaryDirectory() as tmp:
            "reason=%r. This text is the whole answer the person gets, so it has to name the contract "
            "and show the same chip the status line does." % reason[:160])
 
+        ok("and says why the status line has not caught up yet",
+           "status line redraws on your next message" in reason,
+           "reason=%r. The line redraws off the model's reply, which this turn never writes, so the "
+           "stale chip has to be explained where it is noticed." % reason[:200])
+
         listed, _ = ended(fire("inject.py", prompt_payload("be9", "/mode"), config))
         ok("a bare axis answers with its contracts instead of switching",
            "autopilot" in listed and "tester" in listed and not out(mode("be9", "get")),

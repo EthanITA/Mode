@@ -54,6 +54,8 @@ The moment your message carries anything beyond the switch, the turn runs normal
 
 The contract is not spent on the turn that never ran. `/mode debug` on its own defers the whole contract to your next real message, which is the first turn that has any use for it.
 
+One thing does lag, and the confirmation says so. Claude Code redraws the status line off the model's reply, and a turn that ends in the hook never writes one, so the chips down there stay a switch behind until you send your next message. The chips printed back to you are the current ones.
+
 ---
 
 ## Ground rules, the third kind of file
