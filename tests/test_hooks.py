@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 from support import (HOOKS, MODES, PLUGIN, crashed, flag_fixtures, live, ok, out, report, write,
                      require_tool, section, skip)
 
-EVENTS = ("UserPromptSubmit", "SessionStart", "PostToolUse", "PreToolUse", "SessionEnd",
-          "Stop", "SubagentStop", "PreCompact", "Notification", "TaskCreated")
+EVENTS = ("UserPromptSubmit", "SessionStart", "PostToolUse", "PostToolUseFailure", "PreToolUse",
+          "SessionEnd", "Stop", "SubagentStop", "PreCompact", "Notification", "TaskCreated")
 
 HOME_PATH = re.compile(r"/Users/|/home/[a-z]|\$HOME|~/")
 

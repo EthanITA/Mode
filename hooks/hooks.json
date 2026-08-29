@@ -23,6 +23,15 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Bash|Write|Edit|NotebookEdit|Agent|AskUserQuestion|Artifact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/observe.py\""
+          }
+        ]
+      },
+      {
         "matcher": "Write|Edit",
         "hooks": [
           {
@@ -74,6 +83,17 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/shell-write-guard.py\""
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash|Write|Edit|NotebookEdit|Agent|AskUserQuestion|Artifact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/observe.py\""
           }
         ]
       }

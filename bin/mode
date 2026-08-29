@@ -444,11 +444,14 @@ def cmd_announce(args):
             # Marking an unreadable contract announced would swallow the long version for good.
             blocks.append(f"{head}\n\n{UNREADABLE % name}")
             continue
+        # Every turn, not only the first: a position restated is what keeps the pipeline from drifting.
+        where = position(axis, args.session)
+        tail = f"\n\n{where}" if where else ""
         marker = state_path(args.session, f".{axis}.announced")
         if marker and read_state(marker) == name:
-            blocks.append(f"{head}\n\n" + "\n".join(block.splitlines()[:STANDING_LINES]))
+            blocks.append(f"{head}\n\n" + "\n".join(block.splitlines()[:STANDING_LINES]) + tail)
             continue
-        blocks.append(f"{head}\n\n{body}")
+        blocks.append(f"{head}\n\n{body}{tail}")
         if marker:
             write_state(marker, name)
     if blocks:
@@ -511,6 +514,76 @@ def cmd_approve(args):
     if not slug:
         raise SystemExit(1)
     print(slug)
+
+
+def pipeline(axis: str, name: str) -> list[tuple[str, bool, str]]:
+    out = []
+    for token in meta_of(axis, name).get("steps", "").split(","):
+        label, _, event = token.strip().partition("@")
+        label = label.strip()
+        if not label.rstrip("?"):
+            continue
+        out.append((label.rstrip("?"), label.endswith("?"), event.strip().lower()))
+    return out
+
+
+def arcs(axis: str, name: str, steps: list[tuple[str, bool, str]]) -> list[tuple[int, int]]:
+    where = {label.lower(): i for i, (label, _, _) in enumerate(steps)}
+    out = []
+    for pair in meta_of(axis, name).get("loops", "").split(","):
+        src, sep, dst = pair.strip().partition(">")
+        if not sep:
+            continue
+        a, b = where.get(src.strip().lower()), where.get(dst.strip().lower())
+        # A name that no longer exists drops its arc rather than the whole drawing.
+        if a is not None and b is not None:
+            out.append((a, b))
+    return out
+
+
+def furthest(axis: str, sid: str | None, steps: list[tuple[str, bool, str]]) -> int:
+    """Furthest reached, not how many: a step with no event never records, so the set has holes."""
+    recorded = declared(axis, sid)
+    at = 0
+    for i, (label, _, event) in enumerate(steps):
+        if label.lower() in recorded or (event and event in recorded):
+            at = i + 1
+    return at
+
+
+def position(axis: str, sid: str | None) -> str:
+    """Where the pipeline stands, in the words a turn is told it. Empty when none is declared."""
+    name = held(axis, sid)
+    steps = pipeline(axis, name) if name and name != AUTO else []
+    if not steps:
+        return ""
+    at = furthest(axis, sid, steps)
+    if at >= len(steps):
+        return f"Pipeline complete: all {len(steps)} steps of {name} are recorded."
+    here = steps[at][0]
+    behind = ", ".join(label for label, _, _ in steps[:at])
+    ahead = steps[at + 1][0] if at + 1 < len(steps) else ""
+    said = (f"Done: {behind}. " if behind else "") + (f"Next: {ahead}." if ahead else "")
+    lines = [f"Pipeline, step {at + 1} of {len(steps)}: {here}."]
+    if said.strip():
+        lines.append(said.strip())
+    lines.append(f"Record with `mode {axis} done {here}`, or say which step you are on.")
+    return "\n".join(lines)
+
+
+def cmd_step(args):
+    axis, name = args.axis, held(args.axis, args.session)
+    steps = pipeline(axis, name) if name and name != AUTO else []
+    if not steps:
+        raise SystemExit(1)
+    if not args.tsv:
+        print(position(axis, args.session))
+        return
+    at = furthest(axis, args.session, steps)
+    for i, (label, gate, _) in enumerate(steps):
+        print(f"step\t{label}\t{1 if gate else 0}\t{'done' if i < at else 'here' if i == at else 'next'}")
+    for src, dst in arcs(axis, name, steps):
+        print(f"loop\t{src}\t{dst}")
 
 
 def cmd_done(args):
@@ -712,6 +785,10 @@ def main():
 
         p = slot_add("done", cmd_done, "record something the held contract waits on, such as mr-opened")
         p.add_argument("reason")
+
+        p = slot_add("step", cmd_step, "where the held pipeline stands, or exit 1 when it declares none")
+        p.add_argument("--tsv", action="store_true",
+                       help="one line per step as kind, label, gate and state, then one per loop")
 
         slot_add("expired", cmd_expired, "print why the held contract is over, or exit 1 while it stands")
         slot_add("exit", cmd_exit, "end the held contract: back to auto when chosen, off when typed")
