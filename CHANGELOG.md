@@ -7,6 +7,33 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.13.0
+
+The pipeline stops being a drawing and becomes state.
+
+### Added
+
+- **`mode <axis> step`.** Every mode already declared a `steps:` pipeline, but only the status line's
+  bash ever read it, so the position was something a renderer derived and nothing else could see.
+  `bin/mode` parses it now, reads the ledger, and answers where the pipeline stands: in prose for a
+  turn to read, or as tab-separated rows for a renderer. The status line asks rather than parsing
+  front matter itself, which is what stops the drawing and the injected text disagreeing.
+- **The position is injected on every turn.** `announce` carries it under the standing reminder, in
+  the same shape the rest of the plugin uses: the model is never remembering which step it is on,
+  it gets told again each turn. The line names the step, what came before, what comes next, and the
+  command that closes it.
+- **`observe.py`, a PostToolUse hook that records what actually happened.** A step's `@event` suffix
+  names the moment that closes it, and most of those moments are observable: asking the user closes
+  a `@question` step, spawning an agent closes `@agent`, writing an artifact closes `@artifact`, a
+  test run closes `@test` and a red one closes `@test-fail`, a commit closes `@commit`. Those advance
+  with nobody remembering to say so. Steps with no event, four of `ic`'s seven, still need declaring,
+  which is what the injected line asks for. Registered on `PostToolUseFailure` too, since that event
+  is the only honest way to tell a passing suite from a failing one.
+
+### Changed
+
+- **A finished pipeline says so** rather than pointing at its last step forever.
+
 ## 0.12.0
 
 Switching stops costing a turn.

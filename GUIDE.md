@@ -44,6 +44,18 @@ What gets injected depends on whether this is the first prompt or a later one:
 
 So Claude is never remembering which mode it is in. **Every single turn, it gets told again.**
 
+### The pipeline is told again too
+
+Every mode declares its steps in front matter, `steps: read, fork?@question, ground, …`, and that pipeline is what the status line draws. It is also state. `mode mode step` answers where you stand, and the same answer is injected under the standing reminder on every turn:
+
+```text
+Pipeline, step 3 of 7: ground.
+Done: read, fork. Next: shape.
+Record with `mode mode done ground`, or say which step you are on.
+```
+
+A step advances two ways. The `@event` suffix names the moment that closes it, and most of those are observable, so a hook records them from the tool call itself: asking you a question, spawning an agent, writing an artifact, running a test, going red, committing. Nobody has to remember. Steps with no event are the thinking ones, and those are declared, which is what the injected line asks for. A diagram that stops moving is therefore either work that stalled or a step nobody recorded, and the line above tells you which.
+
 That is why a standing reminder is capped at four lines. Two slots held at once give eight injected lines per turn, which is roughly the ceiling before a standing block reads as background noise and stops being seen. A contract body can run to any length, because it is read once. Only the block that repeats is rationed.
 
 ### A switch on its own never reaches Claude
