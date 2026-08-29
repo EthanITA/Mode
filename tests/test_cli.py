@@ -417,9 +417,16 @@ with tempfile.TemporaryDirectory() as tmp:
     # ------------------------------------------------------------------ chips
 
     section("chips, which a status line drops in whole")
+    import unicodedata
+    narrow = [i for i in ("\U0001f9ed", "\U0001f4ac")
+              if unicodedata.east_asian_width(i) not in ("W", "F")]
+    ok("both chip icons are East Asian Wide", not narrow,
+       "%r. A narrow emoji measures one column and renders two, so every row after it "
+       "in a status line is misaligned by one." % narrow)
+
     p = call("s-chips-none", "chips")
     ok("both slots clear prints one off entry per axis, exit 0",
-       p.returncode == 0 and p.stdout.strip() == "\U0001f39a off  \U0001f4ac off",
+       p.returncode == 0 and p.stdout.strip() == "\U0001f9ed off  \U0001f4ac off",
        "rc=%s out=%r. An empty slot has to read as off rather than vanish, or the line jumps "
        "around as slots fill." % (p.returncode, p.stdout))
 
