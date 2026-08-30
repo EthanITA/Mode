@@ -63,7 +63,7 @@ Three things, none of which a plugin can do for itself. It never asks your name:
 
 | It does | Because |
 |---|---|
-| Writes `/mode`, `/style` and `/approve` into your commands directory | A plugin cannot register an un-namespaced command, so without these files those names do not resolve at all |
+| Writes `/mode`, `/style`, `/approve` and `/why` into your commands directory | A plugin cannot register an un-namespaced command, so without these files those names do not resolve at all |
 | Creates `~/.claude/mode/{modes,styles,rules}/` | Somewhere for contracts you write yourself that a plugin update never overwrites |
 | Wires the status line | `statusLine` is a key in your `settings.json`, and no plugin can set it |
 
@@ -122,6 +122,8 @@ An update never touches contracts you wrote yourself, because they live in `~/.c
 /style             # the same three, for the style slot
 /style edu
 /style off
+
+/why               # what is steering this turn, and what the next prompt will carry
 ```
 
 Every contract also has its own palette entry, so you can type `/mode:` or `/style:` and pick from the list rather than recalling names. Both spellings do the identical thing.
@@ -179,6 +181,56 @@ Most combinations just work. Three are worth knowing:
 
 ---
 
+## Pinning a pair to a directory
+
+Both slots die with the conversation, which is right for a contract you set for one piece of work and wrong for the answer that is the same every time you open a particular repo. A **pin** is that answer, written once and adopted by every conversation that starts inside the directory.
+
+```bash
+mode style pin maintainer      # every session under this directory starts in maintainer
+mode mode pin off              # and none of them starts in a mode
+mode pins                      # what a fresh conversation here would begin in, and why
+```
+
+There are two layers, and they resolve the way the contract folders do.
+
+| Layer | Lives in | Reach |
+|---|---|---|
+| **Personal** | `~/.claude/mode/pins.tsv`, written by `mode <axis> pin` | This machine only |
+| **Shared** | a `.mode` file committed at any directory | Everybody who clones the repo |
+
+A shared `.mode` is two lines, and hand-writing it is the point:
+
+```text
+mode: tdd
+style: maintainer
+```
+
+Resolution walks up from the working directory and stops at the first answer, so the **deepest** file wins and one package in a monorepo can differ from the repo around it. Where both layers answer in the same directory, the personal one wins: it is your machine against somebody else's default. `mode <axis> pin off` writes a personal no that masks a shared file, and `--forget` drops the personal row so the shared one shows through again.
+
+Three restraints keep a pin a default rather than an override.
+
+- **A slot you have spoken for is never adopted into.** Typing a name wins, and so does `/mode off`, for the rest of that conversation.
+- **A pin fills a slot once per conversation.** Switching away from an adopted contract is not undone on the next prompt.
+- **A name this machine has no contract for is stepped over in silence.** A repo pinning a contract you never installed costs you nothing, and does not take the rest of its `.mode` file down with it.
+
+A pinned slot is marked in the status line with a leading `=`, so `=maintainer` says the directory chose it, `~maintainer` says the chooser did, and a bare name says you typed it.
+
+---
+
+## Asking what is actually running
+
+Everything this plugin does is either a chip too small to explain itself or text injected where you cannot see it. `/why` is the window into that:
+
+```text
+/why
+```
+
+It is answered in the hook, so like a switch it costs no tokens and returns immediately. It prints what each slot holds and how it got there, where the pipeline stands, every gate the held mode declares with whether it is open right now and what would open it, which ground rules have already been injected and which are still waiting on a trigger, and whether your next prompt costs the whole contract or the four-line reminder.
+
+`/why fix the parser` puts the same report in front of Claude and then runs the turn.
+
+---
+
 ## Writing your own
 
 One markdown file in `~/.claude/mode/modes/` or `~/.claude/mode/styles/`. It is live as soon as you save it.
@@ -210,6 +262,10 @@ The full contract, at whatever length it needs. Read once, at the switch.
 | `color` | One of red, green, yellow, blue, magenta, cyan, grey, sky, pink |
 | `enter-when` | Alternatives split on a vertical bar, matched at a word boundary. Only consulted while the slot holds `auto` |
 | `exit-when` | `manual`, `approved`, or `mr-opened` |
+| `no-dispatch-without-approval` | Arms a gate that refuses to spawn a teammate until a yes is recorded |
+| `no-code-without-red` | Arms a guard that refuses an edit to an implementation file while no watched failure stands |
+
+The last two are the flags with mechanisms behind them, and any contract may declare either. A flag is **on** whenever the key is present and does not explicitly say no.
 
 The four-line cap on `## Standing reminder` is real: it is the only part that repeats, on every prompt, for as long as the slot is held. A file of yours named the same as a shipped contract wins.
 
@@ -221,11 +277,15 @@ There is a third kind of file too, `~/.claude/mode/rules/`, holding **ground rul
 
 Every item here is a real thing this release does not do.
 
-**Nothing persists across conversations.** Both slots are keyed to the conversation and die with it. There is no project default and no way to say "always use `maintainer` in this repo". That is a design choice for now, because a contract that outlives the work it was set for is worse than no contract.
+**A slot still dies with the conversation. Only the pin outlives it.** A pin says where a conversation *starts*; nothing carries a mid-conversation switch into the next session, and nothing should. If you switch to `debug` today, tomorrow's session in the same directory opens on the pin again.
 
-**Only one mode enforces anything.** `copilot` has a real gate: a hook refuses to spawn a teammate until you have approved a spec. That is the entirety of the enforcement. `tdd` is the clearest gap, since the rule it wants would refuse an edit to an implementation file while no failing test is on record. Take every other mode as a written agreement Claude is reminded of every turn, which is useful and is not the same as a guarantee.
+**Two flags have mechanisms. Every other rule is held by agreement.** `no-dispatch-without-approval` refuses a teammate until a yes is on record, and `no-code-without-red` refuses an implementation edit while no watched failure stands. Take everything else as a written agreement Claude is reminded of every single turn, which is genuinely useful and is not a guarantee. `no-implement` is the clearest remaining gap: `copilot` declares it and no hook reads it, because no hook can tell a two-line seam between two finished domains from a domain somebody decided to build themselves.
 
-**The one gate that exists checks that you approved, not that there was anything to approve.** Typing `/approve` followed by any word at all opens it. Read it as "a person deliberately typed a yes", not as "the spec was written and reviewed".
+**The red gate cannot tell a red from a broken test.** It opens on a suite the recorder watched exit non-zero, and an import error exits non-zero too. It stops the failure that actually happens, which is skipping the test entirely. It does not certify that the assertion fired, so the contract's own sentence about what red means is still yours to keep.
+
+**The approval gate checks that you approved, not that there was anything to approve.** Typing `/approve` followed by any word at all opens it. Read it as "a person deliberately typed a yes", not as "the spec was written and reviewed".
+
+**A committed `.mode` file is content from the repo that changes how a session behaves.** It can only name a contract already installed on the machine reading it, and an unknown name is ignored, so the worst a hostile one can do is start you in one of your own contracts. Read it like you read a `.editorconfig`, and `mode pins` tells you which file answered.
 
 **The deliverable is routed but not pinnable.** A ground rule names the form and routes it, but there is no slot holding it for a session.
 

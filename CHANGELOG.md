@@ -7,6 +7,65 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.14.0
+
+A contract can now outlive the conversation, refuse an edit, and explain itself.
+
+### Added
+
+- **Pins: a slot filled by the directory rather than by the conversation.** Both slots still die
+  with the session, which is right for a contract set for one piece of work and wrong for the answer
+  that never changes. `mode <axis> pin <name>` writes that answer against a directory, and every
+  later conversation started inside it adopts it. Two layers resolve, mirroring the contract folders:
+  `~/.claude/mode/pins.tsv` is personal to the machine, and a `.mode` file committed at any directory
+  is shared with everybody who clones the repo, carrying `mode:` and `style:` lines a person
+  hand-writes. Lookup walks up from the working directory and takes the first answer, so the deepest
+  file wins and one package in a monorepo can differ from the repo around it; within one directory
+  the personal layer beats the shared, because a machine outranks somebody else's default.
+  `mode pins` prints what a fresh conversation here would begin in and which file decided each slot.
+- **Three restraints that keep a pin a default rather than an override.** An axis anybody has already
+  spoken for is never adopted into, and `off` counts as speaking for it, so `/mode off` in a pinned
+  directory is not undone by the next message. Adoption runs once per axis per conversation, so a
+  switch made after it is never reverted. A name this machine has no contract for is stepped over in
+  silence and does not take the rest of its file down with it, so a repo pinning somebody else's
+  private contract costs a stranger nothing. `mode <axis> pin off` writes a personal no that masks a
+  shared file without editing the repo, and `--forget` drops the row so the shared one shows again.
+- **A third source mark on the chip.** `=maintainer` says the directory pinned it, against
+  `~maintainer` for the chooser and a bare name for one that was typed. Nobody should be held to a
+  contract they cannot see they did not pick, which was already true of the chooser and is now true
+  of a repo.
+- **`no-code-without-red`, the hook `tdd` shipped without.** The contract carried a section titled
+  "Nothing enforces this", naming the gate that was cut from v1. It exists now: a PreToolUse guard
+  that refuses an edit to an implementation file while no watched failure stands. It opens on a suite
+  the recorder saw exit non-zero and shuts again on the pass that closes the lap, which is why the
+  ledger had to become ordered: read as a set it says a failure happened forever. The flag is on the
+  front matter rather than in the code, so any contract can arm it, and the guard carries no mode
+  name. It judges narrowly on purpose: only a file whose extension carries behaviour, outside a test
+  directory, whose name is not test shaped. The test itself, prose, config and fixtures are never
+  refused, because a rule blocking those would block the only route to a red.
+- **`/why`, the report that says what is actually steering the turn.** Everything here is either a
+  chip too small to explain itself or text injected where nobody can read it, so the plugin had no
+  way to answer its most obvious question. It prints what each slot holds and how it got there, where
+  the pipeline stands, every gate the mode declares with whether it is open right now and what would
+  open it, which ground rules have been injected and which are still waiting on a trigger, and
+  whether the next prompt costs the whole contract or the four standing lines. Answered inside the
+  hook like a switch, so it costs no tokens and returns immediately. `/why`, `/mode:why` and
+  `/mode why` are one code path; `/why fix the parser` puts the report in front of Claude and then
+  runs the turn.
+- **`mode red` and `mode <axis> pin`, `pins`, `adopt`, `why` on the CLI**, so the guard, the hooks and
+  a person all read the same state through the one tool that owns it.
+
+### Changed
+
+- **The done ledger is ordered.** `declared` was a set, which cannot answer a question about a pair
+  that cancels out. It is built on an ordered read now, and nothing else about it moved.
+- **The dispatch gate is no longer the only mechanism**, so the README's limitations, the guide's
+  enforcement table and the manual's flag paragraph now say two rather than one, and name
+  `no-implement` as the gap that remains: no hook can tell a two-line seam between finished domains
+  from a domain somebody decided to build themselves.
+- **`/why` joins `/mode`, `/style` and `/approve`** as a bare command the installer writes, since a
+  plugin cannot register an un-namespaced name.
+
 ## 0.13.0
 
 The pipeline stops being a drawing and becomes state.

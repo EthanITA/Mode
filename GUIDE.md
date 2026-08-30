@@ -129,6 +129,58 @@ Matching anchors at the **start** of a word and runs free at the end. So `fail` 
 
 ---
 
+## Pins, or the answer that is the same every time
+
+A slot dies with the conversation, which is correct for a contract you set for one piece of work. It is wrong for the answer that never changes: this repo belongs to other people, so `native`; that one is a library, so `maintainer`. Retyping it every morning is exactly the memory problem the plugin exists to remove, moved up one level.
+
+A **pin** is that answer written down once. It fills a slot at the start of every conversation held inside a directory, and nothing else.
+
+```bash
+mode style pin maintainer      # here and everywhere below here
+mode pins                      # what a fresh conversation would start in, and which file said so
+```
+
+Two layers answer, and which one you reach for is a question about who the answer is for.
+
+| Layer | Written by | Reaches |
+|---|---|---|
+| **Personal** | `mode <axis> pin <name>`, stored in `~/.claude/mode/pins.tsv` | You, on this machine |
+| **Shared** | a `.mode` file committed in the repo, two lines of `axis: name` | Everybody who clones it |
+
+Lookup walks up from the working directory and takes the first answer it finds, so a package deep in a monorepo can pin something the repo root does not. In one directory the personal layer beats the shared one, because your machine outranks somebody else's default. `mode <axis> pin off` is a personal no that masks a shared file without editing the repo, and `--forget` removes it again.
+
+**What keeps a pin from becoming an override** is three restraints, and each one exists because the alternative is worse:
+
+- A slot you typed into is never adopted over. So is one you turned off, for the rest of that conversation. Without this, `/mode off` in a pinned directory would be undone by your next message.
+- Adoption happens once per axis per conversation. Without this, every switch you made would be reverted on the next prompt.
+- A name this machine has no contract for is skipped rather than held, and it does not take the rest of the file with it. So a repo pinning somebody else's private contract costs a stranger nothing.
+
+The status line tells the three sources apart: `maintainer` you typed, `~maintainer` the chooser picked, `=maintainer` the directory pinned.
+
+---
+
+## `/why`, the window into all of it
+
+Every mechanism above is invisible by design. The contract is injected where you cannot read it, the gates only announce themselves by refusing something, and the chips have room for a name and nothing else. So there is one command that shows the whole state:
+
+```text
+/why
+```
+
+Like a switch, it is answered inside the hook and never reaches the model, so it costs nothing and returns immediately. It prints five things:
+
+| Section | Answers |
+|---|---|
+| **Slots** | What each holds, and whether you typed it, the chooser picked it, or a directory pinned it |
+| **Pipeline** | Which step the held mode is on, what is behind it and what is next |
+| **Gates** | Every flag the mode declares, whether it is open right now, and what would open it |
+| **Ground rules** | Which have been injected already, and which are still waiting on a trigger phrase |
+| **The next prompt carries** | Whether your next message costs the whole contract or the four standing lines |
+
+The Gates section is the one worth knowing about before you need it. A guard refusing an edit reads like the tool being broken until you have seen the line that says which gate it was and what opens it.
+
+---
+
 ## The nine modes
 
 Each one is a pipeline. A yellow box is a gate, meaning the work genuinely stops there. A dashed line is a loop back.
@@ -271,13 +323,20 @@ When you eventually type `/approve <slug>` on the explainer, `debug` reaches its
 
 Worth being blunt, because a contract that asks politely and a gate that refuses are different things.
 
-| | Enforced by a hook | Held by agreement |
+Two flags have a mechanism behind them, and any contract can declare either.
+
+| Flag | What it refuses | What opens it |
 |---|---|---|
-| Which | `copilot` refuses to spawn a teammate until a spec is approved | Every other rule in every other contract |
+| `no-dispatch-without-approval` | Spawning a teammate | A yes recorded with `/approve`, scoped to the mode that asked |
+| `no-code-without-red` | Editing an implementation file | A suite the recorder watched exit non-zero, until a passing run closes the lap |
 
-One gate has a mechanism. Everything else rests on Claude being reminded every single turn, which is genuinely useful and is not a guarantee. `tdd` is the clearest gap, since the rule it wants would refuse an edit to an implementation file while no failing test is on record. That hook is designed and not built.
+`copilot` carries the first, `tdd` the second. The second is narrow on purpose: it judges only files whose extension carries behaviour, outside a test directory, whose name is not test shaped. The test itself, prose, config and fixtures are never refused, because a rule that blocked those would block the only route to a red.
 
-Separately, **guards** ship in `hooks/guards/`, fencing the ground rules: the board fences, the prose fence, comment, null and shell-write guards. One switch disarms them all, `"guards": "off"` in `~/.claude/mode/config.json`, with absent meaning armed.
+It also cannot tell a red from a broken test, since an import error exits non-zero too. It stops the failure that actually happens, which is skipping the test entirely.
+
+Everything else rests on Claude being reminded every single turn, which is genuinely useful and is not a guarantee. The clearest remaining gap is `no-implement`: `copilot` declares it and no hook reads it, because no hook can tell a two-line seam between two finished domains from a domain somebody decided to build themselves.
+
+Separately, **guards** ship in `hooks/guards/`, fencing the ground rules: the board fences, the prose fence, comment, null, red and shell-write guards. One switch disarms them all, `"guards": "off"` in `~/.claude/mode/config.json`, with absent meaning armed. The approval gate sits outside that switch, in `hooks/gate.py`, and `/why` says which of the two you are looking at.
 
 ---
 
@@ -301,6 +360,8 @@ The diagrams in this guide are generated by `scripts/draw-contracts.py`, so addi
 - **A hook, not memory.** The contract is injected into every prompt: whole on the turn you switch, then four standing lines forever after.
 - **A third tier**, ground rules, always on and injected once per conversation.
 - **`auto`** lets contracts be chosen from what you write, with a tilde marking anything you did not type yourself.
+- **A pin** is the answer that never changes, held by a directory rather than by a conversation, marked with an equals sign.
+- **`/why`** shows the whole state at once, and costs nothing to ask.
 
 If you remember one thing: **it holds by mechanism rather than by the model remembering it**, and that single property is what makes the contract still true on turn forty.
 

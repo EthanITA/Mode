@@ -1,6 +1,6 @@
 ---
 name: mode
-description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, ic, prove, studio, swarm, tdd, tester. Styles available: creative, edu, fast, maintainer, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", and when they ask what is currently active.
+description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, ic, prove, studio, swarm, tdd, tester. Styles available: creative, edu, fast, maintainer, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", when they ask what is currently active or type /why, and when they pin a contract to a directory.
 user-invocable: true
 disable-model-invocation: false
 args: "[<name>|auto|off]"
@@ -41,6 +41,7 @@ The switch is not yours to perform. A `UserPromptSubmit` hook reads the message 
 | `/mode auto` or `/style auto` | Set that slot to `auto`, so a contract gets chosen from what gets written | Say the slot is on auto, and name what it holds right now if it holds anything |
 | `/mode off` or `/style off` | Emptied that slot, and the mode one also dropped the recorded approval | Confirm which slot is empty. The other slot is untouched. |
 | `/approve <slug>` | Recorded the yes against that slug, stamped with whichever mode is active | Say what it unblocks. The record already exists, so do not run `mode approve` over it. |
+| `/why` | Printed the whole state back and ended the turn, so nothing reached you at all | Nothing. If the report is in your context rather than answered outright, words were typed after it and those are the ask. |
 | a name that does not exist | Nothing switched, because `mode <axis> set` refuses a name with no file behind it | Run `mode list` and show the real names rather than guessing which one was meant |
 
 Every typed form is a registered command, because Claude Code rejects an unknown slash command before any hook runs. The palette holds exactly three shapes and nothing else: `mode`, `mode:<mode name>` and `style:<style name>`. The bare `/mode`, `/style` and `/approve` are files the installer writes into the user commands directory, since a plugin cannot register an un-namespaced name. Each one carries `disable-model-invocation: true`, which is what keeps them the user's alone.
@@ -58,6 +59,18 @@ Read the contract once, at the moment of the switch. It runs to whatever length 
 A session holds exactly one mode and exactly one style. Setting a new one on either axis replaces what was there, so there is no stack to unwind and no question about which contract wins.
 
 Either slot may also be empty, and empty is the normal state. A session with a style and no mode is ordinary and useful, and so is the reverse.
+
+## A slot filled by the directory
+
+A slot dies with its conversation. A **pin** does not: it is written against a directory and adopted by every conversation that starts inside it, which is how a repo carries the answer that never changes.
+
+Two layers resolve, mirroring the contract folders. `~/.claude/mode/pins.tsv` is the personal one, written by `mode <axis> pin <name>`. A `.mode` file committed at any directory is the shared one, carrying `mode:` and `style:` lines a person hand-wrote. Lookup walks up from the working directory and takes the first answer, so the deepest file wins, and within one directory the personal layer beats the shared.
+
+Three restraints hold it to being a default. An axis anybody has already spoken for is never adopted into, and `off` counts as speaking for it. Adoption happens once per axis per conversation, so a switch is never reverted on the next prompt. A name with no contract behind it on this machine is stepped over rather than held.
+
+A pinned slot carries a leading `=` in the status line, against the chooser's `~` and a bare name for one that was typed. When you notice a contract you did not set, that mark is the answer to where it came from, and `mode pins` names the file.
+
+You do not run `mode adopt` yourself. Two hooks call it, at session start and on every prompt, and it walks past an axis already decided.
 
 ## The axes never read each other
 
@@ -115,9 +128,11 @@ A rules file may also carry a `when:` pattern, alternatives split on a vertical 
 
 ## The guards
 
-The rules are fenced as well as stated. `hooks/guards/` holds the enforcement hooks: the board fences, the prose fence, the comment, null and shell-write guards, the memory guard, and an X/Y/Z read fence that stands only while the `xyz` style is held. Each one interrupts the specific violation it names, which is what makes a rule a mechanism rather than a request.
+The rules are fenced as well as stated. `hooks/guards/` holds the enforcement hooks: the board fences, the prose fence, the comment, null and shell-write guards, the memory guard, an X/Y/Z read fence that stands only while the `xyz` style is held, and the red guard that refuses an implementation edit for any mode declaring `no-code-without-red`. Each one interrupts the specific violation it names, which is what makes a rule a mechanism rather than a request.
 
-One switch disarms them all: `"guards": "off"` in `~/.claude/mode/config.json`. Absent means armed, matching the flag philosophy above, and the ground rules keep injecting either way, so switching the guards off changes what gets enforced and never what gets said.
+One switch disarms them all: `"guards": "off"` in `~/.claude/mode/config.json`. Absent means armed, matching the flag philosophy above, and the ground rules keep injecting either way, so switching the guards off changes what gets enforced and never what gets said. The dispatch gate in `hooks/gate.py` sits outside that switch, since it guards a mode's own contract rather than a ground rule.
+
+`mode why` prints every one of these at once: what each slot holds and how it got there, where the pipeline stands, which gates are open and what would open the shut ones, which ground rules have been injected, and whether the next prompt costs the whole contract or the reminder. Reach for it when the user asks what is running, and when a guard refuses something and the reason is not obvious.
 
 ## What the contracts assume about your setup
 
@@ -171,7 +186,7 @@ One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the shipp
 
 - Front matter with `name`, matching the filename stem, and a one-line `summary`. The summary is what `mode list` prints and what the status line chip shows.
 - `enter-when`, `enter-never` and `exit-when`, per the table above. A contract with no `enter-when` can only be typed, and one with no `exit-when` behaves as `manual`. Write the line anyway, because an implied contract is one nobody can read off the file.
-- Any flag the contract declares, such as `no-implement: true` or `no-dispatch-without-approval: true`. A flag is **on** whenever the key is present and not explicitly switched off, so `true`, `yes`, `1` and even a typo all count as on. It is off only when the key is absent, empty, or set to one of `false`, `no`, `off`, `n` or `0`, in any case and with quotes stripped. These flags are opt-in restrictions and nobody writes one meaning to leave it off, so a misread lands with the gate closed rather than open. Only `no-dispatch-without-approval` currently has a hook behind it; `no-implement` is a declaration that no hook reads yet.
+- Any flag the contract declares, such as `no-implement: true` or `no-dispatch-without-approval: true`. A flag is **on** whenever the key is present and not explicitly switched off, so `true`, `yes`, `1` and even a typo all count as on. It is off only when the key is absent, empty, or set to one of `false`, `no`, `off`, `n` or `0`, in any case and with quotes stripped. These flags are opt-in restrictions and nobody writes one meaning to leave it off, so a misread lands with the gate closed rather than open. Two have hooks behind them: `no-dispatch-without-approval` refuses a teammate until a yes is recorded, and `no-code-without-red` refuses an edit to an implementation file while no watched failure stands. `no-implement` is still a declaration that no hook reads.
 - An optional `color`, one of red, green, yellow, blue, magenta, cyan, grey, sky or pink, which is what the status line chip uses. No two contracts on the same axis may share one, and the nine modes now hold all nine, so a tenth mode means a tenth colour in `bin/mode` and in the test that lists them.
 - An optional `steps`, on a mode only: the pipeline the contract runs, in order, comma separated. Each entry is a lowercase name, and a name ending in `?` is a gate the run stops at rather than a box it walks through. A name may carry `@event` after it, naming the event that records the step with nothing for the model to say, and the recorder publishes seven: `artifact` for a write under the artifacts folder, `approve` for an approval landing, `agent` for a teammate spawned, `question` for a question asked, `commit` for a commit, `test` for a test run that passed, and `test-fail` for one that failed. A step whose gate is a run the author watched fail names `test-fail`, which is how tdd's `red?` and prove's `break` stay put on a green suite. A bare name has no event behind it, so reaching it is the model's own claim. Keep the names short. The status line draws them as a row of boxes and the whole drawing has to fit inside 78 columns, which a test measures for every mode that declares the key.
 - An optional `loops` beside it, carrying the backward edges the contract's own flowchart already draws: comma separated, each one `from>to` by step name, so copilot's `integrate>dispatch` is failed work going back to the IC that produced it. Both ends have to name a step in the same `steps` line. A pipeline that only runs forwards leaves the key out, and so does a mode with no `steps` at all.
