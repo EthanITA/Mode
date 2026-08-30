@@ -37,9 +37,9 @@ Usage: ./install.sh [options]
   --insert-chips     If a status line already exists, append the chips block to its script.
                      Off by default, because that file is yours and not the installer's.
   --no-status-line   Skip the status line entirely.
-  --aliases          Write /mode, /style and /approve into your commands directory. This is the
-                     default: the plugin cannot register an un-namespaced command, so without
-                     these three files the bare commands do not exist at all.
+  --aliases          Write /mode, /style, /approve and /why into your commands directory. This is
+                     the default: the plugin cannot register an un-namespaced command, so without
+                     these four files the bare commands do not exist at all.
   --no-aliases       Skip them.
   --force            Overwrite a status line script this installer wrote that has since changed.
   --yes              Do not ask anything. Never implies --insert-chips.
@@ -537,6 +537,22 @@ Say what the approval unblocks.
 EOF
 }
 
+emit_alias_why() {
+  cat <<EOF
+---
+description: Show what is steering this conversation: slots, pipeline, gates and ground rules.
+argument-hint: ""
+disable-model-invocation: true
+---
+
+<!-- $ALIAS_MARKER -->
+A UserPromptSubmit hook answers this one before the turn starts, so the report is already above and
+there is nothing left to run.
+
+If it is not there, the hook could not reach the tool. Run \`$MODE_BIN why\` and show what it prints.
+EOF
+}
+
 write_alias() {
   target=$USER_COMMANDS/$1.md
   mkdir -p "$USER_COMMANDS"
@@ -553,17 +569,18 @@ write_alias() {
   touched "$target: the bare /$1 command"
 }
 
-step "3. The bare commands: /mode, /style and /approve"
+step "3. The bare commands: /mode, /style, /approve and /why"
 
-say "A plugin cannot register an un-namespaced command, so these three live as small files in"
+say "A plugin cannot register an un-namespaced command, so these four live as small files in"
 say "your own commands directory. Without them the bare names do not exist."
 
 if [ "$SKIP_ALIASES" -eq 1 ]; then
-  say "Skipped, because --no-aliases was given. /mode, /style and /approve will not resolve."
+  say "Skipped, because --no-aliases was given. /mode, /style, /approve and /why will not resolve."
 else
   write_alias mode
   write_alias style
   write_alias approve
+  write_alias why
 fi
 
 # ---------------------------------------------------------------- 4. the per-contract shortcuts
