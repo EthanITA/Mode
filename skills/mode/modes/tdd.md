@@ -4,6 +4,7 @@ summary: No implementation line exists before a test that fails for the right re
 color: green
 enter-when: tdd|test-driven|test driven|test first|test-first|write a failing test|write the test first|write tests first
 exit-when: manual
+no-code-without-red: true
 steps: cases, reduce, direction, red?@test-fail, green@test, refactor
 loops: refactor>red
 ---
@@ -102,19 +103,30 @@ The failure message is part of the test. A stranger reading only that line shoul
 | "The tests pass" | "It failed on the assertion with this message, then passed" |
 | Refactoring and new behaviour ride in together | Refactoring happens green, and new behaviour needs a new red |
 
-## Nothing enforces this
+## A hook enforces this
 
-A hook called `no-code-without-red` was designed for this mode. It would have refused an edit to an implementation file until a test had been observed failing in the same turn. It is deliberately not in v1.
+The `no-code-without-red` flag in the front matter above arms a guard, and the guard refuses the edit rather than reminding you about it. Writing the implementation first is not discouraged here. It is denied.
 
-So this mode ships as a contract with nothing behind it, resting on being followed rather than on a hook.
+What the guard watches is narrow and worth knowing exactly.
 
-Be concrete about what that costs. Nothing stops you writing the implementation first and backfilling a test that passes immediately. Nothing catches a green that came from an assertion pinning nothing. The failure here is silent, which is exactly the failure a hook would have caught.
+| It judges | It never judges |
+|---|---|
+| A file whose extension carries behaviour, in a directory that is not a test one | Markdown, JSON, YAML, CSS, fixtures, anything the rule was never about |
+| A file whose name is not test shaped | A test file, wherever it lives, so the test is always writable |
 
-The honest compensation is narration. Say which lap you are on, quote the red output, and name the case the lap covers. It is weaker than a mechanism and it is what exists today.
+It opens on one condition: a suite the recorder watched exit non-zero, with no passing run recorded after it. That is the red the mode already asks for, read off the run rather than off a claim. A green closes the lap, and the next implementation edit waits for a new red.
+
+Three things follow, and each is deliberate.
+
+- **The guard cannot see why a run failed.** An import error exits non-zero and opens the gate, so the sentence below about what red means is still yours to keep. The mechanism stops the common failure, which is skipping the test entirely; it does not certify the assertion fired.
+- **The test file is never refused.** You can always write, fix and rerun the test, which is the only way to reach a red in the first place.
+- **It can be switched off.** `"guards": "off"` in `~/.claude/mode/config.json` disarms every guard at once, and `/mode off` ends the mode. Neither is a loophole to reach for mid lap. Both exist so a rule that is wrong for this repo can be dropped out loud rather than worked around.
+
+`mode why` prints whether the gate is open right now and what would open it.
 
 ## Standing reminder
 
 - No implementation line before a test you watched fail for the right reason.
 - Red is the assertion firing. An import error or a typo is a broken test, not a red one.
 - Enumerate the cases, reduce to the minimum set, pick a direction and say which.
-- No hook enforces this. Say which lap you are on and quote the red output.
+- A guard refuses the edit while no red stands. Say which lap you are on, and quote the red.

@@ -1,5 +1,5 @@
 {
-  "description": "Holds the session's mode and style, injects contracts and ground rules, gates dispatch on an approval, and fences the ground rules with guards a config switch can disarm",
+  "description": "Holds the session's mode and style, adopts a pinned pair from the working directory, injects contracts and ground rules, gates dispatch on an approval and implementation on a standing red, and fences the ground rules with guards a config switch can disarm",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -83,6 +83,15 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/shell-write-guard.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/red-guard.py\""
           }
         ]
       }
