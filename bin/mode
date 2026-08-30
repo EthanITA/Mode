@@ -12,10 +12,19 @@ from pathlib import Path
 AUTO = "auto"
 OFF = "off"
 AXES = ("mode", "style")
-BOOLEANS = ("enter-never", "no-dispatch-without-approval", "no-implement")
+BOOLEANS = ("enter-never", "no-dispatch-without-approval", "no-implement", "no-code-without-red")
 FALSEY = {"false", "no", "off", "n", "0"}
 FOLDER = {"mode": "modes", "style": "styles"}
 STANDING = "standing reminder"
+# Committed beside the code, so a repo hands every clone of it the same pair with nobody typing one.
+SHARED = ".mode"
+PINS = "pins.tsv"
+# The pair a red-first pipeline swings on. Whichever landed last is where the lap stands.
+RED, GREEN = "test-fail", "test"
+# A gate hook is always on; a guard under hooks/guards/ answers to the config switch.
+GATES = {"no-dispatch-without-approval": ("spawning a teammate", False),
+         "no-code-without-red": ("an implementation edit", True)}
+MARK = {"chosen": "~", "pinned": "="}
 # A hook repeats this every turn, so each axis is capped and the pair still fits in eight lines.
 STANDING_LINES = 4
 # One colour per mode, so a ninth mode needed a ninth name rather than a repeated chip.
@@ -125,13 +134,34 @@ def held(axis: str, sid: str | None) -> str:
     return read_state(state_path(sid, f".{axis}"))
 
 
-def is_chosen(axis: str, sid: str | None) -> bool:
+def marked(axis: str, sid: str | None, kind: str) -> bool:
     name = held(axis, sid)
-    return bool(name) and read_state(state_path(sid, f".{axis}.chosen")) == name
+    return bool(name) and read_state(state_path(sid, f".{axis}.{kind}")) == name
+
+
+def is_chosen(axis: str, sid: str | None) -> bool:
+    return marked(axis, sid, "chosen")
+
+
+def source_of(axis: str, sid: str | None) -> str:
+    """How the slot came to hold what it holds, which is the field the chip's third column carries."""
+    for kind in ("chosen", "pinned"):
+        if marked(axis, sid, kind):
+            return kind
+    return ""
+
+
+def settled(axis: str, sid: str | None) -> Path | None:
+    """Set once this axis has been decided in this conversation, however it was decided.
+
+    A pin fills only an axis nobody has spoken for yet, so `off` has to leave a trace: without one
+    the next prompt would read the empty slot as untouched and pin it straight back."""
+    return state_path(sid, f".{axis}.settled")
 
 
 def drop_slot(axis: str, sid: str | None):
-    for suffix in (f".{axis}", f".{axis}.chosen", f".{axis}.announced", f".{axis}.done"):
+    for suffix in (f".{axis}", f".{axis}.chosen", f".{axis}.pinned", f".{axis}.announced",
+                   f".{axis}.done"):
         p = state_path(sid, suffix)
         if p:
             p.unlink(missing_ok=True)
@@ -165,13 +195,29 @@ def approved_slug(sid: str | None, any_mode: bool = False) -> str:
     return ""
 
 
-def declared(axis: str, sid: str | None) -> set[str]:
+def ledger(axis: str, sid: str | None) -> list[str]:
+    """Every reason recorded under the held contract, in the order it landed.
+
+    Order is the whole point for a pair that cancels each other out, such as a failing run and the
+    pass that closes it, where the set says both happened and only the sequence says which stands."""
     f = state_path(sid, f".{axis}.done")
     if not f or not f.is_file():
-        return set()
+        return []
     name = held(axis, sid)
     lines = f.read_text(errors="replace").splitlines()
-    return {r.lower() for r in (under(name, l) for l in lines if l.strip()) if r}
+    return [r.lower() for r in (under(name, l) for l in lines if l.strip()) if r]
+
+
+def declared(axis: str, sid: str | None) -> set[str]:
+    return set(ledger(axis, sid))
+
+
+def red_standing(sid: str | None) -> bool:
+    """A watched failure with no pass recorded after it, which is what a red-first gate opens on."""
+    for reason in reversed(ledger("mode", sid)):
+        if reason in (RED, GREEN):
+            return reason == RED
+    return False
 
 
 # Observed reasons read state that already exists; every other reason waits for `done`.
@@ -270,25 +316,91 @@ def substitute(text: str) -> str:
     return text.replace(USER_TOKEN, DEFAULT_USER)
 
 
+# --------------------------------------------------------------------- pins
+
+def pins_file() -> Path:
+    return config_home() / PINS
+
+
+def read_pins() -> list[tuple[str, str, str]]:
+    f = pins_file()
+    if not f.is_file():
+        return []
+    rows = []
+    for line in f.read_text(errors="replace").splitlines():
+        parts = line.split("\t")
+        if len(parts) == 3 and parts[0].strip():
+            rows.append((parts[0], parts[1], parts[2].strip()))
+    return rows
+
+
+def save_pins(rows: list[tuple[str, str, str]]):
+    f = pins_file()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text("".join("\t".join(r) + "\n" for r in sorted(set(rows))))
+
+
+def where(path: str | None) -> Path:
+    # A directory that no longer exists still has to answer, since a pin lookup runs on every start.
+    try:
+        return Path(path).resolve() if path else Path.cwd()
+    except OSError:
+        return Path.home()
+
+
+def shared_pin(folder: Path, axis: str) -> str:
+    try:
+        text = (folder / SHARED).read_text(errors="replace")
+    except OSError:
+        return ""
+    for line in text.splitlines():
+        key, sep, value = line.partition(":")
+        if sep and key.strip().lower() == axis:
+            return unquote(value.split("#")[0]).strip()
+    return ""
+
+
+def pin_for(axis: str, start: Path) -> tuple[str, str, Path | None]:
+    """The name pinned nearest this directory, which layer wrote it, and the folder it sat in.
+
+    Personal beats shared in the same folder, because one is this machine's answer and the other is
+    the repo's. A name no contract here answers to is stepped over rather than held, so a repo
+    pinning somebody else's contract costs a stranger nothing."""
+    mine = {(row[0], row[1]): row[2] for row in read_pins()}
+    for folder in [start] + list(start.parents):
+        for name, layer in ((mine.get((str(folder), axis), ""), "personal"),
+                            (shared_pin(folder, axis), "shared")):
+            if not name:
+                continue
+            if name == OFF:
+                return "", OFF, folder
+            if name != AUTO and name not in names(axis):
+                continue
+            return name, layer, folder
+    return "", "", None
+
+
 # ----------------------------------------------------------------- commands
 
 def cmd_set(args):
     axis = args.axis
     require(state_path(args.session, f".{axis}"))
+    # auto is a slot value, not a contract, so it has no file to validate against.
+    if args.name not in (AUTO, OFF) and args.name not in names(axis):
+        die(f"no {axis} named '{args.name}'. {available(axis)}", 2)
+    # Recorded after the name is judged, so a typo is never mistaken for a decision, and before the
+    # off branch returns, so emptying a slot is itself a decision that a pin has to respect.
+    write_state(require(settled(axis, args.session)), args.name)
     if args.name == OFF:
         drop_slot(axis, args.session)
         print(f"{axis} set to off")
         return
-    # auto is a slot value, not a contract, so it has no file to validate against.
-    if args.name != AUTO and args.name not in names(axis):
-        die(f"no {axis} named '{args.name}'. {available(axis)}", 2)
     write_state(state_path(args.session, f".{axis}"), args.name)
-    mark = state_path(args.session, f".{axis}.chosen")
-    # Typing the name is the normal case, so an unflagged set is what drops the mark.
+    # Typing the name is the normal case, so an unflagged set is what leaves the slot unmarked.
+    for kind in ("chosen", "pinned"):
+        state_path(args.session, f".{axis}.{kind}").unlink(missing_ok=True)
     if args.chosen:
-        write_state(mark, args.name)
-    else:
-        mark.unlink(missing_ok=True)
+        write_state(state_path(args.session, f".{axis}.chosen"), args.name)
     print(f"{axis} set to {args.name}")
 
 
@@ -298,7 +410,7 @@ def cmd_get(args):
     if args.chip:
         # Always three fields: a caller splitting on tabs cannot tell a missing one from an empty one.
         color = COLORS.get(meta_of(axis, name).get("color", ""), "") if name else ""
-        print(f"{name}\t{color}\t{'chosen' if is_chosen(axis, args.session) else ''}")
+        print(f"{name}\t{color}\t{source_of(axis, args.session)}")
         return
     if name:
         print(name)
@@ -309,7 +421,7 @@ def cmd_chips(args):
     for axis in AXES:
         name = held(axis, args.session)
         if name:
-            label = ("~" if is_chosen(axis, args.session) else "") + name
+            label = MARK.get(source_of(axis, args.session), "") + name
             color = COLORS.get(meta_of(axis, name).get("color", ""), "")
             label = f"\x1b[{color}m{label}{RESET}" if color else label
         else:
@@ -626,6 +738,72 @@ def cmd_exit(args):
     print(f"{axis} set to {back}")
 
 
+def cmd_pin(args):
+    """Writes the personal layer. With no name it answers what this directory resolves to."""
+    axis, folder = args.axis, where(args.path)
+    if not args.name and not args.forget:
+        name, layer, _ = pin_for(axis, folder)
+        if not name:
+            raise SystemExit(1)
+        print(name)
+        return
+    if args.name and args.name != OFF and args.name != AUTO and args.name not in names(axis):
+        die(f"no {axis} named '{args.name}'. {available(axis)}", 2)
+    rows = [r for r in read_pins() if (r[0], r[1]) != (str(folder), axis)]
+    if args.forget:
+        save_pins(rows)
+        print(f"{axis} pin forgotten for {folder}")
+        return
+    # off is stored rather than deleted, since a personal no is the only way to mask a repo's own file.
+    rows.append((str(folder), axis, args.name))
+    save_pins(rows)
+    print(f"{axis} pinned to {args.name} for {folder}")
+
+
+def cmd_pins(args):
+    """Where a fresh conversation started here would begin, and which file decided each slot."""
+    folder = where(args.path)
+    print(f"pins for {folder}")
+    for axis in AXES:
+        name, layer, matched = pin_for(axis, folder)
+        if layer == OFF:
+            print(f"  {axis:<6} {OFF:<11} pinned off at {matched}")
+        elif name:
+            origin = pins_file() if layer == "personal" else matched / SHARED
+            print(f"  {axis:<6} {name:<11} {layer}, from {origin}")
+        else:
+            print(f"  {axis:<6} {'-':<11} nothing pinned at or above this directory")
+
+
+def cmd_adopt(args):
+    """Fills an untouched slot from the nearest pin, which is how a pin outlives a conversation.
+
+    An axis anyone has already spoken for is never adopted into, so a pin stays a default that a
+    typed name beats rather than an override that fights whoever typed it."""
+    folder, filled = where(args.path), []
+    for axis in AXES:
+        mark = settled(axis, args.session)
+        if not mark or mark.is_file() or held(axis, args.session):
+            continue
+        name, layer, _ = pin_for(axis, folder)
+        if not name:
+            continue
+        write_state(state_path(args.session, f".{axis}"), name)
+        write_state(state_path(args.session, f".{axis}.pinned"), name)
+        write_state(mark, name)
+        filled.append(f"{axis} adopted {name} from a {layer} pin")
+    if not filled:
+        raise SystemExit(1)
+    print("\n".join(filled))
+
+
+def cmd_red(args):
+    """Whether a watched failure is standing, which is the one thing a red-first gate turns on."""
+    if not red_standing(args.session):
+        raise SystemExit(1)
+    print(RED)
+
+
 def cmd_clear(args):
     if args.announced:
         for axis in AXES:
@@ -641,6 +819,125 @@ def cmd_clear(args):
         return
     for axis in AXES:
         drop_slot(axis, args.session)
+        # The settled mark goes too, so a cleared conversation is one a pin may fill again.
+        p = settled(axis, args.session)
+        if p:
+            p.unlink(missing_ok=True)
+
+
+def guards_armed() -> bool:
+    """The one switch that disarms every guard under hooks/guards/, read the way those guards read it."""
+    try:
+        data = json.loads((config_home() / "config.json").read_text(errors="replace"))
+        value = str(data.get("guards", "")).strip().strip("\"'").lower()
+    except (OSError, ValueError, AttributeError):
+        return True
+    return not value or value not in FALSEY
+
+
+def rule_state(sid: str | None) -> tuple[list[str], list[tuple[str, str]]]:
+    """Which ground rules this conversation has already been told, and which are still waiting."""
+    picked: dict[str, Path] = {}
+    for d in rules_dirs():
+        if d.is_dir():
+            for p in d.glob("*.md"):
+                picked[p.stem] = p
+    base = state_path(sid, ".rules")
+    base_told = bool(base and base.is_file())
+    told, waiting = [], []
+    for stem in sorted(picked):
+        meta, body = split_front_matter(picked[stem].read_text(errors="replace"))
+        if not body.strip():
+            continue
+        when = alternatives(meta, "when")
+        if not when:
+            (told if base_told else waiting).append((stem, ""))
+            continue
+        marker = state_path(sid, f".rule-{stem}")
+        # Three alternatives and a count, since a scoped rule's pattern runs to a dozen phrases.
+        shown = " | ".join(when[:3]) + (f" and {len(when) - 3} more" if len(when) > 3 else "")
+        (told if marker and marker.is_file() else waiting).append((stem, shown))
+    return [stem for stem, _ in told], waiting
+
+
+def slot_lines(sid: str | None, folder: Path) -> list[str]:
+    out = []
+    for axis in AXES:
+        name = held(axis, sid)
+        if not name:
+            out.append(f"  {axis:<6} {OFF:<11} nothing is asked of this axis")
+            continue
+        if name == AUTO:
+            offered = [n for n in names(axis)
+                       if not never_auto(meta_of(axis, n))
+                       and alternatives(meta_of(axis, n), "enter-when")]
+            out.append(f"  {axis:<6} {AUTO:<11} empty, with {len(offered)} contracts on offer to the chooser")
+            continue
+        source = source_of(axis, sid) or "typed"
+        out.append(f"  {axis:<6} {name:<11} {source}, {summary(axis, name) or 'no summary on file'}")
+        if source == "pinned":
+            _, layer, matched = pin_for(axis, folder)
+            origin = pins_file() if layer == "personal" else (matched / SHARED if matched else "?")
+            out.append(f"  {'':<6} {'':<11} from {origin}")
+    return out
+
+
+def gate_lines(sid: str | None) -> list[str]:
+    name = held("mode", sid)
+    meta = meta_of("mode", name) if name and name != AUTO else {}
+    armed = guards_armed()
+    out = []
+    for key, (what, switchable) in sorted(GATES.items()):
+        if not truthy(meta, key):
+            out.append(f"  {key:<30} open, not declared by {name or 'an empty mode slot'}")
+            continue
+        if switchable and not armed:
+            out.append(f"  {key:<30} open, declared but disarmed by guards: off in config.json")
+            continue
+        if key == "no-dispatch-without-approval":
+            slug = approved_slug(sid)
+            said = (f"open, {slug} is approved" if slug
+                    else f"SHUT, nothing is approved under {name}, so {what} is refused")
+        else:
+            said = ("open, a red is standing" if red_standing(sid)
+                    else f"SHUT, no red is standing, so {what} is refused")
+        out.append(f"  {key:<30} {said}")
+    return out
+
+
+def next_lines(sid: str | None) -> list[str]:
+    out = []
+    for axis in AXES:
+        name = held(axis, sid)
+        if not name or name == AUTO:
+            continue
+        marker = state_path(sid, f".{axis}.announced")
+        if marker and read_state(marker) == name:
+            block = standing_block(read_contract(axis, name)[1]).splitlines()
+            out.append(f"  {axis:<6} the standing reminder of {name}, "
+                       f"{min(len(block), STANDING_LINES)} lines")
+        else:
+            out.append(f"  {axis:<6} the whole {name} contract, once, and its reminder after that")
+    return out or ["  nothing, because neither slot holds a contract"]
+
+
+def cmd_why(args):
+    """Everything steering this turn on one page.
+
+    Every other surface here is either a chip too small to explain itself or text injected where
+    nobody can see it, so without this the only way to know what is in force is to ask and be told."""
+    sid_, folder = args.session, where(args.path)
+    out = ["What is steering this conversation", "", "Slots"] + slot_lines(sid_, folder)
+    place = position("mode", sid_)
+    if place:
+        out += ["", "Pipeline"] + ["  " + line for line in place.splitlines()]
+    out += ["", "Gates"] + gate_lines(sid_)
+    told, waiting = rule_state(sid_)
+    out += ["", "Ground rules", "  told     " + (", ".join(told) or "none yet")]
+    for stem, when in waiting:
+        out.append(f"  waiting  {stem}" + (f", until a prompt matches {when}" if when else ""))
+    out += ["", "The next prompt carries"] + next_lines(sid_)
+    print(substitute("\n".join(out)))
 
 
 def check_flags():
@@ -751,11 +1048,15 @@ def main():
     # SUPPRESS so a --session given higher up survives the subparser's own default.
     common.add_argument("--session", metavar="ID", default=argparse.SUPPRESS,
                         help="the conversation to act on (defaults to the current one)")
+    common.add_argument("--path", metavar="DIR", default=argparse.SUPPRESS,
+                        help="the directory pins are resolved from (defaults to the current one)")
 
     ap = argparse.ArgumentParser(
         prog="mode", description="Track the mode and the style a conversation is working in.")
     ap.add_argument("--session", metavar="ID", default=None,
                     help="the conversation to act on (defaults to the current one)")
+    ap.add_argument("--path", metavar="DIR", default=None,
+                    help="the directory pins are resolved from (defaults to the current one)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     def add(name, fn, helptext):
@@ -790,10 +1091,24 @@ def main():
         p.add_argument("--tsv", action="store_true",
                        help="one line per step as kind, label, gate and state, then one per loop")
 
+        p = slot_add("pin", cmd_pin, "hold a contract for this directory in every later conversation")
+        p.add_argument("name", nargs="?",
+                       help="the contract to pin, off to mask a repo's own .mode, or nothing to read it back")
+        p.add_argument("--forget", action="store_true",
+                       help="drop the personal pin here, so a repo's own .mode shows through again")
+
         slot_add("expired", cmd_expired, "print why the held contract is over, or exit 1 while it stands")
         slot_add("exit", cmd_exit, "end the held contract: back to auto when chosen, off when typed")
 
     add("chips", cmd_chips, "one chip per axis with colour, ready to paste into a status line")
+
+    add("pins", cmd_pins, "what a fresh conversation here would start in, and which file decided it")
+
+    add("adopt", cmd_adopt, "fill an untouched slot from the nearest pin, or exit 1 when none applies")
+
+    add("red", cmd_red, "print test-fail while a watched failure stands, or exit 1 once a pass closes it")
+
+    add("why", cmd_why, "slots, pipeline, gates, ground rules and what the next prompt will carry")
 
     p = add("choose", cmd_choose, "the contract a message asks for, while that slot is on auto")
     p.add_argument("--axis", required=True, choices=AXES)
