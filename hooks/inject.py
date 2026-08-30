@@ -21,8 +21,9 @@ SET = "Set. The status line catches up when the conversation continues."
 COMMAND = re.compile(r"^/(\S+)((?:[ \t]+\S+)*)")
 # Two commands in one prompt stay two: read as one, the later became a bogus argument and vanished.
 CHUNK = re.compile(r"/\S+(?:[ \t]+(?!/)\S+)*")
-VERBS = ("mode", "style", "approve")
+VERBS = ("mode", "style", "approve", "why")
 PREFIX = "mode"
+WHY = "why"
 # Not contract names, so they act on the axis of the command they were typed on.
 SLOT_WORDS = ("off", "auto")
 # A plugin command leads with <command-message>, so anchoring on <command-name> missed it entirely.
@@ -60,11 +61,12 @@ def parse(message):
     return (verb or PREFIX), parts[(1 if verb else 0):], found.group(2).split()
 
 
-def obey(message, session):
+def obey(message, session, cwd):
     """The switch itself, so a slot changes because someone typed it rather than because the model felt
     like it. Answers which axes were set by hand, since the chooser must never overrule one, plus what
-    the message still asks for once the switch is taken out of it, and which axes were named bare."""
-    done, bare, spare = set(), [], []
+    the message still asks for once the switch is taken out of it, which axes were named bare, and
+    any report the message asked to be shown."""
+    done, bare, spare, shown = set(), [], [], []
     end = 0
     for found in CHUNK.finditer(message):
         spare.append(message[end:found.start()])
@@ -80,11 +82,19 @@ def obey(message, session):
                 ask("approve", (named + words)[0], *sid(session))
             spare.extend((named + words)[1:])
             continue
+        if verb == WHY:
+            shown.append(ask("why", "--path", cwd, *sid(session)) or "")
+            spare.extend(named + words)
+            continue
         if not named and not words:
             bare.append(verb if verb in AXES else PREFIX)
             continue
 
         for index, arg in enumerate(named + words):
+            # /mode why is the same question as /why, so the word answers wherever it is typed.
+            if arg == WHY and not ask("axis", arg):
+                shown.append(ask("why", "--path", cwd, *sid(session)) or "")
+                continue
             owner = ask("axis", arg)
             # So /mode maintainer reaches the style slot instead of failing quietly against the mode one.
             axis = verb if arg in SLOT_WORDS else (owner or verb)
@@ -99,7 +109,7 @@ def obey(message, session):
             if not known and index >= len(named):
                 spare.append(arg)
     spare.append(message[end:])
-    return done, bare, " ".join(spare).strip()
+    return done, bare, " ".join(spare).strip(), [block for block in shown if block]
 
 
 def expire(axis, session):
@@ -141,20 +151,24 @@ def enter(axis, message, session):
 try:
     data = payload()
     session = data.get("session_id") or ""
+    cwd = data.get("cwd") or os.getcwd()
     message = typed(data)
+
+    # Before anything reads a slot, and every prompt: adopt walks past an axis already decided.
+    run("adopt", "--path", cwd, *sid(session))
 
     # Judged before the switch, so an exit condition retires the contract the turn began in.
     blocks = [line for line in (expire(axis, session) for axis in AXES) if line]
 
-    handled, bare, spare = obey(message, session)
+    handled, bare, spare, shown = obey(message, session, cwd)
 
     # Leaving rules and announce uncalled is the point: the contract still lands on the first real ask.
-    if not blocks and not spare and (handled or bare):
+    if not blocks and not spare and (handled or bare or shown):
         print(
             json.dumps(
                 {
                     "decision": "block",
-                    "reason": settled(bare, session),
+                    "reason": "\n\n".join(shown) if shown else settled(bare, session),
                     "hookSpecificOutput": {
                         "hookEventName": "UserPromptSubmit",
                         "suppressOriginalPrompt": True,
@@ -172,6 +186,9 @@ try:
     told = ask("rules", "--message", message, *sid(session))
     if told:
         blocks.insert(0, told)
+
+    # Asked alongside real words rather than alone, so the report rides the turn instead of ending it.
+    blocks.extend(shown)
 
     # One call, because bin/mode owns whether this prompt gets the whole contract or the reminder.
     announced = ask("announce", *sid(session))

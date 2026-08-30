@@ -21,8 +21,13 @@ try:
     from _shared import ROOT, payload, run, sid
 
     remember_root(ROOT)
+    data = payload()
+    session = data.get("session_id") or ""
     # A resume or a compact drops the injected contract while the marker still says it was announced.
-    run("clear", "--announced", *sid(payload().get("session_id") or ""))
+    run("clear", "--announced", *sid(session))
+    # The first chance a pin gets. adopt fills only an untouched slot, so a resumed conversation
+    # that already holds a contract walks past this untouched.
+    run("adopt", "--path", data.get("cwd") or os.getcwd(), *sid(session))
 except Exception:
     pass
 
