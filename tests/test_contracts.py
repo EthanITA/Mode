@@ -299,18 +299,36 @@ ok("no style declares a pipeline",
    "a style is a texture and has no order of operations, so a pipeline on one draws a progress "
    "bar through something that never progresses")
 
-section("tdd ships without the gate behind it")
+section("tdd, and the guard now standing behind it")
 tdd = loaded["mode"].get("tdd")
 if tdd is None:
-    ok("modes/tdd.md exists", False, "the spec fixes five modes and names tdd as one of them")
+    ok("modes/tdd.md exists", False, "the spec fixes nine modes and names tdd as one of them")
 else:
+    ok("tdd declares no-code-without-red", tdd[0].get("no-code-without-red") == "true",
+       "declared as %r. The guard reads the flag off the front matter, so without it the mode is "
+       "back to resting on being followed." % tdd[0].get("no-code-without-red"))
+    guard = os.path.join(PLUGIN, "hooks", "guards", "red-guard.py")
+    ok("and the guard the flag arms actually ships", os.path.isfile(guard),
+       "%s is missing, so the flag is a declaration again and the contract below lies about it."
+       % guard)
     text = tdd[2].lower()
-    said = any(p in text for p in ("no hook", "not enforced", "no gate", "nothing enforces",
-                                   "not yet enforced", "no enforcement", "does not enforce",
-                                   "v2", "on your honour", "on your own"))
-    ok("tdd says out loud that nothing enforces it", said,
-       "no-code-without-red went to v2, so this contract has no hook behind it. Without the file "
-       "saying so, a reader believes a gate is watching them and it is not.")
+    stale = [p for p in ("nothing enforces", "no hook enforces", "not in v1", "went to v2")
+             if p in text]
+    ok("and the contract no longer says nothing enforces it", not stale,
+       "%r. A reader told the rule is unwatched writes the implementation first, which is now "
+       "refused rather than merely discouraged." % stale)
+    ok("the contract names what would open the gate", "guards" in text and "config.json" in text,
+       "a guard that can be switched off has to say so in the file it enforces, or being denied "
+       "reads as the tool being broken")
+
+red = sorted(s for s, (m, _, _) in loaded["mode"].items()
+             if m.get("no-code-without-red") == "true")
+ok("no-code-without-red is on tdd and nothing else", red == ["tdd"],
+   "%r. On a mode that never runs a suite this deadlocks: no red can arrive, so no implementation "
+   "file can be edited at all." % red)
+ok("and no style declares it",
+   not [s for s, (m, _, _) in loaded["style"].items() if m.get("no-code-without-red")],
+   "a style is a register and holds no gate, so the flag would read as enforcement that never runs")
 
 section("routing, through the real chooser against the real contracts")
 

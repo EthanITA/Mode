@@ -348,6 +348,30 @@ with tempfile.TemporaryDirectory() as tmp:
            "contract is delivered to a turn that never runs and only the reminder survives."
            % (len(after), len(later)))
 
+        section("/why is answered in the hook, at no model cost")
+        mode("h-why", "set", "tdd")
+        for label, typed in (("the bare command", "/why"),
+                             ("the namespaced shortcut", "/mode:why"),
+                             ("the word on either axis command", "/mode why"),
+                             ("and on the style command", "/style why")):
+            reason, suppressed = ended(fire("inject.py", prompt_payload("h-why", typed), config))
+            ok("%s: %s" % (label, typed),
+               "What is steering" in reason and "tdd" in reason and suppressed,
+               "reason=%r suppressed=%s. Every spelling has to reach the same report, and the turn "
+               "has to end in the hook or asking what is running costs a round trip."
+               % (reason[:120], suppressed))
+
+        p = fire("inject.py", prompt_payload("h-why2", "/why then fix the parser"), config)
+        reason, _ = ended(p)
+        ok("asked alongside a real ask it rides the turn instead of ending it",
+           not reason and "What is steering" in context(p),
+           "reason=%r context=%r. The words after it are the ask, so blocking would throw them away."
+           % (reason[:80], context(p)[:120]))
+
+        ok("and asking why never switches a slot", out(mode("h-why2", "get")) == "",
+           "mode is %r. why is a question, and a question that moved a slot would be a switch."
+           % out(mode("h-why2", "get")))
+
         section("inject.py never breaks a turn")
         for label, payload in (("junk on stdin", "not json"), ("empty stdin", ""),
                                ("valid JSON with nothing in it", "{}")):
@@ -507,6 +531,118 @@ with tempfile.TemporaryDirectory() as tmp:
         ok("the two readers never disagree with each other", not disagreed,
            "%r. One contract file behaving two ways depending on which layer reads it is the "
            "failure this whole section exists to catch." % disagreed)
+
+    # -------------------------------------------------------------- red-guard
+
+    RED_GUARD = os.path.join(HOOKS, "guards", "red-guard.py")
+
+    def write_payload(session, path, tool="Edit"):
+        return {"session_id": session, "hook_event_name": "PreToolUse", "tool_name": tool,
+                "cwd": PLUGIN, "tool_input": {"file_path": path}}
+
+    def red_fire(session, path, tool="Edit"):
+        return subprocess.run([sys.executable, RED_GUARD],
+                              input=json.dumps(write_payload(session, path, tool)),
+                              capture_output=True, text=True, env=hook_env(PLUGIN, config))
+
+    if os.path.exists(RED_GUARD):
+        section("red-guard.py, PreToolUse on a write")
+        mode("h-red", "set", "tdd")
+        p = red_fire("h-red", "/repo/src/parser.ts")
+        verdict, why = decision(p)
+        ok("a mode carrying no-code-without-red denies an implementation edit with no red standing",
+           verdict == "deny",
+           "verdict=%r out=%r. This is the gate the contract said went to v2, so if it permits, tdd "
+           "is back to resting on being followed." % (verdict, p.stdout[:200]))
+        ok("and the denial names the mode, the file, and what would open it",
+           "tdd" in why and "parser.ts" in why and "fail" in why.lower(),
+           "%r. Being denied with no route out reads as the tool being broken." % why[:300])
+
+        for label, path in (("a test folder", "/repo/tests/parser.ts"),
+                            ("a test-named file", "/repo/src/parser.test.ts"),
+                            ("a python test", "/repo/src/test_parser.py"),
+                            ("a spec", "/repo/src/parser.spec.js"),
+                            ("a conftest", "/repo/conftest.py"),
+                            ("markdown", "/repo/README.md"),
+                            ("json", "/repo/package.json"),
+                            ("a fixture folder", "/repo/fixtures/thing.ts")):
+            ok("%s is never refused" % label, not decision(red_fire("h-red", path))[0],
+               "%r denied %s. The test and everything around it has to stay writable, or there is "
+               "no way to reach a red at all." % (path, decision(red_fire("h-red", path))[1][:160]))
+
+        live(config, "mode", "done", "test-fail", "--session", "h-red")
+        p = red_fire("h-red", "/repo/src/parser.ts")
+        ok("a watched failure opens it",
+           p.returncode == 0 and not p.stdout.strip(),
+           "rc=%s denied with %r. A red that does not open the gate deadlocks the mode."
+           % (p.returncode, decision(p)[1][:200]))
+
+        live(config, "mode", "done", "test", "--session", "h-red")
+        ok("and a pass after it shuts the gate again for the next lap",
+           decision(red_fire("h-red", "/repo/src/parser.ts"))[0] == "deny",
+           "one red would otherwise license every implementation edit for the rest of the session")
+
+        mode("h-red-free", "set", "debug")
+        ok("a mode that does not declare the flag writes freely",
+           not decision(red_fire("h-red-free", "/repo/src/parser.ts"))[0],
+           "denied with %r" % decision(red_fire("h-red-free", "/repo/src/parser.ts"))[1][:200])
+
+        ok("a tool that is not a write is never judged",
+           not decision(red_fire("h-red", "/repo/src/parser.ts", tool="Bash"))[0],
+           "the matcher already narrows this, but a guard has to judge its own payload too")
+
+        write(os.path.join(config, "mode", "config.json"), '{"guards": "off"}\n')
+        p = red_fire("h-red", "/repo/src/parser.ts")
+        ok("and the one switch that disarms every guard disarms this one",
+           p.returncode == 0 and not p.stdout.strip(),
+           "rc=%s out=%r. A guard outside the switch is one nobody can turn off."
+           % (p.returncode, p.stdout[:200]))
+        os.remove(os.path.join(config, "mode", "config.json"))
+
+        source = open(RED_GUARD).read()
+        wired = [n for n in ("copilot", "autopilot", "debug", "studio", "tdd") if n in source]
+        ok("no contract name is wired into the guard", not wired,
+           "%r. The flag decides, so a name here means somebody else's mode cannot use the gate."
+           % wired)
+
+    # -------------------------------------------------------------- pins
+
+    if present["resume.py"] and present["inject.py"]:
+        section("a pin reaches a conversation through the hooks")
+        pinned = os.path.join(tmp, "pinned-repo", "src")
+        write(os.path.join(tmp, "pinned-repo", ".mode"), "mode: tester\nstyle: native\n")
+        os.makedirs(pinned, exist_ok=True)
+        fire("resume.py", {"session_id": "h-pin", "hook_event_name": "SessionStart",
+                           "source": "startup", "cwd": pinned}, config)
+        ok("a session starting in a pinned tree adopts both slots",
+           (out(mode("h-pin", "get")), out(style("h-pin", "get"))) == ("tester", "native"),
+           "mode=%r style=%r. The committed file is the whole point: it has to reach a session "
+           "with nobody typing anything."
+           % (out(mode("h-pin", "get")), out(style("h-pin", "get"))))
+
+        body = prompt_payload("h-pin2", "carry on")
+        body["cwd"] = pinned
+        fire("inject.py", body, config)
+        ok("and a prompt adopts it too, for a session whose start hook never ran",
+           out(mode("h-pin2", "get")) == "tester",
+           "mode is %r. A plugin installed mid-session, or a client that fires no SessionStart, "
+           "would otherwise never see a pin at all." % out(mode("h-pin2", "get")))
+
+        body = prompt_payload("h-pin3", "/mode debug")
+        body["cwd"] = pinned
+        fire("inject.py", body, config)
+        ok("a switch typed on the first prompt still wins over the pin",
+           out(mode("h-pin3", "get")) == "debug" and out(style("h-pin3", "get")) == "native",
+           "mode=%r style=%r. Adoption runs before the switch, so the typed name has to land last."
+           % (out(mode("h-pin3", "get")), out(style("h-pin3", "get"))))
+
+        body = prompt_payload("h-pin3", "carry on")
+        body["cwd"] = pinned
+        fire("inject.py", body, config)
+        ok("and the pin does not creep back on the next prompt",
+           out(mode("h-pin3", "get")) == "debug",
+           "mode is %r. adopt runs every prompt, so an axis already decided has to be walked past."
+           % out(mode("h-pin3", "get")))
 
     # -------------------------------------------------------------- the exit side
 

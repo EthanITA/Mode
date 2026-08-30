@@ -789,6 +789,227 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("and a cleared conversation has no approval left",
        p.returncode == 1 and not out(p), "rc=%s out=%r" % (p.returncode, p.stdout))
 
+    # ------------------------------------------------------------------ pins
+
+    section("pins, which are what outlives a conversation")
+
+    def tree(*parts):
+        """A directory to resolve pins from. Resolved, since the tool stores what it resolved."""
+        path = os.path.realpath(os.path.join(tmp, "trees", *parts))
+        os.makedirs(path, exist_ok=True)
+        return path
+
+    def pin(axis_name, folder, *args):
+        return run(root, config, axis_name, "pin", *(list(args) + ["--path", folder]))
+
+    def pins(folder):
+        return run(root, config, "pins", "--path", folder).stdout
+
+    plain = tree("plain")
+    text = pins(plain)
+    ok("a directory nothing pins reports both axes empty, exit 0",
+       "mode" in text and "style" in text and text.count("nothing pinned") == 2,
+       "%r. The listing is the only place a pin is visible before it fires, so an unpinned "
+       "directory has to say so rather than print nothing." % text)
+
+    repo = tree("repo")
+    deep = tree("repo", "packages", "api")
+    p = pin("mode", repo, "maker")
+    ok("pinning confirms in one line naming the contract and the directory",
+       p.returncode == 0 and "maker" in p.stdout and repo in p.stdout,
+       "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
+    ok("and a child directory resolves to its parent's pin",
+       out(pin("mode", deep)) == "maker",
+       "%r. A pin that only answered in the exact folder it was written in would miss every "
+       "subdirectory of the repo it was meant for." % out(pin("mode", deep)))
+    ok("while a sibling tree is untouched by it", pin("mode", plain).returncode == 1,
+       "%r. Pins are scoped to a path, so one repo's default must not reach another."
+       % out(pin("mode", plain)))
+
+    write(os.path.join(repo, ".mode"), "mode: shipper\nstyle: formal  # the repo's own default\n")
+    ok("a committed .mode file pins without anybody running the tool",
+       out(pin("style", deep)) == "formal",
+       "%r. The file is the whole point of the shared layer: it travels with the clone."
+       % out(pin("style", deep)))
+    ok("and a personal pin beats the shared file in the same folder",
+       out(pin("mode", deep)) == "maker",
+       "%r. One is this machine's answer and the other is the repo's, so the machine wins or "
+       "nobody can override a checked-in default." % out(pin("mode", deep)))
+    ok("the listing says which layer answered and names the file",
+       "personal" in pins(deep) and ".mode" in pins(deep),
+       "%r. Two layers that look identical in the listing leave nobody able to find the one to "
+       "edit." % pins(deep))
+
+    write(os.path.join(deep, ".mode"), "mode: bugfix\n")
+    ok("the deepest file wins over one further up", out(pin("mode", deep)) == "bugfix",
+       "%r. A package pinning its own contract has to beat the repo root, or a monorepo gets one "
+       "answer for every package in it." % out(pin("mode", deep)))
+    os.remove(os.path.join(deep, ".mode"))
+
+    write(os.path.join(repo, ".mode"), "mode: nosuchmode\nstyle: formal\n")
+    ok("a shared file naming a contract this machine lacks is stepped over, not held",
+       out(pin("style", deep)) == "formal" and out(pin("mode", deep)) == "maker",
+       "mode=%r style=%r. A repo pinning somebody else's contract has to cost a stranger nothing, "
+       "and it must not take the rest of the file down with it."
+       % (out(pin("mode", deep)), out(pin("style", deep))))
+
+    masked = tree("masked")
+    write(os.path.join(masked, ".mode"), "style: formal\n")
+    pin("style", masked, "off")
+    ok("a personal off masks a shared file rather than deleting it",
+       pin("style", masked).returncode == 1 and "off" in pins(masked),
+       "%r. Without a stored no there is no way to opt out of a checked-in default except by "
+       "editing the repo." % pins(masked))
+    pin("style", masked, "--forget")
+    ok("and forgetting the personal pin lets the shared one through again",
+       out(pin("style", masked)) == "formal",
+       "%r. off and forget answer different questions, so collapsing them loses the ability to "
+       "opt out without editing the repo." % out(pin("style", masked)))
+
+    p = pin("mode", repo, "nonesuch")
+    ok("pinning a name with no contract behind it exits 2", p.returncode == 2,
+       "rc=%s out=%r. The same code an unknown name gets on set, since it is the same mistake."
+       % (p.returncode, p.stdout))
+    ok("and auto is pinnable, since a slot may legitimately hold it",
+       pin("style", tree("autopin"), "auto").returncode == 0
+       and out(pin("style", tree("autopin"))) == "auto",
+       "a repo that wants the chooser on by default has no other way to say so")
+
+    section("adopt, which is how a pin reaches a conversation")
+    p = run(root, config, "adopt", "--path", deep, "--session", sid("s-adopt"))
+    ok("adopt fills both untouched slots and says where each came from",
+       p.returncode == 0 and "maker" in p.stdout and "formal" in p.stdout
+       and "personal" in p.stdout and "shared" in p.stdout,
+       "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
+    ok("the adopted mode really is held", out(mode("s-adopt", "get")) == "maker",
+       repr(out(mode("s-adopt", "get"))))
+    ok("and the chip marks it pinned, which is neither typed nor chosen",
+       chip("s-adopt") == ["maker", "34", "pinned"],
+       "%r. Typed, chosen and pinned are three different stories about how a conversation ended "
+       "up in a contract, and the chip is where that story is read." % (chip("s-adopt"),))
+    p = run(root, config, "chips", "--session", sid("s-adopt"))
+    ok("and the rendered chip marks it with an equals rather than the chooser's tilde",
+       "=maker" in p.stdout and "~" not in p.stdout,
+       "%r. Sharing the tilde would make a repo default look like a guess the tool made."
+       % p.stdout)
+
+    p = run(root, config, "adopt", "--path", deep, "--session", sid("s-adopt"))
+    ok("adopting twice in one conversation exits 1 and changes nothing",
+       p.returncode == 1 and out(mode("s-adopt", "get")) == "maker",
+       "rc=%s held=%r. A pin re-adopting every prompt would undo every switch made after it."
+       % (p.returncode, out(mode("s-adopt", "get"))))
+
+    mode("s-typedpin", "set", "lead")
+    run(root, config, "adopt", "--path", deep, "--session", sid("s-typedpin"))
+    ok("a slot somebody typed into is never adopted over",
+       out(mode("s-typedpin", "get")) == "lead" and chip("s-typedpin")[2] == "",
+       "held=%r mark=%r. A pin is a default, so a typed name has to win."
+       % (out(mode("s-typedpin", "get")), chip("s-typedpin")[2]))
+
+    mode("s-offpin", "set", "off")
+    run(root, config, "adopt", "--path", deep, "--session", sid("s-offpin"))
+    ok("and turning a slot off is itself a decision the pin respects",
+       not out(mode("s-offpin", "get")),
+       "held=%r. Otherwise /mode off is undone by the next prompt and the slot cannot be emptied "
+       "at all in a pinned directory." % out(mode("s-offpin", "get")))
+    ok("while the other axis of that conversation still adopted",
+       out(style("s-offpin", "get")) == "formal",
+       "style=%r. The axes are independent, and off on one says nothing about the other."
+       % out(style("s-offpin", "get")))
+
+    mode("s-offpin", "set", "bugfix")
+    ok("a name typed after an adopt drops the pinned mark",
+       chip("s-offpin") == ["bugfix", "33", ""],
+       "%r. A stale mark would read as a repo default long after somebody overrode it."
+       % (chip("s-offpin"),))
+
+    p = run(root, config, "adopt", "--path", plain, "--session", sid("s-nopin"))
+    ok("adopt where nothing is pinned exits 1 and holds nothing",
+       p.returncode == 1 and not out(mode("s-nopin", "get")),
+       "rc=%s held=%r" % (p.returncode, out(mode("s-nopin", "get"))))
+
+    # ------------------------------------------------------------------ red
+
+    section("red, where order decides and the set cannot")
+    mode("s-red", "set", "maker")
+    p = call("s-red", "red")
+    ok("nothing recorded is not a red, exit 1", p.returncode == 1 and not out(p),
+       "rc=%s out=%r" % (p.returncode, p.stdout))
+
+    mode("s-red", "done", "test-fail")
+    p = call("s-red", "red")
+    ok("a watched failure stands, exit 0", p.returncode == 0 and out(p) == "test-fail",
+       "rc=%s out=%r" % (p.returncode, p.stdout))
+
+    mode("s-red", "done", "test")
+    p = call("s-red", "red")
+    ok("a pass after it closes the lap, exit 1", p.returncode == 1 and not out(p),
+       "rc=%s out=%r. Both events are on the ledger, so reading it as a set says a failure "
+       "happened forever and the gate never shuts again." % (p.returncode, p.stdout))
+
+    mode("s-red", "done", "test-fail")
+    p = call("s-red", "red")
+    ok("and the next failure opens it again", p.returncode == 0,
+       "rc=%s. One lap per red is the whole cycle." % p.returncode)
+
+    mode("s-red", "done", "commit")
+    p = call("s-red", "red")
+    ok("an unrelated event between them changes nothing",
+       p.returncode == 0, "rc=%s. Only the two run events move this." % p.returncode)
+
+    mode("s-red", "set", "shipper")
+    p = call("s-red", "red")
+    ok("a red recorded under one mode is invisible under another",
+       p.returncode == 1,
+       "rc=%s. The ledger is stamped with the mode, so a failure watched under a different "
+       "contract must not open this one's gate." % p.returncode)
+
+    # ------------------------------------------------------------------ why
+
+    section("why, the report that says what is steering the turn")
+    mode("s-why", "set", "lead")
+    style("s-why", "set", "teach")
+    p = call("s-why", "why")
+    body = p.stdout
+    ok("why exits 0 and carries all four sections",
+       p.returncode == 0 and all(h in body for h in ("Slots", "Gates", "Ground rules",
+                                                     "The next prompt carries")),
+       "rc=%s out=%r" % (p.returncode, body[:400]))
+    ok("it names both held contracts and how each was reached",
+       "lead" in body and "teach" in body and body.count("typed") == 2,
+       "%r. Typed, chosen and pinned are the question this report exists to answer." % body[:400])
+    ok("and it says a declared gate is shut and why",
+       "no-dispatch-without-approval" in body and "SHUT" in body,
+       "%r. lead declares the flag with nothing approved, so the report has to show the gate a "
+       "dispatch would hit rather than leaving it to be discovered by being denied." % body[:600])
+
+    call("s-why", "approve", "the-spec")
+    ok("and open once the approval it waits on is on record",
+       "the-spec" in call("s-why", "why").stdout,
+       "%r" % call("s-why", "why").stdout[:600])
+
+    p = call("s-why", "why")
+    ok("it says the whole contract is what the next prompt carries, before any turn ran",
+       "the whole lead contract" in p.stdout,
+       "%r. Whether the next prompt costs the contract or the reminder is the single biggest "
+       "thing the report can tell somebody." % p.stdout[-300:])
+    call("s-why", "announce")
+    ok("and the standing reminder once that turn has happened",
+       "standing reminder of lead" in call("s-why", "why").stdout,
+       "%r" % call("s-why", "why").stdout[-300:])
+
+    p = call("s-why-none", "why")
+    ok("why with nothing held still answers rather than failing",
+       p.returncode == 0 and "off" in p.stdout and "neither slot" in p.stdout,
+       "rc=%s out=%r. An empty session is exactly when somebody asks what is running."
+       % (p.returncode, p.stdout[:300]))
+
+    mode("s-why-auto", "set", "auto")
+    ok("a slot on auto reports how many contracts are on offer to the chooser",
+       "on offer" in call("s-why-auto", "why").stdout,
+       "%r. auto holds no contract, so naming it alone tells nobody what could be picked."
+       % call("s-why-auto", "why").stdout[:300])
+
     # ------------------------------------------------------------------ sync and init
 
     section("sync")
@@ -924,7 +1145,8 @@ with tempfile.TemporaryDirectory() as tmp:
     section("nothing crashes on a tree that is not there")
     bare = fixture_root(tmp, "bare")
     for args in (["mode", "list"], ["mode", "get"], ["mode", "get", "--chip"], ["chips"],
-                 ["standing"], ["mode", "show"], ["choose", "--axis", "mode", "--message", "hello"]):
+                 ["standing"], ["mode", "show"], ["choose", "--axis", "mode", "--message", "hello"],
+                 ["pins"], ["why"], ["red"], ["adopt"], ["mode", "pin"]):
         p = run(bare, config, *(args + ["--session", "s-bare"]))
         ok("%s survives an empty contracts folder" % " ".join(args),
            not crashed(p), "rc=%s err=%r" % (p.returncode, p.stderr[-300:]))
