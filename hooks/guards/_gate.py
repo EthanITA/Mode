@@ -17,10 +17,14 @@ def armed() -> bool:
         return True
 
 
-def style_held(session: str) -> str:
+def held(axis: str, session: str) -> str:
     try:
-        done = subprocess.run([sys.executable, MODE, "style", "get", "--session", session],
+        done = subprocess.run([sys.executable, MODE, axis, "get", "--session", session],
                               capture_output=True, text=True, timeout=5)
         return done.stdout.strip() if done.returncode == 0 else ""
     except Exception:
         return ""
+
+
+def style_held(session: str) -> str:
+    return held("style", session)

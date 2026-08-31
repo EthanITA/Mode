@@ -146,13 +146,13 @@ MODES = {
                "Tester establishes the environment and preconditions, enumerates the surface by "
                "reading rather than recall, generates cases from structure, runs them for real and "
                "reports a verdict. It fixes nothing."),
-    "swarm": ([("Triage the ask", 1), ("Match the roster", 0), ("Hand over or hire", 0),
-               ("Verify and wire", 0), ("Retire what closed", 0)],
-              (3, 2, "fails, back to the owner"),
-              "Swarm holds at a triage gate, where an unclear ask is rejected rather than routed. "
-              "A clear one is matched against a roster of owners, handed to the owner of that "
-              "domain or to one hired for it, verified on the way back, and owners whose domain "
-              "has closed are retired."),
+    "swarm": ([("Hand over or hire", 0), ("Verify and wire", 0), ("Deliver", 0),
+               ("Retire what closed", 0)],
+              (2, 0, "next ask is triaged and routed again"),
+              "Swarm triages every request as it arrives rather than once at the start, so what the "
+              "pipeline records is the handoff to an owner, the verification on the way back, the "
+              "delivery, and the retiring of owners whose domain has closed. Delivery returns to "
+              "the handoff because the roster outlives the request that filled it."),
     "studio": ([("Talk it through", 0), ("Onto the page now", 0), ("React to what is there", 0),
                 ("Widen or narrow", 0)], (3, 0, "round again, rejected options stay visible"),
                "Studio is a cycle rather than a pipeline: talk, put it on the page immediately, "
