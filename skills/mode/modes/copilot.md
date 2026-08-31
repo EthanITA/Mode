@@ -51,7 +51,7 @@ No path skips Approval, and the two backward edges are the only ones that exist.
 |---|---|---|
 | **Intake** | A conversation. Say back what you think is being asked for, name the parts you are inventing because they were not specified, and put the genuine forks up rather than settling them silently. Name the topic. Then decompose it into domain-scoped tasks, where one task is one domain is one future agent. | You both hold the same picture, and each piece can be built without waiting on another. |
 | **Spec** | Write up what you agreed as an artifact. It fixes the scope, the domains, the files each IC owns, and every contract between them. Where the user chose something at Intake, record who chose it. | The artifact is written and opened. |
-| **Approval** | Open the artifact, then **ask with `AskUserQuestion` and stop there**. The turn ends on the question. | The user picks approve. Nothing weaker counts, and silence never counts. |
+| **Approval** | Open the artifact and read its open comments, then **ask with `AskUserQuestion` and stop there**. The turn ends on the question. | The user picks approve, or approves from inside the spec itself. Nothing weaker counts, and silence never counts. |
 | **Dispatch** | Spawn one named teammate per domain, in parallel, each carrying enough context to start completely cold. Put the names on the board and say who is who. | Every domain has an owner and a board item. |
 | **Integrate** | Read what comes back. Verify it against the spec yourself. Wire the seams between domains. | Every IC's checklist is green and the pieces work together. |
 | **Deliver** | Close on the project's definition of done, which the project's own `CLAUDE.md` states. Read it rather than assuming a bar. | Delivered against that bar. |
@@ -69,6 +69,21 @@ Never summarise the spec in prose and carry on as though that were the asking. O
 When approval comes through that question, record it with `bin/mode approve <slug>`, naming the artifact that was approved, and say that you did. That is what opens the dispatch gate. When the user instead types `/approve <slug>`, a hook has already written the record and there is nothing for you to run.
 
 **The approval is per session and per slug, and it is not scoped to a topic.** It is overwritten by the next approval and dropped by `/mode off`, but it does not expire and it is not consumed by the dispatch it authorised. So one yes this morning still reads as a yes this afternoon. What closes that is passing Spec and Approval again for the new topic, which records the new slug over the old one. Skip those gates and you are dispatching on a yes given to something else.
+
+### Approving from the spec itself
+
+The spec is a page, and the page carries a comment layer, so the yes can come from there instead of from the chat. It is the better channel: the user is already reading the thing being approved, and a comment lands on the exact block it is about rather than as a paragraph describing which part he means.
+
+Run `artifact wait <slug>` once the spec is open. It listens until the page sends its comments or Approve is pressed, and prints what arrived.
+
+| What comes back | What it means |
+|---|---|
+| Approve, no open threads | The yes. Record it with `bin/mode approve <slug>` and dispatch. |
+| Approve with threads still open | Approved with named changes. Those threads are the change list, so work them, resolve each one, then dispatch. |
+| Comments, no approval | Back to Spec. Update the artifact, resolve what you fixed, and ask again. |
+| Nothing | Not an approval. Waiting longer does not turn silence into a yes. |
+
+Read the threads before writing anything, and answer every one: `artifact comments <slug> --reply <n>` to say something back, `--resolve <n> "what changed"` once the spec says the new thing. A thread you decided against stays open with a reply giving the reason, because a silent rejection is the one outcome the user cannot see.
 
 Two things here protect different failures. `AskUserQuestion` is what forces you to stop, and it cannot be faked away, because the turn genuinely ends there. The `/approve <slug>` the user can type instead is the stronger record, since it comes from a human message and no agent can produce one. Recording a click on your own is convenient and honest, but it is the one step that rests on your good faith rather than on a mechanism.
 
