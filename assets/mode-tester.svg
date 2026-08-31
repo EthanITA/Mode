@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 826 150" width="826" height="150" role="img" aria-label="Tester establishes the environment and preconditions, enumerates the surface by reading rather than recall, generates cases from structure, runs them for real and reports a verdict. It fixes nothing.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 826 150" width="826" height="150" role="img" aria-label="Tester establishes the environment and preconditions, enumerates the surface by reading rather than recall, generates cases from structure, runs them for real and reports a verdict. It has no return edge because it fixes nothing.">
 <style>
   .t{font:600 12px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#1f2328}
   .s{font:10.5px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#656d76}

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 662 150" width="662" height="150" role="img" aria-label="Swarm triages every request that arrives, rejecting an unclear one rather than routing it, and dispatches a clear one to the owner of those files or to one hired for them. Once every owner has handed back it sits in delivered and waits. The next ask goes round to triage again, and retiring the fleet is the only way out.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 662 184" width="662" height="184" role="img" aria-label="Swarm triages every request that arrives, rejecting an unclear one rather than routing it, and dispatches a clear one to the owner of those files or to one hired for them. Once every owner has handed back it sits in delivered and waits. The next ask goes round to triage again, and retiring the fleet is the only way out.">
 <style>
   .t{font:600 12px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#1f2328}
   .s{font:10.5px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#656d76}
@@ -30,4 +30,6 @@
 <path class="ln" d="M482 74.0 H504" marker-end="url(#h)"/>
 <path class="lp" d="M413.0 102 V132 H85.0 V106" marker-end="url(#h)"/>
 <text class="s" x="249.0" y="147" text-anchor="middle">more work arrives, so triage it again</text>
+<path class="lp" d="M413.0 102 V166 H249.0 V106" marker-end="url(#h)"/>
+<text class="s" x="331.0" y="181" text-anchor="middle">fails verification, back to the owner</text>
 </svg>

@@ -7,7 +7,7 @@ exit-when: manual
 no-implement: true
 no-dispatch-without-approval: true
 steps: intake, spec@artifact, approval?@approve, dispatch@agent, integrate, deliver@commit
-loops: approval>spec, integrate>dispatch
+loops: approval>spec, integrate>dispatch, deliver>intake
 ---
 
 # Copilot mode
@@ -34,16 +34,18 @@ Every alternative in that pattern is verb-shaped on purpose, and shortening one 
 
 ```mermaid
 flowchart LR
-    I[Intake: the shared read] --> S[Spec, as an artifact]
+    R([A build request arrives]) --> I[Intake: the shared read]
+    I --> S[Spec, as an artifact]
     S --> A{Approval: AskUserQuestion, turn ends}
     A -- changes asked --> S
     A -- yes recorded --> D[Dispatch: one named IC per domain]
     D --> G[Integrate: verify against the spec]
     G -- fails verification --> D
     G --> V[Deliver on the project's stated bar]
+    V -- the next request --> I
 ```
 
-No path skips Approval, and the two backward edges are the only ones that exist.
+No path skips Approval. The edge out of Deliver returns to Intake and never to Dispatch, which matters more than it looks: the recorded yes belongs to one slug, so a new topic earns a new spec and a new approval. Rejoining at Dispatch would be building the second thing on the first thing's permission.
 
 ## The gate machine
 

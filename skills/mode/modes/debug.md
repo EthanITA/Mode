@@ -5,7 +5,7 @@ color: yellow
 enter-when: not working|broken|fail|why is|why does|still not|an error|the error|stack trace
 exit-when: approved
 steps: instrument, reproduce?@test-fail, fix@commit, explainer@artifact, approval?@approve, mr
-loops: reproduce>instrument
+loops: reproduce>instrument, approval>explainer
 ---
 
 # Debug mode
@@ -18,7 +18,8 @@ The mode delivers three things, and all three are required. A fix on a branch. A
 
 ```mermaid
 flowchart TD
-    V[Instrument: make the failure observable] --> H[Hypothesis, with the result that would kill it]
+    R([A failure is reported]) --> V[Instrument: make the failure observable]
+    V --> H[Hypothesis, with the result that would kill it]
     H --> E[One experiment, one change]
     E -- does not reproduce --> V
     E -- reproduces on demand --> F{Burning?}
@@ -27,7 +28,8 @@ flowchart TD
     C --> X[Explainer artifact: why it happened]
     W --> X
     X --> A{/approve its slug}
-    A -- yes --> M[Open the MR, mode ends]
+    A -- changes asked --> X
+    A -- yes --> M([Open the MR, the mode ends])
 ```
 
 The only gate that matters is the reproduce edge: nothing moves forward on a bug never seen failing.

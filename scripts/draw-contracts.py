@@ -69,11 +69,12 @@ def box(cx, y, w, h, title, kind="b", note=""):
     return "".join(out)
 
 
-def mode_svg(steps, loop, alt):
-    """steps: (label, gate?) left to right. loop: (from_index, to_index, caption) or None."""
+def mode_svg(steps, loops, alt):
+    """steps: (label, gate?) left to right. loops: (from_index, to_index, caption), stacked below."""
     bw, bh, gap, x0, y0 = 138, 56, 26, 16, 46
+    lane = 34
     w = x0 * 2 + len(steps) * bw + (len(steps) - 1) * gap
-    h = 150
+    h = 150 + max(0, len(loops) - 1) * lane
     parts = []
     for i, (label, gate) in enumerate(steps):
         cx = x0 + i * (bw + gap)
@@ -81,11 +82,11 @@ def mode_svg(steps, loop, alt):
         if i:
             parts.append(f'<path class="ln" d="M{cx - gap} {y0 + bh / 2} H{cx - 4}" '
                          f'marker-end="url(#h)"/>')
-    if loop:
-        src, dst, cap = loop
+    # Widest edge outermost, so a shorter return never runs underneath a longer one.
+    for depth, (src, dst, cap) in enumerate(sorted(loops, key=lambda e: -abs(e[0] - e[1]))):
         sx = x0 + src * (bw + gap) + bw / 2
         dx = x0 + dst * (bw + gap) + bw / 2
-        by = y0 + bh + 30
+        by = y0 + bh + 30 + depth * lane
         parts.append(f'<path class="lp" d="M{sx} {y0 + bh} V{by} H{dx} V{y0 + bh + 4}" '
                      f'marker-end="url(#h)"/>')
         parts.append(f'<text class="s" x="{(sx + dx) / 2}" y="{by + 15}" '
@@ -113,48 +114,57 @@ def style_svg(before, after, bullets, alt):
 
 MODES = {
     "ic": ([("Read the ask", 0), ("Ground it", 0), ("Build", 0), ("Verify", 0), ("Deliver", 0)],
-           (3, 2, "fails, so back to building"),
+           [(3, 2, "fails, so back to building"), (4, 0, "the next ask, read again")],
            "IC mode runs one loop: read the ask, ground it in the repo, build, verify through "
-           "something that can disagree, deliver. A failed verification returns to building."),
+           "something that can disagree, deliver. A failed verification returns to building, and "
+           "delivering returns to the read, because a session carries several asks."),
     "copilot": ([("Intake together", 0), ("Spec artifact", 0), ("Approval", 1), ("Dispatch team", 0),
-                 ("Integrate", 0)], (4, 3, "fails review, back to the owner"),
+                 ("Integrate", 0), ("Deliver", 0)],
+                [(4, 3, "fails review, back to the owner"),
+                 (5, 0, "the next request, a new spec and a new yes")],
                 "Copilot runs intake with the user, writes a spec artifact, then stops at an "
                 "approval gate. Only a recorded yes opens dispatch to a team, whose work is "
-                "verified and integrated."),
+                "verified and integrated. The next request returns to intake, never to dispatch, "
+                "because the recorded yes belongs to one slug."),
     "autopilot": ([("Read the goal", 0), ("Plan, privately", 0), ("Dispatch team", 0),
-                   ("Integrate", 0), ("Open the MR", 0)], None,
+                   ("Integrate", 0), ("Open the MR", 0)],
+                  [(3, 2, "fails verification, back to the owner")],
                   "Autopilot has no approval gate because nobody is present to give one. It reads "
                   "the goal, plans for itself, dispatches, integrates and opens the merge request, "
-                  "which is also where it ends."),
+                  "which is also where it ends. Work that fails verification goes back to the "
+                  "teammate that produced it."),
     "debug": ([("Instrument", 0), ("Reproduces", 1), ("Fix the cause", 0), ("Explainer", 0),
-               ("Open the MR", 0)], (1, 0, "will not reproduce, so back to visibility"),
+               ("Approval", 1), ("Open the MR", 0)],
+              [(1, 0, "will not reproduce, so back to visibility"),
+               (4, 3, "changes asked, back to the explainer")],
               "Debug makes the failure observable first, then holds at a gate until it reproduces "
-              "on demand. Only then does it fix the cause, write the explainer and open the merge "
-              "request."),
+              "on demand. Only then does it fix the cause, write the explainer, take an approval "
+              "on it and open the merge request, which is where the mode ends."),
     "tdd": ([("Enumerate cases", 0), ("Reduce to minimum", 0), ("Red", 1), ("Green", 0),
-             ("Refactor", 0)], (4, 2, "next behaviour needs a new red"),
+             ("Refactor", 0)], [(4, 2, "next behaviour needs a new red")],
             "TDD enumerates cases from structure, reduces them to a minimum set, then loops: a "
             "test that fails on its assertion, the least code that passes it, then refactoring "
-            "while green."),
+            "while green. It is done when the minimum set is green."),
     "prove": ([("Name the channel", 0), ("Baseline before", 0), ("Change", 0), ("Prove after", 0),
-               ("Break it once", 0)], None,
+               ("Break it once", 0)], [(4, 0, "the next behaviour, name its channel")],
               "Prove names the channel that could disagree, records a baseline before the change, "
               "proves it after, then deliberately breaks the thing once to confirm the channel "
-              "actually notices."),
+              "actually notices. Each further behaviour names its own channel and goes round."),
     "tester": ([("Environment", 0), ("Enumerate surface", 0), ("Generate cases", 0),
-                ("Execute for real", 0), ("Verdict", 0)], None,
+                ("Execute for real", 0), ("Verdict", 0)], [],
                "Tester establishes the environment and preconditions, enumerates the surface by "
                "reading rather than recall, generates cases from structure, runs them for real and "
-               "reports a verdict. It fixes nothing."),
+               "reports a verdict. It has no return edge because it fixes nothing."),
     "swarm": ([("Triage the ask", 1), ("Dispatch to an owner", 0), ("Deliver", 0),
                ("Retire the fleet", 0)],
-              (2, 0, "more work arrives, so triage it again"),
+              [(2, 0, "more work arrives, so triage it again"),
+               (2, 1, "fails verification, back to the owner")],
               "Swarm triages every request that arrives, rejecting an unclear one rather than "
               "routing it, and dispatches a clear one to the owner of those files or to one hired "
               "for them. Once every owner has handed back it sits in delivered and waits. The next "
               "ask goes round to triage again, and retiring the fleet is the only way out."),
     "studio": ([("Talk it through", 0), ("Onto the page now", 0), ("React to what is there", 0),
-                ("Widen or narrow", 0)], (3, 0, "round again, rejected options stay visible"),
+                ("Widen or narrow", 0)], [(3, 0, "round again, rejected options stay visible")],
                "Studio is a cycle rather than a pipeline: talk, put it on the page immediately, "
                "react to what is visible, widen or narrow, and go round again. Rejected options "
                "stay on the page with their reasons."),

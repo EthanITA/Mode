@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 826 150" width="826" height="150" role="img" aria-label="Autopilot has no approval gate because nobody is present to give one. It reads the goal, plans for itself, dispatches, integrates and opens the merge request, which is also where it ends.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 826 150" width="826" height="150" role="img" aria-label="Autopilot has no approval gate because nobody is present to give one. It reads the goal, plans for itself, dispatches, integrates and opens the merge request, which is also where it ends. Work that fails verification goes back to the teammate that produced it.">
 <style>
   .t{font:600 12px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#1f2328}
   .s{font:10.5px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#656d76}
@@ -30,4 +30,6 @@
 <path class="ln" d="M482 74.0 H504" marker-end="url(#h)"/>
 <rect class="b" x="672" y="46" width="138" height="56" rx="7"/><text class="t" x="741.0" y="78.0" text-anchor="middle">Open the MR</text>
 <path class="ln" d="M646 74.0 H668" marker-end="url(#h)"/>
+<path class="lp" d="M577.0 102 V132 H413.0 V106" marker-end="url(#h)"/>
+<text class="s" x="495.0" y="147" text-anchor="middle">fails verification, back to the owner</text>
 </svg>

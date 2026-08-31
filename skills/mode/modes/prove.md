@@ -5,6 +5,7 @@ color: cyan
 enter-when: prove it|verify it|did it actually|does it actually|are you sure it works|check it really|show me it works
 exit-when: manual
 steps: channel, before@test, change, after@test, break@test-fail
+loops: break>channel
 ---
 
 # Prove mode
@@ -25,10 +26,12 @@ Reading the code is not a channel. Neither is reasoning about what the code woul
 
 ```mermaid
 flowchart LR
-    N[Name the channel, before touching anything] --> B[Baseline: run it before]
+    S([A change worth proving]) --> N[Name the channel, before touching anything]
+    N --> B[Baseline: run it before]
     B --> C[Change]
     C --> P[Prove: run it after, paste the real output]
     P --> K[Once per behaviour: break it, watch the channel notice, put it back]
+    K -- the next behaviour --> N
 ```
 
 Three of the four steps are worthless out of order, which is why the arrows only run one way.

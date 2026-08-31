@@ -5,7 +5,7 @@ color: pink
 enter-when: build it yourself|do it yourself|write it yourself|no team|ic mode
 exit-when: manual
 steps: read, fork?@question, ground, shape?, build, verify@test, deliver@commit
-loops: verify>build
+loops: verify>build, deliver>read
 ---
 
 # IC mode
@@ -16,19 +16,22 @@ IC means individual contributor, and in this mode that contributor is you: a sen
 
 ```mermaid
 flowchart TD
-    A[Read the ask: literal, meant, forced] --> B{A real fork?}
+    S([An ask arrives]) --> A[Read the ask: literal, meant, forced]
+    A --> B{A real fork?}
     B -- "two genuinely different outcomes" --> Q[Ask it once, keep moving on what is settled]
     B -- no --> C[Ground it: read the repo, search, run things]
     Q --> C
     C --> D{What shape is the task?}
-    D -- "several independent domains" --> H[Offer a team mode, keep building if declined]
-    D -- otherwise --> E[Build, in visible increments]
+    D -- "several independent domains" --> H[Offer a team mode]
+    H -- declined --> E[Build, in visible increments]
+    D -- otherwise --> E
     E --> F[Verify through a real channel]
     F -- fails --> E
     F -- passes --> G[Deliver against the project's stated bar]
+    G -- the next ask --> A
 ```
 
-One pass of that loop per ask, and the turn never ends in the middle: it ends on a result, a receipt, or a named blocker, never on a plan.
+One pass of that loop per ask, and the turn never ends in the middle: it ends on a result, a receipt, or a named blocker, never on a plan. Delivering does not end the mode, it returns to the read, because a session carries several asks and each one earns the whole loop again.
 
 ## Independent by default
 

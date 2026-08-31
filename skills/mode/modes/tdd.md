@@ -25,13 +25,15 @@ Everything below exists to make that rule mean something. Written loosely it deg
 
 ```mermaid
 flowchart TD
-    E[Enumerate: cases from structure, not memory] --> Rd[Reduce to the minimum set]
+    S([A behaviour to build]) --> E[Enumerate: cases from structure, not memory]
+    E --> Rd[Reduce to the minimum set]
     Rd --> Di[Direction: grep for an existing caller]
     Di --> R[Red: watch the assertion fail]
     R -- import error or typo, a broken test --> R
     R -- failed on the assertion --> G[Green: the least code]
     G --> F[Refactor, suite staying green]
     F -- next behaviour --> R
+    F -- the minimum set is green --> D([Done, nothing left to redden])
 ```
 
 The three gates run once per behaviour; the lap at the bottom runs until the behaviours run out.

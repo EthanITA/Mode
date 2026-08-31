@@ -25,12 +25,15 @@ That split is the whole mode. Everything else here is either how to reach a real
 
 ```mermaid
 flowchart LR
-    E[Environment] --> P[Preconditions, established not assumed]
+    T([Something to test]) --> E[Environment]
+    E --> P[Preconditions, established not assumed]
     P --> S[Surface: enumerate by reading, not recall]
     S --> C[Cases: induction over each surface item]
     C --> X[Execute for real, every case observed]
-    X --> R[Report: verdict first, fix nothing]
+    X --> R([Report: verdict first, fix nothing])
 ```
+
+**There is no edge back, and that is the mode.** Every other contract loops, because every other contract changes something and has to check what it changed. This one ends on a verdict and hands it over. A return edge here would be the mode quietly starting to fix what it found, which is the one thing it must not do.
 
 The first four boxes are the preparation that gets skipped, which is why they come first here.
 

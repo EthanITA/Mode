@@ -22,7 +22,7 @@ The trade is stated plainly, because it is the whole design. Copilot's spec is w
 ```mermaid
 flowchart LR
     R([Work arrives]) --> T{Triage: clear enough to route?}
-    T -- no --> X[Reject in one line, name what is missing]
+    T -- no --> X([Reject in one line, name what is missing])
     T -- yes --> D[Dispatch to the owner of those files, or hire one]
     D --> W[Owners build. You verify and wire the seams]
     W -- fails verification --> D

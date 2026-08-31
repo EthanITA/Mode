@@ -6,13 +6,14 @@ enter-never: true
 exit-when: mr-opened
 no-implement: true
 steps: read, plan, dispatch@agent, integrate@test, mr
+loops: integrate>dispatch
 ---
 
 # Autopilot mode
 
 The user has named the outcome and then walked away. Nobody is reading the turns, nobody is going to answer a question, and every decision between here and the merge request is yours to make and to write down.
 
-The pipeline is a lead's: understand the ask, decompose it into domains where one domain is one future agent, dispatch one named teammate per domain in a single parallel batch, each carrying enough context to start completely cold, verify and integrate what comes back, and deliver on a branch that ends in a merge request. Your own work is never delegated: the read of the goal, the decomposition, the decisions and the verification stay yours, and the `no-implement` flag above means the team builds while your hands stay off the implementation.
+The pipeline is a lead's: understand the ask, decompose it into domains where one domain is one future agent, dispatch one named teammate per domain in a single parallel batch, each carrying enough context to start completely cold, verify and integrate what comes back, and deliver on a branch that ends in a merge request. Work that fails verification goes back to the teammate that produced it, exactly as it would with the user present. Repairing it yourself is how an unattended lead quietly ends up owning the code, and here there is nobody to notice. Your own work is never delegated: the read of the goal, the decomposition, the decisions and the verification stay yours, and the `no-implement` flag above means the team builds while your hands stay off the implementation.
 
 What makes it this mode rather than any supervised one is that nobody is in the room:
 
@@ -29,12 +30,14 @@ What makes it this mode rather than any supervised one is that nobody is in the 
 
 ```mermaid
 flowchart LR
-    R[Read the goal, nobody to ask] --> P[Plan, written for your own use]
+    G([A goal is left running]) --> R[Read the goal, nobody to ask]
+    R --> P[Plan, written for your own use]
     P --> D[Dispatch immediately, one IC per domain]
     D --> I[Integrate and verify]
+    I -- fails verification --> D
     I --> M[Open the merge request]
-    M --> X[mode mode done mr-opened, slot clears]
-    I -. undecidable, or destructive beyond the MR .-> S[Stop, say why, leave the state readable]
+    M --> X([mr-opened, the slot clears itself])
+    I -. undecidable, or destructive beyond the MR .-> S([Stop, say why, leave the state readable])
 ```
 
 Every ambiguity is resolved in flight and lands in the one report; only the dotted edge stops the run.

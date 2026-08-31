@@ -24,11 +24,12 @@ Every other mode is a pipeline with a beginning and an end. This one is a cycle:
 
 ```mermaid
 flowchart TD
-    T[Talk: options out loud, argued] --> U[Into the artifact now, however rough]
+    S([Something to figure out]) --> T[Talk: options out loud, argued]
+    T --> U[Into the artifact now, however rough]
     U --> R[React to what is visible]
     R --> W[Widen or narrow, rejected options stay on the page]
-    W --> T
-    W -. something is ready to build .-> H[Hand over to a building mode, explicitly]
+    W -- round again --> T
+    W -. something is ready to build .-> H([Hand over to a building mode, explicitly])
 ```
 
 A cycle rather than a pipeline, and only the dotted edge ever leaves it.
