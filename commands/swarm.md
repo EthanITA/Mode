@@ -1,5 +1,5 @@
 ---
-description: A gateway, not a builder. Route every ask to the owner of that domain, and hire one when none fits.
+description: A gateway on a stream of work. Check briefly, route to an owner, hire when none fits, never build.
 argument-hint: ""
 disable-model-invocation: true
 ---

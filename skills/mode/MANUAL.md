@@ -155,7 +155,7 @@ Both this table and the `Modes available:` list in the front matter are written 
 | `ic` | `modes/ic.md` | The all-rounder default. One senior contributor runs the whole loop, the user watches. |
 | `prove` | `modes/prove.md` | Nothing is claimed working until a real channel says so, run before and after the change. |
 | `studio` | `modes/studio.md` | Think together on one artifact, and it grows while you talk. |
-| `swarm` | `modes/swarm.md` | A gateway, not a builder. Route every ask to the owner of that domain, and hire one when none fits. |
+| `swarm` | `modes/swarm.md` | A gateway on a stream of work. Check briefly, route to an owner, hire when none fits, never build. |
 | `tdd` | `modes/tdd.md` | No implementation line exists before a test that fails for the right reason. |
 | `tester` | `modes/tester.md` | Work out what to test and how to reach it, run it for real, and report a verdict without fixing anything. |
 | `off` | none | Not a mode. `mode mode set off` empties the slot. |
