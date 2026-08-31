@@ -654,12 +654,23 @@ def arcs(axis: str, name: str, steps: list[tuple[str, bool, str]]) -> list[tuple
 
 
 def furthest(axis: str, sid: str | None, steps: list[tuple[str, bool, str]]) -> int:
-    """Furthest reached, not how many: a step with no event never records, so the set has holes."""
+    """Furthest reached, not how many: a step with no event never records, so the set has holes.
+
+    An event only advances past the required evented steps ahead of it, or a routine `git commit`
+    early in a run satisfies a trailing `deliver@commit` and reports the pipeline complete. A label
+    recorded by name is a deliberate claim, so it still jumps and clears the block.
+    """
     recorded = declared(axis, sid)
-    at = 0
-    for i, (label, _, event) in enumerate(steps):
-        if label.lower() in recorded or (event and event in recorded):
+    at, blocked = 0, False
+    for i, (label, gate, event) in enumerate(steps):
+        if label.lower() in recorded:
+            at, blocked = i + 1, False
+        elif not event:
+            continue
+        elif event in recorded and not blocked:
             at = i + 1
+        elif not gate:
+            blocked = True
     return at
 
 

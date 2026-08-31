@@ -112,6 +112,23 @@ Build it.
 Build what was asked for and stop there.
 """
 
+# The only fixture with a pipeline, so step is read against a shape this file owns.
+RUNNER = """---
+name: runner
+summary: Carries a pipeline, so step has something to walk
+color: green
+exit-when: manual
+steps: read, check?@question, build@artifact, verify@test, deliver@commit
+loops: verify>build
+---
+
+Walk the steps.
+
+## Standing reminder
+
+One step at a time.
+"""
+
 # A v2 key the tool does not know, and two flags written in the shapes that must count as off.
 FUTURE = """---
 name: future
@@ -190,7 +207,7 @@ old junk
 """
 
 MODES = {"lead": LEAD, "bugfix": BUGFIX, "shipper": SHIPPER, "hush": HUSH,
-         "clash": CLASH, "maker": MAKER, "future": FUTURE}
+         "clash": CLASH, "maker": MAKER, "future": FUTURE, "runner": RUNNER}
 STYLES = {"teach": TEACH, "brisk": BRISK, "formal": FORMAL}
 
 LEAD_STANDING = "You lead. You do not implement.\nEvery domain goes to a teammate."
@@ -963,6 +980,44 @@ with tempfile.TemporaryDirectory() as tmp:
        p.returncode == 1,
        "rc=%s. The ledger is stamped with the mode, so a failure watched under a different "
        "contract must not open this one's gate." % p.returncode)
+
+    # ------------------------------------------------------------------ step
+
+    def where(session):
+        rows = [r.split("\t") for r in call(session, "mode", "step", "--tsv").stdout.splitlines()]
+        return next((r[1] for r in rows if r[0] == "step" and r[3] == "here"), "complete")
+
+    section("step, where an event may not reach past the work it comes after")
+    p = call("s-step-none", "mode", "step")
+    ok("a contract declaring no pipeline exits 1", p.returncode == 1,
+       "rc=%s out=%r. Nothing is held, so there is no position to report." % (p.returncode, p.stdout))
+
+    mode("s-step", "set", "runner")
+    mode("s-step", "done", "read")
+    mode("s-step", "done", "commit")
+    ok("a stray commit does not satisfy a trailing deliver@commit",
+       where("s-step") == "check",
+       "at %r. Committing mid-run is routine in a repo whose bar is a local commit, and it used "
+       "to report every step of the pipeline done." % where("s-step"))
+
+    mode("s-step", "done", "artifact")
+    mode("s-step", "done", "test")
+    ok("the blocked event lands once the steps before it have happened, never discarded",
+       where("s-step") == "complete",
+       "at %r. The commit is still on the ledger, so clearing the block must let it through "
+       "without it being recorded again." % where("s-step"))
+
+    mode("s-step-gate", "set", "runner")
+    mode("s-step-gate", "done", "artifact")
+    ok("a gated step ahead of the event never blocks it",
+       where("s-step-gate") == "verify",
+       "at %r. check? is optional, so an unrecorded question must not hold build@artifact back."
+       % where("s-step-gate"))
+
+    mode("s-step-name", "set", "runner")
+    mode("s-step-name", "done", "deliver")
+    ok("a label recorded by name still jumps, because that is a deliberate claim",
+       where("s-step-name") == "complete", "at %r" % where("s-step-name"))
 
     # ------------------------------------------------------------------ why
 
