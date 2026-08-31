@@ -5,8 +5,8 @@ color: sky
 enter-when: swarm|fan out|fan it out|spin up agents|spawn agents|one owner per
 exit-when: manual
 no-implement: true
-steps: handoff@agent, verify@test, deliver@commit, retire
-loops: verify>handoff, deliver>handoff
+steps: triage, dispatch@agent, deliver@commit, retire
+loops: deliver>triage, deliver>dispatch
 ---
 
 # Swarm mode
@@ -21,19 +21,21 @@ The trade is stated plainly, because it is the whole design. Copilot's spec is w
 
 ```mermaid
 flowchart LR
-    R([Any request]) --> T{Clear enough to route?}
+    R([Work arrives]) --> T{Triage: clear enough to route?}
     T -- no --> X[Reject in one line, name what is missing]
-    T -- yes --> H[Hand to the owner who holds those files, or hire one]
-    H --> V[Verify what comes back, wire the seams]
-    V -- fails --> H
-    V --> D[Deliver on the project's stated bar]
-    D --> R
-    D --> C[Retire owners whose domain has closed]
+    T -- yes --> D[Dispatch to the owner of those files, or hire one]
+    D --> W[Owners build. You verify and wire the seams]
+    W -- fails verification --> D
+    W --> L[Deliver on the project's stated bar]
+    L -- more work arrives --> T
+    L --> C([Retire: the domains have closed, the mode is over])
 ```
 
 The rejection edge is a real exit. The turn ends there, and nothing is dispatched on a guess.
 
-**Triage is not the first step, it is the toll gate on every request.** The tenth ask of the session is triaged exactly as hard as the first, so a pipeline that opened on triage and then moved past it would be describing a mode that does not exist. What the recorded pipeline walks is the four things that leave a trace: a handoff, a verification, a delivery, and a retirement. Routing sits on the edge into the first of them and is crossed again every time work arrives, which is why the diagram loops back from Deliver rather than ending there.
+**Triage is where every request enters, and it is not a gate you pass once.** The tenth ask of the session is triaged exactly as hard as the first. What makes this a cycle rather than a march is the edge out of Deliver: when every owner has handed back and the work has landed, the mode sits in Deliver and waits, and the next thing that arrives goes round to Triage again. The roster it finds there is the one the previous request paid to build, which is the whole reason the second ask is cheaper than the first.
+
+**Retire is the only terminal step.** It is not housekeeping between requests, and it is not what you do to one owner whose piece finished. That is a roster edit, covered below. Retire is the end of the fleet: the domains have closed, nothing is routing, and the mode itself is finished. Reaching it is what `/mode off` is for.
 
 ## The roster
 
@@ -63,9 +65,9 @@ A new owner starts completely cold and sees none of this conversation. Its chart
 
 Give it a memorable name and put that name on the board in the same turn. An owner nobody can name is an owner nobody can route to.
 
-### Retiring
+### Retiring one owner, which is not the Retire step
 
-Clean up rather than accumulate, but never on a schedule and never mid-flight.
+Dropping an owner whose piece is finished is a roster edit and happens whenever it is true. The Retire step in the pipeline is the end of the whole fleet. Clean up rather than accumulate, but never on a schedule and never mid-flight.
 
 - An owner with work in hand is never retired. Wait for the handback.
 - An owner whose domain has closed, meaning the files are done and nothing has routed there, is retired and its board item is ticked. The receipt stays.
