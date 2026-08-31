@@ -750,4 +750,97 @@ with tempfile.TemporaryDirectory() as tmp:
        p.returncode == 0 and not p.stdout.strip(), "rc=%s out=%r" % (p.returncode, p.stdout[:200]))
     os.remove(os.path.join(config, "mode", "config.json"))
 
+    # ------------------------------------------------------- the swarm roster
+
+    section("roster-guard, which is what makes the file test a check")
+    rg = os.path.join(HOOKS, "guards", "roster-guard.py")
+    sid = "h-roster"
+    subprocess.run([sys.executable, os.path.join(PLUGIN, "bin", "mode"), "mode", "set", "swarm",
+                    "--session", sid], capture_output=True, env=hook_env(PLUGIN, config))
+
+    board_dir = os.path.join(config, "tasks", "session-%s" % sid[:8])
+    os.makedirs(board_dir, exist_ok=True)
+
+    def roster(*items):
+        for stale in _glob.glob(os.path.join(board_dir, "*.json")):
+            os.remove(stale)
+        for i, item in enumerate(items, 1):
+            write(os.path.join(board_dir, "%d.json" % i),
+                  json.dumps(dict({"id": str(i), "status": "in_progress"}, **item)))
+
+    def spawn(name, prompt):
+        p = subprocess.run([sys.executable, rg], capture_output=True, text=True,
+                           env=hook_env(PLUGIN, config),
+                           input=json.dumps({"session_id": sid, "hook_event_name": "PreToolUse",
+                                             "tool_name": "Agent",
+                                             "tool_input": {"name": name, "prompt": prompt}}))
+        return p.stdout
+
+    api = {"subject": "#1 Api", "metadata": {"owner": "Api", "files": ["server/api/orders.ts"],
+                                             "notes": "the retry path posts to the ledger twice"}}
+    good = ("You own server/api/orders.ts under ~/repo, and nothing under app/. "
+            "the retry path posts to the ledger twice. Close with ## Domain notes.")
+
+    roster(api)
+    ok("a complete charter is allowed through", not spawn("Api", good).strip(),
+       "out=%r" % spawn("Api", good)[:200])
+
+    roster({"subject": "#1 Web", "metadata": {"owner": "Web", "files": ["app/x.vue"]}})
+    ok("an owner the board has never heard of is denied",
+       '"deny"' in spawn("Api", good),
+       "The board is the roster, so a spawn it cannot find is a spawn whose domain nobody recorded.")
+
+    roster(api, {"subject": "#2 Web", "metadata": {"owner": "Web", "files": ["server/api/orders.ts"]}})
+    ok("two owners over one path is denied", '"deny"' in spawn("Api", good),
+       "Two agents writing the same file is the failure the mode calls fleet-ruining.")
+
+    roster(api)
+    ok("a charter that never names its own files is denied",
+       '"deny"' in spawn("Api", "Go and fix the orders bug. ## Domain notes please."),
+       "An agent starts cold, so a charter that does not say what it owns hands over nothing.")
+
+    ok("a charter dropping the notes the roster holds is denied",
+       '"deny"' in spawn("Api", "You own server/api/orders.ts. Close with ## Domain notes."),
+       "The notes exist so the next agent does not buy the same knowledge twice.")
+
+    ok("a charter asking for no handback is denied",
+       '"deny"' in spawn("Api", "You own server/api/orders.ts. the retry path posts to the ledger twice."),
+       "The handback is the only route knowledge takes to the roster, since the router never reads code.")
+
+    subprocess.run([sys.executable, os.path.join(PLUGIN, "bin", "mode"), "mode", "set", "ic",
+                    "--session", sid], capture_output=True, env=hook_env(PLUGIN, config))
+    roster(api)
+    ok("under another contract it says nothing at all", not spawn("nobody", "anything").strip(),
+       "Only swarm holds a roster, so every other mode must spawn untouched.")
+
+    section("the board replay, which is what a compact leaves behind")
+    sys.path.insert(0, os.path.join(HOOKS, "guards"))
+    from _transcript import board_from_transcript
+
+    def use(uid, name, inp):
+        return {"message": {"content": [{"type": "tool_use", "id": uid, "name": name, "input": inp}]}}
+
+    replay = [
+        use("u1", "TaskCreate", {"subject": "Api", "description": "the order path",
+                                 "metadata": {"owner": "Api", "files": ["a.ts"]}}),
+        {"message": {"content": [{"type": "tool_result", "tool_use_id": "u1",
+                                  "content": "Task #1 created successfully: #1  Api"}]}},
+        use("u2", "TaskUpdate", {"taskId": "1", "metadata": {"notes": "retry double-posts"}}),
+        use("u3", "TaskUpdate", {"taskId": "1", "metadata": {"files": ["a.ts", "b.ts"]}}),
+    ]
+    [task] = board_from_transcript(replay)
+    meta = task.get("metadata") or {}
+    ok("a replayed task keeps its metadata and its description",
+       meta.get("owner") == "Api" and task.get("description") == "the order path",
+       "%r. restore_board writes the replay back over a wiped store, so a field dropped here is "
+       "gone for good and the roster silently forgets what each owner holds." % task)
+    ok("later metadata merges rather than replacing",
+       meta.get("notes") == "retry double-posts" and len(meta.get("files") or []) == 2,
+       "%r. Recording a note must not wipe the file list, and vice versa." % meta)
+
+    [dropped] = board_from_transcript(replay + [use("u4", "TaskUpdate", {"taskId": "1",
+                                                                        "metadata": {"notes": None}})])
+    ok("a null metadata key deletes, matching the tool's own contract",
+       "notes" not in (dropped.get("metadata") or {}), "%r" % dropped.get("metadata"))
+
 report()

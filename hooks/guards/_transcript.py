@@ -246,9 +246,16 @@ def board_from_transcript(entries):
                     if args.get("status") == "deleted":
                         tasks.pop(task["id"], None)
                         continue
-                    for field in ("subject", "status", "owner"):
+                    for field in ("subject", "status", "owner", "description"):
                         if args.get(field):
                             task[field] = args[field]
+                    # Merged, not replaced, and a null key deletes: the replay is written back over a
+                    # wiped store, so anything it drops here is gone for good.
+                    for key, value in (args.get("metadata") or {}).items():
+                        if value is None:
+                            task.get("metadata", {}).pop(key, None)
+                        else:
+                            task.setdefault("metadata", {})[key] = value
             elif item.get("type") == "tool_result":
                 name, args = calls.pop(item.get("tool_use_id"), (None, None))
                 if name != "TaskCreate":
@@ -264,6 +271,7 @@ def board_from_transcript(entries):
                         "description": args.get("description", ""),
                         "status": "pending",
                         "owner": args.get("owner", ""),
+                        "metadata": dict(args.get("metadata") or {}),
                     }
     return [tasks[k] for k in sorted(tasks, key=int)]
 

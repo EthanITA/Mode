@@ -35,7 +35,9 @@ flowchart LR
     T -- yes --> D[Dispatch to the owner of those files, or hire one]
     D --> W[Owners build. You verify what comes back]
     W -- fails verification --> D
-    W --> L[Deliver on the project's stated bar]
+    W --> N[Record their domain notes on the roster]
+    N -. spliced into the next charter here .-> D
+    N --> L[Deliver on the project's stated bar]
     L -- more work arrives --> T
     L --> C([Retire: the domains have closed, the mode is over])
 ```
@@ -70,16 +72,40 @@ There is no cap on the roster. There is a floor on what earns a place in it, and
 
 ### Hiring
 
-A new owner starts completely cold and sees none of this conversation. Its charter carries the working directory, the files it owns, the files that are not its to touch named by path, the contract it builds against, the house rules binding its output, and how to report back.
+A new owner starts completely cold and sees none of this conversation. Its charter carries the working directory, the files it owns, the files that are not its to touch named by path, the contract it builds against, the house rules binding its output, the domain notes below, and how to report back.
 
-Give it a memorable name and put that name on the board in the same turn. An owner nobody can name is an owner nobody can route to.
+**The board item comes before the spawn, not in the same turn as it.** Create it with `TaskCreate`, then set `metadata` to `{"owner": "<name>", "files": ["<path>", ...]}`. That metadata is the roster in machine-readable form, and `roster-guard` refuses to spawn an owner it cannot find there, refuses two owners over one path, and refuses a charter that never names the files it hands out. Ordering it this way is what turns the file test from an intention into a check.
+
+Give it a memorable name and use that same name on the `Agent` call. An owner nobody can name is an owner nobody can route to.
+
+### Domain notes, which are what make the second request cheap
+
+Every owner starts cold, so every owner pays to work out the same things about its area. Left alone, that knowledge dies when the agent finishes, and the next one buys it again. The roster keeps owners warm. Notes keep what they learned.
+
+The knowledge moves in one direction, and you are never its source:
+
+| Step | Who | What |
+|---|---|---|
+| Discovery | the owner | It read the code because it was changing the code. It closes its report with a `## Domain notes` section: what the next agent in these files would otherwise work out again. |
+| Record | you | Put it on that owner's board item, in `metadata.notes`. You write down what you were handed and nothing else. |
+| Reuse | you | Splice the notes for those files into the next charter that touches them. |
+
+Being a conduit rather than a researcher is the whole discipline here. The moment you go and read the code to write a better note, you have started doing the work in the one place where it does not scale, and you have made the gateway the bottleneck. You never read to build a note. You only ever pass one on.
+
+Three rules keep the notes worth having:
+
+- **A note says what is true, never what to build.** "The retry path posts to the ledger twice" is a note. "Add an idempotency key" is a spec, and a spec here is copilot without the approval gate, which is the worst combination in the catalogue.
+- **A note carries who found it.** An owner that finds one wrong corrects it on the way back, in the same handback. A stale note is worse than no note, because the next agent believes it.
+- **Notes outlive their owner.** Retiring an owner ticks its board item and keeps the receipt, notes included. Six requests later, hiring for that area again starts warm instead of cold, which is where most of the saving actually is.
+
+The board holds them because it is the one place you can still write, and the size limit does useful work: a note too long for a board item has stopped being a routing aid and become the work in disguise.
 
 ### Retiring one owner, which is not the Retire step
 
 Dropping an owner whose piece is finished is a roster edit and happens whenever it is true. The Retire step in the pipeline is the end of the whole fleet. Clean up rather than accumulate, but never on a schedule and never mid-flight.
 
 - An owner with work in hand is never retired. Wait for the handback.
-- An owner whose domain has closed, meaning the files are done and nothing has routed there, is retired and its board item is ticked. The receipt stays.
+- An owner whose domain has closed, meaning the files are done and nothing has routed there, is retired and its board item is ticked. The receipt stays, and so do its domain notes.
 - Two owners found to be writing the same file are merged, and the survivor inherits the domain.
 - Retiring is cheap and hiring is not, so when it is genuinely uncertain, keep the owner.
 
@@ -132,7 +158,9 @@ Not a file, not a seam, not the two lines joining two finished domains. Every ot
 
 **This one is a mechanism, not an agreement.** `router-guard.py` denies `Write`, `Edit` and `NotebookEdit` outright while swarm is held, and `shell-write-guard` already closes the route through the shell, so the two of them together mean the router cannot write a file even by accident. `TaskCreate` and `TaskUpdate` are untouched, which is why the board stays yours.
 
-What still holds only because you hold it: the file test, the size of the roster, and staying on the topic. No hook counts owners and none reads a domain boundary. Be honest about which half of this page is enforced, because the enforced half is not the half that ruins a fleet.
+`roster-guard.py` covers the other half at the spawn: an owner missing from the board, two owners over one path, a charter that never names its own files, a charter dropping notes the roster already holds, and a charter that asks for no handback. Between them, both rules that actually ruin a fleet are now checked rather than promised.
+
+What still holds only because you hold it: the size of the roster, staying on the topic, and the honesty of the notes. No hook can tell a note that says what is true from one that says what to build, and none can see that you read four files before dispatching. Be honest about which half of this page is enforced.
 
 ## When it starts and when it ends
 
@@ -142,5 +170,5 @@ What still holds only because you hold it: the file test, the size of the roster
 
 - Route, never build, in one or two lines a turn. The check is brief: look things up to decide who owns it, never to decide what the answer is. Three files deep means you should have dispatched two files ago.
 - Unclear on something that changes the build, reject it and name the missing fact. A lookup is not a question.
-- One owner per domain, and two owners never write the same file. The roster is the board.
-- Verify what comes back. A seam goes to an owner too, and the guard will refuse the file if you try.
+- One owner per domain, and two owners never write the same file. The board item, with its files, comes before the spawn.
+- Verify what comes back, record its domain notes on the roster, and splice them into the next charter for those files. A seam goes to an owner too.
