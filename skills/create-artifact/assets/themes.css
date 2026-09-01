@@ -1,0 +1,552 @@
+/* No prefers-color-scheme anywhere: light is the base and dark is opt-in, so a
+   dark-OS viewer still opens light. color-mix marks a tint the vendor doesn't
+   publish — see each design-systems/<key>.md Provenance. */
+
+/* ===== shared derivations ================================================= */
+
+:root {
+  --radius: 12px;
+  --radius-sm: 8px;
+  --measure: 760px;
+  --tracking-tight: -0.015em;
+  --weight-display: 650;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --mono:
+    ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Code", monospace;
+  --sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* ===== neutral — the house default, deliberately brand-free =============== */
+
+:root,
+:root[data-ds="neutral"] {
+  --bg: #fbfaf9;
+  --surface: #ffffff;
+  --surface-2: #f4f2f0;
+  --ink: #1a1a19;
+  --muted: #6b6a67;
+  --faint: #9a9894;
+  --border: #e6e3df;
+  --border-strong: #d3cfc9;
+  --accent: #4f46e5;
+  --accent-ink: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  --ok: #2d8a56;
+  --ok-soft: color-mix(in srgb, var(--ok) 12%, var(--surface));
+  --warn: #b8730a;
+  --warn-soft: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  --bad: #c92a42;
+  --bad-soft: color-mix(in srgb, var(--bad) 12%, var(--surface));
+  --info: #2563eb;
+  --info-soft: color-mix(in srgb, var(--info) 12%, var(--surface));
+}
+
+:root[data-theme="dark"],
+:root[data-ds="neutral"][data-theme="dark"] {
+  --bg: #0f1012;
+  --surface: #17181b;
+  --surface-2: #1f2024;
+  --ink: #eceef1;
+  --muted: #a1a5ad;
+  --faint: #71757d;
+  --border: #2a2c31;
+  --border-strong: #3a3d44;
+  --accent: #818cf8;
+  --accent-ink: #16161c;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --info: #60a5fa;
+}
+
+/* ===== primer — GitHub, vendor CSS verbatim =============================== */
+
+:root[data-ds="primer"] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --ink: #1f2328;
+  --muted: #59636e;
+  --faint: #818b98;
+  --border: #d1d9e0;
+  --border-strong: #b7bfc7;
+  --accent: #0969da;
+  --accent-ink: #ffffff;
+  --accent-soft: #ddf4ff;
+  --ok: #1a7f37;
+  --ok-soft: #dafbe1;
+  --warn: #9a6700;
+  --warn-soft: #fff8c5;
+  --bad: #d1242f;
+  --bad-soft: #ffebe9;
+  --info: #8250df;
+  --info-soft: #fbefff;
+  --radius: 6px;
+  --radius-sm: 6px;
+  --sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica,
+    Arial, sans-serif;
+  --weight-display: 600;
+  --tracking-tight: -0.01em;
+}
+
+:root[data-ds="primer"][data-theme="dark"] {
+  --bg: #0d1117;
+  --surface: #151b23;
+  --surface-2: #010409;
+  --ink: #f0f6fc;
+  --muted: #9198a1;
+  --faint: #656c76;
+  --border: #3d444d;
+  --border-strong: #656c76;
+  --accent: #4493f8;
+  --accent-ink: #ffffff;
+  --accent-soft: #388bfd1a;
+  --ok: #3fb950;
+  --ok-soft: #2ea04326;
+  --warn: #d29922;
+  --warn-soft: #bb800926;
+  --bad: #f85149;
+  --bad-soft: #f851491a;
+  --info: #ab7df8;
+  --info-soft: #ab7df826;
+}
+
+/* ===== material-3 — Google, baseline scheme from the vendor palette ======= */
+
+:root[data-ds="material-3"] {
+  --bg: #fef7ff;
+  --surface: #f3edf7;
+  --surface-2: #ece6f0;
+  --ink: #1d1b20;
+  --muted: #49454f;
+  --faint: #79747e;
+  --border: #cac4d0;
+  --border-strong: #79747e;
+  --accent: #6750a4;
+  --accent-ink: #ffffff;
+  --accent-soft: #eaddff;
+  --secondary: #625b71;
+  --tertiary: #7d5260;
+  --ok: #386a20;
+  --ok-soft: color-mix(in srgb, var(--ok) 14%, var(--surface));
+  --warn: #7d5260;
+  --warn-soft: #ffd8e4;
+  --bad: #b3261e;
+  --bad-soft: #f9dedc;
+  --info: #625b71;
+  --info-soft: #e8def8;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --sans: Roboto, "Helvetica Neue", Arial, sans-serif;
+  --weight-display: 500;
+  --tracking-tight: 0em;
+}
+
+:root[data-ds="material-3"][data-theme="dark"] {
+  --bg: #141218;
+  --surface: #211f26;
+  --surface-2: #2b2930;
+  --ink: #e6e0e9;
+  --muted: #cac4d0;
+  --faint: #938f99;
+  --border: #49454f;
+  --border-strong: #938f99;
+  --accent: #d0bcff;
+  --accent-ink: #381e72;
+  --accent-soft: #4f378b;
+  --ok: #a8d38a;
+  --warn: #efb8c8;
+  --warn-soft: #633b48;
+  --bad: #f2b8b5;
+  --bad-soft: #8c1d18;
+  --info: #ccc2dc;
+  --info-soft: #4a4458;
+}
+
+/* ===== carbon — IBM, White / Gray 100 themes ============================== */
+
+:root[data-ds="carbon"] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f4f4f4;
+  --ink: #161616;
+  --muted: #525252;
+  --faint: #6f6f6f;
+  --border: #e0e0e0;
+  --border-strong: #8d8d8d;
+  --accent: #0f62fe;
+  --accent-ink: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, #ffffff);
+  --ok: #198038;
+  --ok-soft: color-mix(in srgb, var(--ok) 12%, #ffffff);
+  --warn: #f1c21b;
+  --warn-soft: color-mix(in srgb, var(--warn) 20%, #ffffff);
+  --bad: #da1e28;
+  --bad-soft: color-mix(in srgb, var(--bad) 10%, #ffffff);
+  --info: #8a3ffc;
+  --info-soft: color-mix(in srgb, var(--info) 10%, #ffffff);
+  --radius: 0px;
+  --radius-sm: 0px;
+  --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --weight-display: 600;
+  --tracking-tight: 0em;
+  --shadow-sm: none;
+  --shadow: none;
+}
+
+:root[data-ds="carbon"][data-theme="dark"] {
+  --bg: #161616;
+  --surface: #262626;
+  --surface-2: #393939;
+  --ink: #f4f4f4;
+  --muted: #c6c6c6;
+  --faint: #8d8d8d;
+  --border: #393939;
+  --border-strong: #6f6f6f;
+  --accent: #4589ff;
+  --accent-ink: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 22%, #161616);
+  --ok: #24a148;
+  --ok-soft: color-mix(in srgb, var(--ok) 22%, #161616);
+  --warn: #f1c21b;
+  --warn-soft: color-mix(in srgb, var(--warn) 22%, #161616);
+  --bad: #fa4d56;
+  --bad-soft: color-mix(in srgb, var(--bad) 22%, #161616);
+  --info: #8a3ffc;
+  --info-soft: color-mix(in srgb, var(--info) 22%, #161616);
+  --shadow-sm: none;
+  --shadow: none;
+}
+
+/* ===== linear — dark-first product aesthetic ============================== */
+
+:root[data-ds="linear"] {
+  --bg: #ffffff;
+  --surface: #fbfbfb;
+  --surface-2: #f4f5f8;
+  --ink: #08090a;
+  --muted: #62666d;
+  --faint: #8a8f98;
+  --border: #e6e6e6;
+  --border-strong: #d0d1d3;
+  --accent: #5e6ad2;
+  --accent-ink: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, #ffffff);
+  --ok: #4cb782;
+  --ok-soft: color-mix(in srgb, var(--ok) 12%, #ffffff);
+  --warn: #f2c94c;
+  --warn-soft: color-mix(in srgb, var(--warn) 18%, #ffffff);
+  --bad: #eb5757;
+  --bad-soft: color-mix(in srgb, var(--bad) 10%, #ffffff);
+  --info: #5e6ad2;
+  --info-soft: color-mix(in srgb, var(--info) 10%, #ffffff);
+  --radius: 8px;
+  --radius-sm: 6px;
+  --measure: 720px;
+  --sans:
+    "Inter Variable", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --weight-display: 600;
+  --tracking-tight: -0.022em;
+}
+
+:root[data-ds="linear"][data-theme="dark"] {
+  --bg: #010102;
+  --surface: #0f1011;
+  --surface-2: #18191a;
+  --ink: #f7f8f8;
+  --muted: #8a8f98;
+  --faint: #62666d;
+  --border: #23252a;
+  --border-strong: #313337;
+  --accent: #828fff;
+  --accent-ink: #10111a;
+  --accent-soft: color-mix(in srgb, #5e6ad2 26%, #010102);
+  --ok: #4cb782;
+  --ok-soft: color-mix(in srgb, var(--ok) 20%, #010102);
+  --warn: #f2c94c;
+  --warn-soft: color-mix(in srgb, var(--warn) 20%, #010102);
+  --bad: #eb5757;
+  --bad-soft: color-mix(in srgb, var(--bad) 20%, #010102);
+  --info: #828fff;
+  --info-soft: color-mix(in srgb, var(--info) 20%, #010102);
+}
+
+/* ===== geist — Vercel, monochrome with a single blue ====================== */
+
+:root[data-ds="geist"] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f7f7f7;
+  --ink: #171717;
+  --muted: #666666;
+  --faint: #8f8f8f;
+  --border: #eaeaea;
+  --border-strong: #d4d4d4;
+  --accent: #0070f3;
+  --accent-ink: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 8%, #ffffff);
+  --ok: #0f7b34;
+  --ok-soft: color-mix(in srgb, var(--ok) 10%, #ffffff);
+  --warn: #a35200;
+  --warn-soft: color-mix(in srgb, var(--warn) 10%, #ffffff);
+  --bad: #e5484d;
+  --bad-soft: color-mix(in srgb, var(--bad) 8%, #ffffff);
+  --info: #0070f3;
+  --info-soft: color-mix(in srgb, var(--info) 8%, #ffffff);
+  --radius: 8px;
+  --radius-sm: 6px;
+  --sans:
+    Geist, "Geist Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --weight-display: 600;
+  --tracking-tight: -0.02em;
+}
+
+:root[data-ds="geist"][data-theme="dark"] {
+  --bg: #000000;
+  --surface: #0a0a0a;
+  --surface-2: #171717;
+  --ink: #ededed;
+  --muted: #a1a1a1;
+  --faint: #737373;
+  --border: #333333;
+  --border-strong: #4d4d4d;
+  --accent: #3291ff;
+  --accent-ink: #000000;
+  --accent-soft: color-mix(in srgb, var(--accent) 18%, #000000);
+  --ok: #45a557;
+  --ok-soft: color-mix(in srgb, var(--ok) 18%, #000000);
+  --warn: #f5a623;
+  --warn-soft: color-mix(in srgb, var(--warn) 18%, #000000);
+  --bad: #ff6369;
+  --bad-soft: color-mix(in srgb, var(--bad) 18%, #000000);
+  --info: #3291ff;
+  --info-soft: color-mix(in srgb, var(--info) 18%, #000000);
+}
+
+/* ===== stripe — cool white canvas, deep navy ink, one indigo ============== */
+
+:root[data-ds="stripe"] {
+  --bg: #f6f9fc;
+  --surface: #ffffff;
+  --surface-2: #f0f4f8;
+  --ink: #0a2540;
+  --muted: #425466;
+  --faint: #8898aa;
+  --border: #e3e8ee;
+  --border-strong: #cfd7df;
+  --accent: #635bff;
+  --accent-ink: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 8%, #ffffff);
+  --ok: #09825d;
+  --ok-soft: color-mix(in srgb, var(--ok) 10%, #ffffff);
+  --warn: #bb5504;
+  --warn-soft: color-mix(in srgb, var(--warn) 10%, #ffffff);
+  --bad: #cd3d64;
+  --bad-soft: color-mix(in srgb, var(--bad) 10%, #ffffff);
+  --info: #3d5afe;
+  --info-soft: color-mix(in srgb, var(--info) 8%, #ffffff);
+  --radius: 8px;
+  --radius-sm: 4px;
+  --sans:
+    "Sohne", "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --weight-display: 600;
+  --tracking-tight: -0.02em;
+}
+
+:root[data-ds="stripe"][data-theme="dark"] {
+  --bg: #0a2540;
+  --surface: #10314f;
+  --surface-2: #163a5c;
+  --ink: #f6f9fc;
+  --muted: #a3b4c6;
+  --faint: #7d94ab;
+  --border: #1d4368;
+  --border-strong: #2d5a86;
+  --accent: #8f89ff;
+  --accent-ink: #0a2540;
+  --accent-soft: color-mix(in srgb, var(--accent) 20%, #0a2540);
+  --ok: #3ecf8e;
+  --ok-soft: color-mix(in srgb, var(--ok) 18%, #0a2540);
+  --warn: #f5be58;
+  --warn-soft: color-mix(in srgb, var(--warn) 18%, #0a2540);
+  --bad: #ff7186;
+  --bad-soft: color-mix(in srgb, var(--bad) 18%, #0a2540);
+  --info: #8f89ff;
+  --info-soft: color-mix(in srgb, var(--info) 18%, #0a2540);
+}
+
+/* ===== notion — warm neutrals, near-black warm ink ======================== */
+
+:root[data-ds="notion"] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f7f6f3;
+  --ink: #37352f;
+  --muted: #787774;
+  --faint: #9b9a97;
+  --border: #e9e9e7;
+  --border-strong: #dfdedc;
+  --accent: #2eaadc;
+  --accent-ink: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, #ffffff);
+  --ok: #448361;
+  --ok-soft: color-mix(in srgb, var(--ok) 12%, #ffffff);
+  --warn: #cb912f;
+  --warn-soft: color-mix(in srgb, var(--warn) 14%, #ffffff);
+  --bad: #d44c47;
+  --bad-soft: color-mix(in srgb, var(--bad) 10%, #ffffff);
+  --info: #337ea9;
+  --info-soft: color-mix(in srgb, var(--info) 10%, #ffffff);
+  --radius: 4px;
+  --radius-sm: 3px;
+  --measure: 720px;
+  --sans:
+    Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+  --display: Lyon-Text, Georgia, ui-serif, serif;
+  --weight-display: 600;
+  --tracking-tight: -0.01em;
+}
+
+:root[data-ds="notion"][data-theme="dark"] {
+  --bg: #191919;
+  --surface: #202020;
+  --surface-2: #2f2f2f;
+  --ink: #d4d4d4;
+  --muted: #9b9b9b;
+  --faint: #7f7f7f;
+  --border: #2f2f2f;
+  --border-strong: #454545;
+  --accent: #529cca;
+  --accent-ink: #191919;
+  --accent-soft: color-mix(in srgb, var(--accent) 20%, #191919);
+  --ok: #4f9768;
+  --ok-soft: color-mix(in srgb, var(--ok) 20%, #191919);
+  --warn: #c29343;
+  --warn-soft: color-mix(in srgb, var(--warn) 20%, #191919);
+  --bad: #d9730d;
+  --bad-soft: color-mix(in srgb, var(--bad) 20%, #191919);
+  --info: #529cca;
+  --info-soft: color-mix(in srgb, var(--info) 20%, #191919);
+}
+
+/* ===== apple-hig — system colours, grouped-background layout ============== */
+
+:root[data-ds="apple-hig"] {
+  --bg: #f2f2f7;
+  --surface: #ffffff;
+  --surface-2: #e5e5ea;
+  --ink: #000000;
+  --muted: #6c6c70;
+  --faint: #8e8e93;
+  --border: #d1d1d6;
+  --border-strong: #c7c7cc;
+  --accent: #007aff;
+  --accent-ink: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 10%, #ffffff);
+  --ok: #34c759;
+  --ok-soft: color-mix(in srgb, var(--ok) 14%, #ffffff);
+  --warn: #ff9500;
+  --warn-soft: color-mix(in srgb, var(--warn) 14%, #ffffff);
+  --bad: #ff3b30;
+  --bad-soft: color-mix(in srgb, var(--bad) 12%, #ffffff);
+  --info: #5856d6;
+  --info-soft: color-mix(in srgb, var(--info) 12%, #ffffff);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+    sans-serif;
+  --weight-display: 700;
+  --tracking-tight: -0.022em;
+}
+
+:root[data-ds="apple-hig"][data-theme="dark"] {
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --ink: #ffffff;
+  --muted: #aeaeb2;
+  --faint: #8e8e93;
+  --border: #38383a;
+  --border-strong: #48484a;
+  --accent: #0a84ff;
+  --accent-ink: #ffffff;
+  --accent-soft: color-mix(in srgb, var(--accent) 20%, #000000);
+  --ok: #30d158;
+  --ok-soft: color-mix(in srgb, var(--ok) 18%, #000000);
+  --warn: #ff9f0a;
+  --warn-soft: color-mix(in srgb, var(--warn) 18%, #000000);
+  --bad: #ff453a;
+  --bad-soft: color-mix(in srgb, var(--bad) 18%, #000000);
+  --info: #5e5ce6;
+  --info-soft: color-mix(in srgb, var(--info) 18%, #000000);
+}
+
+/* ===== spacex — void black, star white, D-DIN stencil, no colour accent === */
+
+:root[data-ds="spacex"] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f0f0fa;
+  --ink: #000000;
+  --muted: #5a5a5f;
+  --faint: #545457;
+  --border: #e0e0e8;
+  --border-strong: #404040;
+  --accent: #000000;
+  --accent-ink: #f0f0fa;
+  --accent-soft: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  --ok: #2f6b4f;
+  --ok-soft: color-mix(in srgb, var(--ok) 10%, var(--surface));
+  --warn: #8a6a1a;
+  --warn-soft: color-mix(in srgb, var(--warn) 10%, var(--surface));
+  --bad: #8a2a2a;
+  --bad-soft: color-mix(in srgb, var(--bad) 8%, var(--surface));
+  --info: #404040;
+  --info-soft: color-mix(in srgb, var(--info) 8%, var(--surface));
+  --radius: 0px;
+  --radius-sm: 0px;
+  --shadow-sm: none;
+  --shadow: none;
+  --sans: "DIN Alternate", "DIN", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
+  --weight-display: 700;
+  --tracking-tight: 0.04em;
+}
+
+:root[data-ds="spacex"][data-theme="dark"] {
+  --bg: #000000;
+  --surface: #0a0a0a;
+  --surface-2: #121214;
+  --ink: #f0f0fa;
+  --muted: #a8a8b0;
+  --faint: #545457;
+  --border: #3a3a3f;
+  --border-strong: #545457;
+  --accent: #f0f0fa;
+  --accent-ink: #000000;
+  --accent-soft: color-mix(in srgb, #f0f0fa 10%, #000000);
+  --ok: #7d9a86;
+  --ok-soft: color-mix(in srgb, var(--ok) 16%, #000000);
+  --warn: #c4b07a;
+  --warn-soft: color-mix(in srgb, var(--warn) 16%, #000000);
+  --bad: #c47a7a;
+  --bad-soft: color-mix(in srgb, var(--bad) 16%, #000000);
+  --info: #a8a8b0;
+  --info-soft: color-mix(in srgb, var(--info) 14%, #000000);
+  --shadow-sm: none;
+  --shadow: none;
+}

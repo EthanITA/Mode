@@ -1,0 +1,627 @@
+<!-- rv:start -->
+<script type="application/json" id="rv-seed">{"v":1,"slug":"{{SLUG}}","sink":"","threads":[]}</script>
+<style>
+/* Packs spell the same roles differently: the doc system uses --surface/--accent/--radius, a
+   self-contained pack may use --raised/--primary/--radius-box. Each chain tries both before any literal. */
+:root{
+  --rv-ground:var(--bg,var(--canvas,#f6f7f9));
+  --rv-bg:var(--surface,var(--raised,#ffffff));
+  --rv-fg:var(--ink,#16181d);
+  --rv-dim:var(--muted,#6b7280);
+  --rv-line:var(--border,#e3e5ea);
+  --rv-accent:var(--accent,var(--primary,#4f46e5));
+  --rv-on-accent:var(--accent-ink,var(--primary-content,#ffffff));
+  --rv-ok:var(--ok,var(--success,#17845a));
+
+  --rv-radius:var(--radius,var(--radius-box,12px));
+  --rv-radius-sm:var(--radius-sm,var(--radius-field,8px));
+  --rv-pill:999px;
+  --rv-shadow:var(--shadow,var(--shadow-lg,0 12px 40px rgb(0 0 0 / .16)));
+  --rv-sans:var(--sans,system-ui,sans-serif);
+
+  --rv-dur:var(--duration-base,220ms);
+  --rv-dur-fast:var(--duration-fast,120ms);
+  --rv-ease:var(--ease-out,cubic-bezier(.2,.8,.2,1));
+
+  --rv-1:.25rem;
+  --rv-2:.5rem;
+  --rv-3:.75rem;
+  --rv-4:1rem;
+  --rv-panel-w:min(23rem,88vw);
+  --rv-inset:0px;
+  --rv-cursor:url('data:image/svg+xml;utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="26" height="26"%3E%3Cpath d="M3 3v13l4-4h10V3z" fill="%23ffffff" stroke="%23111827" stroke-width="2" stroke-linejoin="round"/%3E%3C/svg%3E') 3 3, crosshair;
+}
+
+/* Published so an artifact's own fixed chrome can step aside: inset:0 var(--rv-inset,0) auto 0. */
+:root[data-rv-panel="open"]{--rv-inset:var(--rv-panel-w)}
+:root[data-rv-panel="open"] body{margin-inline-end:var(--rv-panel-w);
+  transition:margin var(--rv-dur) var(--rv-ease)}
+/* Only over a block that would actually take a comment, so the cursor is the affordance. */
+.rv-hot, .rv-hot *{cursor:var(--rv-cursor) !important}
+
+.rv-hot{outline:2px solid var(--rv-accent);outline-offset:var(--rv-1);border-radius:var(--rv-radius-sm);
+  background:color-mix(in srgb,var(--rv-accent) 7%,transparent)}
+.rv-target{outline:2px dashed var(--rv-accent);outline-offset:var(--rv-1);border-radius:var(--rv-radius-sm)}
+::highlight(rv-quote){background:color-mix(in srgb,var(--rv-accent) 26%,transparent);color:inherit}
+
+/* Deliberately unpositioned: the pins carry document coordinates, so a containing block here would
+   measure them from the end of the body, which is where this element sits. */
+.rv-root{font:400 .875rem/1.5 var(--rv-sans);color:var(--rv-fg)}
+.rv-root button{font:inherit}
+.rv-root textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:3.2rem;padding:var(--rv-2);
+  border-radius:var(--rv-radius-sm);border:1px solid var(--rv-line);background:var(--rv-bg);
+  color:var(--rv-fg);font:inherit}
+.rv-root textarea:focus-visible{outline:2px solid var(--rv-accent);outline-offset:1px}
+
+.rv-fab{position:fixed;inset-inline-end:var(--rv-4);inset-block-end:var(--rv-4);z-index:9002;
+  display:flex;align-items:center;gap:var(--rv-1);height:2.6rem;padding-inline:var(--rv-3);
+  border-radius:var(--rv-pill);cursor:pointer;border:1px solid var(--rv-line);
+  background:var(--rv-bg);color:var(--rv-fg);box-shadow:var(--rv-shadow);
+  transition:inset-inline-end var(--rv-dur) var(--rv-ease)}
+:root[data-rv-panel="open"] .rv-fab{inset-inline-end:calc(var(--rv-panel-w) + var(--rv-4))}
+.rv-fab[aria-pressed="true"]{background:var(--rv-accent);border-color:var(--rv-accent);color:var(--rv-on-accent)}
+.rv-fab:focus-visible{outline:2px solid var(--rv-accent);outline-offset:3px}
+.rv-fab svg{width:1.05rem;height:1.05rem}
+.rv-tally{min-width:1.25rem;padding-inline:var(--rv-1);border-radius:var(--rv-pill);
+  font-size:.75rem;font-weight:600;background:var(--rv-accent);color:var(--rv-on-accent)}
+.rv-fab[aria-pressed="true"] .rv-tally{background:var(--rv-on-accent);color:var(--rv-accent)}
+.rv-tally[data-zero="true"]{visibility:hidden;width:0;min-width:0;padding:0}
+
+.rv-panel{position:fixed;inset-block:0;inset-inline-end:0;z-index:9001;
+  display:flex;flex-direction:column;width:var(--rv-panel-w);
+  background:var(--rv-bg);border-inline-start:1px solid var(--rv-line);
+  box-shadow:var(--rv-shadow);transform:translateX(101%);
+  transition:transform var(--rv-dur) var(--rv-ease)}
+.rv-root[data-panel="open"] .rv-panel{transform:none}
+@media (prefers-reduced-motion:reduce){
+  .rv-panel,.rv-fab,:root[data-rv-panel="open"] body{transition:none}
+}
+
+/* The three chrome rows keep their height and the list is the only thing that gives. A flex child
+   will not scroll inside its parent without min-height:0, whatever overflow says. */
+.rv-head,.rv-filters,.rv-draft,.rv-foot{flex:none}
+.rv-list{flex:1 1 auto;min-height:0;overflow-y:auto}
+
+.rv-head{display:flex;align-items:center;gap:var(--rv-2);padding:var(--rv-3) var(--rv-4);
+  border-bottom:1px solid var(--rv-line)}
+.rv-head strong{font-size:.95rem}
+.rv-state{margin-inline-start:auto;font-size:.72rem;color:var(--rv-dim)}
+.rv-root[data-sink="live"] .rv-state{color:var(--rv-ok)}
+.rv-icon{width:1.9rem;height:1.9rem;display:grid;place-items:center;cursor:pointer;
+  border-radius:var(--rv-pill);border:1px solid var(--rv-line);background:var(--rv-ground);color:var(--rv-fg)}
+.rv-icon:focus-visible{outline:2px solid var(--rv-accent);outline-offset:2px}
+
+.rv-filters{display:flex;gap:var(--rv-1);padding:var(--rv-2) var(--rv-4);border-bottom:1px solid var(--rv-line)}
+.rv-tab{padding:var(--rv-1) var(--rv-3);border-radius:var(--rv-pill);cursor:pointer;font-size:.8rem;
+  border:1px solid var(--rv-line);background:var(--rv-ground);color:var(--rv-dim)}
+.rv-tab[aria-pressed="true"]{background:var(--rv-accent);border-color:var(--rv-accent);color:var(--rv-on-accent)}
+.rv-tab:focus-visible{outline:2px solid var(--rv-accent);outline-offset:2px}
+
+.rv-list{padding:var(--rv-3);display:flex;flex-direction:column;gap:var(--rv-2)}
+.rv-empty{margin:0;padding:var(--rv-4) var(--rv-2);color:var(--rv-dim);font-size:.83rem;text-align:center}
+
+.rv-thread,.rv-draft{border:1px solid var(--rv-line);border-radius:var(--rv-radius);
+  background:var(--rv-ground);padding:var(--rv-3)}
+.rv-draft{margin:var(--rv-3) var(--rv-3) 0;border-color:var(--rv-accent);background:var(--rv-bg)}
+.rv-thread[data-status="resolved"]{opacity:.55}
+.rv-thread[data-focus="true"]{border-color:var(--rv-accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--rv-accent) 18%,transparent)}
+.rv-top{display:flex;align-items:center;gap:var(--rv-1);margin-bottom:var(--rv-1)}
+.rv-num{display:grid;place-items:center;width:1.3rem;height:1.3rem;border-radius:var(--rv-pill);flex:none;
+  font-size:.72rem;font-weight:600;background:var(--rv-accent);color:var(--rv-on-accent)}
+.rv-where{font-size:.75rem;color:var(--rv-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv-quote{margin:0 0 var(--rv-1);padding-inline-start:var(--rv-2);
+  border-inline-start:2px solid var(--rv-accent);font-size:.79rem;color:var(--rv-dim);font-style:italic}
+.rv-msg{margin:0 0 var(--rv-1)}
+.rv-msg p{margin:var(--rv-1) 0 0;white-space:pre-wrap}
+.rv-who{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--rv-dim)}
+.rv-msg[data-by="claude"]{border-inline-start:2px solid var(--rv-ok);padding-inline-start:var(--rv-2)}
+.rv-msg[data-by="claude"] .rv-who{color:var(--rv-ok)}
+.rv-acts{display:flex;gap:var(--rv-1);margin-top:var(--rv-2)}
+.rv-btn{padding:var(--rv-1) var(--rv-2);border-radius:var(--rv-radius-sm);cursor:pointer;font-size:.78rem;
+  border:1px solid var(--rv-line);background:var(--rv-bg);color:var(--rv-fg)}
+.rv-btn:hover{border-color:var(--rv-accent);color:var(--rv-accent)}
+.rv-btn:focus-visible{outline:2px solid var(--rv-accent);outline-offset:2px}
+.rv-btn[data-kind="go"]{background:var(--rv-accent);border-color:var(--rv-accent);color:var(--rv-on-accent)}
+
+.rv-foot{border-top:1px solid var(--rv-line);padding:var(--rv-2) var(--rv-4);
+  display:flex;flex-wrap:wrap;gap:var(--rv-1)}
+.rv-foot .rv-hint{flex-basis:100%;margin:var(--rv-1) 0 0;font-size:.72rem;color:var(--rv-dim)}
+
+.rv-pins{position:absolute;inset-block-start:0;inset-inline-start:0;width:0;height:0;
+  z-index:8999;pointer-events:none}
+/* Centred on the block's corner by transform, so the size lives here and never in the placement code. */
+.rv-pin{position:absolute;width:1.45rem;height:1.45rem;transform:translate(-50%,-50%);
+  border-radius:var(--rv-pill) var(--rv-pill) var(--rv-pill) 2px;cursor:pointer;pointer-events:auto;
+  font-size:.72rem;font-weight:600;border:2px solid var(--rv-bg);
+  background:var(--rv-accent);color:var(--rv-on-accent);box-shadow:var(--rv-shadow)}
+.rv-pin[data-status="resolved"]{background:var(--rv-dim);opacity:.6}
+.rv-pin:focus-visible{outline:2px solid var(--rv-accent);outline-offset:2px}
+
+.rv-toast{position:fixed;inset-inline-start:50%;inset-block-end:var(--rv-4);z-index:9004;
+  transform:translate(-50%,var(--rv-4));padding:var(--rv-2) var(--rv-3);border-radius:var(--rv-pill);
+  font-size:.8rem;opacity:0;pointer-events:none;background:var(--rv-fg);color:var(--rv-bg);
+  transition:opacity var(--rv-dur-fast) var(--rv-ease),transform var(--rv-dur-fast) var(--rv-ease)}
+.rv-toast[data-open="true"]{opacity:1;transform:translate(-50%,0)}
+
+@media print{.rv-root{display:none}}
+</style>
+
+<div class="rv-root" data-panel="closed" data-sink="off">
+  <button class="rv-fab" type="button" aria-pressed="false" aria-label="Comment on this page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span class="rv-tally" data-zero="true">0</span>
+  </button>
+
+  <aside class="rv-panel" aria-label="Comments on this page">
+    <div class="rv-head">
+      <strong>Comments</strong>
+      <span class="rv-state">saved in this browser</span>
+      <button class="rv-icon" type="button" data-act="close" aria-label="Close the comments panel">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="rv-filters" role="group" aria-label="Which comments to show">
+      <button class="rv-tab" type="button" data-filter="open" aria-pressed="true">Open</button>
+      <button class="rv-tab" type="button" data-filter="resolved" aria-pressed="false">Resolved</button>
+      <button class="rv-tab" type="button" data-filter="all" aria-pressed="false">All</button>
+    </div>
+
+    <form class="rv-draft" hidden>
+      <div class="rv-top">
+        <span class="rv-num">+</span>
+        <span class="rv-where"></span>
+      </div>
+      <blockquote class="rv-quote" hidden></blockquote>
+      <textarea placeholder="What should change here?" aria-label="Your comment"></textarea>
+      <div class="rv-acts">
+        <button class="rv-btn" type="submit" data-kind="go">Comment</button>
+        <button class="rv-btn" type="button" data-act="cancel">Cancel</button>
+      </div>
+    </form>
+
+    <div class="rv-list">
+      <p class="rv-empty">Nothing yet. Hold the space bar or press the bubble, then click any block, or select some words first to quote them.</p>
+    </div>
+
+    <div class="rv-foot">
+      <button class="rv-btn" type="button" data-act="approve" data-kind="go">Approve</button>
+      <button class="rv-btn" type="button" data-act="send">Send to Claude</button>
+      <button class="rv-btn" type="button" data-act="save">Save file</button>
+      <p class="rv-hint">Approve tells Claude to go ahead. Send hands over the open comments.</p>
+    </div>
+  </aside>
+
+  <div class="rv-pins" aria-hidden="true"></div>
+
+  <div class="rv-toast" data-open="false" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+(function(){
+  var root = document.querySelector('.rv-root');
+  var panel = root && root.querySelector('.rv-panel');
+  var list = root && root.querySelector('.rv-list');
+  var pinbox = root && root.querySelector('.rv-pins');
+  var composer = root && root.querySelector('.rv-draft');
+  var fab = root && root.querySelector('.rv-fab');
+  var toast = root && root.querySelector('.rv-toast');
+  // A stubbed or stripped DOM has none of this, and the page must still read without the layer.
+  if (!root || !panel || !list || !pinbox || !composer || !fab || !toast) return;
+
+  var BLOCKS = 'p,li,h1,h2,h3,h4,h5,h6,blockquote,figure,figcaption,table,pre,img,canvas,' +
+               '.panel,.stage,.callout,.card,.stat,.table-wrap,.diagram,.hop,.code';
+  var seed = {v: 1, slug: '', sink: '', threads: []};
+  try { seed = Object.assign(seed, JSON.parse(document.getElementById('rv-seed').textContent) || {}); } catch (e) {}
+
+  var SLUG = seed.slug || (location.pathname.split('/').pop() || 'artifact').replace(/\.html$/, '');
+  var SINK = seed.sink || 'http://127.0.0.1:7391';
+  var KEY = 'rv:' + SLUG;
+
+  var now = function(){ return new Date().toISOString(); };
+  var uid = function(){
+    try { return crypto.randomUUID().slice(0, 8); } catch (e) { return Math.random().toString(36).slice(2, 10); }
+  };
+  var norm = function(s){ return (s || '').replace(/\s+/g, ' ').trim(); };
+
+  function readLocal(){
+    try { return JSON.parse(localStorage.getItem(KEY)) || {threads: []}; } catch (e) { return {threads: []}; }
+  }
+  function writeLocal(){
+    try { localStorage.setItem(KEY, JSON.stringify({v: 1, slug: SLUG, threads: threads})); } catch (e) {}
+  }
+
+  // Both sides edit the same threads offline, so the newer `updated` wins and replies are unioned.
+  function merge(a, b){
+    var by = {};
+    [].concat(a || [], b || []).forEach(function(t){
+      if (!t || !t.id) return;
+      var prev = by[t.id];
+      if (!prev) { by[t.id] = Object.assign({}, t, {replies: (t.replies || []).slice()}); return; }
+      var win = (t.updated || '') >= (prev.updated || '') ? t : prev;
+      var seen = {};
+      (prev.replies || []).concat(t.replies || []).forEach(function(r){ if (r && r.id) seen[r.id] = r; });
+      by[t.id] = Object.assign({}, win, {
+        replies: Object.keys(seen).map(function(k){ return seen[k]; })
+          .sort(function(x, y){ return (x.at || '').localeCompare(y.at || ''); })
+      });
+    });
+    return Object.keys(by).map(function(k){ return by[k]; })
+      .sort(function(x, y){ return (x.at || '').localeCompare(y.at || ''); });
+  }
+
+  var threads = merge(seed.threads, readLocal().threads);
+  var filter = 'open';
+  var armed = false, locked = false, heldAt = 0, hot, pending, focused;
+
+  function openCount(){
+    return threads.filter(function(t){ return t.status !== 'resolved'; }).length;
+  }
+
+  function pathOf(node){
+    var parts = [];
+    for (var n = node; n && n.nodeType === 1 && n !== document.body; n = n.parentElement) {
+      if (n.id) { parts.unshift('#' + (window.CSS && CSS.escape ? CSS.escape(n.id) : n.id)); break; }
+      var tag = n.tagName.toLowerCase();
+      var kin = [].slice.call((n.parentElement || {}).children || []).filter(function(c){ return c.tagName === n.tagName; });
+      if (kin.length > 1) tag += ':nth-of-type(' + (kin.indexOf(n) + 1) + ')';
+      parts.unshift(tag);
+    }
+    return parts.join(' > ');
+  }
+
+  function labelOf(node){
+    var host = node.closest('section,article,figure,.panel,.stage') || node;
+    var head = host.querySelector && host.querySelector('h1,h2,h3,h4');
+    return norm(head && head.textContent) .slice(0, 44) || node.tagName.toLowerCase();
+  }
+
+  // Text first, so a comment survives the rebuild that moved the element; the path is the fallback.
+  function locate(anchor){
+    if (!anchor) return;
+    var all = [].slice.call(document.querySelectorAll(BLOCKS)).filter(function(el){ return !el.closest('.rv-root'); });
+    var want = norm(anchor.text).slice(0, 160);
+    if (want) {
+      var exact = all.filter(function(el){ return norm(el.textContent).slice(0, 160) === want; });
+      if (exact.length) return exact[0];
+      var head = want.slice(0, 60);
+      var near = all.filter(function(el){ return norm(el.textContent).indexOf(head) === 0; });
+      if (near.length) return near[0];
+    }
+    try { return anchor.sel ? document.querySelector(anchor.sel) || undefined : undefined; } catch (e) {}
+  }
+
+  function rangeFor(host, quote){
+    var walk = document.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+    var acc = '', marks = [];
+    for (var n; (n = walk.nextNode());) { marks.push([acc.length, n]); acc += n.nodeValue; }
+    var start = acc.indexOf(quote);
+    if (start < 0) return;
+    var at = function(pos){
+      var hit = marks[0];
+      marks.forEach(function(m){ if (m[0] <= pos) hit = m; });
+      return [hit[1], pos - hit[0]];
+    };
+    var a = at(start), b = at(start + quote.length - 1);
+    var r = document.createRange();
+    r.setStart(a[0], a[1]);
+    r.setEnd(b[0], b[1] + 1);
+    return r;
+  }
+
+  function paintQuotes(){
+    if (!window.Highlight || !window.CSS || !CSS.highlights) return;
+    var ranges = [];
+    threads.forEach(function(t){
+      if (t.status === 'resolved' || !t.anchor || !t.anchor.quote || !t.node) return;
+      try { var r = rangeFor(t.node, t.anchor.quote); if (r) ranges.push(r); } catch (e) {}
+    });
+    CSS.highlights.delete('rv-quote');
+    if (ranges.length) CSS.highlights.set('rv-quote', new Highlight(...ranges));
+  }
+
+  function paintPins(){
+    pinbox.textContent = '';
+    threads.forEach(function(t){
+      t.node = locate(t.anchor);
+      if (!t.node || !t.node.getBoundingClientRect) return;
+      var r = t.node.getBoundingClientRect();
+      if (!r.width && !r.height) return;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rv-pin';
+      b.dataset.status = t.status || 'open';
+      b.textContent = String(t.n);
+      b.setAttribute('aria-label', 'Comment ' + t.n);
+      b.style.left = (r.right + window.scrollX) + 'px';
+      b.style.top = (r.top + window.scrollY) + 'px';
+      b.addEventListener('click', function(){ setPanel(true); focus(t.id); });
+      pinbox.appendChild(b);
+    });
+    paintQuotes();
+  }
+
+  function el(tag, cls, text){
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function message(by, body){
+    var m = el('div', 'rv-msg');
+    m.dataset.by = by;
+    m.appendChild(el('span', 'rv-who', by === 'claude' ? 'Claude' : 'You'));
+    m.appendChild(el('p', '', body || ''));
+    return m;
+  }
+
+  function card(t){
+    var a = el('article', 'rv-thread');
+    a.dataset.id = t.id;
+    a.dataset.status = t.status || 'open';
+    if (t.id === focused) a.dataset.focus = 'true';
+
+    var top = el('div', 'rv-top');
+    top.appendChild(el('span', 'rv-num', String(t.n)));
+    top.appendChild(el('span', 'rv-where', (t.anchor && t.anchor.label) || 'somewhere on the page'));
+    a.appendChild(top);
+
+    if (t.anchor && t.anchor.quote) a.appendChild(el('blockquote', 'rv-quote', t.anchor.quote));
+    a.appendChild(message(t.by || 'user', t.body));
+    (t.replies || []).forEach(function(r){ a.appendChild(message(r.by || 'user', r.body)); });
+
+    var box = el('textarea');
+    box.placeholder = 'Reply';
+    box.setAttribute('aria-label', 'Reply to comment ' + t.n);
+    a.appendChild(box);
+
+    var acts = el('div', 'rv-acts');
+    var send = el('button', 'rv-btn', 'Reply');
+    send.type = 'button';
+    send.addEventListener('click', function(){
+      var body = box.value.trim();
+      if (!body) return;
+      t.replies = (t.replies || []).concat([{id: uid(), by: 'user', at: now(), body: body}]);
+      t.updated = now();
+      box.value = '';
+      commit();
+    });
+    var flip = el('button', 'rv-btn', t.status === 'resolved' ? 'Reopen' : 'Resolve');
+    flip.type = 'button';
+    flip.addEventListener('click', function(){
+      t.status = t.status === 'resolved' ? 'open' : 'resolved';
+      t.updated = now();
+      commit();
+    });
+    acts.appendChild(send);
+    acts.appendChild(flip);
+    a.appendChild(acts);
+    a.addEventListener('click', function(){ focus(t.id); });
+    return a;
+  }
+
+  function render(){
+    var show = threads.filter(function(t){
+      return filter === 'all' || (filter === 'resolved') === (t.status === 'resolved');
+    });
+    list.textContent = '';
+    if (!show.length) {
+      list.appendChild(el('p', 'rv-empty', filter === 'open'
+        ? 'No open comments. Hold the space bar, then click any block to leave one.'
+        : 'Nothing here yet.'));
+    } else {
+      show.forEach(function(t){ list.appendChild(card(t)); });
+    }
+    var tally = fab.querySelector('.rv-tally');
+    tally.textContent = String(openCount());
+    tally.dataset.zero = String(!openCount());
+    panel.querySelectorAll('.rv-tab').forEach(function(b){
+      b.setAttribute('aria-pressed', String(b.dataset.filter === filter));
+    });
+  }
+
+  function commit(){
+    writeLocal();
+    render();
+    paintPins();
+    push('sync');
+  }
+
+  function focus(id){
+    focused = id;
+    render();
+    var t = threads.filter(function(x){ return x.id === id; })[0];
+    if (t && t.node && t.node.scrollIntoView) t.node.scrollIntoView({block: 'center', behavior: 'smooth'});
+    var open = list.querySelector('.rv-thread[data-focus="true"]');
+    if (open && open.scrollIntoView) open.scrollIntoView({block: 'nearest'});
+  }
+
+  function say(text){
+    toast.textContent = text;
+    toast.dataset.open = 'true';
+    clearTimeout(say.t);
+    say.t = setTimeout(function(){ toast.dataset.open = 'false'; }, 2600);
+  }
+
+  // Stamped on the root too, so the page and its own fixed chrome can make room via --rv-inset.
+  function setPanel(open){
+    root.dataset.panel = open ? 'open' : 'closed';
+    document.documentElement.dataset.rvPanel = open ? 'open' : 'closed';
+  }
+
+  function setArm(on){
+    armed = on;
+    document.documentElement.classList.toggle('rv-arm', on);
+    fab.setAttribute('aria-pressed', String(on));
+    if (!on && hot) { hot.classList.remove('rv-hot'); hot = undefined; }
+  }
+
+  function payload(action){
+    return JSON.stringify({v: 1, slug: SLUG, action: action, updated: now(), threads: threads}, null, 2);
+  }
+
+  // The page cannot write to disk, so a listening sink is the only path that needs no copy-paste.
+  function ping(){
+    if (!window.fetch || !window.AbortSignal || !AbortSignal.timeout) return;
+    fetch(SINK + '/ping', {signal: AbortSignal.timeout(700)})
+      .then(function(r){ root.dataset.sink = r.ok ? 'live' : 'off'; refreshState(); })
+      .catch(function(){ root.dataset.sink = 'off'; refreshState(); });
+  }
+
+  function push(action){
+    if (root.dataset.sink !== 'live') return Promise.resolve(false);
+    return fetch(SINK + '/rv', {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: payload(action),
+      signal: AbortSignal.timeout(3000)
+    }).then(function(r){ return r.ok; }).catch(function(){ return false; });
+  }
+
+  function refreshState(){
+    panel.querySelector('.rv-state').textContent =
+      root.dataset.sink === 'live' ? 'Claude is listening' : 'saved in this browser';
+  }
+
+  function download(){
+    var blob = new Blob([payload('sync')], {type: 'application/json'});
+    var a = el('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = SLUG + '.comments.json';
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+    say('Saved. Run: artifact comments ' + SLUG);
+  }
+
+  function editable(node){
+    return !!node && (node.isContentEditable || /^(input|textarea|select)$/i.test(node.tagName || ''));
+  }
+
+  // The draft lives in the panel, the way a document editor does it, so nothing has to be positioned
+  // against a click point and the box can never land off-screen.
+  function openComposer(node, quote){
+    if (pending) pending.node.classList.remove('rv-target');
+    pending = {node: node, quote: quote};
+    node.classList.add('rv-target');
+
+    composer.querySelector('.rv-where').textContent = labelOf(node);
+    var mark = composer.querySelector('.rv-quote');
+    mark.textContent = quote;
+    mark.hidden = !quote;
+
+    composer.hidden = false;
+    setPanel(true);
+    var box = composer.querySelector('textarea');
+    box.value = '';
+    box.focus();
+  }
+
+  function closeComposer(){
+    if (pending) pending.node.classList.remove('rv-target');
+    composer.hidden = true;
+    pending = undefined;
+  }
+
+  fab.addEventListener('click', function(){
+    if (root.dataset.panel === 'closed') setPanel(true);
+    locked = !locked;
+    setArm(locked);
+  });
+
+  panel.addEventListener('click', function(e){
+    var b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.filter) { filter = b.dataset.filter; render(); return; }
+    if (b.dataset.act === 'close') { setPanel(false); return; }
+    if (b.dataset.act === 'save') { download(); return; }
+    if (b.dataset.act === 'send' || b.dataset.act === 'approve') {
+      var action = b.dataset.act;
+      push(action).then(function(ok){
+        if (ok) { say(action === 'approve' ? 'Approved. Claude is going ahead.' : 'Sent to Claude.'); return; }
+        download();
+      });
+    }
+  });
+
+  composer.addEventListener('submit', function(e){
+    e.preventDefault();
+    var body = composer.querySelector('textarea').value.trim();
+    if (!body || !pending) return closeComposer();
+    var node = pending.node;
+    threads.push({
+      id: uid(),
+      n: threads.length + 1,
+      status: 'open',
+      by: 'user',
+      at: now(),
+      updated: now(),
+      body: body,
+      replies: [],
+      anchor: {
+        sel: pathOf(node),
+        text: norm(node.textContent).slice(0, 160),
+        label: labelOf(node),
+        quote: pending.quote || ''
+      }
+    });
+    closeComposer();
+    setPanel(true);
+    filter = 'open';
+    commit();
+  });
+
+  composer.addEventListener('click', function(e){
+    if (e.target.closest('[data-act="cancel"]')) closeComposer();
+  });
+
+  document.addEventListener('mousemove', function(e){
+    if (!armed || !e.target.closest) return;
+    var next = e.target.closest('.rv-root') ? undefined : e.target.closest(BLOCKS);
+    if (next === hot) return;
+    if (hot) hot.classList.remove('rv-hot');
+    hot = next;
+    if (hot) hot.classList.add('rv-hot');
+  }, true);
+
+  document.addEventListener('click', function(e){
+    if (!armed || !e.target.closest || e.target.closest('.rv-root')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var node = e.target.closest(BLOCKS) || e.target;
+    var sel = window.getSelection();
+    var quote = sel && !sel.isCollapsed && node.contains(sel.anchorNode)
+      ? norm(sel.toString()).slice(0, 240) : '';
+    openComposer(node, quote);
+  }, true);
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') {
+      if (!composer.hidden) return closeComposer();
+      if (locked || armed) { locked = false; return setArm(false); }
+      return setPanel(false);
+    }
+    if (e.code !== 'Space' || e.repeat || editable(e.target)) return;
+    e.preventDefault();
+    heldAt = Date.now();
+    setArm(true);
+  });
+
+  document.addEventListener('keyup', function(e){
+    if (e.code !== 'Space' || editable(e.target)) return;
+    // A tap locks the mode on, a hold only arms it while held.
+    if (Date.now() - heldAt < 220) { locked = !locked; setArm(locked); }
+    else { locked = false; setArm(false); }
+  });
+
+  addEventListener('resize', paintPins);
+  addEventListener('load', paintPins);
+
+  render();
+  paintPins();
+  refreshState();
+  ping();
+})();
+</script>
+<!-- rv:end -->
