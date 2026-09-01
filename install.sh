@@ -153,6 +153,30 @@ say "Anything you drop in there wins over a plugin file of the same name, and su
 say "update. A contract needs front matter with name, summary, color and enter-when; a rules file"
 say "needs only name and summary, and an empty body silences the shipped rule of the same name."
 
+# A path-scoped rule is not a plugin component, so Claude Code only reads one from the user's own
+# rules directory. A link keeps the plugin the single copy.
+PLUGIN_RULES=$PLUGIN_ROOT/rules
+CLAUDE_RULES=$CONFIG_DIR/rules
+
+if [ -d "$PLUGIN_RULES" ]; then
+  mkdir -p "$CLAUDE_RULES"
+  for rule in "$PLUGIN_RULES"/*.md; do
+    [ -e "$rule" ] || continue
+    target=$CLAUDE_RULES/$(basename "$rule")
+    if [ -e "$target" ] && [ "$(cd "$(dirname "$target")" && pwd -P)/$(basename "$target")" = "$rule" ]; then
+      say "Already there: $target"
+    elif [ -e "$target" ] && [ "$(readlink "$target")" = "$rule" ]; then
+      say "Already there: $target"
+    elif [ -e "$target" ]; then
+      say "Left alone, a file this installer did not write: $target"
+    else
+      ln -s "$rule" "$target"
+      say "Linked: $target"
+      touched "$target: a file-scoped rule the plugin ships"
+    fi
+  done
+fi
+
 # ---------------------------------------------------------------- 2. the status line
 
 read_statusline() {

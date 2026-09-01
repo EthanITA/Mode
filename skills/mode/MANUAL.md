@@ -23,7 +23,7 @@ This manual drives the switching and nothing else. It is deliberately not a regi
 | Applies to | The shape of the turn | Every step of whatever mode is running |
 | Example | `copilot` stops on a question before dispatching a team | `fast` makes that question two lines instead of ten |
 
-The split is what keeps the file count down. Nine modes and seven styles cover sixty-three combinations, so a new way of talking costs one file rather than nine rewrites.
+The split is what keeps the file count down. Nine modes and six styles cover fifty-four combinations, so a new way of talking costs one file rather than nine rewrites.
 
 The test for which folder a new contract belongs in is whether it has an order. If it says do this, then that, and stop here, it is a mode. If it only changes the texture of whatever you were already doing, it is a style.
 

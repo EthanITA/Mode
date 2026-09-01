@@ -1036,7 +1036,8 @@ def write_shortcuts():
         for name in names(axis):
             path = folder / (SHORTCUT_STEM[axis] % name)
             keep.add(path.name)
-            body = SHORTCUT.format(summary=summary(axis, name) or f"Hold the {name} {axis}.",
+            # JSON-quoted, because a colon in a summary makes an unquoted YAML value ambiguous.
+            body = SHORTCUT.format(summary=json.dumps(summary(axis, name) or f"Hold the {name} {axis}."),
                                    axis=axis, name=name)
             if not path.is_file() or path.read_text() != body:
                 path.write_text(body)
