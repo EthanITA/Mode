@@ -1,4 +1,7 @@
-import json, os, re, subprocess
+import json, os, re, subprocess, sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _gate import config
 
 # Subjects that claim shipment must carry a checkable receipt even before metadata exists.
 DELIVERY_SUBJECT = re.compile(
@@ -8,12 +11,13 @@ DELIVERY_SUBJECT = re.compile(
 # Narrower than MUTATING_SHELL: only commands that put work in front of someone else.
 DELIVERY_SHELL = re.compile(r"\b(?:git\s+push|glab\s+mr\s+(?:create|merge)|gh\s+pr\s+(?:create|merge)|publish:artifact)\b")
 
-# The tree decides the bar (each project CLAUDE.md's Definition of done); a weaker declared kind is caught here.
-REQUIRED_KIND = (
-    ("moneyfarm", "mr-merged"),
-    ("projects/cela", "pushed"),
-    ("projects/nanaco", "published"),
-    ("nanaco.co", "published"),
+# Any MCP server's merge-request or pull-request creator, whichever forge the user is on.
+DELIVERY_TOOL = re.compile(r"^mcp__.+__(?:create|merge)_(?:merge_request|pull_request)$")
+
+# Ships empty: only the user knows which tree owes which receipt.
+REQUIRED_KIND = tuple(
+    (str(tree).lower(), str(kind))
+    for tree, kind in (config().get("delivery") or [])
 )
 
 MODE = os.environ.get("DELIVER_MODE") or "warn"  # flip to "deny" once a warn-mode week stays quiet

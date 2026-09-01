@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _gate import armed
 if not armed():
     sys.exit(0)
-from _deliver import DELIVERY_SHELL, verify
+from _deliver import DELIVERY_SHELL, DELIVERY_TOOL, verify
 from _transcript import already_zapped, read_entries, split_turns, store_board
 
 
@@ -41,7 +41,7 @@ try:
         for name, args in turn
         if name == "Bash" and DELIVERY_SHELL.search(args.get("command") or "")
     ]
-    shipped += [name for turn in turns for name, _ in turn if name == "mcp__gitlab-moneyfarm__create_merge_request"]
+    shipped += [name for turn in turns for name, _ in turn if DELIVERY_TOOL.search(name or "")]
     declared = [t for t in tasks if (t.get("metadata") or {}).get("done")]
     if not shipped and not declared:
         sys.exit(0)
