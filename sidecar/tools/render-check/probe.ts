@@ -156,17 +156,20 @@ export function probeScreen(input: ProbeInput): ProbeResult {
     if (depth > 3 || outline.length >= 40) return
     for (const child of Array.from(parent.children)) {
       if (outline.length >= 40) return
-      if (child.matches('script,style,link,meta,noscript')) continue
+      const tag = child.tagName.toLowerCase()
+      if (child.matches('script,style,link,meta,noscript,template')) continue
+      if (tag.startsWith('nuxt-devtools')) continue
       const text = readText(child)
       outline.push({
         depth,
-        tag: child.tagName.toLowerCase(),
+        tag,
         region: child.getAttribute('data-region') ?? undefined,
         className: typeof child.className === 'string' && child.className ? child.className : undefined,
         textLength: text.length,
         snippet: text.slice(0, 70),
       })
-      walk(child, depth + 1)
+      // an svg's internals are filter primitives, never screen content worth listing
+      if (tag !== 'svg') walk(child, depth + 1)
     }
   }
   if (document.body) walk(document.body, 0)
