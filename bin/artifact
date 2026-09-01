@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+"""Resolve, open and stamp the artifacts in the artifacts directory.
+
+The directory resolves from NOTES_ARTIFACTS, then the `artifacts` key in
+~/.claude/mode/config.json, then ~/artifacts. `artifact ds` resolves design
+packs: the ones shipped with the plugin, then the user's own.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _review
+
+
+def artifacts_dir() -> Path:
+    env = os.environ.get("NOTES_ARTIFACTS")
+    if env:
+        return Path(env)
+    configured = str(_review.config().get("artifacts") or "")
+    return Path(configured).expanduser() if configured else Path.home() / "artifacts"
+
+
+ART_DIR = artifacts_dir()
+# Same key the status line derives from its own session_id, so both sides agree.
+SESSION_DIR = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")) / "artifacts"
+BLOCK_RE = re.compile(r"<!--\s*artifact\b(.*?)-->", re.S)
+TITLE_RE = re.compile(r"<title>(.*?)</title>", re.S | re.I)
+FIELDS = ("slug", "title", "url", "target", "ds", "updated")
+
+
+def session_file(sid: str | None = None) -> Path | None:
+    sid = sid or os.environ.get("CLAUDE_CODE_SESSION_ID", "")
+    return SESSION_DIR / f"session-{sid[:8]}" if sid else None
+
+
+def session_slugs(sid: str | None = None) -> list[str]:
+    """Slugs this conversation created or updated, oldest first."""
+    f = session_file(sid)
+    if not f or not f.is_file():
+        return []
+    seen, out = set(), []
+    for line in f.read_text().splitlines():
+        line = line.strip()
+        if line and line not in seen:
+            seen.add(line)
+            out.append(line)
+    return out
+
+
+def record_slug(slug: str) -> None:
+    f = session_file()
+    if not f:
+        return
+    f.parent.mkdir(parents=True, exist_ok=True)
+    if slug not in session_slugs():
+        with f.open("a") as fh:
+            fh.write(slug + "\n")
+
+
+def die(msg: str, code: int = 1):
+    print(msg, file=sys.stderr)
+    raise SystemExit(code)
+
+
+def artifact_files() -> list[Path]:
+    if not ART_DIR.is_dir():
+        return []
+    return sorted(
+        p for p in ART_DIR.glob("*.html") if not p.name.endswith(".src.html")
+    )
+
+
+def read_meta(path: Path) -> dict:
+    head = path.read_text(errors="replace")[:4000]
+    meta = {"slug": path.stem, "path": str(path)}
+    m = BLOCK_RE.search(head)
+    if m:
+        for line in m.group(1).splitlines():
+            if ":" in line:
+                k, _, v = line.partition(":")
+                k = k.strip().lower()
+                if k in FIELDS:
+                    meta[k] = v.strip()
+    if "title" not in meta:
+        t = TITLE_RE.search(head)
+        meta["title"] = t.group(1).strip() if t else ""
+    # A local showpiece owns its own doctype; a published one never does.
+    meta.setdefault("target", "s" if head[:20].lower().lstrip().startswith("<!doctype") else "b")
+    return meta
+
+
+def resolve(token: str) -> Path:
+    """This conversation's artifacts first, then the whole folder. Exact slug,
+    then a unique prefix, then a unique substring."""
+    files = artifact_files()
+    if not files:
+        die(f"no artifacts in {ART_DIR}")
+    token = re.sub(r"\.html$", "", token)
+
+    recorded = set(session_slugs())
+    pools = [[p for p in files if p.stem in recorded]] if recorded else []
+    pools.append(files)
+
+    for pool in pools:
+        for stage, pick in (
+            ("exact", lambda p: p.stem == token),
+            ("prefix", lambda p: p.stem.startswith(token)),
+            ("substring", lambda p: token in p.stem),
+        ):
+            hits = [p for p in pool if pick(p)]
+            if len(hits) == 1:
+                return hits[0]
+            if len(hits) > 1 and stage != "exact":
+                names = "\n  ".join(p.stem for p in hits)
+                # exit 2, not 1: the shell wrapper shows this one and stays quiet about a plain miss
+                die(f"'{token}' matches {len(hits)} artifacts:\n  {names}", 2)
+    die(f"no artifact matching '{token}'. Try: artifact list")
+
+
+def ds_dirs() -> list[Path]:
+    """Shipped first, the user's own second, mirroring the plugin's contract folders."""
+    return [_review.plugin_root() / "skills" / "create-artifact" / "design-systems",
+            _review.config_home() / "design-systems"]
+
+
+def ds_packs() -> dict[str, Path]:
+    packs: dict[str, Path] = {}
+    for d in ds_dirs():
+        if d.is_dir():
+            for p in sorted(d.glob("*.md")):
+                # The Kind line is the pack contract, so a reference .md beside a pack is not a key.
+                if p.stem != "REGISTRY" and "**Kind:**" in p.read_text(errors="replace")[:2000]:
+                    packs[p.stem] = p
+    return packs
+
+
+def cmd_ds(args):
+    packs = ds_packs()
+    if not args.key:
+        if not packs:
+            die(f"no design packs in {' or '.join(str(d) for d in ds_dirs())}")
+        w = max(len(k) for k in packs)
+        for key in sorted(packs):
+            print(f"{key:<{w}}  {packs[key]}")
+        return
+    pack = packs.get(args.key)
+    if not pack:
+        die(f"no design system named '{args.key}'. Installed:\n  " + "\n  ".join(sorted(packs)), 2)
+    print(pack)
+
+
+def cmd_list(args):
+    files = artifact_files()
+    if args.session is not None:
+        keep = set(session_slugs(args.session or None))
+        files = [p for p in files if p.stem in keep]
+    rows = [read_meta(p) for p in files]
+    rows.sort(key=lambda r: os.path.getmtime(r["path"]), reverse=True)
+
+    if args.tsv:
+        for r in rows:
+            print(f"{r['slug']}\t{r['path']}")
+        return
+    if not rows:
+        die("no artifacts touched in this conversation" if args.session is not None
+            else f"no artifacts in {ART_DIR}")
+    w = max(len(r["slug"]) for r in rows)
+    for r in rows:
+        where = r.get("url") or ("local only" if r.get("target") == "s" else "NO URL RECORDED")
+        print(f"{r['slug']:<{w}}  {r.get('title', '') or '(untitled)':<38}  {where}")
+
+
+def cmd_touch(args):
+    path = resolve(args.slug)
+    record_slug(path.stem)
+    print(f"{path.stem} recorded for this conversation")
+
+
+def cmd_path(args):
+    print(resolve(args.slug))
+
+
+def cmd_url(args):
+    meta = read_meta(resolve(args.slug))
+    url = meta.get("url")
+    if not url:
+        die(f"{meta['slug']} has no published URL recorded. Publish it, then: artifact stamp {meta['slug']} --url <url>")
+    print(url)
+
+
+def cmd_open(args):
+    path = resolve(args.slug)
+    target = path
+    if args.web:
+        meta = read_meta(path)
+        if meta.get("url"):
+            target = meta["url"]
+        else:
+            print(f"no published URL recorded for {meta['slug']}, opening the local file", file=sys.stderr)
+    subprocess.run(["/usr/bin/open", str(target)], check=False)
+
+
+def cmd_stamp(args):
+    path = resolve(args.slug)
+    text = path.read_text()
+    meta = read_meta(path)
+    for field in ("url", "ds", "target", "title"):
+        val = getattr(args, field)
+        if val:
+            meta[field] = val
+    meta["slug"] = path.stem
+    # Defaults to the file's own mtime, so the date cannot drift from the build.
+    meta["updated"] = args.updated or datetime.date.fromtimestamp(path.stat().st_mtime).isoformat()
+
+    body = "\n".join(f"{k + ':':<9}{meta[k]}" for k in FIELDS if meta.get(k))
+    block = f"<!-- artifact\n{body}\n-->"
+
+    if BLOCK_RE.search(text[:4000]):
+        text = BLOCK_RE.sub(lambda _: block, text, count=1)
+    else:
+        t = TITLE_RE.search(text[:4000])
+        if not t:
+            die(f"{path.name} has no <title>, so there is nothing to anchor the block to. Add one first.")
+        text = text[: t.end()] + "\n" + block + text[t.end() :]
+    path.write_text(text)
+    record_slug(path.stem)
+    print(f"stamped {path.name}")
+
+
+def cmd_review(args):
+    path = resolve(args.slug)
+    what = _review.install(path, sink=args.sink or "")
+    record_slug(path.stem)
+    print(f"review layer {what} in {path.name}")
+
+
+def dropped(slug: str) -> Path | None:
+    """What the page's Save button wrote, which lands wherever the browser puts a download."""
+    hit = Path.home() / "Downloads" / f"{slug}.comments.json"
+    return hit if hit.is_file() else None
+
+
+def cmd_comments(args):
+    path = resolve(args.slug)
+
+    if args.reply or args.resolve:
+        n = args.reply[0] if args.reply else args.resolve[0]
+        body = (args.reply[1] if args.reply else (args.resolve[1] if len(args.resolve) > 1 else ""))
+        t = _review.reply(path, n, body, resolve=bool(args.resolve))
+        print(f"#{t.get('n')} is now {t.get('status')}")
+        return
+
+    src = Path(args.ingest) if args.ingest else dropped(path.stem)
+    if src and not args.no_ingest:
+        if not src.is_file():
+            die(f"no such file: {src}")
+        added, total = _review.ingest(path, json.loads(src.read_text()))
+        print(f"took {added} new comment(s) from {src}, {total} total")
+
+    doc = _review.read_doc(path)
+    if args.json:
+        print(json.dumps(doc, indent=2, ensure_ascii=False))
+        return
+    print(_review.render(doc, path.stem))
+
+
+def cmd_wait(args):
+    path = resolve(args.slug)
+    until = ("approve",) if args.approve else ("approve", "send")
+    action = _review.serve(path, until=until, timeout=args.timeout)
+    if not action:
+        die("nothing arrived before the wait ended", 2)
+    print(f"\n{action} from the page")
+    print(_review.render(_review.read_doc(path), path.stem))
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="artifact", description=__doc__.split("\n")[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    p = sub.add_parser("list", help="every artifact, newest first, with its published URL")
+    p.add_argument("--session", nargs="?", const="", metavar="ID",
+                   help="only what this conversation created or updated (defaults to the current one)")
+    p.add_argument("--tsv", action="store_true", help="slug and path per line, for the status line")
+    p.set_defaults(fn=cmd_list)
+
+    p = sub.add_parser("ds", help="resolve a design pack: shipped set first, then the user's own")
+    p.add_argument("key", nargs="?", help="print the pack file for one key, or list every key")
+    p.set_defaults(fn=cmd_ds)
+
+    p = sub.add_parser("touch", help="record a slug against this conversation")
+    p.add_argument("slug")
+    p.set_defaults(fn=cmd_touch)
+
+    for name, fn, helptext in (
+        ("path", cmd_path, "print the local file path for a slug"),
+        ("url", cmd_url, "print the published URL for a slug"),
+    ):
+        p = sub.add_parser(name, help=helptext)
+        p.add_argument("slug")
+        p.set_defaults(fn=fn)
+
+    p = sub.add_parser("open", help="open the artifact, locally or on the web")
+    p.add_argument("slug")
+    p.add_argument("--web", action="store_true", help="open the published URL instead of the file")
+    p.set_defaults(fn=cmd_open)
+
+    p = sub.add_parser("review", help="add or refresh the comment layer, keeping the threads it holds")
+    p.add_argument("slug")
+    p.add_argument("--sink", help="where the page posts comments (default http://127.0.0.1:7391)")
+    p.set_defaults(fn=cmd_review)
+
+    p = sub.add_parser("comments", help="read the comments on an artifact, and answer them")
+    p.add_argument("slug")
+    p.add_argument("--ingest", metavar="FILE", help="merge an exported file (default: the one in ~/Downloads)")
+    p.add_argument("--no-ingest", action="store_true", help="read the page as it stands, pick nothing up")
+    p.add_argument("--reply", nargs=2, metavar=("N", "TEXT"), help="answer one comment as Claude")
+    p.add_argument("--resolve", nargs="+", metavar="N", help="close one comment, with what changed")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(fn=cmd_comments)
+
+    p = sub.add_parser("wait", help="listen until the page sends its comments or approves")
+    p.add_argument("slug")
+    p.add_argument("--approve", action="store_true", help="return only on an approval")
+    p.add_argument("--timeout", type=int, default=0, metavar="SECONDS")
+    p.set_defaults(fn=cmd_wait)
+
+    p = sub.add_parser("stamp", help="write or update the metadata block")
+    p.add_argument("slug")
+    for field in ("url", "ds", "target", "title", "updated"):
+        p.add_argument(f"--{field}")
+    p.set_defaults(fn=cmd_stamp)
+
+    args = ap.parse_args()
+    args.fn(args)
+
+
+if __name__ == "__main__":
+    main()
