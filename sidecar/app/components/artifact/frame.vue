@@ -13,6 +13,7 @@ const HOSTS = "section, article, figure, .panel, .stage";
 const HEADINGS = "h1, h2, h3, h4";
 const BLOCKS = "p, li, h1, h2, h3, h4, blockquote, pre, table, figure";
 const LABEL_MAX = 44;
+const SUPPRESS_ID = "sidecar-suppress";
 
 const frame = ref<HTMLIFrameElement>();
 const height = ref(0);
@@ -59,6 +60,7 @@ function onLoad(): void {
   };
 
   syncTheme(doc);
+  hidePageToggle(doc);
   measure();
   loaded.value = true;
 
@@ -89,6 +91,15 @@ function onLoad(): void {
 function syncTheme(doc: Document): void {
   const theme = document.documentElement.getAttribute("data-theme");
   if (theme) doc.documentElement.setAttribute("data-theme", theme);
+}
+
+// Every Cela artifact ships a fixed theme toggle; a second one floating over the app is a bug, like the review layer.
+function hidePageToggle(doc: Document): void {
+  if (doc.getElementById(SUPPRESS_ID)) return;
+  const style = doc.createElement("style");
+  style.id = SUPPRESS_ID;
+  style.textContent = ".theme-toggle { display: none !important; }";
+  doc.head?.append(style);
 }
 
 onMounted(() => {

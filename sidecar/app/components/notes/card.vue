@@ -24,7 +24,7 @@ const age = computed(() => relativeAge(thread.at));
       <p class="body">{{ reply.body }}</p>
     </div>
 
-    <footer v-if="thread.status === 'open'">
+    <footer v-if="thread.status === 'open' && !compact">
       <button class="act plain-button mono-meta" type="button" disabled title="Read only: the sidecar never writes a note">
         Reply
       </button>

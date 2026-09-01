@@ -96,7 +96,7 @@ export function useScreen(): Screen {
       key: s.key,
       live: s.live,
       name: nameOf(s),
-      tint: sessionTint(s.key),
+      tint: tintOf(s.color, s.key),
       waiting: shutGates(sc.whys.value[s.key]) > 0,
     })),
   );

@@ -21,13 +21,12 @@ const NAMED: Record<string, Tint> = {
   yellow: "amber",
 };
 
-// Keyed on identity: the contract colour would paint every session in one mode alike, and the dot exists to tell them apart.
-export function sessionTint(key: string): Tint {
+function fromKey(key: string): Tint {
   let hash = 0;
   for (const char of key) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   return TINTS[hash % TINTS.length] ?? "violet";
 }
 
 export function tintOf(color: string | undefined, key: string): Tint {
-  return (color && NAMED[color.toLowerCase()]) || sessionTint(key);
+  return (color && NAMED[color.toLowerCase()]) || fromKey(key);
 }
