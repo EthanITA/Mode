@@ -15,6 +15,7 @@ const NAMED: Record<string, Tint> = {
   pink: "rose",
   purple: "violet",
   red: "rose",
+  sky: "cyan",
   teal: "cyan",
   violet: "violet",
   white: "slate",
