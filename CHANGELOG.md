@@ -29,6 +29,10 @@ it, and the catalogue is smaller and sharper than it was.
   only after two consecutive clean rounds.
 - **`config.json` grows two keys.** `user` names the person a review comment is from, and `delivery`
   maps a path fragment to the receipt a delivery in that tree owes. Both ship absent.
+- **The installer links the shipped rules into your own rules directory**, and creates
+  `~/.claude/mode/design-systems/`. A path-scoped rule is not a plugin component, so Claude Code
+  reads one only from there; without the link `rules/code-style.md` would ship and never load. An
+  entry you wrote yourself is left alone.
 
 ### Changed
 
