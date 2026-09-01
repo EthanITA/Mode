@@ -6,6 +6,8 @@ import type { ArtifactDetail, ArtifactMeta, ReviewThread, ThreadAnchor, ThreadRe
 const META_BLOCK = /<!--\s*artifact\b([\s\S]*?)-->/
 const TITLE_TAG = /<title>([\s\S]*?)<\/title>/i
 const RV_SEED = /<script type="application\/json" id="rv-seed">([\s\S]*?)<\/script>/
+// Mirrors BLOCK_RE in skills/mode/bin/_review.py, the one writer of this layer.
+const RV_LAYER = /<!-- rv:start -->[\s\S]*?<!-- rv:end -->\n?/
 type MetaField = "slug" | "title" | "url" | "target" | "ds" | "updated"
 const META_FIELDS = new Set<MetaField>(["slug", "title", "url", "target", "ds", "updated"])
 const HEAD_BYTES = 4000
@@ -136,14 +138,32 @@ export async function listArtifacts(): Promise<ArtifactMeta[]> {
   return rows.sort((a, b) => b.mtime - a.mtime).map((r) => r.meta)
 }
 
-export async function getArtifact(slug: string): Promise<ArtifactDetail | undefined> {
+export async function artifactPath(slug: string): Promise<string | undefined> {
   if (!SAFE_SLUG.test(slug)) return undefined
-  const path = join(await artifactsDir(), `${slug}.html`)
-  let html: string
+  return join(await artifactsDir(), `${slug}.html`)
+}
+
+async function readWhole(path: string): Promise<string | undefined> {
   try {
-    html = await readFile(path, "utf8")
+    return await readFile(path, "utf8")
   } catch {
     return undefined
   }
+}
+
+export async function readArtifactHtml(slug: string): Promise<string | undefined> {
+  const path = await artifactPath(slug)
+  return path ? readWhole(path) : undefined
+}
+
+/** The sidecar draws the notes in its own gutter, so the page's own comment surface would be a second one. */
+export function stripReviewLayer(html: string): string {
+  return html.replace(RV_LAYER, "")
+}
+
+export async function getArtifact(slug: string): Promise<ArtifactDetail | undefined> {
+  const path = await artifactPath(slug)
+  const html = path ? await readWhole(path) : undefined
+  if (!path || !html) return undefined
   return { ...parseMeta({ head: html.slice(0, HEAD_BYTES), fallbackSlug: slug, path }), threads: parseThreads(html) }
 }
