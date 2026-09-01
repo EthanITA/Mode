@@ -46,13 +46,15 @@ test("a title that is only the session key is not a name, so the next candidate 
   assert.equal(find(liveSessions(), "bbbbbbbb").name, "Beta, auto but real")
 })
 
-test("colour is the mode's own, for the chip, and absent when no mode is held", () => {
+test("the session colour is its own, so switching mode cannot recolour the tab", () => {
   const all = liveSessions()
   const alpha = find(all, "aaaaaaaa")
   assert.equal(alpha.slots.mode.name, "demo")
-  assert.equal(alpha.color, "blue")
-  assert.equal(alpha.color, alpha.slots.mode.color)
-  assert.equal(find(all, "bbbbbbbb").color, undefined)
+  assert.equal(alpha.slots.mode.color, "blue")
+  assert.equal(alpha.color, "magenta")
+  // Holding no mode at all and still being coloured is the proof the two are unrelated.
+  assert.equal(find(all, "bbbbbbbb").color, "cyan")
+  assert.equal(find(all, "bbbbbbbb").slots.mode.color, undefined)
 })
 
 test("artifacts arrive newest first, blank lines dropped, a re-stamped slug keeping its later place", () => {
