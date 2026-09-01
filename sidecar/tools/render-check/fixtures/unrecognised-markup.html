@@ -1,0 +1,22 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <title>Mode sidecar</title>
+</head>
+<body>
+  <!--
+    The rejected build's failure wearing markup no selector in regions.ts matches.
+    Every region reads MISSING, so the only thing that can catch it is the page-wide
+    placeholder scan. Proves the check does not depend on the data-region contract
+    being adopted before it becomes useful.
+  -->
+  <div class="totally-different-shell">
+    <div class="strip"><span>parser-fix</span><span>billing-v2</span></div>
+    <div class="middle">
+      <p class="whatever">No artifact mounted yet.</p>
+    </div>
+    <div class="edge"><p>Some notes would go here.</p></div>
+  </div>
+</body>
+</html>

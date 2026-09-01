@@ -1,0 +1,82 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <title>Mode sidecar</title>
+  <style>
+    body { font: 14px system-ui; margin: 0 }
+    [hidden] { display: none }
+    body.panel-closed .state-a { display: none }
+    body:not(.panel-closed) .state-b { display: none }
+    iframe { width: 520px; height: 300px; border: 0 }
+  </style>
+</head>
+<body>
+  <!--
+    A screen with every region filled, used as the check's own positive control:
+    `npm run check:render -- --url <this file>` must pass on it. The artifact frame
+    uses srcdoc so the inner document stays same-origin under file://, which a real
+    src= would not be.
+  -->
+  <nav data-region="session-tabs" class="state-a">
+    <button>parser-fix ~/src/parser</button>
+    <button>billing-v2</button>
+    <button>docs-site ~/src/docs WAITING</button>
+  </nav>
+
+  <div data-region="artifact-switcher" class="state-a">
+    <button>Nav redesign mockup</button>
+    <button>Search index explainer</button>
+    <button>Compaction runbook</button>
+  </div>
+
+  <span data-region="version-badge" data-not-real class="state-a">V3 · 4 MIN AGO</span>
+
+  <article data-region="artifact-page">
+    <iframe title="artifact" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;Search index explainer&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;Search index explainer&lt;/h1&gt;&lt;p&gt;How the index is built, and what it costs to rebuild it from cold on a laptop.&lt;/p&gt;&lt;h2&gt;The pipeline in one picture&lt;/h2&gt;&lt;p&gt;Documents arrive, are chunked, embedded and written to the store in one pass.&lt;/p&gt;&lt;h2&gt;Where it gets slow&lt;/h2&gt;&lt;p&gt;Embedding dominates; everything else is noise beside it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;"></iframe>
+  </article>
+
+  <div data-region="panel-tabs" class="state-a">
+    <button>Notes 2</button><button>Pipeline</button><button data-not-real>History v3</button>
+    <span>thinking</span>
+  </div>
+
+  <div data-region="question-card" data-not-real class="state-a">
+    <span>CLAUDE ASKS · BLOCKS SHAPE</span>
+    <p>Which store should the index be written to?</p>
+  </div>
+
+  <div data-region="notes" class="state-a">
+    <h4>§01 · THE PIPELINE IN ONE PICTURE</h4>
+    <div><span>YOU · 6 MIN</span><span>OPEN</span><p>This skips the cold-start case entirely.</p></div>
+  </div>
+
+  <footer data-region="panel-footer" class="state-a">
+    <span>=ic</span><span>~edu</span><span>ground · 3/7</span>
+    <input data-region="prompt-input" disabled placeholder="Prompting arrives in phase 4">
+  </footer>
+
+  <div data-region="session-capsule" class="state-b">docs-site › Search index explainer 2/3</div>
+
+  <div data-region="awaiting-island" class="state-b">
+    <span>2 waiting for you</span><span>1 question · 1 gate</span>
+    <button>Theme</button><button>Share</button>
+  </div>
+
+  <div data-region="gutter-markers" class="state-b"><span>1</span><span>2</span></div>
+
+  <div data-region="pipeline-island">
+    <span>=ic</span><span>~edu</span>
+    <span>SHAPE</span><span>BUILD</span><span>SHIP</span>
+    <span>writing v4</span><button>Send</button>
+  </div>
+
+  <button data-region-toggle="panel">Close panel</button>
+
+  <script>
+    document.querySelector('[data-region-toggle="panel"]').addEventListener('click', () => {
+      document.body.classList.toggle('panel-closed')
+    })
+  </script>
+</body>
+</html>

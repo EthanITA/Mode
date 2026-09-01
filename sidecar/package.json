@@ -7,6 +7,9 @@
     "build": "nuxt build",
     "preview": "nuxt preview",
     "typecheck": "nuxi typecheck",
+    "check:render": "node tools/render-check/run.ts",
+    "check:render:types": "tsc -p tools/render-check/tsconfig.json --noEmit",
+    "check:render:self": "node tools/render-check/selftest.ts",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

@@ -1,0 +1,45 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <title>Mode sidecar</title>
+</head>
+<body>
+  <!--
+    The DOM the rejected build produced, transcribed from app/ at commit d766702.
+    index.vue filled #rail, #shelf and #threads and never filled #artifact, so the
+    layout's fallback rendered instead. Kept as the check's own regression target:
+    `npm run check:render -- --url <this file>` must fail on it.
+  -->
+  <div>
+    <button class="theme-toggle">Theme</button>
+    <div class="pipeline-island">
+      <span class="chip">=ic</span><span class="chip">~edu</span>
+    </div>
+    <div class="folio-desk">
+      <header class="folio-rail">
+        <ul class="rail-list">
+          <li>3f9a1c02</li>
+          <li>7b21de44</li>
+          <li>c0ffee11</li>
+        </ul>
+      </header>
+      <div class="folio-spread">
+        <article class="folio-page folio-page--left">
+          <div class="folio-shelf">
+            <ul class="shelf-list">
+              <li>mode-sidecar-rebuild-spec</li>
+              <li>mode-sidecar-architecture</li>
+              <li>desk-72906-cutoff-5740-rejection</li>
+            </ul>
+          </div>
+          <p class="folio-empty">No artifact mounted yet.</p>
+        </article>
+        <section class="folio-page folio-page--right">
+          <p class="folio-empty">No threads mounted yet.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
