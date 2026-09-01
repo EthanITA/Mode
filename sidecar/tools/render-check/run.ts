@@ -25,7 +25,7 @@ screen, region by region. Structure and presence only — never taste.
   npm run check:render                 attach to a running app, or start one
   npm run check:render -- --json r.json  also write the structured report
 
-  --url <url>        default http://localhost:3000; a file:// url works too
+  --url <url>        default http://localhost:$NUXT_PORT, else :3000; file:// works too
   --no-start         fail rather than starting a dev server
   --viewport <WxH>   default 1440x900
   --settle <ms>      how long to wait for the DOM to stop changing, default 8000
@@ -38,7 +38,7 @@ Exit code is 1 when a region the design fills has nothing in it.
 
 function parseArgs(argv: string[]): Options {
   const options: Options = {
-    url: 'http://localhost:3000',
+    url: `http://localhost:${process.env.NUXT_PORT || process.env.PORT || '3000'}`,
     autoStart: true,
     width: 1440,
     height: 900,

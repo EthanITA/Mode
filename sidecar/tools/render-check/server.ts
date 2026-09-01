@@ -49,5 +49,8 @@ export async function ensureServer(url: string, autoStart: boolean, timeoutMs: n
     if (died) break
   }
   stop()
-  throw new Error(`Started \`npm run dev\` but ${url} never answered within ${timeoutMs}ms.`)
+  throw new Error(
+    `Started \`npm run dev\` but ${url} never answered within ${timeoutMs}ms. ` +
+      `If the app is already running on another port, pass --url, or set NUXT_PORT.`,
+  )
 }

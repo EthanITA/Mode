@@ -300,11 +300,14 @@ export function renderReport(report: RenderReport): string {
     }
   }
 
+  const regionFails = new Set(fails.filter((f) => f.region).map((f) => `${f.state}:${f.region ?? ''}`)).size
+  const pageFails = fails.length - fails.filter((f) => f.region).length
+
   lines.push('')
   lines.push(
     report.verdict === 'pass'
       ? `PASS — every region the design fills has content on screen. ${warns.length} warning(s).`
-      : `FAIL — ${fails.length} region(s) are not showing what the design says they hold.`,
+      : `FAIL — ${regionFails} region(s) not showing what the design says they hold, ${pageFails} page-level error(s).`,
   )
   lines.push('  This check reports structure and presence only. Whether it looks right is Marco’s call.')
   return lines.join('\n')
