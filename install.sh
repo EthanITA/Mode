@@ -138,7 +138,7 @@ fi
 
 step "1. A place for contracts you write yourself"
 
-for sub in modes styles rules; do
+for sub in modes styles rules design-systems; do
   target=$USER_CONTRACTS/$sub
   if [ -d "$target" ]; then
     say "Already there: $target"
@@ -513,7 +513,7 @@ A UserPromptSubmit hook has already read this message and performed the switch, 
 \`mode style set\` over it.
 
 A name goes to whichever axis owns it, so this is not limited to the style slot. \`/style tdd\`
-fills the mode slot, and \`/style tdd maintainer\` fills both, the first name per axis winning.
+fills the mode slot, and \`/style tdd native\` fills both, the first name per axis winning.
 Only \`auto\` and \`off\` stay tied to this command. Read what is in your context rather than
 assuming a style was set.
 
@@ -553,6 +553,30 @@ If it is not there, the hook could not reach the tool. Run \`$MODE_BIN why\` and
 EOF
 }
 
+# Takes its description as an argument: a hyphenated name cannot be a shell function.
+write_skill_alias() {
+  name=$1
+  target=$USER_COMMANDS/$name.md
+  mkdir -p "$USER_COMMANDS"
+  if [ -e "$target" ] && ! grep -q "$ALIAS_MARKER" "$target" 2>/dev/null; then
+    say "Left alone, a file this installer did not write: $target"
+    return 0
+  fi
+  cat > "$target" <<EOF
+---
+description: $2
+argument-hint: "[what to work on]"
+---
+
+<!-- $ALIAS_MARKER -->
+Use the \`mode:$name\` skill, which ships with the mode plugin, and follow it for this request.
+
+\$ARGUMENTS
+EOF
+  say "Wrote: $target"
+  touched "$target: the bare /$name command"
+}
+
 write_alias() {
   target=$USER_COMMANDS/$1.md
   mkdir -p "$USER_COMMANDS"
@@ -581,6 +605,10 @@ else
   write_alias style
   write_alias approve
   write_alias why
+  write_skill_alias create-artifact "Build a visual artifact in a named design system."
+  write_skill_alias edge-induction "Generate an edge-case checklist by inducting on the problem's structure."
+  write_skill_alias design "Guidance on UI polish, component design and animation decisions."
+  write_skill_alias showpiece-prompt "Author a one-shot generative prompt using the six-slot anatomy."
 fi
 
 # ---------------------------------------------------------------- 4. the per-contract shortcuts

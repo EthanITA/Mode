@@ -206,7 +206,9 @@ def cmd_open(args):
             target = meta["url"]
         else:
             print(f"no published URL recorded for {meta['slug']}, opening the local file", file=sys.stderr)
-    subprocess.run(["/usr/bin/open", str(target)], check=False)
+    # Absolute on macOS because bin/open on PATH shadows the system one inside a Notes-style tree.
+    opener = "/usr/bin/open" if sys.platform == "darwin" else "xdg-open"
+    subprocess.run([opener, str(target)], check=False)
 
 
 def cmd_stamp(args):

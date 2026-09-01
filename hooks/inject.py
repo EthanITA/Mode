@@ -96,7 +96,7 @@ def obey(message, session, cwd):
                 shown.append(ask("why", "--path", cwd, *sid(session)) or "")
                 continue
             owner = ask("axis", arg)
-            # So /mode maintainer reaches the style slot instead of failing quietly against the mode one.
+            # So /mode native reaches the style slot instead of failing quietly against the mode one.
             axis = verb if arg in SLOT_WORDS else (owner or verb)
             known = bool(owner) or arg in SLOT_WORDS
             # The first name per axis wins, so names can arrive in any order and a duplicate is noise.

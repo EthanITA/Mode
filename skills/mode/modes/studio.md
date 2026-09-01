@@ -54,7 +54,7 @@ All four are settled before you build anything, and the ordering is the point. P
 | **The register.** Dense thinking stays readable, and every term of art gets a plain gloss the first time it appears. | Precision nobody can follow. |
 | **The coverage.** An exhaustive pass over the problem's structure rather than over whatever comes to mind first. | The three obvious ideas, presented as a survey. |
 
-If this setup carries skills for any of these, load them at the start of the session rather than partway through the build.
+The design, showpiece-prompt and create-artifact skills ship with this plugin. Load the ones that apply at the start of the session rather than partway through the build.
 
 ## Rejected options stay on the page
 
