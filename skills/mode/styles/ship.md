@@ -1,14 +1,16 @@
 ---
 name: ship
-summary: Ship it properly. Readable, well named, grouped by domain, and our standard where the repo has none.
+summary: Ship it properly. Readable, named, grouped by domain, and everything a dependent needs travels with it.
 color: green
-enter-when: ship this|ship it|get it out|ship mode|ready to ship
+enter-when: ship this|ship it|get it out|ready to ship|ship mode|public api|backwards compat|backward compat
 exit-when: manual
 ---
 
 # Ship style
 
 The change is going out, and going out is exactly why it has to read well. Shipped code is code somebody maintains, so every choice is judged by the next developer's cost to understand it: what autocomplete shows them, how big the file is they open, how many hops it takes from a call site to the behaviour.
+
+And somebody who is not in this room will depend on it. So the change never travels alone: whatever describes it moves in the same diff, and whatever it breaks gets named before it lands rather than discovered after.
 
 ## The inner compass
 
@@ -51,10 +53,29 @@ Follow the repo's standard when it has one worth the name. Most repos do not. Th
 - A file you touched that has outgrown what one person can hold gets split as part of the work, by domain, with real names. That is what shipping means here, and it needs no permission.
 - The boundary is the file you touched. Never sweep the repo, and never half-migrate: when bringing a file current would balloon the diff, leave it whole and say so instead.
 
-## Tests and docs
+## What travels with the change
 
-- Tests go where the change carries real risk: money paths, state machines, parsing, a security property. A lean file with few essential cases, folded into an existing test file when one fits.
-- A change to documented behaviour updates the doc in the same change.
+Each of these moves in the same diff as the code it describes, or it drifts. A doc updated next week is a doc that spent a week lying.
+
+| Travels | Moves when | What wrong looks like |
+|---|---|---|
+| Tests | Behaviour changed, a bug was fixed, or the change carries real risk: money paths, state machines, parsing, a security property | The bug can come back and nothing notices |
+| README and usage docs | The way somebody installs, configures or calls the thing changed | A newcomer follows the instructions and hits an error |
+| The API description, where the project keeps one | A request shape, a response shape or a status code changed | Generated clients are wrong and nobody finds out until integration |
+| Changelog, where the project keeps one | Anything a user of this code would want to know about | The upgrade is a surprise, every time |
+| Migration note | A breaking change ships | People stay on the old version because nobody wrote the path off it |
+
+Correct and short, both. Verbosity is a maintenance cost like any other: a changelog entry is one line saying what changed and who it affects, and a README section explains what is not obvious and skips what is. Paste the real command over a description of it.
+
+## No surprising side effects
+
+A behaviour change nobody asked for is a defect even when the new behaviour is better. Before shipping, name the blast radius out loud. Five things carry surprises more often than anything else: a default value that changed, the shape of an error, ordering somebody was relying on, timing, and anything a caller could reach that is now gone or renamed.
+
+When one of those has to change, keep the old path working and mark it deprecated, with a version where it goes away. Deleting it in the same release is the move that turns a good change into an incident.
+
+## Dependencies: recommend, never bump silently
+
+Watch for the stale dependency and the published advisory, and say what you found. Then stop. A silent upgrade is a change nobody reviewed, arriving inside a diff about something else. The deliverable is a recommendation: what is out of date, what the advisory says, what the upgrade would cost, and how urgent it honestly is. The user picks. The one exception is a vulnerability being actively exploited in code that is currently exposed: say so plainly and loudly, then still ask.
 
 ## Delivery
 
@@ -67,7 +88,7 @@ A style modulates how the work is written. It never removes what a mode requires
 
 ## Standing reminder
 
-- Ship means the next developer can work on it: readable, named, grouped by domain.
+- Ship means the next developer can work on it: readable, named, grouped by domain, typed at its edges.
 - The repo's habits are not a standard. Where it has no real one, this contract's rules apply.
-- Comments say why or nothing; exported surfaces carry explicit types; reuse before building.
-- Refactor a touched file that has outgrown itself, and never sweep beyond what you touched.
+- Tests, docs and the changelog move in the same diff as the code they describe.
+- Name the blast radius out loud, deprecate rather than delete, and recommend a dependency bump rather than making it.
