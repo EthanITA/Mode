@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   compatibilityDate: "2026-09-01",
   // Non-negotiable: this whole app renders client side, never on the server.
   ssr: false,
-  css: ["~/assets/css/cela.css", "~/assets/css/surface.css"],
+  css: ["~/assets/css/cela.css", "~/assets/css/surface.css", "~/assets/css/sidecar.css"],
   app: {
     head: {
       title: "Mode sidecar",

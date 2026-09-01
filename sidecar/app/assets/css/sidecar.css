@@ -1,0 +1,88 @@
+/* Screen-wide tokens for the sidecar shell. Everything here resolves out of the
+   vendored Cela tokens in cela.css — no literal colour, no literal duration. */
+
+:root {
+  --rail-h: 46px;
+  --panel-w: 400px;
+  --gutter-w: 44px;
+  --page-w: 760px;
+  --step: 8px;
+
+  /* Session and contract colours arrive as terminal colour names. Cela carries four
+     of the hues outright; the rest are mixed from them so nothing here is a raw hex. */
+  --tint-violet: var(--primary);
+  --tint-amber: var(--warning);
+  --tint-blue: var(--info);
+  --tint-green: var(--success);
+  --tint-rose: var(--error);
+  --tint-cyan: color-mix(in oklch, var(--info) 62%, var(--success));
+  --tint-orange: color-mix(in oklch, var(--warning) 68%, var(--error));
+  --tint-slate: var(--subtle);
+}
+
+[data-tint="violet"] { --tint: var(--tint-violet); }
+[data-tint="amber"] { --tint: var(--tint-amber); }
+[data-tint="blue"] { --tint: var(--tint-blue); }
+[data-tint="green"] { --tint: var(--tint-green); }
+[data-tint="rose"] { --tint: var(--tint-rose); }
+[data-tint="cyan"] { --tint: var(--tint-cyan); }
+[data-tint="orange"] { --tint: var(--tint-orange); }
+[data-tint="slate"] { --tint: var(--tint-slate); }
+
+html,
+body,
+#__nuxt {
+  height: 100%;
+}
+
+body {
+  overflow: hidden; /* the stage owns the scroll, so the fixed islands never drift */
+}
+
+/* --- shared vocabulary -----------------------------------------------------
+   Small primitives the whole screen reuses. Component-local rules stay scoped;
+   these are the ones repeated across four or more components. */
+
+.mono-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.dot {
+  border-radius: 999px;
+  flex: none;
+  height: var(--dot-size, 7px);
+  width: var(--dot-size, 7px);
+}
+
+/* Marks a region drawn from the design that no data can fill yet, so a drawing is
+   never read as a description. */
+[data-scaffold] {
+  position: relative;
+}
+
+[data-scaffold] > .scaffold-body {
+  opacity: 0.55;
+}
+
+.focusable:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.plain-button {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.plain-button:disabled {
+  cursor: not-allowed;
+}
