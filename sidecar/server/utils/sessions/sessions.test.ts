@@ -53,9 +53,9 @@ test("the mode slot lends the session its colour, and no mode leaves it uncolour
   assert.equal(find(all, "bbbbbbbb").color, undefined)
 })
 
-test("artifacts come from the session's own list, deduped, blank lines dropped", () => {
+test("artifacts arrive newest first, blank lines dropped, a re-stamped slug keeping its later place", () => {
   const all = liveSessions()
-  assert.deepEqual(find(all, "aaaaaaaa").artifacts, ["alpha-one", "alpha-two"])
+  assert.deepEqual(find(all, "aaaaaaaa").artifacts, ["alpha-one", "alpha-three", "alpha-two"])
   assert.deepEqual(find(all, "bbbbbbbb").artifacts, [])
 })
 
