@@ -63,8 +63,8 @@ Three things, none of which a plugin can do for itself. It never asks your name:
 
 | It does | Because |
 |---|---|
-| Writes `/mode`, `/style`, `/approve` and `/why` into your commands directory | A plugin cannot register an un-namespaced command, so without these files those names do not resolve at all |
-| Creates `~/.claude/mode/{modes,styles,rules}/` | Somewhere for contracts you write yourself that a plugin update never overwrites |
+| Writes `/mode`, `/style`, `/approve` and `/why` into your commands directory, plus one per shipped skill | A plugin cannot register an un-namespaced command, so without these files those names do not resolve at all |
+| Creates `~/.claude/mode/{modes,styles,rules,design-systems}/` | Somewhere for contracts and design-system packs you write yourself that a plugin update never overwrites |
 | Wires the status line | `statusLine` is a key in your `settings.json`, and no plugin can set it |
 
 It then runs `mode sync`, which adds one palette entry per contract.
@@ -128,10 +128,10 @@ An update never touches contracts you wrote yourself, because they live in `~/.c
 
 Every contract also has its own palette entry, so you can type `/mode:` or `/style:` and pick from the list rather than recalling names. Both spellings do the identical thing.
 
-**A bare name goes to whichever axis owns it**, so you do not have to remember which is which: `/mode maintainer` fills the *style* slot, because `maintainer` is a style. You can set both at once, in either order, and two commands in one message both land:
+**A bare name goes to whichever axis owns it**, so you do not have to remember which is which: `/mode native` fills the *style* slot, because `native` is a style. You can set both at once, in either order, and two commands in one message both land:
 
 ```text
-/mode tdd maintainer     # a mode and a style in one go
+/mode tdd native         # a mode and a style in one go
 /mode:debug /style:edu   # the same thing, as two shortcuts
 ```
 
@@ -140,6 +140,13 @@ The slots are independent. Setting one never touches the other, and `off` on one
 **A message that is only a switch never reaches the model.** The hook does the switch, prints the chips back, and ends the turn, so it costs no tokens and answers immediately. Add anything else and the turn runs as usual: `/mode debug fix the parser` sets the slot and then gets to work.
 
 Both also accept `auto`, which lets a contract be picked from what you write. A contract you set by hand is never overridden, a message matching two contracts picks neither, and anything chosen for you is marked with a leading tilde in the status line, so `~debug` means the chooser filled the slot and plain `debug` means you typed it.
+
+> [!TIP]
+> A fresh slot starts empty, not on `auto`, so nothing is ever chosen for you until you ask for it. If you would rather the chooser were always live, pin it once and every session below that directory starts there:
+>
+> ```bash
+> cd ~ && mode mode pin auto && mode style pin auto
+> ```
 
 ### The modes
 
@@ -153,7 +160,7 @@ A **mode** is how the work runs: steps, gates, and a point where you can say it 
 | `autopilot` | You want a result and you are walking away. Every decision is Claude's, one report waits. Typed only, never auto-chosen. | the MR opens |
 | `debug` | Something is broken and nobody knows where. Instrument, reproduce, fix the cause, explain why. | you approve the explainer |
 | `tdd` | You want the test to exist before the code, failing for the right reason | you say so |
-| `prove` | You do not trust that a change works, and want it run before and after through something that can disagree | you say so |
+| `goal` | It has to be truly finished: verified for real, then audited clean by fresh eyes, twice in a row | you say so |
 | `tester` | A feature somebody else built needs sweeping, and you want a verdict rather than a fix | you say so |
 | `studio` | You are thinking something through and want the ideas on a page that grows as you talk | you say so |
 
@@ -165,8 +172,7 @@ A **style** is how Claude sounds while any of that runs. It has no steps of its 
 |---|---|
 | `edu` | You want to understand, not just be updated. Top down, plain words, carried by pictures |
 | `fast` | You are in a hurry. It gets made to work and nothing gets polished |
-| `ship` | It is going out, so it has to be maintainable: readable, named, grouped by domain |
-| `maintainer` | Other people depend on this. Tests, docs and the changelog move with the code |
+| `ship` | It is going out and other people depend on it: readable, named, and the tests, docs and changelog travel with it |
 | `native` | Somebody else's codebase. Match the local idiom and add none of your own |
 | `creative` | The safe first answer is not good enough. Go wide, several real options, boldness spent in one place |
 | `xyz` | You write short and expect the rest inferred. Every reply opens with the read |
@@ -181,12 +187,42 @@ Most combinations just work. Three are worth knowing:
 
 ---
 
+## What else ships with it
+
+Beyond the two slots, the plugin carries the skills the contracts reach for, so a mode that says
+"build an artifact" is naming something that is actually installed.
+
+| Skill | What it does |
+|---|---|
+| `create-artifact` | Builds one self-contained HTML page in a named design system, opened locally |
+| `edge-induction` | Turns a problem's structure into an edge-case checklist rather than a list from memory |
+| `design` | Interface craft: polish, component design, animation decisions |
+| `showpiece-prompt` | Writes a one-shot generative prompt using the six-slot anatomy |
+
+They are namespaced `mode:<name>`, and the installer writes a bare `/<name>` command for each.
+
+`create-artifact` comes with a CLI, `bin/artifact`, which resolves a slug to a file, stamps its
+metadata, and runs the comment round trip that lets you review a page and have Claude answer the
+threads. Three lookups are worth knowing:
+
+| It resolves | In this order |
+|---|---|
+| A design system | The packs shipped here, then `~/.claude/mode/design-systems/`, where yours wins on a name clash |
+| Where artifacts live | `NOTES_ARTIFACTS`, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/artifacts` |
+| Who a comment is from | The `user` key in that same config, defaulting to "User" |
+
+That config file holds the plugin's own settings too: `guards` turns every guard off at once, and
+`delivery` maps a path fragment to the receipt a delivery in that tree owes, such as
+`[["acme", "mr-merged"]]`. It ships empty, because only you know which of your trees owes what.
+
+---
+
 ## Pinning a pair to a directory
 
 Both slots die with the conversation, which is right for a contract you set for one piece of work and wrong for the answer that is the same every time you open a particular repo. A **pin** is that answer, written once and adopted by every conversation that starts inside the directory.
 
 ```bash
-mode style pin maintainer      # every session under this directory starts in maintainer
+mode style pin native          # every session under this directory starts in native
 mode mode pin off              # and none of them starts in a mode
 mode pins                      # what a fresh conversation here would begin in, and why
 ```
@@ -202,7 +238,7 @@ A shared `.mode` is two lines, and hand-writing it is the point:
 
 ```text
 mode: tdd
-style: maintainer
+style: native
 ```
 
 Resolution walks up from the working directory and stops at the first answer, so the **deepest** file wins and one package in a monorepo can differ from the repo around it. Where both layers answer in the same directory, the personal one wins: it is your machine against somebody else's default. `mode <axis> pin off` writes a personal no that masks a shared file, and `--forget` drops the personal row so the shared one shows through again.
@@ -213,7 +249,7 @@ Three restraints keep a pin a default rather than an override.
 - **A pin fills a slot once per conversation.** Switching away from an adopted contract is not undone on the next prompt.
 - **A name this machine has no contract for is stepped over in silence.** A repo pinning a contract you never installed costs you nothing, and does not take the rest of its `.mode` file down with it.
 
-A pinned slot is marked in the status line with a leading `=`, so `=maintainer` says the directory chose it, `~maintainer` says the chooser did, and a bare name says you typed it.
+A pinned slot is marked in the status line with a leading `=`, so `=native` says the directory chose it, `~native` says the chooser did, and a bare name says you typed it.
 
 ---
 

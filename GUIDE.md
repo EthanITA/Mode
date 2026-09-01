@@ -22,9 +22,9 @@ Those are the two dials. A session holds one of each, and each one holds until y
 
 A **mode** answers *how the work runs*: it has steps, gates and a point where you can say it finished. A **style** answers *how it sounds while running*: it has no steps at all, and instead changes the texture of whatever mode is going.
 
-<p align="center"><img src="assets/axes.svg" alt="A grid of nine modes down the side against seven styles across the top, making sixty-three combinations, with the cell where debug meets edu highlighted." width="620"></p>
+<p align="center"><img src="assets/axes.svg" alt="A grid of nine modes down the side against six styles across the top, making fifty-four combinations, with the cell where debug meets edu highlighted." width="620"></p>
 
-Keeping them apart is what keeps the file count down. Nine modes and seven styles cover sixty-three combinations, so a new way of talking costs one file rather than nine rewrites.
+Keeping them apart is what keeps the file count down. Nine modes and six styles cover fifty-four combinations, so a new way of talking costs one file rather than nine rewrites.
 
 **The test for which one a new idea is:** does it have an order of operations? If it says do this, then that, and stop here, it is a mode. If it only changes the texture of what you were already doing, it is a style.
 
@@ -131,12 +131,12 @@ Matching anchors at the **start** of a word and runs free at the end. So `fail` 
 
 ## Pins, or the answer that is the same every time
 
-A slot dies with the conversation, which is correct for a contract you set for one piece of work. It is wrong for the answer that never changes: this repo belongs to other people, so `native`; that one is a library, so `maintainer`. Retyping it every morning is exactly the memory problem the plugin exists to remove, moved up one level.
+A slot dies with the conversation, which is correct for a contract you set for one piece of work. It is wrong for the answer that never changes: this repo belongs to other people, so `native`; that one goes out to dependents, so `ship`. Retyping it every morning is exactly the memory problem the plugin exists to remove, moved up one level.
 
 A **pin** is that answer written down once. It fills a slot at the start of every conversation held inside a directory, and nothing else.
 
 ```bash
-mode style pin maintainer      # here and everywhere below here
+mode style pin native          # here and everywhere below here
 mode pins                      # what a fresh conversation would start in, and which file said so
 ```
 
@@ -155,7 +155,7 @@ Lookup walks up from the working directory and takes the first answer it finds, 
 - Adoption happens once per axis per conversation. Without this, every switch you made would be reverted on the next prompt.
 - A name this machine has no contract for is skipped rather than held, and it does not take the rest of the file with it. So a repo pinning somebody else's private contract costs a stranger nothing.
 
-The status line tells the three sources apart: `maintainer` you typed, `~maintainer` the chooser picked, `=maintainer` the directory pinned.
+The status line tells the three sources apart: `native` you typed, `~native` the chooser picked, `=native` the directory pinned.
 
 ---
 
@@ -221,11 +221,11 @@ No implementation line exists before a test that failed for the right reason. Re
 
 <p align="center"><img src="assets/mode-tdd.svg" alt="TDD enumerates cases from structure, reduces them to a minimum set, then loops: a test that fails on its assertion, the least code that passes it, then refactoring while green." width="820"></p>
 
-### `prove`
+### `goal`
 
-For when you do not trust that a change works. A channel is anything that can disagree with you: a response body, a log line, an exit code. Reading the code is not one.
+For when "it works" is only half of done. A channel is anything that can disagree with you: a response body, a log line, an exit code. Reading the code is not one, and neither is your own opinion of your diff, which is why the audit goes to fresh eyes.
 
-<p align="center"><img src="assets/mode-prove.svg" alt="Prove names the channel that could disagree, records a baseline before the change, proves it after, then deliberately breaks the thing once to confirm the channel actually notices." width="820"></p>
+<p align="center"><img src="assets/mode-goal.svg" alt="Goal loops: implement, verify through a channel that could disagree, then hand the diff to a fresh subagent to audit against the project's own bar. Any finding restarts the loop, and it ends only after two consecutive clean rounds." width="820"></p>
 
 ### `tester`
 
@@ -241,7 +241,7 @@ Thinking something through, where the thinking itself is the deliverable. The on
 
 ---
 
-## The seven styles
+## The six styles
 
 A style has no steps, so each is drawn as what it does to the same reply: on the left what it would have been, on the right what it becomes.
 
@@ -259,15 +259,9 @@ You are in a hurry. Note the third line: fewer words never means less work.
 
 ### `ship`
 
-It is going out, so somebody has to maintain it.
+It is going out and somebody else has to maintain it, so the change cannot travel alone.
 
 <p align="center"><img src="assets/style-ship.svg" alt="The ship style turns code that merely works into code the next developer can maintain: readable, named, grouped by domain and typed at its edges." width="620"></p>
-
-### `maintainer`
-
-Other people depend on this, so the change cannot travel alone.
-
-<p align="center"><img src="assets/style-maintainer.svg" alt="The maintainer style makes the change arrive with its tests, docs and changelog in the same diff, and names the blast radius of anything that could surprise a dependent." width="620"></p>
 
 ### `native`
 

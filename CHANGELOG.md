@@ -7,6 +7,49 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.15.0
+
+The plugin stops pointing at things it does not carry. The skills its contracts name now ship with
+it, and the catalogue is smaller and sharper than it was.
+
+### Added
+
+- **Four skills ship with the plugin**, namespaced `mode:<name>`, with a bare `/<name>` command each
+  written by the installer. `create-artifact` builds one self-contained HTML page in a named design
+  system. `edge-induction` generates an edge-case checklist from a problem's structure. `design`
+  carries interface craft. `showpiece-prompt` writes one-shot generative prompts. Until now the
+  contracts named these and hoped the setup happened to have them.
+- **The artifact CLI, `bin/artifact`**, beside `bin/mode`: slug resolution, the metadata stamp, and
+  the comment round trip that lets a page be reviewed and the threads answered from the terminal.
+- **`artifact ds`**, which resolves a design system through the shipped packs first and
+  `~/.claude/mode/design-systems/` second, so a pack you write beats one that ships.
+- **`rules/code-style.md`**, the rule the null guard already enforced, now shipping beside it.
+- **`goal` mode.** Implement, verify through a channel that could disagree, then hand the diff to a
+  fresh subagent to audit against the project's own bar. Any finding restarts the loop, and it ends
+  only after two consecutive clean rounds.
+- **`config.json` grows two keys.** `user` names the person a review comment is from, and `delivery`
+  maps a path fragment to the receipt a delivery in that tree owes. Both ship absent.
+
+### Changed
+
+- **`prove` is gone, folded into `goal`.** Naming the channel, recording a baseline, and breaking the
+  thing once to check the channel notices are all steps of the new mode, and `ic` already carried the
+  discipline for smaller work.
+- **`maintainer` is gone, folded into `ship`.** One style slot meant the two could never be held
+  together, yet a change that goes out wants both. `ship` now carries what travels with the change,
+  the blast radius, and the restraint on bumping a dependency.
+- **`enter-when` phrases that misfired on ordinary asks are dropped**: `why is` and `why does` from
+  `debug`, `end to end` and bare `regression` and `qa` from `tester`, bare `explore` and `think
+  about` from `studio`, and `make it work` from `fast`.
+- **The delivery bar is read from config rather than compiled in.** It used to name one person's
+  repositories.
+- **`artifact open` uses `xdg-open` off macOS.**
+
+### Fixed
+
+- The guide embedded two diagrams for contracts that no longer exist, and the axes diagram still drew
+  a grid of sixty-three combinations. Both now match the catalogue.
+
 ## 0.14.0
 
 A contract can now outlive the conversation, refuse an edit, and explain itself.
