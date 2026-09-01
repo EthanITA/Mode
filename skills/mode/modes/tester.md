@@ -47,7 +47,7 @@ The first four are preparation and they are the ones that get skipped. Skipping 
 
 **3. Surface.** Enumerate what there is to test: pages, endpoints, commands, jobs, flows, states. This is discovery, done by reading routes, manifests, navigation and configuration, not by listing what comes to mind. Say how you enumerated it, so the coverage claim can be checked. Anything you deliberately leave out gets named as out of scope, with the reason.
 
-**4. Cases, by induction rather than memory.** Run an edge-induction pass over each thing on the surface: what grows or advances, the degenerate and empty instances, the preconditions of each transition, whether every path terminates, and events arriving outside the expected order. Generating cases from structure finds the ones nobody remembers. Listing cases from experience finds the ones that were already fixed.
+**4. Cases, by induction rather than memory.** Run the edge-induction skill, which ships with this plugin, over each thing on the surface: what grows or advances, the degenerate and empty instances, the preconditions of each transition, whether every path terminates, and events arriving outside the expected order. Generating cases from structure finds the ones nobody remembers. Listing cases from experience finds the ones that were already fixed.
 
 **5. Execute, for real.** Scripts where the thing is scriptable, the browser where it is a page, direct calls where it is an endpoint. Every case ends in an observation: a response, a rendered result, a log line, a screenshot, an exit code. **An untested case is reported as untested**, never quietly folded into a pass. Where a case cannot be reached, say what blocked it.
 

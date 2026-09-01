@@ -52,7 +52,7 @@ Do not list cases from memory. Induct on the structure of the behaviour, along t
 - **Termination.** What stops the loop, and what happens when the stopping condition never arrives.
 - **Out-of-domain events.** The input nobody planned for, arriving in the state nobody planned for. A cancel during a retry. A second call before the first one returned.
 
-If this setup carries an edge-induction skill, this is the gate that loads it.
+The edge-induction skill ships with this plugin; this is the gate that loads it.
 
 ### 2. Reduce
 
