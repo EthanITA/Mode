@@ -74,7 +74,7 @@ On the status line it emits and does not own. `bin/mode chips` prints one entry 
 | What you have | What it does |
 |---|---|
 | No status line | Writes a small one whose only job is to print the chips |
-| A status line already | Never overwrites it. Shows the block to add, offers to append, shows the diff first |
+| A status line already | Never overwrites it. Shows the block to add, offers to append, shows the diff first. Appends only to a shell script; a `node …` or `python …` line is left alone |
 | A settings file that is a symlink | Resolves it and writes through it, so it stays a symlink |
 
 > [!WARNING]

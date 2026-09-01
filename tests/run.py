@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run every suite and print one summary.
 
-    python3 tests/run.py            all three suites
+    python3 tests/run.py            all suites
     python3 tests/run.py cli hooks  only the named ones
 """
 
@@ -16,6 +16,7 @@ SUITES = (
     ("cli", "test_cli.py", "bin/mode against the fixed CLI surface, on fixture contracts"),
     ("contracts", "test_contracts.py", "the ten shipped contracts, and how real phrases route"),
     ("hooks", "test_hooks.py", "each hook against the payload Claude Code sends it"),
+    ("install", "test_install.py", "install.sh against a fake config dir, including a node status line"),
 )
 
 COUNT = re.compile(r"^  (PASS|FAIL|SKIP)  ", re.M)

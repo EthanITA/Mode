@@ -71,7 +71,7 @@ In both cases it writes `chips.sh` into the user's own config directory, and tha
 
 When a status line already exists, show the block `install.sh` printed and ask with `AskUserQuestion`, giving them a real choice:
 
-- **Append it for me.** Re-run with `--insert-chips`. It backs the file up first and shows a diff before writing.
+- **Append it for me.** Re-run with `--insert-chips`. It backs the file up first and shows a diff before writing. It only appends to a shell script; a `node …` or `python …` status line is left alone, because the first file on that command is the interpreter.
 - **I will do it myself.** Leave the block on screen. Nothing gets written.
 
 Never append to someone's status line script without asking. It is their file, and the plugin is a guest in it.

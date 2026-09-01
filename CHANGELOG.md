@@ -7,6 +7,16 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.15.1
+
+### Fixed
+
+- **`--insert-chips` no longer appends to the interpreter.** A status line of
+  `node /path/to/index.ts` has two files on the command: the Node binary, then the
+  script. The installer took the first file that existed, so it wrote a shell block
+  onto `node` itself and SIGKILL'd every new Node 24/26 process on that path. It now
+  skips interpreters, and it refuses to edit a file that is not a shell script.
+
 ## 0.15.0
 
 The plugin stops pointing at things it does not carry. The skills its contracts name now ship with

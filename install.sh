@@ -221,13 +221,62 @@ with open(p) as f:
 script_from_command() {
   python3 -c '
 import os, shlex, sys
+
+# Interpreters are files, and they come first in a statusLine command, so taking
+# the first existing path used to append a shell block to node itself.
+SKIP = {
+    "env", "nice", "nohup", "sudo", "time",
+    "node", "nodejs", "bun", "deno", "tsx", "ts-node",
+    "python", "python2", "python3", "pypy", "pypy3",
+    "ruby", "perl", "php", "lua",
+    "bash", "sh", "zsh", "ksh", "dash", "fish", "awk", "gawk",
+}
+
+def is_interpreter(arg):
+    base = os.path.basename(arg).lower()
+    if base in SKIP:
+        return True
+    for prefix in ("python", "node", "pypy", "ruby", "perl", "php"):
+        rest = base[len(prefix):]
+        if base.startswith(prefix) and (not rest or not rest[0].isalpha()):
+            return True
+    return False
+
 try:
     parts = shlex.split(sys.argv[1])
 except ValueError:
     parts = sys.argv[1].split()
 for a in parts:
-    if os.path.isfile(a):
-        print(a); break
+    if os.path.isfile(a) and not is_interpreter(a):
+        print(a)
+        break
+' "$1"
+}
+
+is_shell_script() {
+  python3 -c '
+import os, sys
+path = sys.argv[1]
+try:
+    with open(path, "rb") as f:
+        head = f.read(8192)
+except OSError:
+    raise SystemExit(1)
+if b"\0" in head:
+    raise SystemExit(1)
+try:
+    text = head.decode("utf-8")
+except UnicodeDecodeError:
+    raise SystemExit(1)
+line = text.lstrip().split("\n", 1)[0]
+if path.endswith(".sh"):
+    raise SystemExit(0)
+if line.startswith("#!") and any(
+    token in line
+    for token in ("/sh", "/bash", "/zsh", " env sh", " env bash", " env zsh")
+):
+    raise SystemExit(0)
+raise SystemExit(1)
 ' "$1"
 }
 
@@ -374,13 +423,23 @@ handle_existing_statusline() {
   host_script=$(script_from_command "$existing_command")
 
   if [ -z "$host_script" ]; then
-    say "The command does not point at a file this script can find, so add the chips yourself."
+    say "The command does not point at a shell script this installer can edit, so add the chips yourself."
+    say "A command that starts with node or python is that program, not a file to append to."
     say "Wherever that command builds its output, add:"
     say ""
     emit_chips_block
     say ""
     say "It expects a session id in \$session_id. If your line does not have one, read it from"
     say "the JSON on stdin with: jq -r '.session_id // empty'"
+    return 0
+  fi
+
+  if ! is_shell_script "$host_script"; then
+    warn "Refusing to edit $host_script: it is not a shell script."
+    say "Appending the chips block would corrupt it. Print them from that program instead."
+    say "The shell form, for a line that is a shell script, is:"
+    say ""
+    emit_chips_block
     return 0
   fi
 
