@@ -17,12 +17,25 @@ function findPluginRoot(start: string): string | undefined {
   }
 }
 
+// Split from pluginRoot() so a test can drive it with a fixture start/guess instead of this
+// file's own real import.meta.url.
+export function resolvePluginRoot(start: string, guess: string): string {
+  const found = findPluginRoot(start)
+  if (found) return found
+  if (existsSync(join(guess, "skills", "mode"))) return guess
+  // Refuse to guess quietly: a wrong guess here reads as valid-but-empty contracts, not a failure.
+  throw new Error(
+    `mode plugin root not found: no .claude-plugin/plugin.json above any of ${ancestors(start).join(", ")}, ` +
+      `and no skills/mode under the fallback guess ${guess}. Set MODE_PLUGIN_ROOT to the plugin's root.`,
+  )
+}
+
 export function pluginRoot(): string {
   const override = process.env.MODE_PLUGIN_ROOT
   if (override) return override
   const plugin = process.env.CLAUDE_PLUGIN_ROOT
   if (plugin && existsSync(join(plugin, "skills", "mode"))) return plugin
-  return findPluginRoot(moduleDir) || join(homedir(), ".claude", "skills", "mode")
+  return resolvePluginRoot(moduleDir, join(homedir(), ".claude", "skills", "mode"))
 }
 
 export function configRoot(): string {
