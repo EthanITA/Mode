@@ -3,7 +3,6 @@ import { slotOf } from "../mode/slot.ts"
 import { sessions as modeSessions } from "../mode/sessions.ts"
 import { agentsOf } from "./agents.ts"
 import { artifactsOf, keysWithArtifacts } from "./artifact-lists.ts"
-import { sessionColor } from "./identity.ts"
 import { keyOf } from "./paths.ts"
 import { liveEntries, type RegistryEntry } from "./registry.ts"
 import { cwdFromSlug } from "./slug.ts"
@@ -25,14 +24,16 @@ function build(key: string, entry: RegistryEntry | undefined, ref: TranscriptRef
   const identity: TranscriptIdentity = ref ? identityOf(ref) : { names: [] }
   const cwd = entry?.cwd || identity.cwd || (ref ? cwdFromSlug(ref.slug) : undefined)
   if (!cwd) return undefined
+  const mode = slotOf("mode", key)
   return {
     id,
     key,
     name: [entry?.name, ...identity.names].map((one) => realName(one, key, id)).find(Boolean),
     cwd,
     live: !!entry,
-    color: sessionColor(key),
-    slots: { mode: slotOf("mode", key), style: slotOf("style", key) },
+    // The mode's own colour, for the mode chip. The tab dot is keyed on the session, in tint.ts.
+    color: mode.color,
+    slots: { mode, style: slotOf("style", key) },
     pipeline: pipelineFor(key),
     artifacts: artifactsOf(key),
     agents: ref ? agentsOf(ref) : undefined,
