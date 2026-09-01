@@ -29,13 +29,36 @@ function judgeFrame(spec: RegionSpec, reading: RegionReading, state: ScreenState
       detail: 'holds no iframe, so no artifact is being rendered here',
     }]
   }
+  const src = frame.srcCheck
+  if (src && !src.reachable) {
+    return [{
+      severity: 'fail',
+      state,
+      region: spec.id,
+      code: 'frame-src-unreachable',
+      detail: `the frame points at ${src.url}, which could not be fetched at all — the server is down or the route is gone. Not a rendering failure. ${src.reason ?? ''}`.trim(),
+    }]
+  }
+  if (src && src.status >= 400) {
+    const refused = src.framingBlocked
+      ? ', and that error response carries x-frame-options: DENY, so the browser refuses to frame it and shows nothing'
+      : ''
+    return [{
+      severity: 'fail',
+      state,
+      region: spec.id,
+      code: 'frame-src-error',
+      detail: `the frame points at ${src.url}, which answers HTTP ${src.status}${refused}. The slug does not resolve — a data problem, not a rendering one.`,
+    }]
+  }
+
   if (!frame.reachable) {
     return [{
       severity: 'fail',
       state,
       region: spec.id,
       code: 'frame-unreachable',
-      detail: `iframe src=${frame.src ?? '(none)'} — ${frame.blockedReason ?? 'inner document unreadable'}`,
+      detail: `iframe src=${frame.src ?? '(none)'} — ${frame.blockedReason ?? 'inner document unreadable'}${src ? `, though the src itself answers HTTP ${src.status}` : ''}`,
     }]
   }
   if (frame.blank) {
@@ -44,7 +67,7 @@ function judgeFrame(spec: RegionSpec, reading: RegionReading, state: ScreenState
       state,
       region: spec.id,
       code: 'frame-blank',
-      detail: `iframe resolved but the document is empty: ${frame.htmlBytes} bytes of HTML, ${frame.bodyTextLength} chars of text, ${frame.headings.length} headings`,
+      detail: `the frame loaded${src ? ` a HTTP ${src.status} response` : ''} but the document is empty: ${frame.htmlBytes} bytes of HTML, ${frame.bodyTextLength} chars of text, ${frame.headings.length} headings. The region is genuinely empty.`,
     }]
   }
   return [{
@@ -190,6 +213,10 @@ function statusOf(spec: RegionSpec, reading: RegionReading): string {
   if (reading.placeholders.length && spec.demand !== 'inert') return 'FALLBACK'
   if (reading.idLeaks.length) return 'ID-LEAK'
   if (!reading.visible) return 'HIDDEN'
+  // the src verdict outranks emptiness: a 404 explains the empty region and owns it
+  const src = reading.frame?.srcCheck
+  if (src && !src.reachable) return 'SRC DOWN'
+  if (src && src.status >= 400) return `SRC ${src.status}`
   if (!hasSubstance(reading)) return spec.demand === 'required' ? 'EMPTY' : 'SILENT'
   if (reading.frame && !reading.frame.reachable) return 'NO FRAME'
   if (reading.frame?.blank) return 'BLANK'
@@ -202,6 +229,12 @@ function summaryOf(reading: RegionReading): string {
   const frame = reading.frame
   if (frame?.reachable) {
     return `frame ${frame.htmlBytes.toLocaleString('en-US')}B · ${frame.headings.length} headings · ${JSON.stringify(frame.docTitle ?? '')}`
+  }
+  if (frame?.srcCheck && !frame.srcCheck.reachable) {
+    return `frame src unreachable: ${frame.srcCheck.reason ?? frame.srcCheck.url}`
+  }
+  if (frame?.srcCheck && frame.srcCheck.status >= 400) {
+    return `frame src HTTP ${frame.srcCheck.status}${frame.srcCheck.framingBlocked ? ', framing refused' : ''} — slug does not resolve`
   }
   if (frame?.present) return `frame present, unreadable (src ${frame.src ?? 'none'})`
   if (reading.headings.length) {

@@ -20,7 +20,11 @@ export async function reachable(url: string, timeoutMs = 2_000): Promise<boolean
 export async function ensureServer(url: string, autoStart: boolean, timeoutMs: number): Promise<ServerHandle> {
   if (await reachable(url)) return { url, spawned: false, stop: (): void => {} }
   if (!autoStart) {
-    throw new Error(`Nothing is serving ${url} and --no-start was given. Start the app, or drop --no-start.`)
+    throw new Error(
+      `Could not reach the app at ${url}. This is a connection failure, not a rendering failure — ` +
+        `nothing was measured. Point at the running server with --url, or set NUXT_PORT. ` +
+        `Pass --start only if no one else owns the dev server.`,
+    )
   }
 
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')

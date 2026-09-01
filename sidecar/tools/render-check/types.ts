@@ -13,6 +13,14 @@ export interface RegionSpec {
   frame?: boolean
 }
 
+export interface FrameSrcCheck {
+  url: string
+  reachable: boolean
+  status: number
+  framingBlocked: boolean
+  reason?: string
+}
+
 export interface FrameReading {
   present: boolean
   src?: string
@@ -24,6 +32,7 @@ export interface FrameReading {
   headings: string[]
   blank: boolean
   blockedReason?: string
+  srcCheck?: FrameSrcCheck
 }
 
 export interface RegionReading {

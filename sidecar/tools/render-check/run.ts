@@ -22,11 +22,14 @@ const HELP = `mode sidecar · render check
 Renders the running app in headless Chrome and reports what is actually on the
 screen, region by region. Structure and presence only — never taste.
 
-  npm run check:render                 attach to a running app, or start one
+  npm run check:render                 attach to the running app
   npm run check:render -- --json r.json  also write the structured report
 
+It attaches to a server someone else is running and never starts or stops one,
+because two things managing one dev server is its own bug.
+
   --url <url>        default http://localhost:$NUXT_PORT, else :3000; file:// works too
-  --no-start         fail rather than starting a dev server
+  --start            last resort: start a dev server if nothing answers
   --viewport <WxH>   default 1440x900
   --settle <ms>      how long to wait for the DOM to stop changing, default 8000
   --known-ids <a,b>  extra session ids to treat as leaks if they reach the screen
@@ -39,7 +42,7 @@ Exit code is 1 when a region the design fills has nothing in it.
 function parseArgs(argv: string[]): Options {
   const options: Options = {
     url: `http://localhost:${process.env.NUXT_PORT || process.env.PORT || '3000'}`,
-    autoStart: true,
+    autoStart: false,
     width: 1440,
     height: 900,
     settleMs: 8_000,
@@ -50,8 +53,8 @@ function parseArgs(argv: string[]): Options {
     if (arg === '--help' || arg === '-h') {
       process.stdout.write(HELP)
       process.exit(0)
-    } else if (arg === '--no-start') {
-      options.autoStart = false
+    } else if (arg === '--start') {
+      options.autoStart = true
     } else if (arg === '--url') {
       options.url = argv[++i] ?? options.url
     } else if (arg === '--known-ids') {
@@ -183,6 +186,38 @@ async function probe(cdp: Cdp, sessionId: string, input: ProbeInput): Promise<Pr
   return evaluate<ProbeResult>(cdp, sessionId, expression)
 }
 
+// a blank frame has three causes with three owners; fetching the src separates them,
+// since an error response carries x-frame-options and the browser then renders nothing
+async function diagnoseFrames(pageUrl: string, result: ProbeResult): Promise<void> {
+  for (const region of result.regions) {
+    const frame = region.frame
+    if (!frame?.present || !frame.src) continue
+    const url = ((): string | undefined => {
+      try {
+        return new URL(frame.src, pageUrl).href
+      } catch {
+        return undefined
+      }
+    })()
+    if (!url?.startsWith('http')) continue
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+      const xfo = (response.headers.get('x-frame-options') ?? '').trim().toUpperCase()
+      const csp = response.headers.get('content-security-policy') ?? ''
+      frame.srcCheck = {
+        url,
+        reachable: true,
+        status: response.status,
+        framingBlocked: xfo === 'DENY' || /frame-ancestors\s+'none'/i.test(csp),
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+      const cause = error instanceof Error && error.cause ? ` (${String(error.cause)})` : ''
+      frame.srcCheck = { url, reachable: false, status: 0, framingBlocked: false, reason: `${reason}${cause}` }
+    }
+  }
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2))
   // a file:// target is a static fixture: nothing to serve and no api to ask
@@ -233,6 +268,7 @@ async function main(): Promise<void> {
     await cdp.send('Page.navigate', { url: options.url }, sessionId, 60_000)
     const settledOpen = await waitForSettle(cdp, sessionId, options.settleMs)
     const openProbe = await probe(cdp, sessionId, probeInput)
+    await diagnoseFrames(options.url, openProbe)
     states.push({ state: 'open', reached: true, settled: settledOpen, probe: openProbe })
 
     if (openProbe.panelToggle) {
@@ -243,6 +279,7 @@ async function main(): Promise<void> {
       )
       const settledClosed = await waitForSettle(cdp, sessionId, options.settleMs)
       const closedProbe = await probe(cdp, sessionId, probeInput)
+      await diagnoseFrames(options.url, closedProbe)
       states.push({ state: 'closed', reached: true, settled: settledClosed, probe: closedProbe })
     } else {
       states.push({
