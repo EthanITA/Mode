@@ -1,6 +1,6 @@
 """The shipped contracts, read straight off disk and judged against the front matter contract.
 
-test_cli.py proves the tool behaves. This proves the ten files it reads are written correctly,
+test_cli.py proves the tool behaves. This proves the contract files it reads are written correctly,
 so it fails when somebody writes a contract wrong rather than when the tool breaks. The front
 matter is parsed here independently of bin/mode, so a parser bug cannot make this suite pass.
 """
@@ -77,7 +77,7 @@ for axis, folder in axes.items():
            "%s is missing, so every check on this axis below is unrunnable" % folder)
         continue
     names = sorted(n for n in os.listdir(folder) if n.endswith(".md"))
-    expected = 9 if folder.endswith("modes") else 7
+    expected = 9 if folder.endswith("modes") else 6
     ok("%s/ holds %d contracts" % (os.path.relpath(folder, PLUGIN), expected),
        len(names) == expected, "found %d: %r" % (len(names), names))
 
@@ -189,6 +189,8 @@ RELATED = {
     ("studio", "fast"), ("studio", "native"), ("tdd", "fast"),
     # edu wants the least text that does the job; prove wants the raw output pasted whole.
     ("prove", "edu"), ("prove", "ship"),
+    # the loop explained as it runs: each round's receipts double as the teaching material.
+    ("goal", "edu"),
     # away means the X/Y/Z read is the only interpretation pass the work gets.
     ("autopilot", "xyz"),
     # the everyday all-rounder with the imagination turned up.
@@ -339,6 +341,8 @@ ROUTING = [
     ("the test keeps failing", "debug"),
     ("a failure in the parser", "debug"),
     ("rebuild the index from scratch", ""),
+    ("loop until the suite is green", "goal"),
+    ("why does the hook run before the model", ""),
 ]
 
 with tempfile.TemporaryDirectory() as config:

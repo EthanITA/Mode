@@ -1,11 +1,11 @@
 ---
 name: mode
-description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, ic, prove, studio, swarm, tdd, tester. Styles available: creative, edu, fast, maintainer, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", when they ask what is currently active or type /why, and when they pin a contract to a directory.
+description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, goal, ic, studio, swarm, tdd, tester. Styles available: creative, edu, fast, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", when they ask what is currently active or type /why, and when they pin a contract to a directory.
 user-invocable: true
 disable-model-invocation: false
 args: "[<name>|auto|off]"
-modes: autopilot, copilot, debug, ic, prove, studio, swarm, tdd, tester
-styles: creative, edu, fast, maintainer, native, ship, xyz
+modes: autopilot, copilot, debug, goal, ic, studio, swarm, tdd, tester
+styles: creative, edu, fast, native, ship, xyz
 ---
 
 # Mode
@@ -152,8 +152,8 @@ Both this table and the `Modes available:` list in the front matter are written 
 | `autopilot` | `modes/autopilot.md` | The user wants X and is away. Every decision is Claude's, one report waits. |
 | `copilot` | `modes/copilot.md` | Refine it together, then a team builds it while the user watches. |
 | `debug` | `modes/debug.md` | Find it, prove it reproduces, fix it, and draw why it happened. |
+| `goal` | `modes/goal.md` | Loop until it is truly done, verified for real and audited clean, twice in a row. |
 | `ic` | `modes/ic.md` | The all-rounder default. One senior contributor runs the whole loop, the user watches. |
-| `prove` | `modes/prove.md` | Nothing is claimed working until a real channel says so, run before and after the change. |
 | `studio` | `modes/studio.md` | Think together on one artifact, and it grows while you talk. |
 | `swarm` | `modes/swarm.md` | A gateway on a stream of work. Check briefly, route to an owner, hire when none fits, never build. |
 | `tdd` | `modes/tdd.md` | No implementation line exists before a test that fails for the right reason. |
@@ -172,9 +172,8 @@ Written by the same command, from `styles/`, under the same rule.
 | `creative` | `styles/creative.md` | Go wide. Several real options, boldness spent in one place, nothing sanded down. |
 | `edu` | `styles/edu.md` | Teach it top down, in plain words, carried by pictures rather than prose. |
 | `fast` | `styles/fast.md` | The user is in a hurry. Make it work, say done, polish nothing. |
-| `maintainer` | `styles/maintainer.md` | Other people depend on this. Docs, tests and the changelog move with the code. |
 | `native` | `styles/native.md` | Somebody else's house. Match the neighbours and add none of your own idiom. |
-| `ship` | `styles/ship.md` | Ship it properly. Readable, well named, grouped by domain, and our standard where the repo has none. |
+| `ship` | `styles/ship.md` | Ship it properly. Readable, named, grouped by domain, and everything a dependent needs travels with it. |
 | `xyz` | `styles/xyz.md` | Open every reply with the read. X what was typed, Y what was meant, Z what that forces. |
 | `off` | none | Not a style. `mode style set off` empties the slot. |
 | `auto` | none | Not a style. `mode style set auto` matches each message against every `enter-when` and enters the winner. |

@@ -183,15 +183,15 @@ with tempfile.TemporaryDirectory() as tmp:
         section("/mode routes a name to the axis that owns it")
         # Distinct in the first eight characters, which is all the session key keeps.
         for s, label, typed, want_mode, want_style in (
-            ("rt1", "both, mode first", "/mode tdd maintainer", "tdd", "maintainer"),
-            ("rt2", "both, either order", "/mode maintainer tdd", "tdd", "maintainer"),
-            ("rt3", "a style name alone", "/mode maintainer", "", "maintainer"),
+            ("rt1", "both, mode first", "/mode tdd native", "tdd", "native"),
+            ("rt2", "both, either order", "/mode native tdd", "tdd", "native"),
+            ("rt3", "a style name alone", "/mode native", "", "native"),
             ("rt4", "a mode name alone", "/mode tdd", "tdd", ""),
             ("rt5", "an unknown name moves nothing", "/mode nonsense", "", ""),
             ("rt6", "two mode names keep the first", "/mode tdd debug", "tdd", ""),
-            ("rt7", "two style names keep the first", "/style maintainer edu", "", "maintainer"),
-            ("rt8", "a duplicate is noise, the other axis still fills", "/mode tdd tdd maintainer",
-             "tdd", "maintainer"),
+            ("rt7", "two style names keep the first", "/style native edu", "", "native"),
+            ("rt8", "a duplicate is noise, the other axis still fills", "/mode tdd tdd native",
+             "tdd", "native"),
         ):
             fire("inject.py", prompt_payload(s, typed), config)
             got = (out(mode(s, "get")), out(style(s, "get")))

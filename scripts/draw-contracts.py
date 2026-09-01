@@ -145,11 +145,13 @@ MODES = {
             "TDD enumerates cases from structure, reduces them to a minimum set, then loops: a "
             "test that fails on its assertion, the least code that passes it, then refactoring "
             "while green. It is done when the minimum set is green."),
-    "prove": ([("Name the channel", 0), ("Baseline before", 0), ("Change", 0), ("Prove after", 0),
-               ("Break it once", 0)], [(4, 0, "the next behaviour, name its channel")],
-              "Prove names the channel that could disagree, records a baseline before the change, "
-              "proves it after, then deliberately breaks the thing once to confirm the channel "
-              "actually notices. Each further behaviour names its own channel and goes round."),
+    "goal": ([("Implement", 0), ("Verify for real", 0), ("Fresh audit", 0)],
+             [(1, 0, "fails, back to the work"),
+              (2, 0, "findings, fix them all"),
+              (2, 1, "clean, so run both gates again")],
+             "Goal loops until the outcome is truly reached: implement, verify through a channel "
+             "that can disagree, then hand the diff to a fresh subagent that audits it against the "
+             "project's own bar. Any fix restarts the loop, and done is two clean rounds in a row."),
     "tester": ([("Environment", 0), ("Enumerate surface", 0), ("Generate cases", 0),
                 ("Execute for real", 0), ("Verdict", 0)], [],
                "Tester establishes the environment and preconditions, enumerates the surface by "
@@ -183,19 +185,13 @@ STYLES = {
               "Fewer words, never less work: the lookup still happens."],
              "The fast style strips preamble, plan and recap down to the one thing and a statement "
              "that it is done, without skipping any of the actual work."),
-    "ship": ("Code that works", "Code the next person can hold",
-             ["Readable, named for what it is, grouped by domain.",
-              "Comments say why or do not exist; exported surfaces are typed.",
-              "A touched file that outgrew itself gets split."],
+    "ship": ("Code that works, alone", "Code the next person can hold",
+             ["Readable, named for what it is, grouped by domain, typed at its edges.",
+              "Tests, docs and the changelog move in the same diff as the code.",
+              "The blast radius is named out loud; a stale dependency is reported, never bumped."],
              "The ship style turns code that merely works into code the next developer can "
-             "maintain: readable, named, grouped by domain and typed at its edges."),
-    "maintainer": ("The change alone", "The change, and everything that travels with it",
-                   ["Tests, README, API docs and changelog move in the same diff.",
-                    "The blast radius of every behaviour change is named out loud.",
-                    "A stale dependency is reported and never silently bumped."],
-                   "The maintainer style makes the change arrive with its tests, docs and changelog "
-                   "in the same diff, and names the blast radius of anything that could surprise a "
-                   "dependent."),
+             "maintain, arriving with its tests, docs and changelog in the same diff and the "
+             "blast radius of every behaviour change named."),
     "native": ("Your own idiom", "The idiom already in the file",
                ["Match the neighbours: naming, structure, test shape, commit style.",
                 "Contribute none of your own conventions to somebody else's house.",
