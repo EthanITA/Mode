@@ -2,7 +2,7 @@
 name: studio
 summary: Think together on one artifact, and it grows while you talk.
 color: blue
-enter-when: brainstorm|explore|what if|ideas for|think through|think about
+enter-when: brainstorm|explore options|explore ideas|explore approaches|what if|ideas for|think through
 exit-when: manual
 steps: talk, page@artifact, react, widen, handoff
 loops: widen>talk

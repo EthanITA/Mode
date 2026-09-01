@@ -2,7 +2,7 @@
 name: tester
 summary: Work out what to test and how to reach it, run it for real, and report a verdict without fixing anything.
 color: grey
-enter-when: test the|qa|smoke test|regression|end to end|does it all still work|check the feature
+enter-when: test the|qa this|qa the|qa pass|smoke test|regression test|regression pass|does it all still work|check the feature
 exit-when: manual
 steps: env, preconditions, surface, cases, execute@test, verdict@artifact
 ---

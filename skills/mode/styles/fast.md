@@ -2,7 +2,7 @@
 name: fast
 summary: The user is in a hurry. Make it work, say done, polish nothing.
 color: magenta
-enter-when: just do|quickly|in a hurry|asap|no explanation|be quick|fast mode|just ship|hotfix|quick and dirty|make it work
+enter-when: just do|quickly|in a hurry|asap|no explanation|be quick|fast mode|just ship|hotfix|quick and dirty
 exit-when: manual
 ---
 

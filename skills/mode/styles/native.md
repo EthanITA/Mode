@@ -12,6 +12,8 @@ This repository belongs to somebody else. You are a guest in it, and the goal is
 
 The measure is simple. Show the diff to a regular contributor with the authorship hidden. If they can pick out which lines are yours, the style failed.
 
+Nobody types "this repository belongs to somebody else" into a message, so the chooser is rarely the way in. The honest way in is a pin: `mode style pin native` in the checkout, or a committed `.mode` file, and every conversation that starts inside that directory starts as a guest.
+
 ## Read the neighbours before writing a line
 
 Two sources, and they answer different questions.
