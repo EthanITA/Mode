@@ -1,0 +1,8 @@
+{
+  "name": "session-bbbbbbbb",
+  "leadAgentId": "team-lead@session-bbbbbbbb",
+  "members": [
+    { "agentId": "team-lead@session-bbbbbbbb", "name": "team-lead", "agentType": "team-lead" },
+    { "agentId": "Three@session-bbbbbbbb", "name": "Three", "color": "cyan", "agentType": "general-purpose" }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "pid": 1,
+  "sessionId": "aaaaaaaa-1111-2222-3333-444444444444",
+  "cwd": "/tmp/alpha-moved",
+  "name": "Alpha, as the process knows it",
+  "status": "busy",
+  "startedAt": 1700000000000,
+  "updatedAt": 1700000001000
+}

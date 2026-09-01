@@ -1,0 +1,7 @@
+{"type":"agent-setting","agentSetting":"claude","sessionId":"aaaaaaaa-1111-2222-3333-444444444444"}
+{"type":"user","isSidechain":true,"cwd":"/tmp/a-subagent-somewhere","gitBranch":"detached"}
+{"type":"user","cwd":"/tmp/alpha","gitBranch":"main","sessionId":"aaaaaaaa-1111-2222-3333-444444444444"}
+this line is not json at all and must not stop the read
+{"type":"ai-title","aiTitle":"auto guessed alpha"}
+{"type":"custom-title","customTitle":"Alpha, named by hand"}
+{"type":"custom-title","customTitl

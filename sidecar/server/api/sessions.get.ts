@@ -1,6 +1,6 @@
-import { Mode } from "~~/server/utils/mode"
-import type { SessionSummary } from "../../shared/types/mode"
+import { liveSessions } from "~~/server/utils/sessions"
+import type { LiveSession } from "../../shared/types/session"
 
-export default defineEventHandler((): SessionSummary[] => {
-  return Mode.sessions().map((s) => ({ session: s.id, slots: s.slots, pipeline: s.pipeline }))
+export default defineEventHandler((): LiveSession[] => {
+  return liveSessions()
 })
