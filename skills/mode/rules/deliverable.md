@@ -10,7 +10,7 @@ Every piece of work ends in a form, and the form is a separate choice from how t
 | The form | What it means | Route it to |
 |---|---|---|
 | **chat** | The answer lives in the conversation and nothing is built | Stay inline. Do not build a page nobody asked for. |
-| **artifact** | A page the user opens, keeps and re-reads | The `create-artifact` skill, always. Never hand-roll one beside it. |
+| **artifact** | A page the user opens, keeps and re-reads | The `create-artifact` skill shipped with this plugin, always. Never hand-roll one beside it. |
 | **MR or PR** | A change plus the note a reviewer reads | The outbound-writing rules: human prose, sectioned what and why, visuals where structure exists. Posting it is the delivery. |
 | **MVP** | The smallest slice that actually runs | Working code, run once for real before it is called done. |
 
