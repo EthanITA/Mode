@@ -1,0 +1,338 @@
+/* ============================================================================
+   Cela design system — plain-CSS, CSP-safe artifact stylesheet.
+   Inline this whole file into a published claude.ai Artifact's <style>.
+
+   Source of truth: ~/Notes/projects/Cela/cela/app/assets/css/main.css
+   (DaisyUI @plugin "cela"/"cela-dark" + @theme) and the approved document
+   reference docs/design-labs/thread-intent-synthesis.html. This file TRANSLATES
+   those (which need the Tailwind/DaisyUI build) into plain CSS that renders
+   standalone. Regenerate/verify against those files if they drift.
+
+   Theme: light = DaisyUI "cela", dark = "cela-dark". Artifacts render in the
+   viewer's theme — prefers-color-scheme + the [data-theme] stamp both handled.
+   ========================================================================== */
+
+:root {
+  --canvas: #f9f8f5;          /* base-200 */
+  --raised: #ffffff;          /* base-100 */
+  --sunken: #f3f1ed;          /* base-300 */
+  --ink: #0d0425;             /* base-content */
+  --muted: #6e6882;
+  --subtle: #9b96ab;
+  --border: #e8e5df;
+  --border-strong: #d4d0c9;
+  --primary: #7c3aed;
+  --primary-deep: #6d28d9;    /* = accent; chip/link text */
+  --primary-content: #ffffff;
+  --primary-soft: #ede9fe;
+  --secondary: #0d0425;
+  --accent: #6d28d9;
+  --success: #2d8a56;  --success-soft: #e8f5ee;
+  --warning: #d4820c;  --warning-soft: #fef3e2;
+  --error:   #d1344b;  --error-soft:   #fde8ec;  --error-content: #ffffff;
+  --info:    #3b82f6;  --info-soft:    #eff6ff;
+  --rec-fg: #ffffff;
+
+  --radius-box: .75rem;
+  --radius-field: .625rem;
+  --radius-selector: 1.5rem;
+
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --ease-in-out: cubic-bezier(.77, 0, .175, 1);
+  --duration-fast: 180ms;
+  --duration-snappy: 200ms;
+  --duration-base: 300ms;
+
+  /* warm-tinted elevation (not neutral grey) */
+  --shadow-sm: 0 1px 3px rgba(13,4,37,.06), 0 1px 2px rgba(13,4,37,.04);
+  --shadow-md: 0 4px 12px rgba(13,4,37,.06), 0 2px 4px rgba(13,4,37,.04);
+  --shadow-lg: 0 12px 32px rgba(13,4,37,.08), 0 4px 8px rgba(13,4,37,.04);
+
+  --glass-bg: rgba(255,255,255,.65);
+  --glass-bg-strong: rgba(255,255,255,.78);
+  --glass-border: rgba(255,255,255,.5);
+  --glass-shadow: inset 0 1px 0 0 rgba(255,255,255,.8), 0 4px 16px -2px rgba(13,4,37,.04), 0 12px 32px -4px rgba(13,4,37,.06);
+  --glass-liquid-bg: rgba(255,255,255,.15);
+  --glass-liquid-blur: blur(8px) saturate(120%);
+  --glass-liquid-border: rgba(13,4,37,.12);
+  --glass-liquid-shadow: inset 0 1px 0 0 rgba(255,255,255,.85), inset 0 1.5px 3px 0 rgba(255,255,255,.35), 0 4px 16px -2px rgba(13,4,37,.05), 0 12px 32px -4px rgba(13,4,37,.07);
+
+  /* Read by the lens script through getComputedStyle, never by CSS, so a call site
+     retunes the rim with a plain override. Scale is px of displacement. */
+  --glass-refraction-scale: -46;
+  --glass-refraction-spread: 3;
+  --glass-refraction-band: 20;
+  --glass-refraction-softness: .7;
+
+  --sans: "Plus Jakarta Sans", -apple-system, "SF Pro Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, monospace;
+}
+
+/* cela-dark */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #111113; --raised: #09090b; --sunken: #18181b;
+    --ink: #fafafa; --muted: rgba(250,250,250,.6); --subtle: rgba(250,250,250,.38);
+    --border: rgba(255,255,255,.06); --border-strong: rgba(255,255,255,.12);
+    --primary: #a78bfa; --primary-deep: #c4b5fd; --primary-content: #0d0425;
+    --primary-soft: rgba(167,139,250,.15); --secondary: #fafafa; --accent: #9d5ff5;
+    --success: #4ade80; --success-soft: rgba(74,222,128,.15);
+    --warning: #fbbf24; --warning-soft: rgba(251,191,36,.15);
+    --error:   #fb7185; --error-soft:   rgba(251,113,133,.15); --error-content: #09090b;
+    --info:    #60a5fa; --info-soft:    rgba(96,165,250,.15);
+    --rec-fg: #0d0425;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.25);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.35), 0 2px 4px rgba(0,0,0,.2);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,.5), 0 4px 8px rgba(0,0,0,.3);
+    --glass-bg: rgba(9,9,11,.45); --glass-bg-strong: rgba(9,9,11,.55);
+    --glass-border: rgba(255,255,255,.08);
+    --glass-shadow: inset 0 1px 0 0 rgba(255,255,255,.16), 0 16px 40px -8px rgba(0,0,0,.45);
+    --glass-liquid-bg: rgba(9,9,11,.25); --glass-liquid-border: rgba(255,255,255,.2);
+    --glass-liquid-shadow: inset 0 1px 0 0 rgba(255,255,255,.2), inset 0 1px 3px 0 rgba(255,255,255,.08), 0 4px 20px -2px rgba(0,0,0,.35), 0 16px 40px -8px rgba(0,0,0,.55);
+  }
+}
+/* Explicit theme stamps win over the media query in both directions. */
+:root[data-theme="light"] {
+  --canvas: #f9f8f5; --raised: #ffffff; --sunken: #f3f1ed; --ink: #0d0425;
+  --muted: #6e6882; --subtle: #9b96ab; --border: #e8e5df; --border-strong: #d4d0c9;
+  --primary: #7c3aed; --primary-deep: #6d28d9; --primary-content: #ffffff;
+  --primary-soft: #ede9fe; --secondary: #0d0425; --accent: #6d28d9;
+  --success: #2d8a56; --success-soft: #e8f5ee; --warning: #d4820c; --warning-soft: #fef3e2;
+  --error: #d1344b; --error-soft: #fde8ec; --error-content: #ffffff; --info: #3b82f6; --info-soft: #eff6ff; --rec-fg: #ffffff;
+  --shadow-sm: 0 1px 3px rgba(13,4,37,.06), 0 1px 2px rgba(13,4,37,.04);
+  --shadow-md: 0 4px 12px rgba(13,4,37,.06), 0 2px 4px rgba(13,4,37,.04);
+  --shadow-lg: 0 12px 32px rgba(13,4,37,.08), 0 4px 8px rgba(13,4,37,.04);
+  --glass-bg: rgba(255,255,255,.65); --glass-bg-strong: rgba(255,255,255,.78);
+  --glass-border: rgba(255,255,255,.5);
+  --glass-shadow: inset 0 1px 0 0 rgba(255,255,255,.8), 0 4px 16px -2px rgba(13,4,37,.04), 0 12px 32px -4px rgba(13,4,37,.06);
+  --glass-liquid-bg: rgba(255,255,255,.15); --glass-liquid-border: rgba(13,4,37,.12);
+  --glass-liquid-shadow: inset 0 1px 0 0 rgba(255,255,255,.85), inset 0 1.5px 3px 0 rgba(255,255,255,.35), 0 4px 16px -2px rgba(13,4,37,.05), 0 12px 32px -4px rgba(13,4,37,.07);
+}
+:root[data-theme="dark"] {
+  --canvas: #111113; --raised: #09090b; --sunken: #18181b; --ink: #fafafa;
+  --muted: rgba(250,250,250,.6); --subtle: rgba(250,250,250,.38);
+  --border: rgba(255,255,255,.06); --border-strong: rgba(255,255,255,.12);
+  --primary: #a78bfa; --primary-deep: #c4b5fd; --primary-content: #0d0425;
+  --primary-soft: rgba(167,139,250,.15); --secondary: #fafafa; --accent: #9d5ff5;
+  --success: #4ade80; --success-soft: rgba(74,222,128,.15); --warning: #fbbf24; --warning-soft: rgba(251,191,36,.15);
+  --error: #fb7185; --error-soft: rgba(251,113,133,.15); --error-content: #09090b; --info: #60a5fa; --info-soft: rgba(96,165,250,.15); --rec-fg: #0d0425;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.25);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.35), 0 2px 4px rgba(0,0,0,.2);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,.5), 0 4px 8px rgba(0,0,0,.3);
+  --glass-bg: rgba(9,9,11,.45); --glass-bg-strong: rgba(9,9,11,.55);
+  --glass-border: rgba(255,255,255,.08);
+  --glass-shadow: inset 0 1px 0 0 rgba(255,255,255,.16), 0 16px 40px -8px rgba(0,0,0,.45);
+  --glass-liquid-bg: rgba(9,9,11,.25); --glass-liquid-border: rgba(255,255,255,.2);
+  --glass-liquid-shadow: inset 0 1px 0 0 rgba(255,255,255,.2), inset 0 1px 3px 0 rgba(255,255,255,.08), 0 4px 20px -2px rgba(0,0,0,.35), 0 16px 40px -8px rgba(0,0,0,.55);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--canvas); color: var(--ink); font-family: var(--sans);
+  font-size: 17px; line-height: 1.68; font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+}
+@media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* ---------------------------------------------------------------------------
+   DOCUMENT-ARTIFACT SYSTEM  (approved: thread-intent-synthesis.html)
+   The default for reports / reviews / RFCs / synthesis docs.
+   --------------------------------------------------------------------------- */
+.page { max-width: 760px; margin: 0 auto; padding: 56px 24px 96px; }
+
+h1, h2, h3 { text-wrap: balance; line-height: 1.18; }
+h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; margin: 10px 0 14px; }
+h2 { font-size: 1.45rem; font-weight: 800; letter-spacing: -.02em; margin: 0 0 6px; }
+h3 { font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; margin: 32px 0 8px; }
+.page p { margin: 0 0 16px; max-width: 68ch; }
+.page ul, .page ol { padding-left: 22px; margin: 0 0 16px; }
+.page li { margin: 0 0 8px; }
+
+.eyebrow { font-family: var(--mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+.eyebrow--primary { color: var(--primary); }
+.lede { font-size: 1.12rem; color: var(--muted); max-width: 62ch; }
+.kicker { color: var(--muted); max-width: 66ch; }
+
+section { margin-top: 72px; }
+.section-head { margin-bottom: 20px; }
+.section-head .eyebrow { display: block; margin-bottom: 8px; }
+
+.toc { background: var(--raised); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; margin: 28px 0 0; }
+.toc ol { margin: 8px 0 0; padding-left: 20px; font-size: .92rem; columns: 2; column-gap: 32px; }
+@media (max-width: 560px) { .toc ol { columns: 1; } }
+.toc a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--border-strong); }
+.toc a:hover, .toc a:focus-visible { color: var(--primary); border-color: var(--primary); }
+a:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 2px; }
+
+.panel { background: var(--sunken); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin: 20px 0 24px; overflow-x: auto; }
+.panel pre { margin: 0; font-family: var(--mono); font-size: .78rem; line-height: 1.6; color: var(--ink); white-space: pre; }
+.panel-label { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .12em; color: var(--subtle); margin-bottom: 12px; }
+.panel pre .cm { color: var(--subtle); }
+.panel pre .hl { color: var(--primary-deep); font-weight: 600; }
+
+.callout { border-radius: 12px; padding: 18px 20px; margin: 24px 0; }
+.callout .label { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .14em; display: inline-block; padding: 3px 9px; border-radius: 99px; margin-bottom: 10px; }
+.callout p { margin: 0 0 10px; font-size: .95rem; }
+.callout p:last-child { margin-bottom: 0; }
+.callout--take { background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); }
+.callout--take .label { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary-deep); }
+.callout--tension { background: var(--warning-soft); border: 1px solid color-mix(in srgb, var(--warning) 34%, transparent); }
+.callout--tension .label { background: color-mix(in srgb, var(--warning) 16%, transparent); color: var(--warning); }
+.callout--verified { background: var(--success-soft); border: 1px solid color-mix(in srgb, var(--success) 34%, transparent); }
+.callout--verified .label { background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success); }
+
+.maxim { font-size: 1.25rem; font-weight: 700; letter-spacing: -.01em; text-align: center; padding: 26px 20px; margin: 30px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); text-wrap: balance; }
+.maxim .sub { display: block; margin-top: 6px; font-size: .85rem; font-weight: 400; color: var(--muted); font-family: var(--mono); }
+
+.table-wrap { overflow-x: auto; margin: 20px 0 26px; }
+.page table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.page th { font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .11em; color: var(--subtle); font-weight: 500; text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--border-strong); white-space: nowrap; }
+.page td { padding: 11px 14px 11px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.page td:first-child { font-weight: 600; }
+.page td .dim { color: var(--muted); font-size: .86rem; display: block; font-weight: 400; }
+.page tbody tr:last-child td { border-bottom: 0; }
+
+.chip { display: inline-block; font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; border-radius: 99px; padding: 2px 9px; white-space: nowrap; }
+.chip--exists, .chip--met, .chip--free { background: var(--success-soft); color: var(--success); }
+.chip--extend, .chip--gate, .chip--note { background: var(--warning-soft); color: var(--warning); }
+.chip--new { background: var(--primary-soft); color: var(--primary-deep); }
+.chip--always { background: var(--error-soft); color: var(--error); }
+
+.fork { background: var(--raised); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin: 16px 0; }
+.fork h3 { margin: 0 0 4px; font-size: 1rem; }
+.fork .q { color: var(--muted); font-size: .92rem; margin-bottom: 12px; }
+.fork ul { margin: 0; padding-left: 0; list-style: none; }
+.fork li { padding: 10px 0; border-top: 1px solid var(--border); font-size: .92rem; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.fork li .opt { font-weight: 600; white-space: nowrap; }
+.fork li .why { color: var(--muted); }
+.rec { font-family: var(--mono); font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; background: var(--primary); color: var(--rec-fg); border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
+
+.phase { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--border); }
+.phase:last-child { border-bottom: 0; }
+.phase .num { font-family: var(--mono); font-weight: 500; color: var(--primary); font-size: .9rem; padding-top: 2px; white-space: nowrap; }
+.phase div p { margin: 0; font-size: .94rem; }
+.phase div p.t { font-weight: 700; margin-bottom: 3px; }
+.phase div p.d { color: var(--muted); }
+
+.page footer { margin-top: 80px; padding-top: 20px; border-top: 1px solid var(--border); font-family: var(--mono); font-size: .74rem; color: var(--subtle); line-height: 1.8; }
+.page code, code.inl { font-family: var(--mono); font-size: .85em; background: var(--sunken); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; overflow-wrap: anywhere; }
+
+/* ---------------------------------------------------------------------------
+   RECEIPTS & INTERACTION  (see references/grounding.md, references/interaction.md)
+   --------------------------------------------------------------------------- */
+
+.receipt { display: inline-flex; align-items: baseline; gap: 5px; font-family: var(--mono); font-size: .68rem; line-height: 1.4; color: var(--muted); background: var(--sunken); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; white-space: nowrap; text-decoration: none; vertical-align: baseline; }
+a.receipt:hover { color: var(--primary-deep); border-color: var(--primary); }
+a.receipt:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* Marks a judgement, so a reader never reads it as a sourced finding. */
+.rec-label, .open-label { font-family: var(--mono); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
+.rec-label { background: var(--primary-soft); color: var(--primary-deep); }
+.open-label { background: var(--warning-soft); color: var(--warning); }
+
+.sources { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); }
+.sources h2 { font-size: 1rem; margin-bottom: 4px; }
+.sources .as-of { font-family: var(--mono); font-size: .7rem; color: var(--subtle); margin-bottom: 14px; }
+.sources ol { margin: 0; padding-left: 20px; }
+.sources li { font-size: .85rem; color: var(--muted); margin-bottom: 7px; overflow-wrap: anywhere; }
+.sources li .what { color: var(--ink); }
+
+/* Hidden only once script has added .js, so a page that never runs it still reads. */
+.js .reveal { opacity: 0; transform: translateY(12px); }
+.js .reveal.is-in { opacity: 1; transform: none; transition: opacity var(--duration-base, .3s) var(--ease-out, ease-out), transform var(--duration-base, .3s) var(--ease-out, ease-out); transition-delay: calc(var(--d, 0) * 60ms); }
+
+[role="tablist"] { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+[role="tab"] { font: inherit; font-size: .85rem; color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px; cursor: pointer; margin-bottom: -1px; }
+[role="tab"][aria-selected="true"] { color: var(--ink); border-bottom-color: var(--primary); }
+[role="tab"]:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+
+[data-tip] { position: relative; }
+[data-tip]::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); white-space: nowrap; font-family: var(--sans); font-size: .75rem; padding: 4px 9px; border-radius: var(--radius-field); background: var(--ink); color: var(--canvas); opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 5; }
+[data-tip]:hover::after, [data-tip]:focus-visible::after { opacity: 1; }
+
+/* ---------------------------------------------------------------------------
+   APP-UI COMPONENTS  (resolved from app/components/ui/*.vue + components/*.css)
+   For artifacts that mock the real Cela app surface. Compose these class names;
+   read the matching ui/*.vue for exact markup (references/components.md).
+   --------------------------------------------------------------------------- */
+.surface-canvas { background: var(--canvas); }
+.surface-raised { background: var(--raised); }
+.surface-sunken { background: var(--sunken); }
+
+.card { background: var(--raised); border: 1px solid var(--border); border-radius: var(--radius-box); box-shadow: var(--shadow-sm); }
+.hover-lift { transition: transform var(--duration-snappy) var(--ease-out), box-shadow var(--duration-snappy) var(--ease-out); }
+.hover-lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+
+/* Inset ring, not a border: a real border shrinks the content box under border-box,
+   which is why the repo's own utility rings instead. */
+.cela-glass { background: var(--glass-bg); box-shadow: inset 0 0 0 1px var(--glass-border), var(--glass-shadow); backdrop-filter: blur(16px) saturate(180%); isolation: isolate; }
+.cela-glass-strong { background: var(--glass-bg-strong); }
+
+/* The refraction resolves only where backdrop-filter accepts a url(). Everywhere else
+   the blur(0px) fallback leaves the surface exactly as frosted as it was. */
+.cela-liquid-glass { background: var(--glass-liquid-bg); box-shadow: inset 0 0 0 1px var(--glass-liquid-border), var(--glass-liquid-shadow); backdrop-filter: var(--glass-liquid-refraction, blur(0px)) var(--glass-liquid-blur); isolation: isolate; }
+
+/* Holds the per-element lens filters the script mints. Referenced by url(), never
+   painted, so it must take no space and catch no pointer. */
+.glass-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+
+.btn { display: inline-flex; align-items: center; gap: .5rem; border: 0; border-radius: 9999px; font-family: var(--sans); font-weight: 600; font-size: 14px; line-height: 1.3; padding: .375rem 1rem; cursor: pointer; transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast), background-color var(--duration-fast), color var(--duration-fast); }
+.btn:active { transform: scale(.97); }
+.btn-xs { font-size: 11px; padding: .25rem .75rem; }
+.btn-sm { font-size: 14px; padding: .375rem .875rem; }
+.btn-primary { background: linear-gradient(to bottom right, var(--primary), var(--accent)); color: var(--primary-content); box-shadow: inset 0 1px rgba(255,255,255,.35), 0 4px 12px -2px rgba(124,58,237,.2); }
+.btn-secondary { background: var(--secondary); color: var(--canvas); }
+.btn-outline { background: color-mix(in srgb, var(--raised) 22%, transparent); backdrop-filter: blur(12px) saturate(160%); border: 1px solid var(--border); color: var(--ink); }
+.btn-outline:hover { background: color-mix(in srgb, var(--raised) 42%, transparent); border-color: var(--border-strong); }
+.btn-ghost { background: transparent; color: var(--muted); }
+.btn-ghost:hover { background: var(--sunken); color: var(--ink); }
+.btn-error { background: var(--error); color: var(--error-content); }
+
+.badge { display: inline-flex; align-items: center; border: 0; border-radius: 9999px; font-size: 12px; font-weight: 500; padding: .25rem .75rem; }
+.badge-primary { background: var(--primary-soft); color: var(--primary); }
+.badge-success { background: var(--success-soft); color: var(--success); }
+.badge-warning { background: var(--warning-soft); color: var(--warning); }
+.badge-error   { background: var(--error-soft);   color: var(--error); }
+.badge-info    { background: var(--info-soft);    color: var(--info); }
+.badge-neutral { background: var(--sunken); color: var(--muted); }
+
+/* Typography scale (typo-* utilities). Tight negative tracking on headings is a
+   Cela hallmark. */
+.typo-display { font-size: 28px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em; }
+.typo-heading-xl { font-size: 24px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em; }
+.typo-heading-lg { font-size: 18px; font-weight: 700; line-height: 1.3; letter-spacing: -.015em; }
+.typo-title { font-size: 17px; font-weight: 700; line-height: 1.2; letter-spacing: -.015em; }
+.typo-heading { font-size: 15px; font-weight: 700; line-height: 1.3; letter-spacing: -.005em; }
+.typo-subheading { font-size: 14px; font-weight: 600; line-height: 1.3; letter-spacing: -.005em; }
+.typo-body { font-size: 13px; font-weight: 400; line-height: 1.5; }
+.typo-caption { font-size: 12px; font-weight: 400; }
+.typo-meta { font-size: 11px; font-weight: 400; }
+.typo-eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; }
+.typo-mono-meta { font-family: var(--mono); font-size: 11px; }
+
+/* ---------------------------------------------------------------------------
+   THEME TOGGLE (required on every artifact)
+   --------------------------------------------------------------------------- */
+.theme-toggle {
+  position: fixed; top: 16px; right: 16px; z-index: 50;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; padding: 0;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--raised); color: var(--muted);
+  cursor: pointer; box-shadow: var(--shadow-sm);
+  transition: color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+}
+.theme-toggle:hover { color: var(--ink); border-color: var(--border-strong); }
+.theme-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.theme-toggle svg { width: 16px; height: 16px; }
+.theme-toggle .i-sun { display: none; }
+.theme-toggle .i-moon { display: block; }
+/* Unstamped roots fall to the media query, so the icon must swap there too. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle .i-sun { display: block; }
+  :root:not([data-theme="light"]) .theme-toggle .i-moon { display: none; }
+}
+:root[data-theme="dark"] .theme-toggle .i-sun { display: block; }
+:root[data-theme="dark"] .theme-toggle .i-moon { display: none; }
+:root[data-theme="light"] .theme-toggle .i-sun { display: none; }
+:root[data-theme="light"] .theme-toggle .i-moon { display: block; }

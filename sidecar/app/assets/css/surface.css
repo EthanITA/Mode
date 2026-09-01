@@ -1,0 +1,69 @@
+/* Data-attribute surfaces for UiSurface. Recipes mirror
+   ~/Notes/projects/Cela/cela/app/assets/css/components/surface.css, translated from
+   Tailwind @utility/@apply into plain rules against the vendored cela.css tokens. */
+
+[data-surface] {
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-snappy) var(--ease-out),
+    backdrop-filter var(--duration-snappy) var(--ease-out);
+}
+
+[data-surface="card"] {
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-box);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-surface="flat"] {
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-box);
+}
+
+[data-surface="glass"] {
+  background: var(--glass-bg);
+  border-radius: var(--radius-box);
+  box-shadow: inset 0 0 0 1px var(--glass-border), var(--glass-shadow);
+  backdrop-filter: blur(16px) saturate(180%);
+  isolation: isolate;
+}
+
+[data-surface="glass-liquid"] {
+  background: var(--glass-liquid-bg);
+  border-radius: var(--radius-box);
+  box-shadow: inset 0 0 0 1px var(--glass-liquid-border), var(--glass-liquid-shadow);
+  backdrop-filter: var(--glass-liquid-refraction, blur(0px)) var(--glass-liquid-blur);
+  isolation: isolate;
+}
+
+[data-surface="raised"] {
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-box);
+  box-shadow: var(--shadow-lg);
+}
+
+[data-surface="sunken"] {
+  background: var(--sunken);
+  border-radius: var(--radius-box);
+}
+
+/* island lands on --radius-selector, which already carries the app's rounded-3xl value.
+   pill goes straight to fully round: the sidecar has no size-transition depending on a
+   finite radius, unlike the app's UiSurface, so it skips that carve-out. */
+[data-surface-shape="island"] {
+  border-radius: var(--radius-selector);
+}
+
+[data-surface-shape="pill"] {
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-surface] {
+    transition: none;
+  }
+}
