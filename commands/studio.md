@@ -1,5 +1,5 @@
 ---
-description: Think together on one artifact, and it grows while you talk.
+description: "Think together on one artifact, and it grows while you talk."
 argument-hint: ""
 disable-model-invocation: true
 ---

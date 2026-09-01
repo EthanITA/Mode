@@ -1,5 +1,5 @@
 ---
-description: Work out what to test and how to reach it, run it for real, and report a verdict without fixing anything.
+description: "Work out what to test and how to reach it, run it for real, and report a verdict without fixing anything."
 argument-hint: ""
 disable-model-invocation: true
 ---

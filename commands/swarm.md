@@ -1,5 +1,5 @@
 ---
-description: A gateway on a stream of work. Check briefly, route to an owner, hire when none fits, never build.
+description: "A gateway on a stream of work. Check briefly, route to an owner, hire when none fits, never build."
 argument-hint: ""
 disable-model-invocation: true
 ---

@@ -1,5 +1,5 @@
 ---
-description: Refine it together, then a team builds it while the user watches.
+description: "Refine it together, then a team builds it while the user watches."
 argument-hint: ""
 disable-model-invocation: true
 ---

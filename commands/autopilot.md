@@ -1,5 +1,5 @@
 ---
-description: The user wants X and is away. Every decision is Claude's, one report waits.
+description: "The user wants X and is away. Every decision is Claude's, one report waits."
 argument-hint: ""
 disable-model-invocation: true
 ---

@@ -1,5 +1,5 @@
 ---
-description: Find it, prove it reproduces, fix it, and draw why it happened.
+description: "Find it, prove it reproduces, fix it, and draw why it happened."
 argument-hint: ""
 disable-model-invocation: true
 ---

@@ -1,5 +1,5 @@
 ---
-description: No implementation line exists before a test that fails for the right reason.
+description: "No implementation line exists before a test that fails for the right reason."
 argument-hint: ""
 disable-model-invocation: true
 ---

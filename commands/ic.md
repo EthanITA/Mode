@@ -1,5 +1,5 @@
 ---
-description: The all-rounder default. One senior contributor runs the whole loop, the user watches.
+description: "The all-rounder default. One senior contributor runs the whole loop, the user watches."
 argument-hint: ""
 disable-model-invocation: true
 ---

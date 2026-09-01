@@ -1,5 +1,5 @@
 ---
-description: Loop until it is truly done, verified for real and audited clean, twice in a row.
+description: "Loop until it is truly done, verified for real and audited clean, twice in a row."
 argument-hint: ""
 disable-model-invocation: true
 ---
