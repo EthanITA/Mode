@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 498 218" width="498" height="218" role="img" aria-label="Goal loops until the outcome is truly reached: implement, verify through a channel that can disagree, then hand the diff to a fresh subagent that audits it against the project's own bar. Any fix restarts the loop, and done is two clean rounds in a row.">
+<style>
+  .t{font:600 12px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#1f2328}
+  .s{font:10.5px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#656d76}
+  .k{font:600 9px ui-sans-serif,sans-serif;fill:#7d4e00;letter-spacing:.07em}
+  .b{fill:#ffffff;stroke:#d0d7de;stroke-width:1.5}
+  .g{fill:#fff8c5;stroke:#9a6700;stroke-width:1.5}
+  .a{fill:#fbefff;stroke:#8250df;stroke-width:1.5}
+  .m{fill:#f6f8fa;stroke:#d0d7de;stroke-width:1.5}
+  .ln{stroke:#8c959f;stroke-width:1.5;fill:none}
+  .lp{stroke:#8c959f;stroke-width:1.3;fill:none;stroke-dasharray:4 3}
+  .at{fill:#6639ba}
+  @media (prefers-color-scheme: dark){
+    .t{fill:#e6edf3}.s{fill:#9198a1}.k{fill:#e3b341}
+    .b{fill:#151b23;stroke:#3d444d}
+    .g{fill:#2b2412;stroke:#d4a72c}
+    .a{fill:#231c33;stroke:#a371f7}
+    .m{fill:#0d1117;stroke:#3d444d}
+    .ln,.lp{stroke:#6e7681}
+    .at{fill:#c297ff}
+  }
+</style>
+<defs><marker id="h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8c959f"/></marker></defs>
+<rect class="b" x="16" y="46" width="138" height="56" rx="7"/><text class="t" x="85.0" y="78.0" text-anchor="middle">Implement</text>
+<rect class="b" x="180" y="46" width="138" height="56" rx="7"/><text class="t" x="249.0" y="78.0" text-anchor="middle">Verify for real</text>
+<path class="ln" d="M154 74.0 H176" marker-end="url(#h)"/>
+<rect class="b" x="344" y="46" width="138" height="56" rx="7"/><text class="t" x="413.0" y="78.0" text-anchor="middle">Fresh audit</text>
+<path class="ln" d="M318 74.0 H340" marker-end="url(#h)"/>
+<path class="lp" d="M413.0 102 V132 H85.0 V106" marker-end="url(#h)"/>
+<text class="s" x="249.0" y="147" text-anchor="middle">findings, fix them all</text>
+<path class="lp" d="M249.0 102 V166 H85.0 V106" marker-end="url(#h)"/>
+<text class="s" x="167.0" y="181" text-anchor="middle">fails, back to the work</text>
+<path class="lp" d="M413.0 102 V200 H249.0 V106" marker-end="url(#h)"/>
+<text class="s" x="331.0" y="215" text-anchor="middle">clean, so run both gates again</text>
+</svg>
