@@ -13,6 +13,8 @@ const META_FIELDS = new Set<MetaField>(["slug", "title", "url", "target", "ds", 
 const HEAD_BYTES = 4000
 // Slug becomes a filename on disk; reject anything that could climb out of the artifacts dir.
 const SAFE_SLUG = /^[a-zA-Z0-9._-]+$/
+// A pre-build source, never an artifact. One constant, so listing and direct access cannot diverge.
+const SRC_SUFFIX = ".src.html"
 
 function expandHome(path: string): string {
   return path.startsWith("~") ? join(homedir(), path.slice(1)) : path
@@ -117,7 +119,7 @@ function parseThreads(html: string): ReviewThread[] {
 async function artifactFiles(dir: string): Promise<string[]> {
   try {
     const entries = await readdir(dir)
-    return entries.filter((name) => name.endsWith(".html") && !name.endsWith(".src.html")).sort()
+    return entries.filter((name) => name.endsWith(".html") && !name.endsWith(SRC_SUFFIX)).sort()
   } catch {
     return []
   }
@@ -140,7 +142,9 @@ export async function listArtifacts(): Promise<ArtifactMeta[]> {
 
 export async function artifactPath(slug: string): Promise<string | undefined> {
   if (!SAFE_SLUG.test(slug)) return undefined
-  return join(await artifactsDir(), `${slug}.html`)
+  const name = `${slug}.html`
+  if (name.endsWith(SRC_SUFFIX)) return undefined
+  return join(await artifactsDir(), name)
 }
 
 async function readWhole(path: string): Promise<string | undefined> {
