@@ -14,7 +14,11 @@ const CANDIDATES: string[] = [
 
 export function findChrome(): string | undefined {
   const fromEnv = process.env.CHROME_PATH
-  if (fromEnv && existsSync(fromEnv)) return fromEnv
+  // an override that silently falls back to a different browser is worse than an error
+  if (fromEnv) {
+    if (!existsSync(fromEnv)) throw new Error(`CHROME_PATH points at ${fromEnv}, which does not exist.`)
+    return fromEnv
+  }
   return CANDIDATES.find((path) => existsSync(path))
 }
 
