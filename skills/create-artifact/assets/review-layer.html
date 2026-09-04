@@ -228,8 +228,17 @@
   function readLocal(){
     try { return JSON.parse(localStorage.getItem(KEY)) || {threads: []}; } catch (e) { return {threads: []}; }
   }
+  // `node` is a live element, and GSAP hangs a back-reference on anything it animates, so a thread
+  // serialized whole throws on a circular structure and every comment is lost silently.
+  function serializable(){
+    return threads.map(function(t){
+      var copy = {}, k;
+      for (k in t) if (Object.prototype.hasOwnProperty.call(t, k) && k !== 'node') copy[k] = t[k];
+      return copy;
+    });
+  }
   function writeLocal(){
-    try { localStorage.setItem(KEY, JSON.stringify({v: 1, slug: SLUG, threads: threads})); } catch (e) {}
+    try { localStorage.setItem(KEY, JSON.stringify({v: 1, slug: SLUG, threads: serializable()})); } catch (e) {}
   }
 
   // Both sides edit the same threads offline, so the newer `updated` wins and replies are unioned.
@@ -459,7 +468,8 @@
   }
 
   function payload(action){
-    return JSON.stringify({v: 1, slug: SLUG, action: action, updated: now(), threads: threads}, null, 2);
+    return JSON.stringify(
+      {v: 1, slug: SLUG, action: action, updated: now(), threads: serializable()}, null, 2);
   }
 
   // The page cannot write to disk, so a listening sink is the only path that needs no copy-paste.
