@@ -29,7 +29,7 @@ function text(value: unknown): string | undefined {
   return typeof value === "string" && !!value.trim() ? value.trim() : undefined
 }
 
-function readWindow(path: string, from: Window, bytes: number): { text: string; whole: boolean } | undefined {
+export function readWindow(path: string, from: Window, bytes: number): { text: string; whole: boolean } | undefined {
   try {
     const fd = openSync(path, "r")
     try {
@@ -47,7 +47,7 @@ function readWindow(path: string, from: Window, bytes: number): { text: string; 
 }
 
 // The line the window cut in half is not a record; a transcript mid-write also ends in one.
-function usableLines(window: { text: string; whole: boolean }, from: Window): string[] {
+export function usableLines(window: { text: string; whole: boolean }, from: Window): string[] {
   const lines = splitLines(window.text)
   if (window.whole) return lines
   return from === "head" ? lines.slice(0, -1) : lines.slice(1)
