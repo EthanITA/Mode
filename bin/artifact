@@ -240,7 +240,7 @@ def cmd_stamp(args):
 
 def cmd_review(args):
     path = resolve(args.slug)
-    what = _review.install(path, sink=args.sink or "")
+    what = _review.install(path, sink=args.sink or "", sidecar=args.sidecar or "")
     record_slug(path.stem)
     print(f"review layer {what} in {path.name}")
 
@@ -319,6 +319,7 @@ def main():
     p = sub.add_parser("review", help="add or refresh the comment layer, keeping the threads it holds")
     p.add_argument("slug")
     p.add_argument("--sink", help="where the page posts comments (default http://127.0.0.1:7391)")
+    p.add_argument("--sidecar", help="where the page posts session messages (default http://127.0.0.1:3210)")
     p.set_defaults(fn=cmd_review)
 
     p = sub.add_parser("comments", help="read the comments on an artifact, and answer them")

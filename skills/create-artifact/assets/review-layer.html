@@ -1,5 +1,5 @@
 <!-- rv:start -->
-<script type="application/json" id="rv-seed">{"v":1,"slug":"{{SLUG}}","sink":"","threads":[]}</script>
+<script type="application/json" id="rv-seed">{"v":1,"slug":"{{SLUG}}","sink":"","sidecar":"","threads":[]}</script>
 <style>
 /* Packs spell the same roles differently: the doc system uses --surface/--accent/--radius, a
    self-contained pack may use --raised/--primary/--radius-box. Each chain tries both before any literal. */
@@ -212,11 +212,32 @@
 
   var BLOCKS = 'p,li,h1,h2,h3,h4,h5,h6,blockquote,figure,figcaption,table,pre,img,canvas,' +
                '.panel,.stage,.callout,.card,.stat,.table-wrap,.diagram,.hop,.code';
-  var seed = {v: 1, slug: '', sink: '', threads: []};
+  function readSlug(){
+    var title = document.querySelector('title');
+    var node = title;
+    while (node && (node = node.nextSibling)) {
+      if (node.nodeType === 8) {
+        var m = (node.nodeValue || '').match(/\bslug:\s*([^\s|]+)/);
+        if (m) return m[1];
+      }
+    }
+    if (document.createTreeWalker) {
+      var walker = document.createTreeWalker(document.head || document.documentElement, 128);
+      var c;
+      while ((c = walker.nextNode())) {
+        var m2 = (c.nodeValue || '').match(/\bslug:\s*([^\s|]+)/);
+        if (m2) return m2[1];
+      }
+    }
+    return '';
+  }
+
+  var seed = {v: 1, slug: '', sink: '', sidecar: '', threads: []};
   try { seed = Object.assign(seed, JSON.parse(document.getElementById('rv-seed').textContent) || {}); } catch (e) {}
 
-  var SLUG = seed.slug || (location.pathname.split('/').pop() || 'artifact').replace(/\.html$/, '');
-  var SINK = seed.sink || 'http://127.0.0.1:7391';
+  var SLUG = readSlug() || seed.slug || (location.pathname.split('/').pop() || 'artifact').replace(/\.html$/, '');
+  var SINK = (seed.sink || 'http://127.0.0.1:7391').replace(/\/+$/, '');
+  var SIDECAR = (seed.sidecar || 'http://127.0.0.1:3210').replace(/\/+$/, '');
   var KEY = 'rv:' + SLUG;
 
   var now = function(){ return new Date().toISOString(); };
@@ -490,6 +511,47 @@
     }).then(function(r){ return r.ok; }).catch(function(){ return false; });
   }
 
+  function postSession(kind, text){
+    if (!window.fetch || !window.AbortSignal || !AbortSignal.timeout) return Promise.resolve(false);
+    try {
+      return fetch(SIDECAR + '/api/sessions/message', {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({slug: SLUG, kind: kind, text: text}),
+        signal: AbortSignal.timeout(1500)
+      }).then(function(r){
+        return r.ok ? r.json().then(function(d){ return !!(d && d.delivered); }).catch(function(){ return false; }) : false;
+      }).catch(function(){ return false; });
+    } catch (e) {
+      return Promise.resolve(false);
+    }
+  }
+
+  function commentText(){
+    var opens = threads.filter(function(t){ return t.status !== 'resolved'; });
+    if (!opens.length) opens = threads;
+    if (!opens.length) return 'Comments on ' + SLUG;
+    return opens.map(function(t){
+      var loc = t.anchor && (t.anchor.quote ? 'quoting "' + t.anchor.quote + '"' : t.anchor.label);
+      var header = loc ? '[' + loc + ']: ' : '';
+      var msgs = [t.body].concat((t.replies || []).map(function(r){ return r.body; }));
+      return (opens.length > 1 ? '#' + t.n + ' ' : '') + header + msgs.join('\n');
+    }).join('\n\n');
+  }
+
+  function send(action){
+    writeLocal();
+    var kind = action === 'approve' ? 'approval' : 'comment';
+    var text = action === 'approve' ? ('Approved ' + SLUG) : commentText();
+    postSession(kind, text).then(function(ok){
+      if (ok) { say(action === 'approve' ? 'Approved. Claude is going ahead.' : 'Sent to Claude.'); return; }
+      push(action).then(function(ok2){
+        if (ok2) { say(action === 'approve' ? 'Approved. Claude is going ahead.' : 'Sent to Claude.'); return; }
+        download();
+      });
+    });
+  }
+
   function refreshState(){
     panel.querySelector('.rv-state').textContent =
       root.dataset.sink === 'live' ? 'Claude is listening' : 'saved in this browser';
@@ -547,11 +609,7 @@
     if (b.dataset.act === 'close') { setPanel(false); return; }
     if (b.dataset.act === 'save') { download(); return; }
     if (b.dataset.act === 'send' || b.dataset.act === 'approve') {
-      var action = b.dataset.act;
-      push(action).then(function(ok){
-        if (ok) { say(action === 'approve' ? 'Approved. Claude is going ahead.' : 'Sent to Claude.'); return; }
-        download();
-      });
+      send(b.dataset.act);
     }
   });
 

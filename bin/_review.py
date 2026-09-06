@@ -94,13 +94,20 @@ def ingest(path: Path, incoming: dict) -> tuple[int, int]:
     return len(doc["threads"]) - before, len(doc["threads"])
 
 
-def install(path: Path, sink: str = "") -> str:
+def install(path: Path, sink: str = "", sidecar: str = "") -> str:
     """Inject or refresh the layer in place, carrying whatever threads the page already holds."""
     layer_src = layer_file()
     if not layer_src.is_file():
         raise SystemExit(f"no review layer at {layer_src}")
-    kept = read_doc(path)["threads"] if SEED_RE.search(path.read_text(errors="replace")) else []
-    doc = {"v": 1, "slug": path.stem, "sink": sink, "threads": kept}
+    existing = read_doc(path) if SEED_RE.search(path.read_text(errors="replace")) else {}
+    kept = existing.get("threads") or []
+    doc = {
+        "v": 1,
+        "slug": path.stem,
+        "sink": sink or existing.get("sink") or "",
+        "sidecar": sidecar or existing.get("sidecar") or "",
+        "threads": kept,
+    }
     layer = SEED_RE.sub(lambda m: m.group(1) + json.dumps(doc, ensure_ascii=False) + m.group(3),
                         layer_src.read_text(), count=1)
 
