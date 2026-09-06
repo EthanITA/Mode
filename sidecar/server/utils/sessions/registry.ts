@@ -11,6 +11,7 @@ export interface RegistryEntry {
   name?: string
   status?: SessionStatus
   updatedAt?: number
+  messagingSocketPath?: string
 }
 
 function text(value: unknown): string | undefined {
@@ -57,6 +58,7 @@ function parse(path: string): RegistryEntry | undefined {
     name: text(record.name),
     status: status(record.status),
     updatedAt: num(record.updatedAt) || num(record.startedAt),
+    messagingSocketPath: text(record.messagingSocketPath),
   }
 }
 
