@@ -750,6 +750,28 @@ with tempfile.TemporaryDirectory() as tmp:
        p.returncode == 0 and not p.stdout.strip(), "rc=%s out=%r" % (p.returncode, p.stdout[:200]))
     os.remove(os.path.join(config, "mode", "config.json"))
 
+    ng = os.path.join(HOOKS, "guards", "namespace-guard.py")
+    scratch = tempfile.mkdtemp()
+
+    def written(name, text):
+        path = os.path.join(scratch, name)
+        write(path, text)
+        return subprocess.run([sys.executable, ng], capture_output=True, text=True, env=hook_env(PLUGIN, config),
+                              input=json.dumps({"session_id": "h-guard", "hook_event_name": "PostToolUse",
+                                                "tool_name": "Write",
+                                                "tool_input": {"file_path": path, "content": text}})).stdout
+
+    noisy = written("google.ts", "export const googleLogin = () => 1\nexport const googleSignout = () => 2\n"
+                                 "export * from './oauth'\n")
+    ok("namespace-guard flags sibling exports sharing a prefix and an export *",
+       "googleLogin" in noisy and "export *" in noisy, "out=%r" % noisy[:200])
+    quiet = written("things.ts", "export const useThing = () => 1\nexport const useOther = () => 2\n"
+                                 "export const formatDate = () => 3\nexport const formatMoney = () => 4\n"
+                                 "export const Google = { login: 1 }\n")
+    ok("namespace-guard stays quiet on use* composables, verb prefixes and a lone namespace",
+       not quiet.strip(), "out=%r" % quiet[:200])
+    shutil.rmtree(scratch)
+
     # ------------------------------------------------------- the swarm roster
 
     section("roster-guard, which is what makes the file test a check")

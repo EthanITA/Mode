@@ -7,6 +7,16 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.16.0
+
+### Added
+
+- **`namespace-guard`, a fourth style guard on `Write|Edit`.** It reads the whole file after the
+  edit and flags what the domain-namespace rule bans: two or more exports sharing a prefix
+  (`googleLogin` beside `googleSignout`, which want to be `Google.login()`), and `export *`, which
+  turns a curated index into a firehose. Verb prefixes such as `format` and `create`, and the
+  `use` of a composable, are exempt because they name an action rather than a domain.
+
 ## 0.15.1
 
 ### Fixed
