@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-const TABS = ["notes", "pipeline", "history"] as const;
+const TABS = ["conversation", "notes", "pipeline", "history"] as const;
 type PanelTab = (typeof TABS)[number];
 
 const sc = useSidecar();
@@ -37,7 +37,9 @@ function ordinal(index: number): string {
       </span>
     </header>
 
-    <div class="body">
+    <div class="body" :data-fill="tab === 'conversation' ? '' : undefined">
+      <SessionConversation v-show="tab === 'conversation'" />
+
       <template v-if="tab === 'notes'">
         <NotesQuestionCard />
 
@@ -77,7 +79,7 @@ function ordinal(index: number): string {
         <p v-else class="empty">No gate is declared by this mode.</p>
       </template>
 
-      <template v-else>
+      <template v-else-if="tab === 'history'">
         <div class="history" data-scaffold>
           <div class="scaffold-body">
             <p class="empty">Every earlier version of this artifact would be listed here, newest first.</p>
@@ -95,14 +97,6 @@ function ordinal(index: number): string {
       <span class="ground mono-meta" :title="`${ground.told} of ${ground.total} ground rules have been told to this session`">
         ground · {{ ground.told }}/{{ ground.total }}
       </span>
-      <input
-        class="prompt"
-        data-region="prompt-input"
-        type="text"
-        placeholder="Read only — sending arrives in phase 4"
-        disabled
-        aria-label="Prompt (unavailable until phase 4)"
-      />
     </footer>
   </aside>
 </template>
@@ -202,6 +196,11 @@ function ordinal(index: number): string {
   gap: 14px;
   overflow-y: auto;
   padding: 14px;
+}
+
+.body[data-fill] {
+  overflow: hidden;
+  padding: 0;
 }
 
 .notes {
@@ -326,19 +325,6 @@ function ordinal(index: number): string {
 .ground {
   color: var(--subtle);
   cursor: help;
-}
-
-.prompt {
-  background: var(--sunken);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted);
-  cursor: not-allowed;
-  flex: 1 1 100%;
-  font: inherit;
-  font-size: 12.5px;
-  min-width: 0;
-  padding: 7px 13px;
 }
 
 @media (prefers-reduced-motion: reduce) {
