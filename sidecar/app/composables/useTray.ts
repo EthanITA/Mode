@@ -11,7 +11,7 @@ export interface TrayItem {
 }
 
 export interface TrayDraft {
-  /** Pass the identity you already own — a thread, a task row — and a re-drop replaces rather than duplicates. */
+  /** `<intent>:<entity>`, never the bare entity: two intents on one thread must coexist, a re-drop of one replace. */
   id?: string;
   kind: TrayKind;
   quote?: string;

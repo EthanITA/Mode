@@ -65,7 +65,8 @@ export function useReadVersions({ path, sessionKey }: VersionsInput): ReadVersio
       });
       if (mine === reader) content.value = got;
     } catch {
-      if (mine === reader) content.value = { path: one, turn, content: "", missing: true };
+      // A fetch that threw means the store never answered, which is not the same as an empty version.
+      if (mine === reader) content.value = { path: one, turn, found: false, reason: "store-failed" };
     } finally {
       if (mine === reader) reading.value = false;
     }

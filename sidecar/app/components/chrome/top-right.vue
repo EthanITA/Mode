@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { MessageSquare } from "@lucide/vue";
+
 const route = useRoute();
 const chrome = useChrome();
 
@@ -13,45 +15,39 @@ function toggleComment(): void {
 </script>
 
 <template>
-  <div class="top-right">
+  <div class="top-right" data-region="top-right">
     <template v-if="atConversation">
       <UiSurface
         v-if="chrome.view.faces.value.length > 1"
         class="pill switcher"
+        data-region="view-switcher"
         pad="none"
         shape="pill"
         variant="glass"
       >
-        <button
+        <UiChip
           v-for="face in chrome.view.faces.value"
           :key="face"
-          class="face focusable plain-button"
-          type="button"
-          :data-on="chrome.view.current.value === face"
+          :selected="chrome.view.current.value === face"
           @click="chrome.view.set(face)"
         >
           {{ LABELS[face] }}
-        </button>
+        </UiChip>
       </UiSurface>
 
-      <UiSurface class="pill" pad="none" shape="pill" variant="glass">
-        <button
-          class="comment focusable plain-button"
-          type="button"
+      <UiSurface class="pill" data-region="comment-arm" pad="none" shape="pill" variant="glass">
+        <UiChip
+          :selected="chrome.comment.armed.value"
           title="Comment on anything · hold C"
-          :aria-pressed="chrome.comment.armed.value"
-          :data-on="chrome.comment.armed.value"
           @click="toggleComment"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
+          <UiIcon :icon="MessageSquare" size="sm" />
           Comment
-        </button>
+        </UiChip>
       </UiSurface>
     </template>
 
-    <UiSurface class="pill theme" pad="none" shape="pill" variant="glass">
+    <UiSurface class="pill theme" data-region="theme-toggle" pad="none" shape="pill" variant="glass">
       <UiThemeToggle />
     </UiSurface>
   </div>
@@ -73,63 +69,16 @@ function toggleComment(): void {
   display: flex;
   flex: none;
   height: 40px;
+  padding: 0 6px;
 }
 
 .switcher {
-  gap: 2px;
-  padding: 0 4px;
-}
-
-.face {
-  border-radius: 999px;
-  color: var(--ink);
-  font-size: 12.5px;
-  font-weight: 600;
-  height: 32px;
-  padding: 0 14px;
-  transition:
-    background var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
-}
-
-.face:hover {
-  background: var(--sunken);
-}
-
-.face[data-on="true"] {
-  background: var(--ink);
-  color: var(--canvas);
-}
-
-.comment {
-  align-items: center;
-  border-radius: 999px;
-  color: var(--ink);
-  display: inline-flex;
-  font-size: 12.5px;
-  font-weight: 600;
-  gap: 8px;
-  height: 40px;
-  padding: 0 14px;
-}
-
-.comment svg {
-  fill: none;
-  height: 14px;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-  width: 14px;
-}
-
-.comment[data-on="true"] {
-  background: var(--primary);
-  color: var(--primary-content);
+  gap: 4px;
 }
 
 .theme {
   justify-content: center;
+  padding: 0;
   width: 40px;
 }
 
@@ -142,11 +91,5 @@ function toggleComment(): void {
   height: 40px;
   position: static;
   width: 40px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .face {
-    transition: none;
-  }
 }
 </style>

@@ -16,7 +16,6 @@ export interface Sidecar {
   catalogue: Ref<ArtifactMeta[]>;
   contracts: Ref<Contracts>;
   failure: Maybe<string>;
-  openThread: Maybe<string>;
   panelOpen: Ref<boolean>;
   ready: Ref<boolean>;
   sessionKey: Maybe<string>;
@@ -33,7 +32,6 @@ export function useSidecar(): Sidecar {
     catalogue: useState<ArtifactMeta[]>("sc:catalogue", () => []),
     contracts: useState<Contracts>("sc:contracts", () => ({ modes: [], styles: [] })),
     failure: maybeState<string>("sc:failure"),
-    openThread: maybeState<string>("sc:open-thread"),
     panelOpen: useState<boolean>("sc:panel-open", () => true),
     ready: useState<boolean>("sc:ready", () => false),
     sessionKey: maybeState<string>("sc:session-key"),
@@ -107,7 +105,6 @@ export function loadSidecar(): void {
   watch(
     () => sc.slug.value,
     async (slug) => {
-      sc.openThread.value = undefined;
       if (!slug) {
         sc.artifact.value = undefined;
         return;

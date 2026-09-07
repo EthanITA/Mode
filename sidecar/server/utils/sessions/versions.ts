@@ -39,7 +39,7 @@ export const Versions = {
 
   async restore({ key, path, turn, force }: Versions.At): Promise<RestoreResult> {
     const found = await call<RestoreResult>(["restore", key, "--path", path, "--turn", String(turn), ...(force ? ["--force"] : [])])
-    return found || { path, turn, restored: false, reason: "the version store could not be reached" }
+    return found || { path, turn, restored: false, forceable: false, reason: "the version store could not be reached" }
   },
 }
 

@@ -109,8 +109,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="chrome.comment.armed.value" class="armed">
-    <p class="banner">
+  <div v-if="chrome.comment.armed.value" class="armed" data-region="comment-mode">
+    <p class="banner" data-region="comment-banner">
       Pick anything to comment on
       <span class="hint mono-meta">esc cancel</span>
     </p>

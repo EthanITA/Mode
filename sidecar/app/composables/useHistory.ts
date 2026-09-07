@@ -29,7 +29,7 @@ export interface History {
   diffing: Ref<boolean>;
   error: Maybe<string>;
   files: Ref<HistoryFile[]>;
-  /** The last restore failed only because disk holds work this conversation never wrote. */
+  /** The last restore refused, and overwriting is the one thing that would get past it. */
   forceable: ComputedRef<boolean>;
   loading: Ref<boolean>;
   restore: (path: string, force?: boolean) => Promise<void>;
@@ -91,6 +91,11 @@ export function useHistory(): History {
   let diffTicket = 0;
 
   const capped = computed(() => !!versions.value?.capped);
+
+  const forceable = computed(() => {
+    const done = restored.value;
+    return !!done && !done.restored && done.forceable;
+  });
 
   const turns = computed<HistoryTurn[]>(() =>
     receipts.value.map((receipt, index) => ({
@@ -195,6 +200,8 @@ export function useHistory(): History {
     }).catch((caught: unknown) => ({
       path,
       turn,
+      // A call that never reached the store proves nothing about disk, so force would not help.
+      forceable: false,
       restored: false,
       reason: caught instanceof Error ? caught.message : "the restore call failed",
     }));
@@ -203,11 +210,15 @@ export function useHistory(): History {
   onMounted(() => {
     watch(() => sc.sessionKey.value, (key) => void load(key), { immediate: true });
     watch([selected, compare, versions], () => void pullDiffs(), { immediate: true });
+    // A restore receipt names the turn it acted on, so it must not follow the reader to another turn.
+    watch(selected, () => {
+      restored.value = undefined;
+    });
     onScopeDispose(() => {
       loadTicket += 1;
       diffTicket += 1;
     });
   });
 
-  return { capped, compare, diffing, error, files, loading, restore, restored, selected, turns };
+  return { capped, compare, diffing, error, files, forceable, loading, restore, restored, selected, turns };
 }

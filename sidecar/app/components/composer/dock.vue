@@ -5,7 +5,7 @@ type DockState = "expanded" | "minimized" | "preview";
 
 const convo = useConversation();
 const tray = useTray();
-const { steps } = useScreen();
+const { liveState, steps } = useScreen();
 
 const state = ref<DockState>("preview");
 
@@ -116,6 +116,11 @@ onMounted(() => {
         >
           <i v-for="step in steps" :key="step.label" class="bar" :data-state="step.state" :data-gate="step.gate" />
         </span>
+
+        <span class="live mono-meta" :data-live="liveState.running">
+          <span class="dot" />
+          {{ liveState.label }}
+        </span>
       </div>
     </UiSurface>
 
@@ -221,6 +226,41 @@ onMounted(() => {
   background: var(--warning);
 }
 
+.live {
+  align-items: center;
+  color: var(--subtle);
+  display: flex;
+  flex: none;
+  gap: 5px;
+  margin-left: auto;
+}
+
+.bars ~ .live {
+  margin-left: 0;
+}
+
+.live .dot {
+  --dot-size: 6px;
+
+  background: var(--subtle);
+}
+
+.live[data-live="true"] {
+  color: var(--success);
+}
+
+/* No token is this slow — a breath at spotlight speed reads as anxious rather than alive. */
+.live[data-live="true"] .dot {
+  animation: breathe calc(var(--duration-spotlight) * 2) var(--ease-in-out) infinite;
+  background: var(--success);
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .failure {
   background: var(--error-soft);
   border: 1px solid var(--error);
@@ -229,5 +269,11 @@ onMounted(() => {
   font-size: 13px;
   margin: 0;
   padding: 9px 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live[data-live="true"] .dot {
+    animation: none;
+  }
 }
 </style>

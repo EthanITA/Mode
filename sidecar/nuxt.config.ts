@@ -7,15 +7,17 @@ export default defineNuxtConfig({
   compatibilityDate: "2026-09-01",
   // Non-negotiable: this whole app renders client side, never on the server.
   ssr: false,
-  // Naming any dir replaces Nuxt's default scan, so ~/components is listed again.
+  // The app outranks the package: without it, adding a name the package also has
+  // silently reskins every call site using that tag.
   components: [
     {
       path: fileURLToPath(
         new URL("../../cela/packages/design/components", import.meta.url),
       ),
       prefix: "Ui",
+      priority: 0,
     },
-    "~/components",
+    { path: "~/components", priority: 10 },
   ],
   css: ["~/assets/css/main.css", "~/assets/css/sidecar.css"],
   // A scoped <style> block is its own Tailwind entry point, so every SFC needs an

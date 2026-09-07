@@ -4,7 +4,7 @@ import type { Maybe, MaybeComputed } from "~/composables/useSidecar";
 export const FACES = ["canvas", "read", "history"] as const;
 export type Face = (typeof FACES)[number];
 
-export type ToastTone = "destructive" | "success" | "warning";
+export type ToastTone = "destructive" | "neutral" | "success" | "warning";
 
 export interface Toast {
   id: number;
@@ -53,8 +53,6 @@ export interface Chrome {
   view: { current: ComputedRef<Face>; faces: Ref<Face[]>; set: (face: Face) => void };
 }
 
-const TOAST_MS = 2800;
-
 // Not useState: a callback is nothing to hydrate, and the mounted canvas is the only writer.
 const hooks = shallowRef<CanvasHooks>({});
 let toastSeq = 0;
@@ -76,12 +74,9 @@ export function useChrome(): Chrome {
     faces.value.includes(picked.value) ? picked.value : (faces.value[0] ?? "canvas"),
   );
 
-  function toast(text: string, tone: ToastTone = "success"): void {
-    const id = ++toastSeq;
-    toasts.value = [...toasts.value, { id, text, tone }];
-    window.setTimeout(() => {
-      toasts.value = toasts.value.filter((row) => row.id !== id);
-    }, TOAST_MS);
+  // A colour asserts an outcome, and most of these only say a message left.
+  function toast(text: string, tone: ToastTone = "neutral"): void {
+    toasts.value = [...toasts.value, { id: ++toastSeq, text, tone }];
   }
 
   function disarm(): void {

@@ -1,7 +1,17 @@
 <script lang="ts" setup>
 import type { FrameMark, FrameSelection } from "~/types/frame";
+import type { DiffGap } from "~~/shared/types/versions";
 
 type Stage = "live" | "reading" | "unreadable" | "version";
+
+// Same vocabulary History uses for the same gaps, worded for a version rather than a diff.
+const GAP: Record<DiffGap, string> = {
+  "missing-content": "no version of this file was stored for this turn",
+  "skipped": "this file is not versioned — it was over the size budget",
+  "store-failed": "the version store could not be read",
+  "unknown-baseline": "what stood before this file was first touched could not be reconstructed",
+  "unresolved-target": "there is no version of this file at the point being asked for",
+};
 
 const sc = useSidecar();
 const { session } = useScreen();
@@ -20,10 +30,18 @@ const stage = computed<Stage>(() => {
   if (!versions.at.value) return "live";
   const got = versions.content.value;
   if (!got) return "reading";
-  return got.missing ? "unreadable" : "version";
+  return got.found ? "version" : "unreadable";
 });
 
-const html = computed(() => (stage.value === "version" ? versions.content.value?.content : undefined));
+const html = computed(() => {
+  const got = versions.content.value;
+  return got?.found ? got.content : undefined;
+});
+
+const gap = computed(() => {
+  const got = versions.content.value;
+  return got && !got.found ? GAP[got.reason] : "";
+});
 
 function onMarks(next: FrameMark[]): void {
   marks.value = next;
@@ -40,7 +58,6 @@ watch([() => sc.slug.value, () => versions.at.value], () => {
   marks.value = [];
   measured.value = false;
   selection.value = undefined;
-  sc.openThread.value = undefined;
 });
 </script>
 
@@ -53,6 +70,7 @@ watch([() => sc.slug.value, () => versions.at.value], () => {
       :list="versions.list.value"
       :reading="versions.reading.value"
       :skipped="versions.skipped.value"
+      :slug="sc.slug.value ?? ''"
       :unreachable="versions.unreachable.value"
     />
 
@@ -70,16 +88,18 @@ watch([() => sc.slug.value, () => versions.at.value], () => {
         @select="selection = $event"
       />
 
-      <div v-else class="gap">
+      <div v-else class="gap" data-region="read-gap">
         <p v-if="stage === 'reading'" class="mono-meta">reading t{{ versions.at.value }}…</p>
         <template v-else>
           <p class="title">This version could not be read back.</p>
+          <p class="why">{{ gap }}.</p>
           <p class="why">
-            The store lists t{{ versions.at.value }} for <b>{{ sc.slug.value }}</b>, but its content did not come
-            back. Nothing is drawn here rather than a blank page, which would read as though the version changed
-            nothing.
+            Nothing is drawn here rather than a blank page, which would read as though t{{ versions.at.value }} of
+            <b>{{ sc.slug.value }}</b> changed nothing.
           </p>
-          <button class="back focusable" type="button" @click="versions.at.value = undefined">Back to latest</button>
+          <button v-press class="back focusable" type="button" @click="versions.at.value = undefined">
+            Back to latest
+          </button>
         </template>
       </div>
 

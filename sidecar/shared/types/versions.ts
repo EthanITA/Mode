@@ -45,5 +45,7 @@ export interface RestoreResult {
   path: string
   turn: number
   restored: boolean
+  // Ask this, never `reason`: that is prose for a person and free to be reworded.
+  forceable: boolean
   reason?: string
 }

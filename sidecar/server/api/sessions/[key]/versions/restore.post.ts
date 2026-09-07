@@ -11,6 +11,6 @@ function payloadOf(raw: unknown): { path: string; turn: number; force: boolean }
 export default defineEventHandler(async (event): Promise<RestoreResult> => {
   const key = getRouterParam(event, "key") || ""
   const body = payloadOf(await readBody(event))
-  if (!key || !body) return { path: "", turn: 0, restored: false, reason: "a path and a turn are required" }
+  if (!key || !body) return { path: "", turn: 0, restored: false, forceable: false, reason: "a path and a turn are required" }
   return Versions.restore({ key, ...body })
 })

@@ -13,11 +13,22 @@ const subtitle = computed(() => {
   return count ? plural(count, "file") : "no files changed";
 });
 
-async function restore(path: string): Promise<void> {
+async function restore(path: string, force?: boolean): Promise<void> {
   restoring.value = path;
-  await history.restore(path);
+  await history.restore(path, force);
   restoring.value = undefined;
 }
+
+const restoreMessage = computed(() => {
+  const done = history.restored.value;
+  if (!done) return "";
+  if (done.restored) return `Restored ${basename(done.path)} to turn ${done.turn}.`;
+  // The store refuses only when disk matches no version it holds, so this is never our own earlier restore.
+  if (history.forceable.value) {
+    return `${basename(done.path)} on disk is not any version this conversation stored. Something outside this conversation — a hand edit, or another session — has changed it since. Restoring will overwrite that work.`;
+  }
+  return `Could not restore ${basename(done.path)} — ${done.reason || "no reason was given"}`;
+});
 </script>
 
 <template>
@@ -65,13 +76,19 @@ async function restore(path: string): Promise<void> {
           below is missing from the store, not from the conversation.
         </p>
 
-        <p v-if="history.restored.value" class="notice" :data-ok="history.restored.value.restored" role="status">
-          {{
-            history.restored.value.restored
-              ? `Restored ${basename(history.restored.value.path)} to turn ${history.restored.value.turn}.`
-              : `Could not restore ${basename(history.restored.value.path)} — ${history.restored.value.reason || "no reason was given"}`
-          }}
-        </p>
+        <div v-if="history.restored.value" class="notice" :data-ok="history.restored.value.restored" role="status">
+          <span>{{ restoreMessage }}</span>
+          <!-- Overwriting work we never wrote is a second, deliberate act, never a retry of the first. -->
+          <button
+            v-if="history.forceable.value"
+            v-press
+            class="overwrite focusable"
+            type="button"
+            @click="restore(history.restored.value.path, true)"
+          >
+            Overwrite anyway
+          </button>
+        </div>
 
         <p v-if="!selectedTurn" class="empty">Pick a turn to see what it changed.</p>
         <p v-else-if="history.diffing.value" class="empty">Reading the diffs…</p>
@@ -189,13 +206,30 @@ async function restore(path: string): Promise<void> {
 }
 
 .notice {
+  align-items: flex-start;
   background: var(--warning-soft);
   border-radius: var(--radius-field);
   color: var(--warning);
+  display: flex;
   font-size: 12.5px;
+  gap: 10px;
   line-height: 1.5;
   margin: 0;
   padding: 9px 13px;
+}
+
+.overwrite {
+  background: var(--warning);
+  border: 0;
+  border-radius: 999px;
+  color: var(--canvas);
+  cursor: pointer;
+  flex: none;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  margin-left: auto;
+  padding: 4px 11px;
 }
 
 .notice[data-ok="true"] {

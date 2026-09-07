@@ -6,13 +6,13 @@ const { spot } = defineProps<{ spot: CommentSpot }>();
 const chrome = useChrome();
 
 const draft = ref("");
-const box = useTemplateRef<HTMLTextAreaElement>("box");
+const pen = useTemplateRef<HTMLElement>("pen");
 let cameFrom: HTMLElement | undefined;
 
 onMounted(async () => {
   cameFrom = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
   await nextTick();
-  box.value?.focus();
+  pen.value?.querySelector("textarea")?.focus();
 });
 
 onBeforeUnmount(() => cameFrom?.focus());
@@ -28,7 +28,9 @@ function onKey(event: KeyboardEvent): void {
   <div class="scrim" @click="chrome.comment.close()" />
 
   <UiSurface
+    v-island-pop="'top left'"
     class="card"
+    data-region="comment-popover"
     pad="xs"
     variant="raised"
     role="dialog"
@@ -46,19 +48,20 @@ function onKey(event: KeyboardEvent): void {
       <span v-if="spot.excerpt" class="tell-quote">{{ spot.excerpt }}</span>
     </div>
 
-    <textarea
-      ref="box"
-      v-model="draft"
-      class="draft"
-      rows="3"
-      placeholder="What should change?"
-      @keydown="onKey"
-    />
+    <div ref="pen">
+      <UiTextarea v-model="draft" :rows="3" placeholder="What should change?" @keydown="onKey" />
+    </div>
 
     <p class="foot">
       <span class="hint mono-meta">↵ to tray · esc cancel</span>
-      <button class="cancel focusable" type="button" @click="chrome.comment.close()">Cancel</button>
-      <button class="save focusable" type="button" :disabled="!draft.trim()" @click="chrome.comment.save(draft)">
+      <button v-press class="cancel focusable" type="button" @click="chrome.comment.close()">Cancel</button>
+      <button
+        v-press
+        class="save focusable"
+        type="button"
+        :disabled="!draft.trim()"
+        @click="chrome.comment.save(draft)"
+      >
         Add to tray
       </button>
     </p>
@@ -139,19 +142,6 @@ function onKey(event: KeyboardEvent): void {
   line-height: 1.5;
   padding-left: 8px;
   text-wrap: pretty;
-}
-
-.draft {
-  background: var(--canvas);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--ink);
-  font-family: var(--sans);
-  font-size: 13px;
-  line-height: 1.5;
-  outline: none;
-  padding: 8px 10px;
-  resize: none;
 }
 
 .foot {

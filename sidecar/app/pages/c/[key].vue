@@ -48,7 +48,7 @@ loadSidecar();
     </UiSurface>
 
     <template v-else>
-      <main class="stage" :data-face="chrome.view.current.value">
+      <main class="stage" data-region="conversation-stage" :data-face="chrome.view.current.value">
         <component :is="face" v-if="face" />
         <p v-else class="empty">
           No view has been built for this conversation yet.

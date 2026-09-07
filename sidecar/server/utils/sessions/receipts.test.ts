@@ -127,8 +127,14 @@ test("restore refuses to clobber a file that moved on since the store's head", (
     writeFileSync(target, "somebody else was here\n")
     const refused = JSON.parse(run(["restore", key, "--path", target, "--turn", "1"]))
     assert.equal(refused.restored, false)
-    assert.match(refused.reason, /never wrote/)
+    // The field, never the sentence: the wording is prose and free to change.
+    assert.equal(refused.forceable, true)
+    assert.ok(refused.reason, "a refusal that explains nothing is its own bug")
     assert.equal(readFileSync(target, "utf8"), "somebody else was here\n")
+
+    const hopeless = JSON.parse(run(["restore", key, "--path", join(root, "never-stored.ts"), "--turn", "1"]))
+    assert.equal(hopeless.forceable, false)
+    assert.ok(hopeless.reason)
 
     assert.equal(JSON.parse(run(["restore", key, "--path", target, "--turn", "1", "--force"])).restored, true)
     assert.equal(readFileSync(target, "utf8"), "v1\n")

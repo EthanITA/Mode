@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { ArrowLeft } from "@lucide/vue";
+
 const { cwd, title } = defineProps<{ cwd?: string; title: string }>();
 
 const chrome = useChrome();
@@ -10,21 +12,22 @@ const zoom = computed(() => {
 </script>
 
 <template>
-  <div class="head">
+  <div class="head" data-region="conversation-head">
     <UiSurface class="pill" pad="none" shape="pill" variant="glass">
-      <NuxtLink class="back focusable" to="/">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+      <NuxtLink v-press class="back focusable" to="/">
+        <UiIcon :icon="ArrowLeft" size="sm" />
         desk
       </NuxtLink>
     </UiSurface>
 
-    <UiSurface class="pill what" pad="none" shape="pill" variant="glass">
+    <UiSurface class="pill what" data-region="conversation-title" pad="none" shape="pill" variant="glass">
       <span class="title">{{ title }}</span>
       <span v-if="cwd" class="cwd mono-meta">{{ homePath(cwd) }}</span>
     </UiSurface>
 
-    <UiSurface v-if="zoom" class="pill" pad="none" shape="pill" variant="glass">
+    <UiSurface v-if="zoom" class="pill" data-region="canvas-zoom" pad="none" shape="pill" variant="glass">
       <button
+        v-press
         class="zoom focusable plain-button"
         type="button"
         title="Zoom to fit · ⇧1"
@@ -75,16 +78,6 @@ const zoom = computed(() => {
 
 .back:hover {
   color: var(--primary);
-}
-
-.back svg {
-  fill: none;
-  height: 14px;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-  width: 14px;
 }
 
 .title {
