@@ -1,11 +1,17 @@
 <script lang="ts" setup>
-import type { FrameAnchor, FrameBlock } from "~/types/frame";
+import type { FrameAnchor, FrameBlock, FrameMark, FrameSelection } from "~/types/frame";
 
-const { slug } = defineProps<{ slug: string }>();
+const { html, slug, version } = defineProps<{
+  html?: string;
+  slug: string;
+  version?: number;
+}>();
 
 const emit = defineEmits<{
   anchors: [anchors: FrameAnchor[]];
   block: [block?: FrameBlock];
+  marks: [marks: FrameMark[]];
+  select: [selection?: FrameSelection];
 }>();
 
 // Mirrors labelOf() in the review layer: the anchor label is the host section's own heading.
@@ -13,13 +19,22 @@ const HOSTS = "section, article, figure, .panel, .stage";
 const HEADINGS = "h1, h2, h3, h4";
 const BLOCKS = "p, li, h1, h2, h3, h4, blockquote, pre, table, figure";
 const LABEL_MAX = 44;
+const MIN_QUOTE = 3;
 const SUPPRESS_ID = "sidecar-suppress";
+
+interface Indexed {
+  el: HTMLElement;
+  key: string;
+  label: string;
+  text: string;
+}
 
 const frame = ref<HTMLIFrameElement>();
 const height = ref(0);
 const loaded = ref(false);
 
 let watchers: (() => void)[] = [];
+let indexed: Indexed[] = [];
 
 function norm(text: string | undefined): string {
   return (text || "").replace(/\s+/g, " ").trim();
@@ -29,6 +44,10 @@ function norm(text: string | undefined): string {
 function blockAt(target: unknown): Element | undefined {
   const node = target as { closest?: (selectors: string) => Element | null } | undefined; // external contract: DOM closest()
   return node?.closest?.(BLOCKS) ?? undefined;
+}
+
+function labelOf(el: Element): string {
+  return norm(el.closest(HOSTS)?.querySelector(HEADINGS)?.textContent).slice(0, LABEL_MAX);
 }
 
 function readAnchors(doc: Document): FrameAnchor[] {
@@ -43,9 +62,47 @@ function readAnchors(doc: Document): FrameAnchor[] {
   return out;
 }
 
+// Walked once per load, so a mark keeps its key while the page reflows under it.
+function indexBlocks(doc: Document): void {
+  indexed = [];
+  for (const el of doc.querySelectorAll<HTMLElement>(BLOCKS)) {
+    // A figure wrapping a paragraph would otherwise carry a second, overlapping mark.
+    if (el.querySelector(BLOCKS)) continue;
+    const text = norm(el.textContent);
+    if (!text) continue;
+    indexed.push({ el, key: `${indexed.length}:${el.tagName.toLowerCase()}`, label: labelOf(el), text });
+  }
+}
+
+function measure(doc: Document): FrameMark[] {
+  const scroll = doc.documentElement.scrollTop;
+  return indexed.map(({ el, key, label, text }) => {
+    const box = el.getBoundingClientRect();
+    return { height: box.height, key, label, text, top: box.top + scroll };
+  });
+}
+
+function markFor(doc: Document, node?: Node): FrameMark | undefined {
+  const held = indexed.find((one) => node && one.el.contains(node));
+  if (!held) return undefined;
+  const box = held.el.getBoundingClientRect();
+  const scroll = doc.documentElement.scrollTop;
+  return { height: box.height, key: held.key, label: held.label, text: held.text, top: box.top + scroll };
+}
+
 function teardown(): void {
   for (const off of watchers) off();
   watchers = [];
+  indexed = [];
+}
+
+function reset(): void {
+  loaded.value = false;
+  height.value = 0;
+  teardown();
+  emit("anchors", []);
+  emit("block", undefined);
+  emit("select", undefined);
 }
 
 function onLoad(): void {
@@ -53,18 +110,21 @@ function onLoad(): void {
   const doc = frame.value?.contentDocument;
   if (!doc) return;
 
+  indexBlocks(doc);
+
   // documentElement.scrollHeight floors at the viewport, so a tall boot frame would never shrink back.
-  const measure = (): void => {
+  const remeasure = (): void => {
     height.value = doc.body?.scrollHeight || doc.documentElement.scrollHeight;
     emit("anchors", readAnchors(doc));
+    emit("marks", measure(doc));
   };
 
   syncTheme(doc);
   hidePageToggle(doc);
-  measure();
+  remeasure();
   loaded.value = true;
 
-  const resize = new ResizeObserver(measure);
+  const resize = new ResizeObserver(remeasure);
   resize.observe(doc.body ?? doc.documentElement);
   watchers.push(() => resize.disconnect());
 
@@ -79,12 +139,44 @@ function onLoad(): void {
   };
   const onLeave = (): void => emit("block", undefined);
 
+  const onSelect = (): void => {
+    const selection = doc.getSelection();
+    const quote = norm(selection?.toString());
+    if (!selection || selection.isCollapsed || quote.length < MIN_QUOTE) {
+      emit("select", undefined);
+      return;
+    }
+    const mark = markFor(doc, selection.anchorNode ?? undefined);
+    if (!mark) {
+      emit("select", undefined);
+      return;
+    }
+    const box = selection.getRangeAt(0).getBoundingClientRect();
+    const scroll = doc.documentElement.scrollTop;
+    emit("select", {
+      bottom: box.bottom + scroll,
+      left: box.left + box.width / 2,
+      mark,
+      quote,
+      top: box.top + scroll,
+    });
+  };
+
   doc.addEventListener("mousemove", onMove);
   doc.addEventListener("mouseleave", onLeave);
+  doc.addEventListener("mouseup", onSelect);
+  doc.addEventListener("keyup", onSelect);
   watchers.push(() => {
     doc.removeEventListener("mousemove", onMove);
     doc.removeEventListener("mouseleave", onLeave);
+    doc.removeEventListener("mouseup", onSelect);
+    doc.removeEventListener("keyup", onSelect);
   });
+}
+
+function clearSelection(): void {
+  frame.value?.contentDocument?.getSelection()?.removeAllRanges();
+  emit("select", undefined);
 }
 
 // The artifact carries its own theme stamp, so the frame follows the app's toggle rather than the OS.
@@ -111,26 +203,20 @@ onMounted(() => {
   onScopeDispose(() => observer.disconnect());
 });
 
-watch(
-  () => slug,
-  () => {
-    loaded.value = false;
-    height.value = 0;
-    teardown();
-    emit("anchors", []);
-    emit("block", undefined);
-  },
-);
+watch(() => [slug, version, html], reset);
 
 onScopeDispose(teardown);
+
+defineExpose({ clearSelection });
 </script>
 
 <template>
   <div class="sheet" :data-loaded="loaded ? '' : undefined">
     <iframe
       ref="frame"
-      :key="slug"
-      :src="`/artifact/${slug}`"
+      :key="`${slug}:${version ?? 'head'}`"
+      :src="html ? undefined : `/artifact/${slug}`"
+      :srcdoc="html"
       :style="{ height: height ? `${height}px` : undefined }"
       :title="`Artifact ${slug}`"
       loading="eager"
