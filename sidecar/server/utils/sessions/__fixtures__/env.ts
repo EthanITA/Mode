@@ -23,6 +23,17 @@ export function useFixtures(): () => void {
   }
 }
 
+// Its own config root, so a session added for the receipts tests cannot shift the session list
+// the other suites assert on.
+export function useReceiptFixtures(root = join(HERE, "receipts")): () => void {
+  const had = "CLAUDE_CONFIG_DIR" in process.env
+  const was = process.env.CLAUDE_CONFIG_DIR
+  process.env.CLAUDE_CONFIG_DIR = root
+  return () => restore("CLAUDE_CONFIG_DIR", had, was)
+}
+
 export const FIXTURES_DIR = HERE
+export const RECEIPTS_DIR = join(HERE, "receipts")
 export const ALPHA_ID = "aaaaaaaa-1111-2222-3333-444444444444"
 export const BETA_ID = "bbbbbbbb-2222-3333-4444-555555555555"
+export const DELTA_KEY = "dddddddd"
