@@ -10,6 +10,8 @@ export interface ConversationTurn {
 }
 
 export interface Conversation {
+  /** Reports delivery, so a caller holding state to clear can tell a refusal from a send. */
+  deliver: (text: string) => Promise<boolean>;
   draft: Ref<string>;
   error: Maybe<string>;
   live: ComputedRef<boolean>;
@@ -123,13 +125,13 @@ export function useConversation(): Conversation {
     }
   }
 
-  async function send(): Promise<void> {
+  async function deliver(body: string): Promise<boolean> {
     const key = sc.sessionKey.value;
-    const text = draft.value.trim();
-    if (!key || !text || sending.value) return;
+    const text = body.trim();
+    if (!key || !text || sending.value) return false;
     if (!live.value) {
       error.value = REFUSAL["no-live-session"];
-      return;
+      return false;
     }
     sending.value = true;
     error.value = undefined;
@@ -138,17 +140,22 @@ export function useConversation(): Conversation {
         method: "POST",
         body: { text },
       });
-      if (result.delivered) {
-        draft.value = "";
-        append({ at: Date.now(), role: "user", text });
-      } else {
+      if (!result.delivered) {
         error.value = refusalMessage(result.reason);
+        return false;
       }
+      append({ at: Date.now(), role: "user", text });
+      return true;
     } catch (caught) {
       error.value = caught instanceof Error ? caught.message : String(caught);
+      return false;
     } finally {
       sending.value = false;
     }
+  }
+
+  async function send(): Promise<void> {
+    if (await deliver(draft.value)) draft.value = "";
   }
 
   onMounted(() => {
@@ -159,5 +166,5 @@ export function useConversation(): Conversation {
     });
   });
 
-  return { draft, error, live, loading, send, sending, turns };
+  return { deliver, draft, error, live, loading, send, sending, turns };
 }

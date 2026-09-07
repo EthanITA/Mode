@@ -5,7 +5,7 @@ const { liveState, steps } = useScreen();
 </script>
 
 <template>
-  <UiSurface v-island-pop class="island" data-region="pipeline-island" variant="glass-liquid" shape="island">
+  <UiSurface v-island-pop class="island" data-region="pipeline-island" variant="glass-liquid" shape="island" pad="none">
     <PipelineSlotChips v-if="withSlots" />
     <span v-if="withSlots && steps.length" class="rule" />
 
@@ -27,16 +27,6 @@ const { liveState, steps } = useScreen();
       phase="phase 3"
       why="Working and idle come from the session registry. Finer states — thinking, writing v4 — need the transcript tail, which phase 3 adds."
     />
-
-    <button
-      class="send focusable"
-      type="button"
-      disabled
-      title="Phase 4: the sidecar cannot send into a conversation yet"
-      aria-label="Send (unavailable until phase 4)"
-    >
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 12.5V3.5M4 7.2 8 3.2l4 4" /></svg>
-    </button>
   </UiSurface>
 </template>
 
@@ -131,31 +121,6 @@ const { liveState, steps } = useScreen();
   50% {
     opacity: 0.35;
   }
-}
-
-.send {
-  align-items: center;
-  background: var(--secondary);
-  border: 0;
-  border-radius: 999px;
-  color: var(--canvas);
-  cursor: not-allowed;
-  display: flex;
-  flex: none;
-  height: 30px;
-  justify-content: center;
-  opacity: 0.45;
-  width: 30px;
-}
-
-.send svg {
-  fill: none;
-  height: 15px;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.7;
-  width: 15px;
 }
 
 @media (prefers-reduced-motion: reduce) {
