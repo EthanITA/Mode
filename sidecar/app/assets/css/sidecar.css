@@ -2,8 +2,6 @@
    vendored Cela tokens in cela.css — no literal colour, no literal duration. */
 
 :root {
-  --rail-h: 46px;
-  --panel-w: 400px;
   --gutter-w: 44px;
   --page-w: 760px;
   --step: 8px;

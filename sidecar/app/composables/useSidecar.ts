@@ -16,7 +16,6 @@ export interface Sidecar {
   catalogue: Ref<ArtifactMeta[]>;
   contracts: Ref<Contracts>;
   failure: Maybe<string>;
-  panelOpen: Ref<boolean>;
   ready: Ref<boolean>;
   sessionKey: Maybe<string>;
   sessions: Ref<LiveSession[]>;
@@ -32,7 +31,6 @@ export function useSidecar(): Sidecar {
     catalogue: useState<ArtifactMeta[]>("sc:catalogue", () => []),
     contracts: useState<Contracts>("sc:contracts", () => ({ modes: [], styles: [] })),
     failure: maybeState<string>("sc:failure"),
-    panelOpen: useState<boolean>("sc:panel-open", () => true),
     ready: useState<boolean>("sc:ready", () => false),
     sessionKey: maybeState<string>("sc:session-key"),
     sessions: useState<LiveSession[]>("sc:sessions", () => []),
