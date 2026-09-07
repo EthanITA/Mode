@@ -34,11 +34,22 @@ const CASES: Case[] = [
     expectText: ['No artifact mounted yet', 'page-placeholder'],
   },
   {
-    name: 'a filled screen passes',
+    name: 'a filled screen passes, and every screen the driver can reach is reached',
     url: fixture('filled-screen.html'),
     args: [],
     expectExit: 0,
-    expectText: ['PASS', 'STATE B'],
+    expectText: [
+      'PASS',
+      'DESK ·',
+      'CANVAS ·',
+      'READ ·',
+      'HISTORY ·',
+      'JUMP ·',
+      'COMMENT ·',
+      // A region no state can reach is named rather than counted as covered.
+      'NOT DRIVEN',
+      'toaster',
+    ],
   },
 ]
 
@@ -61,7 +72,9 @@ function frame404Case(origin: string): Case {
   writeFileSync(
     path,
     `<!doctype html><html><head><meta charset="utf-8"><title>frame 404</title></head><body>
+<main data-region="conversation-stage" data-face="read"><div data-region="read-view">
 <article data-region="artifact-page"><iframe src="${origin}/artifact/definitely-not-a-real-slug"></iframe></article>
+</div></main>
 </body></html>\n`,
   )
   return {

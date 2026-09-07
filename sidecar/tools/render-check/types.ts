@@ -1,4 +1,6 @@
-export type ScreenState = 'open' | 'closed'
+// v6 is two routes and three faces, so a screen is where you are rather than
+// whether one panel is collapsed.
+export type ScreenState = 'desk' | 'canvas' | 'read' | 'history' | 'jump' | 'comment'
 
 export type RegionDemand = 'required' | 'empty-ok' | 'inert'
 
@@ -9,7 +11,10 @@ export interface RegionSpec {
   selectors: string[]
   demand: RegionDemand
   states: ScreenState[]
+  /** Renders a session id as a leak rather than as content. */
   namesNotIds?: boolean
+  /** Renders words a person or Claude wrote, where a fallback string is content rather than a defect. */
+  quotes?: boolean
   frame?: boolean
 }
 
@@ -79,7 +84,17 @@ export interface ProbeResult {
   outline: OutlineNode[]
   namesOnScreen: string[]
   namesMissing: string[]
-  panelToggle: boolean
+  screen: ScreenReading
+}
+
+export interface ScreenReading {
+  commentTargets: number
+  deskCards: number
+  /** The face the conversation stage is showing, absent when no conversation is mounted. */
+  face?: string
+  /** What the switcher offers, empty when fewer than two domains are built. */
+  faces: string[]
+  onDesk: boolean
 }
 
 export type Severity = 'fail' | 'warn' | 'info'

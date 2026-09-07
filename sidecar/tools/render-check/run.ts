@@ -2,10 +2,20 @@ import { writeFileSync } from 'node:fs'
 import { Cdp } from './cdp.ts'
 import { launchChrome } from './chrome.ts'
 import { probeScreen } from './probe.ts'
-import { judgeEvents, judgeState, renderReport } from './report.ts'
+import { Judge, renderReport } from './report.ts'
 import { PLACEHOLDER_PATTERNS, REGIONS } from './regions.ts'
 import { ensureServer } from './server.ts'
-import type { Finding, PageEvent, ProbeInput, ProbeResult, RenderReport, StateReport } from './types.ts'
+import type {
+  Finding,
+  PageEvent,
+  ProbeInput,
+  ProbeResult,
+  RenderReport,
+  ScreenState,
+  StateReport,
+} from './types.ts'
+
+const FACES = ['canvas', 'read', 'history'] as const
 
 interface Options {
   url: string
@@ -89,6 +99,40 @@ async function evaluate<T>(cdp: Cdp, sessionId: string, expression: string): Pro
   return response.result.value as T
 }
 
+async function click(cdp: Cdp, sessionId: string, selector: string): Promise<boolean> {
+  return evaluate<boolean>(
+    cdp,
+    sessionId,
+    `(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; el.click(); return true })()`,
+  )
+}
+
+// The app binds its shortcuts on window, so a dispatched event drives them without a pointer.
+async function press(cdp: Cdp, sessionId: string, key: string, meta = false): Promise<void> {
+  await evaluate(
+    cdp,
+    sessionId,
+    `window.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(key)}, metaKey: ${meta}, bubbles: true }))`,
+  )
+}
+
+// Comment mode listens in the capture phase on document, which a bubbling event still reaches.
+async function pickCommentTarget(cdp: Cdp, sessionId: string): Promise<boolean> {
+  return evaluate<boolean>(
+    cdp,
+    sessionId,
+    `(() => {
+      const el = document.querySelector('[data-cmt]')
+      if (!el) return false
+      const box = el.getBoundingClientRect()
+      el.dispatchEvent(new MouseEvent('mousedown', {
+        bubbles: true, clientX: box.left + 4, clientY: box.top + 4,
+      }))
+      return true
+    })()`,
+  )
+}
+
 interface SettleSample {
   elements: number
   frames: number
@@ -123,6 +167,7 @@ async function waitForSettle(cdp: Cdp, sessionId: string, budgetMs: number): Pro
 }
 
 interface ApiSession {
+  artifacts?: string[]
   id?: string
   key?: string
   name?: string
@@ -244,6 +289,8 @@ async function main(): Promise<void> {
   const chrome = await launchChrome(options.width, options.height, 20_000)
   const events: PageEvent[] = []
   const states: StateReport[] = []
+  let lastSettled = false
+  let landing: ProbeResult | undefined
 
   try {
     const cdp = await Cdp.connect(chrome.wsUrl, 10_000)
@@ -265,29 +312,97 @@ async function main(): Promise<void> {
       mobile: false,
     }, sessionId)
 
-    await cdp.send('Page.navigate', { url: options.url }, sessionId, 60_000)
-    const settledOpen = await waitForSettle(cdp, sessionId, options.settleMs)
-    const openProbe = await probe(cdp, sessionId, probeInput)
-    await diagnoseFrames(options.url, openProbe)
-    states.push({ state: 'open', reached: true, settled: settledOpen, probe: openProbe })
+    const look = async (): Promise<ProbeResult> => {
+      const settled = await waitForSettle(cdp, sessionId, options.settleMs)
+      const result = await probe(cdp, sessionId, probeInput)
+      await diagnoseFrames(options.url, result)
+      lastSettled = settled
+      return result
+    }
+    const keep = (state: ScreenState, result: ProbeResult): void => {
+      states.push({ state, reached: true, settled: lastSettled, probe: result })
+    }
+    const skip = (state: ScreenState, why: string): void => {
+      states.push({ state, reached: false, settled: false, skipped: why })
+    }
 
-    if (openProbe.panelToggle) {
-      await evaluate<boolean>(
-        cdp,
-        sessionId,
-        `(() => { const el = document.querySelector('[data-region-toggle="panel"],[data-panel-toggle]'); if (!el) return false; el.click(); return true })()`,
-      )
-      const settledClosed = await waitForSettle(cdp, sessionId, options.settleMs)
-      const closedProbe = await probe(cdp, sessionId, probeInput)
-      await diagnoseFrames(options.url, closedProbe)
-      states.push({ state: 'closed', reached: true, settled: settledClosed, probe: closedProbe })
+    await cdp.send('Page.navigate', { url: options.url }, sessionId, 60_000)
+    let seen = await look()
+    landing = seen
+
+    if (seen.screen.onDesk) keep('desk', seen)
+    else skip('desk', `${options.url} does not render the desk, so that screen was never on show`)
+
+    // Clicking a card is how a person opens a conversation, so it is how the check does.
+    if (!seen.screen.face && seen.screen.deskCards > 0) {
+      if (await click(cdp, sessionId, '[data-region="desk-card"]')) seen = await look()
+    }
+    // Artifacts first: the read face has nothing to render without one, and a run that
+    // opened the wrong conversation would report that as a broken artifact frame.
+    const key = (
+      sessions.find((s) => s.live && s.key && s.artifacts?.length) ??
+      sessions.find((s) => s.key && s.artifacts?.length) ??
+      sessions.find((s) => s.live && s.key) ??
+      sessions.find((s) => s.key)
+    )?.key
+    if (!seen.screen.face && !isFile && key) {
+      await cdp.send('Page.navigate', { url: new URL(`/c/${key}`, options.url).href }, sessionId, 60_000)
+      seen = await look()
+    }
+
+    const inConversation = Boolean(seen.screen.face)
+    const openedKey = /\/c\/([^/?#]+)/.exec(seen.url)?.[1]
+    const opened = sessions.find((s) => s.key === openedKey)
+    const offered = seen.screen.faces.length
+      ? seen.screen.faces
+      : seen.screen.face
+        ? [seen.screen.face]
+        : []
+
+    for (const face of FACES) {
+      if (!inConversation) {
+        skip(face, 'no conversation could be opened: no desk card to click and no session key to navigate to')
+        continue
+      }
+      if (!offered.includes(face)) {
+        skip(face, `the switcher does not offer ${face}, so that domain is not built and the face is unreachable`)
+        continue
+      }
+      if (face === 'read' && opened && !opened.artifacts?.length) {
+        skip('read', `${opened.name ?? openedKey ?? 'that conversation'} has stamped no artifact, so the read face has nothing to show`)
+        continue
+      }
+      if (seen.screen.face !== face) {
+        if (!(await click(cdp, sessionId, `[data-region="view-switcher"] [data-value="${face}"]`))) {
+          skip(face, `the switcher offers ${face} but carries no [data-value="${face}"] control to click`)
+          continue
+        }
+        seen = await look()
+      }
+      keep(face, seen)
+    }
+
+    await press(cdp, sessionId, 'k', true)
+    const jump = await look()
+    if (jump.regions.find((r) => r.id === 'jump-palette')?.found) keep('jump', jump)
+    else skip('jump', 'command-K raised no jump palette')
+    await press(cdp, sessionId, 'Escape')
+
+    if (inConversation && seen.screen.commentTargets > 0) {
+      await press(cdp, sessionId, 'c')
+      await pickCommentTarget(cdp, sessionId)
+      const comment = await look()
+      if (comment.regions.find((r) => r.id === 'comment-popover')?.found) keep('comment', comment)
+      else skip('comment', 'holding C and picking a [data-cmt] element opened no comment popover')
+      await press(cdp, sessionId, 'Escape')
+      await press(cdp, sessionId, 'Escape')
     } else {
-      states.push({
-        state: 'closed',
-        reached: false,
-        settled: false,
-        skipped: 'no control carries data-region-toggle="panel", so the panel-closed state cannot be reached',
-      })
+      skip(
+        'comment',
+        inConversation
+          ? 'nothing on the conversation carries data-cmt, so there is nothing to comment on'
+          : 'comment mode needs a conversation, and none could be opened',
+      )
     }
 
     await cdp.send('Browser.close').catch(() => undefined)
@@ -297,9 +412,12 @@ async function main(): Promise<void> {
     server.stop()
   }
 
-  const findings: Finding[] = judgeEvents(events)
+  const findings: Finding[] = Judge.events(events)
   for (const state of states) {
-    if (state.probe) findings.push(...judgeState(state.state, state.probe))
+    if (state.probe) findings.push(...Judge.state(state.state, state.probe))
+  }
+  if (landing && !states.some((state) => state.probe === landing)) {
+    findings.push(...Judge.page(landing))
   }
 
   const report: RenderReport = {

@@ -84,10 +84,11 @@ function onEnter(event: KeyboardEvent): void {
           @drop.prevent="onEndDrop"
         >
           <span class="spacer-handle" aria-hidden="true" />
-          <input
+          <UiTextInput
             v-model="newTask"
             class="add-input"
             placeholder="Add a task&hellip; &#8629;"
+            variant="bare"
             @keydown="onEnter"
           />
         </div>

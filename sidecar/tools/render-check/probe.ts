@@ -1,4 +1,4 @@
-import type { FrameReading, OutlineNode, ProbeInput, ProbeResult, RegionReading } from './types.ts'
+import type { FrameReading, OutlineNode, ProbeInput, ProbeResult, RegionReading, ScreenReading } from './types.ts'
 
 /**
  * Serialised with `.toString()` and evaluated inside the page, so it may not
@@ -178,6 +178,22 @@ export function probeScreen(input: ProbeInput): ProbeResult {
   const namesOnScreen = input.expectedNames.filter((n) => n.length > 0 && bodyText.includes(n))
   const namesMissing = input.expectedNames.filter((n) => n.length > 0 && !bodyText.includes(n))
 
+  // Visibility, not presence: a stage still in the DOM but display:none would otherwise
+  // convince the driver it had already opened a conversation.
+  const onScreen = (selector: string): Element[] =>
+    Array.from(document.querySelectorAll(selector)).filter(isVisible)
+
+  const stage = onScreen('[data-region="conversation-stage"]')[0]
+  const screen: ScreenReading = {
+    commentTargets: onScreen('[data-cmt]').length,
+    deskCards: onScreen('[data-region="desk-card"]').length,
+    face: stage ? stage.getAttribute('data-face') || undefined : undefined,
+    faces: onScreen('[data-region="view-switcher"] [data-value]')
+      .map((el) => el.getAttribute('data-value') || '')
+      .filter((face) => face.length > 0),
+    onDesk: onScreen('[data-region="desk"]').length > 0,
+  }
+
   return {
     url: location.href,
     title: document.title,
@@ -189,8 +205,6 @@ export function probeScreen(input: ProbeInput): ProbeResult {
     outline,
     namesOnScreen,
     namesMissing,
-    panelToggle: Boolean(
-      document.querySelector('[data-region-toggle="panel"],[data-panel-toggle]'),
-    ),
+    screen,
   }
 }

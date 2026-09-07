@@ -14,7 +14,7 @@ const chrome = useChrome();
 
 const query = ref("");
 const cursor = ref(0);
-const field = useTemplateRef<HTMLInputElement>("field");
+const field = useTemplateRef<HTMLElement>("field");
 let cameFrom: HTMLElement | undefined;
 
 const rows = computed<JumpRow[]>(() => {
@@ -48,7 +48,7 @@ watch(chrome.jump.open, async (on) => {
   query.value = "";
   cursor.value = 0;
   await nextTick();
-  field.value?.focus();
+  field.value?.querySelector("input")?.focus();
 });
 
 function go(row?: JumpRow): void {
@@ -86,20 +86,19 @@ function onKey(event: KeyboardEvent): void {
         role="dialog"
         aria-label="Jump to a conversation"
       >
-        <div class="field">
-          <input
-            ref="field"
+        <div ref="field" class="field">
+          <UiTextInput
             v-model="query"
-            class="input"
-            type="text"
-            role="combobox"
-            aria-expanded="true"
             aria-controls="jump-rows"
+            aria-expanded="true"
             :aria-activedescendant="active"
             aria-label="Filter conversations by name"
             placeholder="Jump to a conversation…"
+            role="combobox"
+            type="search"
+            variant="bare"
             @keydown="onKey"
-          >
+          />
         </div>
 
         <div id="jump-rows" class="rows" role="listbox" aria-label="Conversations">
@@ -155,20 +154,11 @@ function onKey(event: KeyboardEvent): void {
 }
 
 .field {
+  align-items: center;
   border-bottom: 1px solid var(--border);
-  padding: 8px 10px;
-}
-
-.input {
-  background: none;
-  border: 0;
-  color: var(--ink);
-  font-family: var(--sans);
-  font-size: 13.5px;
-  height: 34px;
-  outline: none;
-  padding: 0 6px;
-  width: 100%;
+  display: flex;
+  height: 50px;
+  padding: 0 16px;
 }
 
 .rows {

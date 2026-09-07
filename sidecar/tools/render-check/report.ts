@@ -117,18 +117,21 @@ function judgeRegion(spec: RegionSpec, reading: RegionReading, state: ScreenStat
   for (const placeholder of reading.placeholders) {
     findings.push({
       ...at,
-      severity: spec.demand === 'inert' ? 'info' : 'fail',
+      severity: spec.demand === 'inert' || spec.quotes ? 'info' : 'fail',
       code: 'placeholder',
-      detail: `renders the literal fallback string ${JSON.stringify(placeholder)} where real content belongs`,
+      detail: spec.quotes
+        ? `carries the word ${JSON.stringify(placeholder)}, which here is something someone wrote rather than a fallback`
+        : `renders the literal fallback string ${JSON.stringify(placeholder)} where real content belongs`,
     })
   }
 
   for (const leak of reading.idLeaks) {
     findings.push({
       ...at,
-      severity: 'fail',
+      // Warn, not fail: nameOf reaches the key only once name and cwd are both empty.
+      severity: spec.namesNotIds ? 'warn' : 'info',
       code: 'id-leak',
-      detail: `renders the session id ${JSON.stringify(leak)} as text where a name belongs`,
+      detail: `renders the session id ${JSON.stringify(leak)}, so that conversation has neither a name nor a usable working directory`,
     })
   }
 
@@ -145,7 +148,7 @@ function judgeRegion(spec: RegionSpec, reading: RegionReading, state: ScreenStat
   return findings
 }
 
-export function judgeState(state: ScreenState, probe: ProbeResult): Finding[] {
+function judgeState(state: ScreenState, probe: ProbeResult): Finding[] {
   const findings: Finding[] = []
 
   if (probe.bodyTextLength < 40) {
@@ -157,13 +160,13 @@ export function judgeState(state: ScreenState, probe: ProbeResult): Finding[] {
     })
   }
 
+  // Every region, not just this state's: an overlay leaves the screen behind it on the page.
   const claimed = new Set<string>()
   for (const spec of REGIONS) {
-    if (!spec.states.includes(state)) continue
     const reading = probe.regions.find((r) => r.id === spec.id)
     if (!reading) continue
     for (const placeholder of reading.placeholders) claimed.add(placeholder)
-    findings.push(...judgeRegion(spec, reading, state))
+    if (spec.states.includes(state)) findings.push(...judgeRegion(spec, reading, state))
   }
 
   // the safety net: a fallback string fails the build even when no region matched it
@@ -177,11 +180,12 @@ export function judgeState(state: ScreenState, probe: ProbeResult): Finding[] {
     })
   }
 
-  if (probe.namesMissing.length) {
+  // Only the desk lists every conversation; a face shows one, so a name missing there means nothing.
+  if (state === 'desk' && probe.namesMissing.length) {
     findings.push({
       severity: 'warn',
       state,
-      region: 'session-tabs',
+      region: 'desk-card',
       code: 'name-absent',
       detail: `live sessions whose real name appears nowhere on screen: ${probe.namesMissing.map((n) => JSON.stringify(n)).join(', ')}`,
     })
@@ -190,7 +194,7 @@ export function judgeState(state: ScreenState, probe: ProbeResult): Finding[] {
   return findings
 }
 
-export function judgeEvents(events: PageEvent[]): Finding[] {
+function judgeEvents(events: PageEvent[]): Finding[] {
   return events.map((event): Finding => {
     if (event.kind === 'exception') {
       return { severity: 'fail', state: 'page', code: 'page-exception', detail: event.detail }
@@ -207,6 +211,31 @@ export function judgeEvents(events: PageEvent[]): Finding[] {
     return { severity: 'warn', state: 'page', code: 'console-error', detail: event.detail }
   })
 }
+
+// A page the driver recognises nothing on reaches no state, so without this a screen
+// of fallback strings would produce no findings at all and pass.
+function judgePage(probe: ProbeResult): Finding[] {
+  const findings: Finding[] = []
+  if (probe.bodyTextLength < 40) {
+    findings.push({
+      severity: 'fail',
+      state: 'page',
+      code: 'page-blank',
+      detail: `the whole page carries ${probe.bodyTextLength} characters of visible text across ${probe.domElementCount} elements`,
+    })
+  }
+  for (const placeholder of probe.pagePlaceholders) {
+    findings.push({
+      severity: 'fail',
+      state: 'page',
+      code: 'page-placeholder',
+      detail: `the page renders the literal fallback string ${JSON.stringify(placeholder)}, and matched no screen this check can drive`,
+    })
+  }
+  return findings
+}
+
+export const Judge = { events: judgeEvents, page: judgePage, state: judgeState }
 
 function statusOf(spec: RegionSpec, reading: RegionReading): string {
   if (!reading.found) return 'MISSING'
@@ -256,11 +285,19 @@ function padStart(value: string, width: number): string {
   return value.length >= width ? value : ' '.repeat(width - value.length) + value
 }
 
+const TITLES: Record<ScreenState, string> = {
+  canvas: 'CANVAS · artifacts where they were made',
+  comment: 'COMMENT · the page armed, one element picked',
+  desk: 'DESK · every conversation as a card',
+  history: 'HISTORY · turns, and what each one changed',
+  jump: 'JUMP · the command-K palette',
+  read: 'READ · the artifact, its versions and its comments',
+}
+
 function renderStateTable(report: StateReport): string[] {
   const lines: string[] = []
-  const title = report.state === 'open' ? 'STATE A · conversation panel open' : 'STATE B · page alone'
   lines.push('')
-  lines.push(title)
+  lines.push(TITLES[report.state])
 
   if (!report.reached) {
     lines.push(`  not reached — ${report.skipped ?? 'unknown reason'}`)
@@ -331,6 +368,14 @@ export function renderReport(report: RenderReport): string {
       lines.push(`  ! [${finding.state}] ${finding.region ?? 'page'} · ${finding.code}`)
       lines.push(`      ${finding.detail}`)
     }
+  }
+
+  // Named rather than omitted: a region nothing checks is a gap, and a silent gap reads as coverage.
+  const undriven = REGIONS.filter((spec) => !spec.states.length)
+  if (undriven.length) {
+    lines.push('')
+    lines.push(`NOT DRIVEN (${undriven.length}) — specified, but in a state this check cannot reach`)
+    for (const spec of undriven) lines.push(`  · ${pad(spec.label, 20)}${spec.design}`)
   }
 
   const regionFails = new Set(fails.filter((f) => f.region).map((f) => `${f.state}:${f.region ?? ''}`)).size

@@ -6,77 +6,141 @@
   <style>
     body { font: 14px system-ui; margin: 0 }
     [hidden] { display: none }
-    body.panel-closed .state-a { display: none }
-    body:not(.panel-closed) .state-b { display: none }
     iframe { width: 520px; height: 300px; border: 0 }
   </style>
 </head>
 <body>
   <!--
-    A screen with every region filled, used as the check's own positive control:
-    `npm run check:render -- --url <this file>` must pass on it. The artifact frame
-    uses srcdoc so the inner document stays same-origin under file://, which a real
-    src= would not be.
+    Every v6 region filled, used as the check's own positive control:
+    `npm run check:render -- --url <this file>` must pass on it and reach all six
+    screens. It answers the same affordances the real app does — a desk card that
+    opens a conversation, a switcher whose options carry data-value the way
+    UiSegmented renders them, command-K on window, and comment mode armed by C then
+    a mousedown on a data-cmt element — so the driver needs no fixture-only hook. The artifact frame uses srcdoc so the inner document
+    stays same-origin under file://, which a real src= would not.
   -->
-  <nav data-region="session-tabs" class="state-a">
+
+  <div data-region="top-right">
+    <span id="conv-chrome" hidden>
+      <span data-region="view-switcher" role="radiogroup">
+        <button data-value="canvas" role="radio">Canvas</button>
+        <button data-value="read" role="radio">Read</button>
+        <button data-value="history" role="radio">History</button>
+      </span>
+      <button data-region="comment-arm">Comment</button>
+    </span>
+    <button data-region="theme-toggle" class="theme-toggle">Theme</button>
+  </div>
+
+  <div id="desk" data-region="desk">
+    <div data-region="desk-head">3 conversations · 1 waiting</div>
+    <button data-region="desk-card">parser-fix ~/src/parser · autopilot · edu · 4 tasks</button>
+    <button data-region="desk-card">billing-v2 ~/src/billing · copilot · native · 9 tasks</button>
+    <button data-region="desk-card">docs-site ~/src/docs · goal · edu · 2 tasks</button>
+  </div>
+
+  <div id="conv" hidden>
+    <div data-region="conversation-head">
+      <a href="#">desk</a>
+      <span data-region="conversation-title">docs-site <span>~/src/docs</span></span>
+      <button data-region="canvas-zoom">88%</button>
+    </div>
+
+    <main data-region="conversation-stage" data-face="canvas">
+      <div id="face-canvas" data-region="canvas">
+        <div data-cmt="artifact" data-cmt-label="search-index.html · v3"
+             data-cmt-tell="On search-index.html (v3, written t11) under task 2">
+          Search index explainer · v3 · t11
+        </div>
+        <div data-cmt="note" data-cmt-label="canvas note">Check the cold-start numbers.</div>
+      </div>
+
+      <div id="face-read" hidden data-region="read-view">
+        <div data-region="version-tabs"><button>v1</button><button>v2</button><button>v3</button><button>Latest</button></div>
+        <span data-region="version-badge">v3 · written t11</span>
+        <div data-region="gutter-markers"><span>1</span><span>2</span></div>
+        <article data-region="artifact-page">
+          <iframe title="artifact" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;Search index explainer&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;Search index explainer&lt;/h1&gt;&lt;p&gt;How the index is built, and what it costs to rebuild it from cold on a laptop.&lt;/p&gt;&lt;h2&gt;The pipeline in one picture&lt;/h2&gt;&lt;p&gt;Documents arrive, are chunked, embedded and written to the store in one pass.&lt;/p&gt;&lt;h2&gt;Where it gets slow&lt;/h2&gt;&lt;p&gt;Embedding dominates; everything else is noise beside it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;"></iframe>
+        </article>
+      </div>
+
+      <div id="face-history" hidden data-region="history">
+        <div data-region="history-turns">
+          <div data-cmt="turn" data-cmt-label="t11">t11 · you · wrote search-index.html</div>
+          <div data-cmt="turn" data-cmt-label="t10">t10 · Claude · read 4 files</div>
+        </div>
+        <div data-region="history-changes">search-index.html · 12 added, 3 removed · vs head</div>
+      </div>
+    </main>
+
+    <div data-region="composer-dock">
+      <div data-region="composer-transcript">t11 · wrote the explainer and its diagram</div>
+      <div data-region="composer-tray"><span>element — tighten the cold-start line</span></div>
+      <textarea placeholder="Prompt Claude in docs-site…"></textarea>
+      <span data-region="mode-picker"><button>goal</button></span>
+      <span data-region="style-picker"><button>edu</button></span>
+    </div>
+
+    <div data-region="board-island">Board · 2 of 5 · one waiting on you</div>
+  </div>
+
+  <div id="jump" hidden data-region="jump-palette">
+    <input aria-label="Filter conversations by name" placeholder="Jump to a conversation…">
     <button>parser-fix ~/src/parser</button>
-    <button>billing-v2</button>
-    <button>docs-site ~/src/docs WAITING</button>
-  </nav>
-
-  <div data-region="artifact-switcher" class="state-a">
-    <button>Nav redesign mockup</button>
-    <button>Search index explainer</button>
-    <button>Compaction runbook</button>
+    <button>billing-v2 ~/src/billing</button>
+    <span>↑↓ move · ↵ open · esc close</span>
   </div>
 
-  <span data-region="version-badge" data-not-real class="state-a">V3 · 4 MIN AGO</span>
-
-  <article data-region="artifact-page">
-    <iframe title="artifact" srcdoc="&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;Search index explainer&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;Search index explainer&lt;/h1&gt;&lt;p&gt;How the index is built, and what it costs to rebuild it from cold on a laptop.&lt;/p&gt;&lt;h2&gt;The pipeline in one picture&lt;/h2&gt;&lt;p&gt;Documents arrive, are chunked, embedded and written to the store in one pass.&lt;/p&gt;&lt;h2&gt;Where it gets slow&lt;/h2&gt;&lt;p&gt;Embedding dominates; everything else is noise beside it.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;"></iframe>
-  </article>
-
-  <div data-region="panel-tabs" class="state-a">
-    <button>Notes 2</button><button>Pipeline</button><button data-not-real>History v3</button>
-    <span>thinking</span>
+  <div id="armed" hidden data-region="comment-mode">
+    <p data-region="comment-banner">Pick anything to comment on · esc cancel</p>
   </div>
 
-  <div data-region="question-card" data-not-real class="state-a">
-    <span>CLAUDE ASKS · BLOCKS SHAPE</span>
-    <p>Which store should the index be written to?</p>
+  <div id="popover" hidden data-region="comment-popover">
+    <span>artifact</span><span>search-index.html · v3</span>
+    <span>Claude will be told</span>
+    <span>On search-index.html (v3, written t11) under task 2</span>
+    <textarea placeholder="What should change?"></textarea>
+    <button>Cancel</button><button>Add to tray</button>
   </div>
-
-  <div data-region="notes" class="state-a">
-    <h4>§01 · THE PIPELINE IN ONE PICTURE</h4>
-    <div><span>YOU · 6 MIN</span><span>OPEN</span><p>This skips the cold-start case entirely.</p></div>
-  </div>
-
-  <footer data-region="panel-footer" class="state-a">
-    <span>=ic</span><span>~edu</span><span>ground · 3/7</span>
-    <input data-region="prompt-input" disabled placeholder="Prompting arrives in phase 4">
-  </footer>
-
-  <div data-region="session-capsule" class="state-b">docs-site › Search index explainer 2/3</div>
-
-  <div data-region="awaiting-island" class="state-b">
-    <span>2 waiting for you</span><span>1 question · 1 gate</span>
-    <button>Theme</button><button>Share</button>
-  </div>
-
-  <div data-region="gutter-markers" class="state-b"><span>1</span><span>2</span></div>
-
-  <div data-region="pipeline-island">
-    <span>=ic</span><span>~edu</span>
-    <span>SHAPE</span><span>BUILD</span><span>SHIP</span>
-    <span>writing v4</span><button>Send</button>
-  </div>
-
-  <button data-region-toggle="panel">Close panel</button>
 
   <script>
-    document.querySelector('[data-region-toggle="panel"]').addEventListener('click', () => {
-      document.body.classList.toggle('panel-closed')
+    const show = (id, on) => document.getElementById(id).hidden = !on
+
+    for (const card of document.querySelectorAll('[data-region="desk-card"]')) {
+      card.addEventListener('click', () => {
+        show('desk', false)
+        show('conv', true)
+        show('conv-chrome', true)
+      })
+    }
+
+    const stage = document.querySelector('[data-region="conversation-stage"]')
+    for (const chip of document.querySelectorAll('[data-region="view-switcher"] [data-value]')) {
+      chip.addEventListener('click', () => {
+        const face = chip.getAttribute('data-value')
+        stage.setAttribute('data-face', face)
+        for (const other of ['canvas', 'read', 'history']) show('face-' + other, other === face)
+      })
+    }
+
+    window.addEventListener('keydown', (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        show('jump', document.getElementById('jump').hidden)
+        return
+      }
+      if (event.key === 'Escape') {
+        if (!document.getElementById('popover').hidden) return show('popover', false)
+        if (!document.getElementById('armed').hidden) return show('armed', false)
+        return show('jump', false)
+      }
+      if (event.key.toLowerCase() === 'c') show('armed', true)
     })
+
+    document.addEventListener('mousedown', (event) => {
+      if (document.getElementById('armed').hidden) return
+      if (!event.target.closest('[data-cmt]')) return
+      show('popover', true)
+    }, true)
   </script>
 </body>
 </html>

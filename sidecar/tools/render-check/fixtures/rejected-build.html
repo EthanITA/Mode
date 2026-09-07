@@ -6,40 +6,33 @@
 </head>
 <body>
   <!--
-    The DOM the rejected build produced, transcribed from app/ at commit d766702.
-    index.vue filled #rail, #shelf and #threads and never filled #artifact, so the
-    layout's fallback rendered instead. Kept as the check's own regression target:
-    `npm run check:render -- --url <this file>` must fail on it.
+    A v6 conversation that rendered badly, kept as the check's own regression target:
+    `npm run check:render -- --url <this file>` must fail on it. It opens straight
+    onto the read face, so the driver reaches that screen with no desk to click
+    through. Three separate failures, one per mechanism: the artifact region holds no
+    frame at all, the title renders raw session keys where names belong, and the page
+    says the words it says when a mount never happened.
   -->
-  <div>
-    <button class="theme-toggle">Theme</button>
-    <div class="pipeline-island">
-      <span class="chip">=ic</span><span class="chip">~edu</span>
+  <div data-region="top-right">
+    <button data-region="theme-toggle" class="theme-toggle">Theme</button>
+  </div>
+
+  <div data-region="conversation-head">
+    <a href="#">desk</a>
+    <span data-region="conversation-title">3f9a1c02 · 7b21de44 · c0ffee11</span>
+  </div>
+
+  <main data-region="conversation-stage" data-face="read">
+    <div data-region="read-view">
+      <div data-region="version-tabs"></div>
+      <article data-region="artifact-page">
+        <p>No artifact mounted yet.</p>
+      </article>
     </div>
-    <div class="folio-desk">
-      <header class="folio-rail">
-        <ul class="rail-list">
-          <li>3f9a1c02</li>
-          <li>7b21de44</li>
-          <li>c0ffee11</li>
-        </ul>
-      </header>
-      <div class="folio-spread">
-        <article class="folio-page folio-page--left">
-          <div class="folio-shelf">
-            <ul class="shelf-list">
-              <li>mode-sidecar-rebuild-spec</li>
-              <li>mode-sidecar-architecture</li>
-              <li>desk-72906-cutoff-5740-rejection</li>
-            </ul>
-          </div>
-          <p class="folio-empty">No artifact mounted yet.</p>
-        </article>
-        <section class="folio-page folio-page--right">
-          <p class="folio-empty">No threads mounted yet.</p>
-        </section>
-      </div>
-    </div>
+  </main>
+
+  <div data-region="composer-dock">
+    <textarea placeholder="Prompt Claude…"></textarea>
   </div>
 </body>
 </html>

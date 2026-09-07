@@ -8,6 +8,13 @@ const LABELS: Record<Face, string> = { canvas: "Canvas", history: "History", rea
 
 const atConversation = computed(() => route.path.startsWith("/c/"));
 
+const faces = computed(() => chrome.view.faces.value.map((face) => ({ label: LABELS[face], value: face })));
+
+const face = computed({
+  get: () => chrome.view.current.value,
+  set: (next: Face) => chrome.view.set(next),
+});
+
 function toggleComment(): void {
   if (chrome.comment.armed.value) chrome.comment.disarm();
   else chrome.comment.arm();
@@ -17,23 +24,12 @@ function toggleComment(): void {
 <template>
   <div class="top-right" data-region="top-right">
     <template v-if="atConversation">
-      <UiSurface
-        v-if="chrome.view.faces.value.length > 1"
-        class="pill switcher"
+      <UiSegmented
+        v-if="faces.length > 1"
+        v-model="face"
         data-region="view-switcher"
-        pad="none"
-        shape="pill"
-        variant="glass"
-      >
-        <UiChip
-          v-for="face in chrome.view.faces.value"
-          :key="face"
-          :selected="chrome.view.current.value === face"
-          @click="chrome.view.set(face)"
-        >
-          {{ LABELS[face] }}
-        </UiChip>
-      </UiSurface>
+        :options="faces"
+      />
 
       <UiSurface class="pill" data-region="comment-arm" pad="none" shape="pill" variant="glass">
         <UiChip
@@ -70,10 +66,6 @@ function toggleComment(): void {
   flex: none;
   height: 40px;
   padding: 0 6px;
-}
-
-.switcher {
-  gap: 4px;
 }
 
 .theme {
