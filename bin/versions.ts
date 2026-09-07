@@ -335,18 +335,23 @@ function parentOf(key: string, sha: string): string {
 }
 
 function restore({ key, index, path, turn, force }: At & { force?: boolean }): RestoreResult {
-  if (!isAbsolute(path) || normalize(path) !== path) return { path, turn, restored: false, reason: "path is not a plain absolute path" }
-  const versions = index.files[path]?.versions || []
-  const head = versions[versions.length - 1]
-  if (!head) return { path, turn, restored: false, reason: "no version of this file in the store" }
+  const refuse = (reason: string): RestoreResult => ({ path, turn, restored: false, forceable: false, reason })
+  if (!isAbsolute(path) || normalize(path) !== path) return refuse("path is not a plain absolute path")
+  if (!index.files[path]?.versions.length) return refuse("no version of this file in the store")
   const version = show({ key, index, path, turn })
-  if (!version.found) return { path, turn, restored: false, reason: "that turn has no version of this file" }
-  if (!existsSync(dirname(path))) return { path, turn, restored: false, reason: "the parent directory no longer exists" }
+  if (!version.found) return refuse("that turn has no version of this file")
+  if (!existsSync(dirname(path))) return refuse("the parent directory no longer exists")
   if (!force && foreign({ key, index, path })) {
-    return { path, turn, restored: false, reason: "the file on disk holds work this conversation never wrote; pass force to overwrite it" }
+    return {
+      path,
+      turn,
+      restored: false,
+      forceable: true,
+      reason: "the file on disk holds work this conversation never wrote, so restoring would overwrite it",
+    }
   }
   writeFileSync(path, version.content)
-  return { path, turn: version.turn, restored: true }
+  return { path, turn: version.turn, restored: true, forceable: false }
 }
 
 // Matching any stored version is enough: an earlier restore also leaves disk off head, and
