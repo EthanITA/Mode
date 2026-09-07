@@ -8,6 +8,7 @@ const TITLE_TAG = /<title>([\s\S]*?)<\/title>/i
 const RV_SEED = /<script type="application\/json" id="rv-seed">([\s\S]*?)<\/script>/
 // Mirrors BLOCK_RE in skills/mode/bin/_review.py, the one writer of this layer.
 const RV_LAYER = /<!-- rv:start -->[\s\S]*?<!-- rv:end -->\n?/
+const RV_LAYER_START = /<!-- rv:start -->/
 type MetaField = "slug" | "title" | "url" | "target" | "ds" | "updated"
 const META_FIELDS = new Set<MetaField>(["slug", "title", "url", "target", "ds", "updated"])
 const HEAD_BYTES = 4000
@@ -116,6 +117,47 @@ function parseThreads(html: string): ReviewThread[] {
   return Array.isArray(threads) ? threads.map(toThread).filter((t): t is ReviewThread => Boolean(t)) : []
 }
 
+// The review layer sits after the seed and measures ~30 KB, so the window has to clear it.
+const TAIL_BYTES = 96 * 1024
+// Inline pack CSS puts <body> at a measured p50 of 33 KB, max 45 KB, well past the meta window.
+const BODY_BYTES = 64 * 1024
+const PREVIEW_CHARS = 220
+const BODY_TAG = /<body[^>]*>/i
+const NOT_PROSE = /<(script|style|svg|template)[\s\S]*?<\/\1>/gi
+const TAGS = /<[^>]+>/g
+const ENTITY: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", nbsp: " ", middot: "·", hellip: "…" }
+
+function previewOf(head: string): string | undefined {
+  const at = BODY_TAG.exec(head)
+  if (!at) return undefined
+  const text = head
+    .slice(at.index + at[0].length)
+    .replace(NOT_PROSE, " ")
+    .replace(TAGS, " ")
+    .replace(/&([a-z#0-9]+);/gi, (whole, name: string) => ENTITY[name.toLowerCase()] ?? whole)
+    .replace(/\s+/g, " ")
+    .trim()
+  return text ? text.slice(0, PREVIEW_CHARS) : undefined
+}
+
+async function readTail(path: string, size: number): Promise<string> {
+  const length = Math.min(TAIL_BYTES, size)
+  const handle = await open(path, "r")
+  try {
+    const buf = Buffer.alloc(length)
+    const { bytesRead } = await handle.read(buf, 0, length, size - length)
+    return buf.subarray(0, bytesRead).toString("utf8")
+  } finally {
+    await handle.close()
+  }
+}
+
+// Undefined rather than 0 when the window missed the seed: no layer and an unread one differ.
+function countThreads(tail: string): number | undefined {
+  if (!RV_LAYER_START.test(tail)) return undefined
+  return RV_SEED.test(tail) ? parseThreads(tail).length : undefined
+}
+
 async function artifactFiles(dir: string): Promise<string[]> {
   try {
     const entries = await readdir(dir)
@@ -125,14 +167,30 @@ async function artifactFiles(dir: string): Promise<string[]> {
   }
 }
 
+// Each row costs 160 KB of reads, so a list that has not changed on disk is answered from here.
+const listed = new Map<string, { size: number; mtimeMs: number; meta: ArtifactMeta }>()
+
+async function metaOf(path: string, slug: string, stats: { size: number; mtimeMs: number }): Promise<ArtifactMeta> {
+  const hit = listed.get(path)
+  if (hit && hit.size === stats.size && hit.mtimeMs === stats.mtimeMs) return hit.meta
+  const [head, tail] = await Promise.all([readHead(path, BODY_BYTES), readTail(path, stats.size)])
+  const meta: ArtifactMeta = {
+    ...parseMeta({ head: head.slice(0, HEAD_BYTES), fallbackSlug: slug, path }),
+    threadCount: countThreads(tail),
+    preview: previewOf(head),
+  }
+  listed.set(path, { size: stats.size, mtimeMs: stats.mtimeMs, meta })
+  return meta
+}
+
 export async function listArtifacts(): Promise<ArtifactMeta[]> {
   const dir = await artifactsDir()
   const rows: { meta: ArtifactMeta; mtime: number }[] = []
   for (const name of await artifactFiles(dir)) {
     const path = join(dir, name)
     try {
-      const [head, stats] = await Promise.all([readHead(path), stat(path)])
-      rows.push({ meta: parseMeta({ head, fallbackSlug: name.replace(/\.html$/, ""), path }), mtime: stats.mtimeMs })
+      const stats = await stat(path)
+      rows.push({ meta: await metaOf(path, name.replace(/\.html$/, ""), stats), mtime: stats.mtimeMs })
     } catch {
       // vanished or unreadable between the readdir and the read: drop it rather than fail the whole list
     }

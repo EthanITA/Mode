@@ -6,6 +6,9 @@ export interface ArtifactMeta {
   ds?: string
   updated?: string
   path: string
+  // Not `threads`: ArtifactDetail already owns that name for the array itself.
+  threadCount?: number
+  preview?: string
 }
 
 export interface ThreadAnchor {
