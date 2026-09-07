@@ -1,8 +1,31 @@
+import { fileURLToPath } from "node:url";
+
+import tailwindcss from "@tailwindcss/vite";
+import tailwindAutoReference from "vite-plugin-vue-tailwind-auto-reference";
+
 export default defineNuxtConfig({
   compatibilityDate: "2026-09-01",
   // Non-negotiable: this whole app renders client side, never on the server.
   ssr: false,
-  css: ["~/assets/css/cela.css", "~/assets/css/surface.css", "~/assets/css/sidecar.css"],
+  // Naming any dir replaces Nuxt's default scan, so ~/components is listed again.
+  components: [
+    {
+      path: fileURLToPath(
+        new URL("../../cela/packages/design/components", import.meta.url),
+      ),
+      prefix: "Ui",
+    },
+    "~/components",
+  ],
+  css: ["~/assets/css/main.css", "~/assets/css/sidecar.css"],
+  // A scoped <style> block is its own Tailwind entry point, so every SFC needs an
+  // @reference to the theme before it can @apply anything from the package.
+  vite: {
+    plugins: [
+      tailwindAutoReference(["./assets/css/main.css"]),
+      tailwindcss(),
+    ],
+  },
   app: {
     head: {
       title: "Mode sidecar",
