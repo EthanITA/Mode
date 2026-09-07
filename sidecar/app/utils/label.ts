@@ -51,3 +51,9 @@ export function authorOf(by: string): string {
 export function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
+
+/** Flattens first: a prompt's newlines would otherwise survive into a one-line label. */
+export function shorten(text: string, max: number): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
+}
