@@ -14,6 +14,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@cela/design": "file:../cela/packages/design",
     "@lucide/vue": "^1.16.0",
     "@vueuse/core": "^14.3.0",
