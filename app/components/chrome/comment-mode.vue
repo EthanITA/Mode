@@ -63,6 +63,12 @@ function onMove(event: MouseEvent): void {
   };
 }
 
+// pointer events fire before mouse events, so this is the only place a card's own drag can be stopped.
+function onPointerDown(event: PointerEvent): void {
+  if (!chrome.comment.armed.value || chrome.comment.spot.value || !target(event)) return;
+  event.stopPropagation();
+}
+
 function onDown(event: MouseEvent): void {
   if (!chrome.comment.armed.value || chrome.comment.spot.value) return;
   const el = target(event);
@@ -98,10 +104,12 @@ watch(chrome.comment.armed, (on) => {
 
 onMounted(() => {
   document.addEventListener("mousemove", onMove, true);
+  document.addEventListener("pointerdown", onPointerDown, true);
   document.addEventListener("mousedown", onDown, true);
   document.addEventListener("click", onClick, true);
   onScopeDispose(() => {
     document.removeEventListener("mousemove", onMove, true);
+    document.removeEventListener("pointerdown", onPointerDown, true);
     document.removeEventListener("mousedown", onDown, true);
     document.removeEventListener("click", onClick, true);
   });
