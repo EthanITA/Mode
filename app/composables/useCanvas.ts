@@ -49,6 +49,7 @@ export interface Canvas {
   empty: ComputedRef<boolean>;
   frames: ComputedRef<FrameView[]>;
   links: ComputedRef<LinkView[]>;
+  loaded: Ref<string | undefined>;
   moveCard: (slug: string, at: CanvasPoint) => void;
   notes: ComputedRef<CanvasNote[]>;
   removeNote: (id: string) => void;
@@ -57,6 +58,7 @@ export interface Canvas {
   setNote: (id: string, patch: Partial<CanvasNote>) => void;
   toggleFrame: (id: string) => void;
   viewport: Ref<CanvasViewport>;
+  viewports: Ref<Record<string, CanvasViewport>>;
 }
 
 export const CARD_W = 320;
@@ -125,7 +127,8 @@ export function useCanvas(): Canvas {
   const sc = useSidecar();
   const { session } = useScreen();
 
-  const viewport = useState<CanvasViewport>("sc:canvas-viewport", () => ({ x: 0, y: 0, zoom: 1 }));
+  const viewports = useState<Record<string, CanvasViewport>>("sc:canvas-viewports", () => ({}));
+  const loaded = useState<string | undefined>("sc:canvas-loaded");
   const selection = useState<string[]>("sc:canvas-selection", () => []);
   const placement = useState<CanvasPlacement>("sc:canvas-placement", () => emptyPlacement(""));
   const versions = useState<ConversationVersions | undefined>("sc:canvas-versions", () => undefined);
@@ -139,6 +142,19 @@ export function useCanvas(): Canvas {
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const key = computed(() => sc.sessionKey.value);
+
+  const viewport = computed({
+    get(): CanvasViewport {
+      const here = key.value;
+      return (here && viewports.value[here]) || { x: 0, y: 0, zoom: 1 };
+    },
+    // A mount-time clamp must not stamp the default as a stored pan.
+    set(next: CanvasViewport): void {
+      const here = key.value;
+      if (!here || !viewports.value[here]) return;
+      viewports.value = { ...viewports.value, [here]: next };
+    },
+  });
 
   const metas = computed(() => new Map(sc.catalogue.value.map((meta) => [meta.slug, meta])));
 
@@ -345,6 +361,7 @@ export function useCanvas(): Canvas {
     versions.value = listed;
     receipts.value = slice?.turns ?? [];
     seen.value = { ...seen.value, [here]: seen.value[here] ?? Date.now() };
+    loaded.value = here;
   }
 
   onMounted(() => {
@@ -361,6 +378,7 @@ export function useCanvas(): Canvas {
     empty,
     frames,
     links,
+    loaded,
     moveCard,
     notes,
     removeNote,
@@ -369,5 +387,6 @@ export function useCanvas(): Canvas {
     setNote,
     toggleFrame,
     viewport,
+    viewports,
   };
 }

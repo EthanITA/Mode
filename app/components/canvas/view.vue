@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Canvas, ContextMenu, type CanvasMenuEvent } from "@cela/design";
+import { Canvas, ContextMenu, type CanvasFitOptions, type CanvasMenuEvent } from "@cela/design";
 import { LayoutGrid, Maximize2, MousePointerSquareDashed, Scan, StickyNote } from "@lucide/vue";
 import { CARD_H, CARD_W, NOTE_H, NOTE_W, type CardView } from "~/composables/useCanvas";
 import type { CardAction } from "~/types/canvas-action";
@@ -9,8 +9,23 @@ const emit = defineEmits<{ open: [slug: string] }>();
 const sc = useSidecar();
 const bridge = useActionBridge();
 const chrome = useChrome();
-const { addNote, cards, empty, frames, links, moveCard, notes, removeNote, resizeCard, selection, setNote, toggleFrame, viewport } =
-  useCanvas();
+const {
+  addNote,
+  cards,
+  empty,
+  frames,
+  links,
+  loaded,
+  moveCard,
+  notes,
+  removeNote,
+  resizeCard,
+  selection,
+  setNote,
+  toggleFrame,
+  viewport,
+  viewports,
+} = useCanvas();
 
 const canvasEl = useTemplateRef<InstanceType<typeof Canvas>>("canvasEl");
 const menuEl = useTemplateRef<InstanceType<typeof ContextMenu>>("menuEl");
@@ -73,13 +88,33 @@ function noteHere(close: () => void): void {
   close();
 }
 
-function fit(): void {
-  canvasEl.value?.zoomToFit();
+function fit(options?: CanvasFitOptions): void {
+  canvasEl.value?.zoomToFit(options);
 }
 
-// The head reads the zoom through this rather than the composable, so it shows nothing
-// once the canvas unmounts instead of a stale percentage.
-chrome.canvas.register({ fit, zoom: () => viewport.value.zoom });
+function step(factor: number): void {
+  canvasEl.value?.zoomStep(factor);
+}
+
+function reset(): void {
+  canvasEl.value?.zoomReset();
+}
+
+// The island row reads the zoom through this, so it shows nothing once the canvas unmounts.
+chrome.canvas.register({ fit, reset, step, zoom: () => viewport.value.zoom });
+
+// The fit waits for the first card to mount, because an empty canvas has nothing to fit.
+watch(
+  [loaded, () => cards.value.length],
+  async ([here, count]) => {
+    if (!here || count <= 0 || here !== sc.sessionKey.value || viewports.value[here]) return;
+    await nextTick();
+    if (here !== sc.sessionKey.value || viewports.value[here]) return;
+    viewports.value = { ...viewports.value, [here]: { x: 0, y: 0, zoom: 1 } };
+    canvasEl.value?.zoomToFit({ inset: chrome.frame.insets.value });
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -88,6 +123,7 @@ chrome.canvas.register({ fit, zoom: () => viewport.value.zoom });
       ref="canvasEl"
       v-model:selection="selection"
       v-model:viewport="viewport"
+      :zoom-control="false"
       @dblclick="onDoubleClick"
       @menu="onMenu"
     >
