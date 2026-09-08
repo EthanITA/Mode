@@ -16,6 +16,8 @@ export type ConversationQuery = {
   since?: number
 }
 
+const QUEUE_ECHO_MS = 60_000
+
 export function conversationOf({ key, since = 0 }: ConversationQuery): ConversationSlice {
   const ref = transcriptIndex().get(key)
   if (!ref) return { turns: [], offset: 0 }
@@ -27,9 +29,17 @@ export function conversationOf({ key, since = 0 }: ConversationQuery): Conversat
   const prefix = throughLastNewline(window.text)
   if (!prefix) return { turns: [], offset: start }
   const turns: ConversationTurn[] = []
+  // The harness re-queues a mid-turn message, writing it twice with replies in between.
+  const echo = new Map<string, number>()
   for (const line of usableLines({ text: prefix, whole: true }, "head")) {
     const turn = turnOf(line)
-    if (turn) turns.push(turn)
+    if (!turn) continue
+    if (turn.role === "user") {
+      const said = echo.get(turn.text)
+      if (said && turn.at - said < QUEUE_ECHO_MS) continue
+      echo.set(turn.text, turn.at)
+    }
+    turns.push(turn)
   }
   return { turns, offset: start + Buffer.byteLength(prefix, "utf8") }
 }
@@ -42,9 +52,20 @@ function throughLastNewline(text: string): string | undefined {
   return text.slice(0, at + 1)
 }
 
+// A mid-turn message lands only here: the copy that reached the model is buried in a
+// tool_result the text scan skips, and remove/popAll repeat the same words.
+function queuedOf(entry: Record<string, unknown>): ConversationTurn | undefined {
+  if (entry.operation !== "enqueue") return undefined
+  const { content } = entry
+  if (typeof content !== "string" || !content.trim()) return undefined
+  const at = atOf(entry.timestamp)
+  return at ? { role: "user", text: content, at } : undefined
+}
+
 function turnOf(line: string): ConversationTurn | undefined {
   const entry = record(line)
   if (!entry) return undefined
+  if (entry.type === "queue-operation") return queuedOf(entry)
   if (entry.type !== "user" && entry.type !== "assistant") return undefined
   if (entry.isSidechain) return undefined
   const message = entry.message
