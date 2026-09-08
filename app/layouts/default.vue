@@ -14,7 +14,9 @@ useResizeObserver(dockEl, ([entry]) => {
 </script>
 
 <template>
-  <div class="shell" :style="{ '--dock-h': `${dockHeight}px` }">
+  <!-- Unset until measured, so the first frame takes the CSS fallback rather than
+       reserving nothing and shifting the reading surface once the observer reports. -->
+  <div class="shell" :style="dockHeight ? { '--dock-h': `${dockHeight}px` } : undefined">
     <slot />
 
     <!-- One row, and every cell is a flex sibling in it. Two independently anchored
