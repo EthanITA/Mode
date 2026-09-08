@@ -3,7 +3,7 @@
 
 :root {
   --gutter-w: 44px;
-  --page-w: 760px;
+  --page-w: 880px;
   --step: 8px;
 
   /* The island geometry, in one place: the layout anchors its zones off these and

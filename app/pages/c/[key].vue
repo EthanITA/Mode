@@ -72,11 +72,13 @@ loadSidecar();
   position: absolute;
 }
 
-/* The canvas draws to the edges under the floating chrome; the panelled faces do not.
-   The bottom follows the dock's measured height, so it clears whatever state it is in. */
+/* The canvas draws to the edges under the floating chrome and owns its own gestures;
+   the panelled faces do not, so the stage is what scrolls them. The bottom follows the
+   dock's measured height, so it clears whatever state the dock is in. */
 .stage[data-face="history"],
 .stage[data-face="read"] {
   box-sizing: border-box;
+  overflow-y: auto;
   padding: var(--stage-top) var(--gutter) calc(var(--dock-h, var(--dock-rest-h)) + var(--gutter) * 2);
 }
 

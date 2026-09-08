@@ -27,16 +27,20 @@ useResizeObserver(dockEl, ([entry]) => {
       <ChromeTopRight />
     </div>
 
-    <div ref="dockEl" class="corner corner-start" data-region="dock-corner">
-      <p v-if="sc.failure.value" class="failure" role="alert">
-        The sidecar server did not answer: {{ sc.failure.value }}
-      </p>
+    <!-- One row, so the composer takes whatever width the board leaves rather than
+         the two hugging opposite corners and colliding in the middle. -->
+    <div ref="dockEl" class="foot" data-region="dock-row">
+      <div class="foot-dock" data-region="dock-corner">
+        <p v-if="sc.failure.value" class="failure" role="alert">
+          The sidecar server did not answer: {{ sc.failure.value }}
+        </p>
 
-      <slot name="dock" />
-    </div>
+        <slot name="dock" />
+      </div>
 
-    <div class="corner corner-end" data-region="board-corner">
-      <slot name="board" />
+      <div class="foot-board" data-region="board-corner">
+        <slot name="board" />
+      </div>
     </div>
   </div>
 </template>
@@ -65,30 +69,33 @@ useResizeObserver(dockEl, ([entry]) => {
   z-index: 30;
 }
 
-.corner {
+.foot {
+  align-items: flex-end;
   bottom: var(--gutter);
   display: flex;
-  flex-direction: column;
   gap: 8px;
+  left: var(--gutter);
   pointer-events: none;
   position: absolute;
+  right: var(--gutter);
   z-index: 20;
 }
 
-/* Each corner hugs its own edge and neither spans the width, so the dock and the
-   board cannot reach each other however tall either grows. */
-.corner-start {
-  align-items: flex-start;
-  left: var(--gutter);
+.foot-dock {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
 }
 
-.corner-end {
-  align-items: flex-end;
-  right: var(--gutter);
+.foot-board {
+  flex: none;
 }
 
 .row > :deep(*),
-.corner > :deep(*) {
+.foot-dock > :deep(*),
+.foot-board > :deep(*) {
   pointer-events: auto;
 }
 
