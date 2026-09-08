@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ChevronDown } from "@lucide/vue";
+import { ChevronDown, ChevronUp } from "@lucide/vue";
 
 const sc = useSidecar();
 const board = useBoard(sc.sessionKey);
@@ -50,71 +50,76 @@ function onEnter(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <div class="board" data-region="board-island">
-    <UiSurface v-if="open" v-island-pop variant="glass-liquid" shape="island" pad="none" class="panel">
-      <header class="head">
-        <span class="title">Board</span>
-        <span class="meta mono-meta">{{ count }} open &middot; shared</span>
-        <span class="spacer" />
-        <UiIconButton :icon="ChevronDown" label="Minimize" size="sm" @click="open = false" />
-      </header>
+  <UiSurface
+    v-island-pop
+    class="board"
+    data-region="board-island"
+    variant="glass-liquid"
+    :shape="open ? 'island' : 'pill'"
+    pad="none"
+    :responsive="{ anchorX: 'end', anchorY: 'end', order: 'height', case: open ? 'panel' : 'pill' }"
+  >
+    <template #panel>
+      <div class="panel">
+        <header class="head">
+          <span class="title">Board</span>
+          <span class="meta mono-meta">{{ count }} open &middot; shared</span>
+          <span class="spacer" />
+          <UiIconButton :icon="ChevronDown" label="Minimize" size="sm" @click="open = false" />
+        </header>
 
-      <div class="list">
-        <BoardItem
-          v-for="task in tasks"
-          :key="task.id"
-          :task="task"
-          :agents="agents"
-          :drop-highlight="overId === task.id"
-          @toggle="board.toggleDone(task)"
-          @reassign="board.reassign(task, $event)"
-          @dragstart="draggedId = task.id"
-          @dragover="overId = task.id"
-          @dragend="resetDrag"
-          @drop="onDrop(task.id)"
-        />
-
-        <p v-if="!tasks.length" class="empty">Nothing on the board yet.</p>
-
-        <div
-          class="add"
-          :data-drop="overEnd ? '' : undefined"
-          @dragover.prevent="overEnd = true"
-          @dragleave="overEnd = false"
-          @drop.prevent="onEndDrop"
-        >
-          <span class="spacer-handle" aria-hidden="true" />
-          <UiTextInput
-            v-model="newTask"
-            class="add-input"
-            placeholder="Add a task&hellip; &#8629;"
-            variant="bare"
-            @keydown="onEnter"
+        <div class="list">
+          <BoardItem
+            v-for="task in tasks"
+            :key="task.id"
+            :task="task"
+            :agents="agents"
+            :drop-highlight="overId === task.id"
+            @toggle="board.toggleDone(task)"
+            @reassign="board.reassign(task, $event)"
+            @dragstart="draggedId = task.id"
+            @dragover="overId = task.id"
+            @dragend="resetDrag"
+            @drop="onDrop(task.id)"
           />
+
+          <p v-if="!tasks.length" class="empty">Nothing on the board yet.</p>
+
+          <div
+            class="add"
+            :data-drop="overEnd ? '' : undefined"
+            @dragover.prevent="overEnd = true"
+            @dragleave="overEnd = false"
+            @drop.prevent="onEndDrop"
+          >
+            <span class="spacer-handle" aria-hidden="true" />
+            <UiTextInput
+              v-model="newTask"
+              class="add-input"
+              placeholder="Add a task&hellip; &#8629;"
+              variant="bare"
+              @keydown="onEnter"
+            />
+          </div>
         </div>
       </div>
-    </UiSurface>
+    </template>
 
-    <button v-else v-press class="pill focusable" type="button" title="Show the board" @click="open = true">
-      Board
-      <span class="bar"><i class="fill" :style="{ width: `${pct}%` }" /></span>
-      <span class="count mono-meta">{{ count }}</span>
-      <span v-if="waiting" class="waiting mono-meta">
-        <i class="dot" />{{ waiting }} on Marco
-      </span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
-    </button>
-  </div>
+    <template #pill>
+      <button v-press class="pill focusable" type="button" title="Show the board" @click="open = true">
+        Board
+        <span class="bar"><i class="fill" :style="{ width: `${pct}%` }" /></span>
+        <span class="count mono-meta">{{ count }}</span>
+        <span v-if="waiting" class="waiting mono-meta">
+          <i class="dot" />{{ waiting }} on Marco
+        </span>
+        <span class="chevron"><UiIcon :icon="ChevronUp" size="xs" /></span>
+      </button>
+    </template>
+  </UiSurface>
 </template>
 
 <style scoped>
-/* The layout's bottom-right corner anchors this; all it owns is its own stacking. */
-.board {
-  align-items: flex-end;
-  display: flex;
-  flex-direction: column;
-}
-
 .panel {
   display: flex;
   flex-direction: column;
@@ -187,19 +192,19 @@ function onEnter(event: KeyboardEvent): void {
   padding: 0 4px;
 }
 
+/* Resting height must equal --island-row-h: shape="pill" only clips to a full
+   circle when the box is no taller than that (see design-system/components/island.md). */
 .pill {
   align-items: center;
-  background: var(--glass-liquid-bg, var(--raised));
+  background: none;
   border: 0;
-  border-radius: 999px;
-  box-shadow: var(--shadow-lg);
   color: var(--ink);
   cursor: pointer;
   display: inline-flex;
   font-size: 12.5px;
   font-weight: 600;
   gap: 10px;
-  height: 40px;
+  height: var(--island-row-h);
   padding: 0 14px;
 }
 
@@ -242,13 +247,15 @@ function onEnter(event: KeyboardEvent): void {
   background: var(--warning);
 }
 
-.pill svg {
-  fill: none;
-  height: 13px;
-  stroke: var(--muted);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-  width: 13px;
+.chevron {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
 }
 </style>

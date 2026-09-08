@@ -1,13 +1,12 @@
 <script lang="ts" setup>
 import { ChevronUp } from "@lucide/vue";
-
-type DockState = "expanded" | "minimized" | "preview";
+import type { TranscriptState } from "./transcript.vue";
 
 const convo = useConversation();
 const tray = useTray();
 const { liveState, steps } = useScreen();
 
-const state = ref<DockState>("preview");
+const state = ref<TranscriptState>("preview");
 
 const load = computed(() => {
   const comments = tray.items.value.filter((item) => item.kind !== "task").length;
@@ -63,64 +62,71 @@ onMounted(() => {
   <div class="dock" :data-state="state" data-region="composer-dock">
     <ComposerTray />
 
-    <UiSurface class="island" variant="glass-liquid" shape="island" pad="none">
-      <ComposerTranscript
-        v-if="state !== 'minimized'"
-        :expanded="state === 'expanded'"
-        :turns="convo.turns.value"
-        @minimize="state = 'minimized'"
-        @toggle="state = state === 'expanded' ? 'preview' : 'expanded'"
-      />
-
-      <div class="row">
-        <UiIconButton
-          v-if="state === 'minimized'"
-          :icon="ChevronUp"
-          label="Show the transcript"
-          size="xs"
-          @click="state = 'preview'"
-        >
-          {{ plural(convo.turns.value.length, "turn") }}
-        </UiIconButton>
-
-        <UiTextarea
-          v-model="convo.draft.value"
-          auto-fit
-          class="prompt focusable"
-          variant="bare"
-          :rows="1"
-          :placeholder="placeholder"
-          :disabled="!convo.live.value"
-          aria-label="Prompt this session"
-          @keydown="onKey"
+    <UiSurface
+      class="island"
+      variant="glass-liquid"
+      shape="island"
+      pad="none"
+      :responsive="{ axis: 'height', anchorY: 'end' }"
+    >
+      <div class="island-body">
+        <ComposerTranscript
+          :state="state"
+          :turns="convo.turns.value"
+          @minimize="state = 'minimized'"
+          @toggle="state = state === 'expanded' ? 'preview' : 'expanded'"
         />
 
-        <button v-press class="send focusable" type="button" :disabled="!ready" @click="send">
-          {{ load ? `Send ${load}` : "Send" }}
-          <span class="key mono-meta">↵</span>
-        </button>
-      </div>
+        <div class="row">
+          <UiIconButton
+            v-if="state === 'minimized'"
+            :icon="ChevronUp"
+            label="Show the transcript"
+            size="xs"
+            @click="state = 'preview'"
+          >
+            {{ plural(convo.turns.value.length, "turn") }}
+          </UiIconButton>
 
-      <div class="slots">
-        <ComposerPicker axis="mode" @pick="command" />
-        <ComposerPicker axis="style" @pick="command" />
+          <UiTextarea
+            v-model="convo.draft.value"
+            auto-fit
+            class="prompt focusable"
+            variant="bare"
+            :rows="1"
+            :placeholder="placeholder"
+            :disabled="!convo.live.value"
+            aria-label="Prompt this session"
+            @keydown="onKey"
+          />
 
-        <span
-          v-if="steps.length"
-          class="bars"
-          :title="walk"
-          data-cmt="pipeline"
-          data-cmt-label="Pipeline"
-          data-cmt-tell="About where this conversation is in its pipeline"
-          :data-cmt-excerpt="walk"
-        >
-          <i v-for="step in steps" :key="step.label" class="bar" :data-state="step.state" :data-gate="step.gate" />
-        </span>
+          <button v-press class="send focusable" type="button" :disabled="!ready" @click="send">
+            {{ load ? `Send ${load}` : "Send" }}
+            <span class="key mono-meta">↵</span>
+          </button>
+        </div>
 
-        <span class="live mono-meta" :data-live="liveState.running">
-          <span class="dot" />
-          {{ liveState.label }}
-        </span>
+        <div class="slots">
+          <ComposerPicker axis="mode" @pick="command" />
+          <ComposerPicker axis="style" @pick="command" />
+
+          <span
+            v-if="steps.length"
+            class="bars"
+            :title="walk"
+            data-cmt="pipeline"
+            data-cmt-label="Pipeline"
+            data-cmt-tell="About where this conversation is in its pipeline"
+            :data-cmt-excerpt="walk"
+          >
+            <i v-for="step in steps" :key="step.label" class="bar" :data-state="step.state" :data-gate="step.gate" />
+          </span>
+
+          <span class="live mono-meta" :data-live="liveState.running">
+            <span class="dot" />
+            {{ liveState.label }}
+          </span>
+        </div>
       </div>
     </UiSurface>
 
@@ -140,11 +146,14 @@ onMounted(() => {
 
 .island {
   box-sizing: border-box;
+  width: 100%;
+}
+
+.island-body {
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 6px 6px 6px 8px;
-  width: 100%;
 }
 
 .row {
