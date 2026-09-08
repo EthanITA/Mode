@@ -1,9 +1,20 @@
 <script lang="ts" setup>
+import { useResizeObserver } from "@vueuse/core";
+
 const sc = useSidecar();
+
+const dockEl = useTemplateRef<HTMLElement>("dockEl");
+const dockHeight = ref(0);
+
+// Published so a panelled face can reserve exactly what the dock covers: expanding the
+// transcript then lifts the reading surface instead of burying its last line.
+useResizeObserver(dockEl, ([entry]) => {
+  dockHeight.value = Math.round(entry?.contentRect.height ?? 0);
+});
 </script>
 
 <template>
-  <div class="shell">
+  <div class="shell" :style="{ '--dock-h': `${dockHeight}px` }">
     <slot />
 
     <!-- One row, and every cell is a flex sibling in it. Two independently anchored
@@ -14,7 +25,7 @@ const sc = useSidecar();
       <ChromeTopRight />
     </div>
 
-    <div class="corner corner-start" data-region="dock-corner">
+    <div ref="dockEl" class="corner corner-start" data-region="dock-corner">
       <p v-if="sc.failure.value" class="failure" role="alert">
         The sidecar server did not answer: {{ sc.failure.value }}
       </p>

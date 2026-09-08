@@ -13,10 +13,11 @@
   --dock-rest-h: 64px;
   --shell-max-w: 1536px;
 
-  /* What a panelled face must leave clear to sit under the row and above the dock.
-     The canvas opts out and draws to the edges, with the islands floating over it. */
+  /* What a panelled face leaves clear to sit under the island row. The bottom is not a
+     token: the layout measures the dock and publishes --dock-h, with --dock-rest-h the
+     fallback for the frame before the observer has reported. The canvas opts out of
+     both and draws to the edges, with the islands floating over it. */
   --stage-top: calc(var(--gutter) * 2 + var(--island-row-h));
-  --stage-bottom: calc(var(--gutter) * 2 + var(--dock-rest-h));
 
   /* Session and contract colours arrive as terminal colour names. Cela carries four
      of the hues outright; the rest are mixed from them so nothing here is a raw hex. */
