@@ -24,20 +24,15 @@ function toggleComment(): void {
 <template>
   <div class="top-right" data-region="top-right">
     <template v-if="atConversation">
-      <UiSurface
+      <UiCanvasZoom
         v-if="chrome.view.current.value === 'canvas'"
         class="zoom"
         data-region="canvas-zoom"
-        pad="none"
-        shape="pill"
         variant="glass-liquid"
-      >
-        <UiCanvasZoom
-          :zoom="chrome.canvas.zoom.value ?? 1"
-          @step="chrome.canvas.step.value?.($event)"
-          @reset="chrome.canvas.reset.value?.()"
-        />
-      </UiSurface>
+        :zoom="chrome.canvas.zoom.value ?? 1"
+        @step="chrome.canvas.step.value?.($event)"
+        @reset="chrome.canvas.reset.value?.()"
+      />
 
       <UiSurface v-if="faces.length > 1" class="pill" pad="none" shape="pill" variant="glass">
         <UiSegmented
@@ -83,15 +78,25 @@ function toggleComment(): void {
   padding: 0 6px;
 }
 
-.zoom,
+/* The pill is the surface, so the segmented must not draw a second one. */
+.pill :deep(.segmented) {
+  background: none;
+  border: 0;
+}
+
+.zoom {
+  align-items: center;
+  display: flex;
+  flex: none;
+  height: var(--island-row-h);
+  padding: 0 6px;
+}
+
 .comment-cell {
   align-items: center;
   display: flex;
   flex: none;
   height: var(--island-row-h);
-}
-
-.comment-cell {
   overflow: hidden;
 }
 
