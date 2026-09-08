@@ -113,6 +113,40 @@ test("git sees the late-touched file as modified rather than added", () => {
   }
 })
 
+test("an unknown baseline inside a git tree is reconstructed from the last tracked commit", () => {
+  const root = mkdtempSync(join(tmpdir(), "sidecar-git-baseline-"))
+  const repo = join(root, "repo")
+  const config = join(root, "config")
+  const target = join(repo, "tracked.ts")
+  const key = "ffffffff"
+  try {
+    mkdirSync(repo, { recursive: true })
+    mkdirSync(join(config, "projects", "-tmp-tracked"), { recursive: true })
+    writeFileSync(target, "alpha\n")
+    execFileSync("git", ["-C", repo, "init", "-q", "-b", "main"])
+    execFileSync("git", ["-C", repo, "config", "user.name", "fixture"])
+    execFileSync("git", ["-C", repo, "config", "user.email", "fixture@local"])
+    execFileSync("git", ["-C", repo, "add", "tracked.ts"])
+    execFileSync("git", ["-C", repo, "commit", "-q", "-m", "seed", "--author", "fixture <fixture@local>"], {
+      env: { ...process.env, GIT_AUTHOR_DATE: "2026-01-01T09:00:00.000Z", GIT_COMMITTER_DATE: "2026-01-01T09:00:00.000Z" },
+    })
+    writeFileSync(join(config, "projects", "-tmp-tracked", `${key}-1111-2222-3333-444444444444.jsonl`), editTranscript(target))
+    const run = (args: string[]): string =>
+      execFileSync(process.execPath, ["--experimental-strip-types", BIN, ...args], {
+        encoding: "utf8",
+        env: { ...process.env, CLAUDE_CONFIG_DIR: config },
+      })
+    run(["build", key])
+    const listed = JSON.parse(run(["list", key, "--path", target]))
+    assert.equal(listed.files[0].baseline, "reconstructed")
+    const diff = JSON.parse(run(["diff", key, "--path", target, "--from", "1", "--to", "2"]))
+    assert.equal(diff.computed, true)
+    assert.match(diff.patch, /-alpha\n\+beta/)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
 test("restore refuses to clobber a file that moved on since the store's head", () => {
   const root = mkdtempSync(join(tmpdir(), "sidecar-restore-"))
   const target = join(root, "target.ts")
@@ -148,6 +182,29 @@ test("restore refuses to clobber a file that moved on since the store's head", (
     rmSync(root, { recursive: true, force: true })
   }
 })
+
+function editTranscript(target: string): string {
+  const cwd = dirname(target)
+  return [
+    { type: "user", cwd, timestamp: "2026-01-01T12:00:00.000Z", message: { role: "user", content: "look at it" } },
+    { type: "user", cwd, timestamp: "2026-01-01T12:05:00.000Z", message: { role: "user", content: "now fix the old one" } },
+    {
+      type: "assistant",
+      cwd,
+      timestamp: "2026-01-01T12:05:10.000Z",
+      message: { role: "assistant", content: [{ type: "tool_use", id: "e1", name: "Edit", input: { file_path: target, old_string: "alpha", new_string: "beta" } }] },
+    },
+    {
+      type: "user",
+      cwd,
+      timestamp: "2026-01-01T12:05:11.000Z",
+      message: { role: "user", content: [{ type: "tool_result", tool_use_id: "e1", content: "ok" }] },
+      toolUseResult: { filePath: target, oldString: "alpha", newString: "beta", originalFile: null, replaceAll: false, structuredPatch: [{ oldStart: 1 }] },
+    },
+  ]
+    .map((one) => JSON.stringify(one))
+    .join("\n")
+}
 
 function transcript(target: string): string {
   const write = { file_path: target, content: "v1\n" }

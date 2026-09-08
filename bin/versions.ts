@@ -1,10 +1,10 @@
 #!/usr/bin/env -S node --experimental-strip-types
 import { execFileSync } from "node:child_process"
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs"
-import { dirname, isAbsolute, join, normalize } from "node:path"
+import { basename, dirname, isAbsolute, join, normalize } from "node:path"
 import { configRoot } from "../server/utils/mode/paths.ts"
 import { splitLines } from "../server/utils/mode/fsutil.ts"
-import { receiptsOf, turnsOf } from "../server/utils/sessions/receipts.ts"
+import { applyEdit, receiptsOf, turnsOf, type FileTouch, type ParsedTurn } from "../server/utils/sessions/receipts.ts"
 import { identityOf, transcriptIndex } from "../server/utils/sessions/transcripts.ts"
 import { planOf, storePath } from "../server/utils/sessions/store.ts"
 import type {
@@ -134,6 +134,58 @@ function put({ key, path, content }: { key: string; path: string; content?: stri
   writeFileSync(target, content)
 }
 
+function userGit(cwd: string, args: string[]): string {
+  return execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+}
+
+// The transcript never sees a shell write, so a tracked file's own history is the honest starting point.
+function trackedBaseline({ path, at }: { path: string; at: number }): { content: string; sha: string } | undefined {
+  const dir = dirname(path)
+  let root: string
+  try {
+    root = userGit(dir, ["rev-parse", "--show-toplevel"]).trim()
+  } catch {
+    return undefined
+  }
+  if (!root) return undefined
+  let prefix: string
+  try {
+    prefix = userGit(dir, ["rev-parse", "--show-prefix"]).trim()
+  } catch {
+    return undefined
+  }
+  const rel = `${prefix}${basename(path)}`
+  let sha: string
+  try {
+    sha = userGit(root, ["rev-list", "-1", `--before=${new Date(at).toISOString()}`, "HEAD"]).trim()
+  } catch {
+    return undefined
+  }
+  if (!sha) return undefined
+  try {
+    return { content: userGit(root, ["show", `${sha}:${rel}`]), sha }
+  } catch {
+    return undefined
+  }
+}
+
+function replay(content: string, touches: FileTouch[]): string | undefined {
+  let next: string | undefined = content
+  for (const touch of touches) {
+    if (touch.kind === "delete") return undefined
+    const pre = typeof touch.prior === "string" ? touch.prior : touch.created ? "" : next
+    if (touch.kind === "write") next = typeof touch.content === "string" ? touch.content : pre
+    else if (!touch.edit || typeof pre !== "string") next = pre
+    else next = applyEdit(pre, touch.edit) ?? pre
+  }
+  return next
+}
+
+function touchesAt({ turns, turn, path }: { turns: ParsedTurn[]; turn: number; path: string }): FileTouch[] {
+  const found = turns.find((one) => one.receipt.turn === turn)
+  return found?.touches.filter((one) => one.path === path) || []
+}
+
 function build(key: string): StoreIndex {
   const ref = transcriptIndex().get(key)
   const empty: StoreIndex = { key, id: "", size: 0, turns: 0, bytes: 0, files: {} }
@@ -152,7 +204,16 @@ function build(key: string): StoreIndex {
   // attribution of versions it is not re-committing.
   const marks = new Map<string, Map<number, { by: string; deleted?: true }>>()
   for (const turn of plan.plans) {
+    const gitBases: { path: string; content: string; sha: string }[] = []
     for (const file of turn.files) {
+      if (plan.baselines.get(file.path) === "unknown") {
+        const found = trackedBaseline({ path: file.path, at: turn.at })
+        if (found) {
+          plan.baselines.set(file.path, "reconstructed")
+          file.content = replay(found.content, touchesAt({ turns, turn: turn.turn, path: file.path }))
+          gitBases.push({ path: file.path, ...found })
+        }
+      }
       const byTurn = marks.get(file.path) || new Map<number, { by: string; deleted?: true }>()
       byTurn.set(turn.turn, { by: file.by || who, deleted: typeof file.content === "string" ? undefined : true })
       marks.set(file.path, byTurn)
@@ -161,6 +222,10 @@ function build(key: string): StoreIndex {
     if (turn.baselines.length) {
       for (const file of turn.baselines) put({ key, path: file.path, content: file.content })
       commit(key, { message: `baseline before turn ${turn.turn}`, by: who, at: turn.at })
+    }
+    if (gitBases.length) {
+      for (const file of gitBases) put({ key, path: file.path, content: file.content })
+      commit(key, { message: `baseline before turn ${turn.turn} from git ${gitBases[0]!.sha.slice(0, 7)}`, by: who, at: turn.at })
     }
     if (!turn.files.length) continue
     for (const file of turn.files) put({ key, path: file.path, content: file.content })
