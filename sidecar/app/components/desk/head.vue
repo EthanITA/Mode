@@ -14,13 +14,10 @@ const { head } = useDeskCards();
 .head {
   align-items: center;
   display: flex;
+  flex: none;
   gap: 10px;
-  height: 40px;
-  left: 16px;
+  height: var(--island-row-h);
   padding: 0 16px 0 14px;
-  position: fixed;
-  top: 16px;
-  z-index: 30;
 }
 
 .wordmark {

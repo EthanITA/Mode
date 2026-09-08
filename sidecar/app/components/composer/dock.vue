@@ -129,11 +129,15 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* The layout's bottom-left corner anchors this. The width is explicit because the
+   corner is sized by its content, and a prompt box that hugged its text would
+   resize on every keystroke. */
 .dock {
   align-items: flex-start;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 560px;
 }
 
 .island {

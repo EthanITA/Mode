@@ -6,6 +6,18 @@
   --page-w: 760px;
   --step: 8px;
 
+  /* The island geometry, in one place: the layout anchors its zones off these and
+     the stage derives the room it must leave, so moving a row moves the content. */
+  --gutter: 16px;
+  --island-row-h: 40px;
+  --dock-rest-h: 64px;
+  --shell-max-w: 1536px;
+
+  /* What a panelled face must leave clear to sit under the row and above the dock.
+     The canvas opts out and draws to the edges, with the islands floating over it. */
+  --stage-top: calc(var(--gutter) * 2 + var(--island-row-h));
+  --stage-bottom: calc(var(--gutter) * 2 + var(--dock-rest-h));
+
   /* Session and contract colours arrive as terminal colour names. Cela carries four
      of the hues outright; the rest are mixed from them so nothing here is a raw hex. */
   --tint-violet: var(--primary);
@@ -34,7 +46,7 @@ body,
 }
 
 body {
-  overflow: hidden; /* the stage owns the scroll, so the fixed islands never drift */
+  overflow: hidden; /* the stage owns the scroll, so the floating islands never drift */
 }
 
 /* --- shared vocabulary -----------------------------------------------------

@@ -40,15 +40,14 @@ const zoom = computed(() => {
 </template>
 
 <style scoped>
+/* The island row anchors this; shrinking is what keeps a long title off the cell
+   to its right instead of running underneath it. */
 .head {
   align-items: center;
   display: flex;
+  flex: 0 1 auto;
   gap: 8px;
-  left: 16px;
-  position: fixed;
-  right: 16px;
-  top: 16px;
-  z-index: 30;
+  min-width: 0;
 }
 
 .pill {
@@ -56,7 +55,7 @@ const zoom = computed(() => {
   display: flex;
   flex: none;
   gap: 10px;
-  height: 40px;
+  height: var(--island-row-h);
   padding: 0 14px;
 }
 

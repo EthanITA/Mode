@@ -50,7 +50,7 @@ function onEnter(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <div class="dock" data-region="board-island">
+  <div class="board" data-region="board-island">
     <UiSurface v-if="open" v-island-pop variant="glass-liquid" shape="island" pad="none" class="panel">
       <header class="head">
         <span class="title">Board</span>
@@ -108,14 +108,11 @@ function onEnter(event: KeyboardEvent): void {
 </template>
 
 <style scoped>
-.dock {
-  bottom: 16px;
+/* The layout's bottom-right corner anchors this; all it owns is its own stacking. */
+.board {
+  align-items: flex-end;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  position: fixed;
-  right: 16px;
-  z-index: 20;
 }
 
 .panel {
@@ -124,7 +121,6 @@ function onEnter(event: KeyboardEvent): void {
   max-height: min(60vh, 520px);
   overflow: hidden;
   width: 340px;
-  max-width: calc(100vw - 32px);
 }
 
 .head {

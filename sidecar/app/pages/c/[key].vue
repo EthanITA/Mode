@@ -39,39 +39,34 @@ loadSidecar();
 </script>
 
 <template>
-  <div class="conversation">
-    <ChromeHead :cwd="session?.cwd" :title="title" />
+  <NuxtLayout>
+    <template #lead>
+      <ChromeHead :cwd="session?.cwd" :title="title" />
+    </template>
+
+    <template #dock>
+      <component :is="dock" v-if="dock && !gone" />
+    </template>
+
+    <template #board>
+      <component :is="board" v-if="board && !gone" />
+    </template>
 
     <UiSurface v-if="gone" class="gone" pad="md" shape="island" variant="raised">
       <p class="gone-line">No conversation is running under <code>{{ key }}</code>.</p>
       <NuxtLink class="gone-back focusable" to="/">Back to the desk</NuxtLink>
     </UiSurface>
 
-    <template v-else>
-      <main class="stage" data-region="conversation-stage" :data-face="chrome.view.current.value">
-        <component :is="face" v-if="face" />
-        <p v-else class="empty">
-          No view has been built for this conversation yet.
-        </p>
-      </main>
-
-      <component :is="dock" v-if="dock" />
-      <component :is="board" v-if="board" />
-    </template>
-
-    <p v-if="sc.failure.value" class="failure" role="alert">
-      The sidecar server did not answer: {{ sc.failure.value }}
-    </p>
-  </div>
+    <main v-else class="stage" data-region="conversation-stage" :data-face="chrome.view.current.value">
+      <component :is="face" v-if="face" />
+      <p v-else class="empty">
+        No view has been built for this conversation yet.
+      </p>
+    </main>
+  </NuxtLayout>
 </template>
 
 <style scoped>
-.conversation {
-  background: var(--canvas);
-  height: 100vh;
-  position: relative;
-}
-
 .stage {
   inset: 0;
   position: absolute;
@@ -80,7 +75,8 @@ loadSidecar();
 /* The canvas draws to the edges under the floating chrome; the panelled faces do not. */
 .stage[data-face="history"],
 .stage[data-face="read"] {
-  padding: 72px 16px 96px;
+  box-sizing: border-box;
+  padding: var(--stage-top) var(--gutter) var(--stage-bottom);
 }
 
 .empty {
@@ -119,19 +115,5 @@ loadSidecar();
   font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
-}
-
-.failure {
-  background: var(--error-soft);
-  border: 1px solid var(--error);
-  border-radius: var(--radius-field);
-  bottom: 16px;
-  color: var(--error);
-  font-size: 13px;
-  left: 16px;
-  margin: 0;
-  padding: 9px 13px;
-  position: fixed;
-  z-index: 30;
 }
 </style>

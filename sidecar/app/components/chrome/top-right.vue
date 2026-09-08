@@ -53,25 +53,22 @@ function toggleComment(): void {
 .top-right {
   align-items: center;
   display: flex;
+  flex: none;
   gap: 8px;
-  position: fixed;
-  right: 16px;
-  top: 16px;
-  z-index: 30;
 }
 
 .pill {
   align-items: center;
   display: flex;
   flex: none;
-  height: 40px;
+  height: var(--island-row-h);
   padding: 0 6px;
 }
 
 .theme {
   justify-content: center;
   padding: 0;
-  width: 40px;
+  width: var(--island-row-h);
 }
 
 /* The package pins it top right for a standalone artifact page; here it is one cell of a row. */
@@ -80,8 +77,8 @@ function toggleComment(): void {
   border: 0;
   box-shadow: none;
   color: var(--ink);
-  height: 40px;
+  height: var(--island-row-h);
   position: static;
-  width: 40px;
+  width: var(--island-row-h);
 }
 </style>
