@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import type { FrameMark, FrameSelection } from "~/types/frame";
+import { Check, RotateCcw } from "@lucide/vue";
+import type { FrameMark, FramePending, FrameSelection } from "~/types/frame";
 import type { DiffGap } from "~~/shared/types/versions";
 
 type Stage = "live" | "reading" | "unreadable" | "version";
@@ -14,17 +15,24 @@ const GAP: Record<DiffGap, string> = {
 };
 
 const sc = useSidecar();
+const chrome = useChrome();
 const { session } = useScreen();
 
 const frame = ref<{ clearSelection: () => void }>();
 const marks = ref<FrameMark[]>([]);
 const measured = ref(false);
 const selection = ref<FrameSelection>();
+const panel = ref<FrameSelection>();
+const pendingEdits = ref<FramePending[]>([]);
+const edition = ref(0);
+const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
+const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
 
 const path = computed(() => sc.artifact.value?.path);
 const versions = useReadVersions({ path, sessionKey: sc.sessionKey });
 
 const threads = computed(() => sc.artifact.value?.threads ?? []);
+const live = computed(() => !versions.at.value);
 
 const stage = computed<Stage>(() => {
   if (!versions.at.value) return "live";
@@ -53,11 +61,57 @@ function clearSelection(): void {
   frame.value?.clearSelection();
 }
 
+function openInline(): void {
+  if (!selection.value) return;
+  panel.value = selection.value;
+}
+
+function closeInline(): void {
+  panel.value = undefined;
+  clearSelection();
+}
+
+function onApplied(): void {
+  edition.value += 1;
+  pendingEdits.value = [];
+  closeInline();
+}
+
+async function settle(action: "accept" | "revert", edit: FramePending): Promise<void> {
+  const slug = sc.slug.value;
+  if (!slug) return;
+  try {
+    await $fetch(`/api/artifacts/${slug}/edit`, {
+      body: { action, selection: edit.selection },
+      method: "POST",
+    });
+    edition.value += 1;
+  } catch {
+    chrome.toast("That change could not be settled", "destructive");
+  }
+}
+
+watch([selection, live], ([next, on]) => {
+  inlineArmed.value = Boolean(next) && on;
+});
+
+watch(inlineAsk, (ask) => {
+  if (!ask) return;
+  inlineAsk.value = false;
+  openInline();
+});
+
 // Until the frame has measured once every thread looks adrift, so the gutter waits rather than lying.
 watch([() => sc.slug.value, () => versions.at.value], () => {
   marks.value = [];
   measured.value = false;
   selection.value = undefined;
+  panel.value = undefined;
+  pendingEdits.value = [];
+});
+
+onScopeDispose(() => {
+  inlineArmed.value = false;
 });
 </script>
 
@@ -75,16 +129,26 @@ watch([() => sc.slug.value, () => versions.at.value], () => {
     />
 
     <div v-if="sc.slug.value && sc.artifact.value" class="stack">
-      <ArtifactGutter v-if="measured" side="right" :marks="marks" :threads="threads" />
+      <ArtifactGutter
+        v-if="measured"
+        side="right"
+        :live="live"
+        :marks="marks"
+        :threads="threads"
+        @reload="edition += 1"
+      />
 
       <ArtifactFrame
         v-if="stage === 'live' || stage === 'version'"
         ref="frame"
         data-region="artifact-page"
+        :edition="edition"
         :html="html"
         :slug="sc.slug.value"
         :version="versions.at.value"
+        @edit="openInline"
         @marks="onMarks"
+        @pending="pendingEdits = $event"
         @select="selection = $event"
       />
 
@@ -105,10 +169,39 @@ watch([() => sc.slug.value, () => versions.at.value], () => {
 
       <ReadCompose
         :key="`${sc.slug.value}:${versions.at.value ?? 'head'}`"
+        :editable="live"
+        :open="!!panel"
         :selection="selection"
         :slug="sc.slug.value"
         @done="clearSelection"
+        @edit="openInline"
       />
+
+      <ReadInline
+        v-if="panel"
+        :live="live"
+        :selection="panel"
+        :slug="sc.slug.value"
+        @applied="onApplied"
+        @done="closeInline"
+      />
+
+      <UiSurface
+        v-for="edit in pendingEdits"
+        :key="edit.id"
+        class="settle"
+        data-region="inline-panel"
+        pad="none"
+        variant="raised"
+        :style="{ left: `${edit.left}px`, top: `${edit.top}px` }"
+      >
+        <UiIconButton :icon="Check" label="Keep the new text" size="xs" @click="settle('accept', edit)">
+          Accept
+        </UiIconButton>
+        <UiIconButton :icon="RotateCcw" label="Restore the old text" size="xs" @click="settle('revert', edit)">
+          Revert
+        </UiIconButton>
+      </UiSurface>
     </div>
 
     <div v-else class="blank">
@@ -187,5 +280,15 @@ watch([() => sc.slug.value, () => versions.at.value], () => {
 
 .back:hover {
   border-color: var(--ink);
+}
+
+.settle {
+  align-items: center;
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px 4px;
+  position: absolute;
+  transform: translate(8px, -50%);
+  z-index: 28;
 }
 </style>

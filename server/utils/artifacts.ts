@@ -1,4 +1,4 @@
-import { open, readdir, readFile, stat } from "node:fs/promises"
+import { open, readdir, readFile, stat, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
 import type { ArtifactDetail, ArtifactMeta, ReviewThread, ThreadAnchor, ThreadReply } from "../../shared/types/artifact"
@@ -228,4 +228,239 @@ export async function getArtifact(slug: string): Promise<ArtifactDetail | undefi
   const html = path ? await readWhole(path) : undefined
   if (!path || !html) return undefined
   return { ...parseMeta({ head: html.slice(0, HEAD_BYTES), fallbackSlug: slug, path }), threads: parseThreads(html) }
+}
+
+export async function writeArtifactHtml(slug: string, html: string): Promise<boolean> {
+  const path = await artifactPath(slug)
+  if (!path) return false
+  await writeFile(path, html, "utf8")
+  listed.delete(path)
+  return true
+}
+
+const BLOCK_TAGS = new Set(["blockquote", "figure", "h1", "h2", "h3", "h4", "li", "p", "pre", "table"])
+const SKIP_TAGS = new Set(["script", "style", "svg", "template"])
+
+interface TextAtom {
+  ch: string
+  from: number
+  to: number
+}
+
+interface BlockSpan {
+  from: number
+  innerFrom: number
+  innerTo: number
+  nested: boolean
+  to: number
+}
+
+export type ArtifactEditFail = "ambiguous" | "invalid" | "not-found"
+
+export type ArtifactEditOutcome =
+  | { html: string; id?: string; ok: true }
+  | { ok: false; reason: ArtifactEditFail }
+
+function decodeEntity(raw: string): string {
+  if (raw[0] === "#") {
+    const hex = raw[1] === "x" || raw[1] === "X"
+    const n = Number.parseInt(raw.slice(hex ? 2 : 1), hex ? 16 : 10)
+    return Number.isFinite(n) && n ? String.fromCodePoint(n) : `&${raw};`
+  }
+  return ENTITY[raw.toLowerCase()] ?? `&${raw};`
+}
+
+function atomsIn(html: string, from: number, to: number): TextAtom[] {
+  const out: TextAtom[] = []
+  let i = from
+  let skip = 0
+  while (i < to) {
+    if (html.startsWith("<!--", i)) {
+      const end = html.indexOf("-->", i + 4)
+      i = end < 0 ? to : end + 3
+      continue
+    }
+    if (html[i] === "<") {
+      const gt = html.indexOf(">", i)
+      if (gt < 0 || gt >= to) break
+      const close = html[i + 1] === "/"
+      const name = /^<\/?([a-zA-Z][a-zA-Z0-9]*)/.exec(html.slice(i, gt + 1))?.[1]?.toLowerCase()
+      if (name && SKIP_TAGS.has(name)) skip += close ? -1 : 1
+      if (skip < 0) skip = 0
+      i = gt + 1
+      continue
+    }
+    if (skip) {
+      i += 1
+      continue
+    }
+    if (html[i] === "&") {
+      const semi = html.indexOf(";", i + 1)
+      if (semi > i && semi < i + 12 && semi < to) {
+        out.push({ ch: decodeEntity(html.slice(i + 1, semi)), from: i, to: semi + 1 })
+        i = semi + 1
+        continue
+      }
+    }
+    out.push({ ch: html[i] ?? "", from: i, to: i + 1 })
+    i += 1
+  }
+  return out
+}
+
+function folded(atoms: TextAtom[]): { at: number[]; text: string } {
+  const chars: string[] = []
+  const at: number[] = []
+  let pending = false
+  let started = false
+  for (let i = 0; i < atoms.length; i++) {
+    const ch = atoms[i]?.ch ?? ""
+    if (!ch) continue
+    if (/\s/.test(ch)) {
+      if (started) pending = true
+      continue
+    }
+    if (pending) {
+      chars.push(" ")
+      at.push(at.at(-1) ?? i)
+      pending = false
+    }
+    chars.push(ch)
+    at.push(i)
+    started = true
+  }
+  return { at, text: chars.join("") }
+}
+
+function bodyBounds(html: string): { from: number; to: number } {
+  const open = /<body\b[^>]*>/i.exec(html)
+  const close = html.search(/<\/body>/i)
+  if (!open || close < 0) return { from: 0, to: html.length }
+  return { from: open.index + open[0].length, to: close }
+}
+
+function leafBlocks(html: string, from: number, to: number): BlockSpan[] {
+  const stack: { from: number; innerFrom: number; nested: boolean; tag: string }[] = []
+  const done: BlockSpan[] = []
+  let i = from
+  while (i < to) {
+    if (html.startsWith("<!--", i)) {
+      const end = html.indexOf("-->", i + 4)
+      i = end < 0 ? to : end + 3
+      continue
+    }
+    if (html[i] !== "<") {
+      i += 1
+      continue
+    }
+    const gt = html.indexOf(">", i)
+    if (gt < 0 || gt >= to) break
+    const token = html.slice(i, gt + 1)
+    const close = token.startsWith("</")
+    const name = /^<\/?([a-zA-Z][a-zA-Z0-9]*)/.exec(token)?.[1]?.toLowerCase()
+    if (!name || !BLOCK_TAGS.has(name)) {
+      i = gt + 1
+      continue
+    }
+    if (close) {
+      for (let s = stack.length - 1; s >= 0; s--) {
+        const held = stack[s]
+        if (held?.tag !== name) continue
+        done.push({ from: held.from, innerFrom: held.innerFrom, innerTo: i, nested: held.nested, to: gt + 1 })
+        stack.length = s
+        break
+      }
+      i = gt + 1
+      continue
+    }
+    if (token.endsWith("/>")) {
+      i = gt + 1
+      continue
+    }
+    for (const held of stack) held.nested = true
+    stack.push({ from: i, innerFrom: gt + 1, nested: false, tag: name })
+    i = gt + 1
+  }
+  return done.filter((block) => !block.nested)
+}
+
+function pageOf(html: string): { page: string; tail: string } {
+  const at = html.search(RV_LAYER_START)
+  if (at < 0) return { page: html, tail: "" }
+  return { page: html.slice(0, at), tail: html.slice(at) }
+}
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+}
+
+function hitsIn(html: string, from: number, to: number, needle: string): { from: number; to: number }[] {
+  if (!needle) return []
+  const atoms = atomsIn(html, from, to)
+  const { at, text } = folded(atoms)
+  const hits: { from: number; to: number }[] = []
+  let cursor = 0
+  while (cursor < text.length) {
+    const atNorm = text.indexOf(needle, cursor)
+    if (atNorm < 0) break
+    const first = at[atNorm]
+    const last = at[atNorm + needle.length - 1]
+    const startAtom = typeof first === "number" ? atoms[first] : undefined
+    const endAtom = typeof last === "number" ? atoms[last] : undefined
+    if (startAtom && endAtom) hits.push({ from: startAtom.from, to: endAtom.to })
+    cursor = atNorm + 1
+  }
+  return hits
+}
+
+function matchingBlocks(html: string, from: number, to: number, block: string): BlockSpan[] {
+  const leaves = leafBlocks(html, from, to)
+  const exact = leaves.filter((leaf) => folded(atomsIn(html, leaf.innerFrom, leaf.innerTo)).text === block)
+  return exact.length ? exact : leaves.filter((leaf) => folded(atomsIn(html, leaf.innerFrom, leaf.innerTo)).text.includes(block))
+}
+
+export function applyArtifactEdit(input: { block?: string; html: string; replacement: string; selection: string }): ArtifactEditOutcome {
+  const selection = input.selection.replace(/\s+/g, " ").trim()
+  if (!selection || !input.replacement) return { ok: false, reason: "invalid" }
+  const { page, tail } = pageOf(input.html)
+  const bounds = bodyBounds(page)
+  const hits = input.block
+    ? matchingBlocks(page, bounds.from, bounds.to, input.block.replace(/\s+/g, " ").trim()).flatMap((leaf) =>
+        hitsIn(page, leaf.innerFrom, leaf.innerTo, selection),
+      )
+    : hitsIn(page, bounds.from, bounds.to, selection)
+  if (!hits.length) return { ok: false, reason: "not-found" }
+  if (hits.length > 1) return { ok: false, reason: "ambiguous" }
+  const [hit] = hits
+  if (!hit) return { ok: false, reason: "not-found" }
+  const slice = page.slice(hit.from, hit.to)
+  // A wrap that swallowed a tag would leave the artifact unparseable as standalone HTML.
+  if (slice.includes("<")) return { ok: false, reason: "not-found" }
+  const id = crypto.randomUUID().replace(/-/g, "").slice(0, 12)
+  const wrapped = `<del data-sc-edit="${id}">${slice}</del><ins data-sc-edit="${id}">${escapeHtml(input.replacement)}</ins>`
+  return { html: `${page.slice(0, hit.from)}${wrapped}${page.slice(hit.to)}${tail}`, id, ok: true }
+}
+
+const PAIR = /<del data-sc-edit="([^"]+)">([\s\S]*?)<\/del><ins data-sc-edit="\1">([\s\S]*?)<\/ins>/g
+
+export function resolveArtifactEdit(input: { action: "accept" | "revert"; html: string; selection: string }): ArtifactEditOutcome {
+  const selection = input.selection.replace(/\s+/g, " ").trim()
+  if (!selection) return { ok: false, reason: "invalid" }
+  const { page, tail } = pageOf(input.html)
+  const found: { from: number; next: string; old: string; to: number }[] = []
+  for (const match of page.matchAll(PAIR)) {
+    if (typeof match.index !== "number") continue
+    const old = match[2] ?? ""
+    const next = match[3] ?? ""
+    const oldText = folded(atomsIn(old, 0, old.length)).text
+    if (old === selection || oldText === selection) {
+      found.push({ from: match.index, next, old, to: match.index + match[0].length })
+    }
+  }
+  if (!found.length) return { ok: false, reason: "not-found" }
+  if (found.length > 1) return { ok: false, reason: "ambiguous" }
+  const [pair] = found
+  if (!pair) return { ok: false, reason: "not-found" }
+  const kept = input.action === "accept" ? pair.next : pair.old
+  return { html: `${page.slice(0, pair.from)}${kept}${page.slice(pair.to)}${tail}`, ok: true }
 }

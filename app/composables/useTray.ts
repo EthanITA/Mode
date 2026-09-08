@@ -2,21 +2,34 @@ import type { ComputedRef } from "vue";
 
 export type TrayKind = "comment" | "element" | "reply" | "task";
 
+export interface TrayChatLine {
+  role: "assistant" | "user";
+  text: string;
+}
+
 export interface TrayItem {
+  block?: string;
+  chat?: TrayChatLine[];
   id: string;
   kind: TrayKind;
+  mark?: string;
   quote?: string;
   source?: string;
   text: string;
+  top?: number;
 }
 
 export interface TrayDraft {
   /** `<intent>:<entity>`, never the bare entity: two intents on one thread must coexist, a re-drop of one replace. */
+  block?: string;
+  chat?: TrayChatLine[];
   id?: string;
   kind: TrayKind;
+  mark?: string;
   quote?: string;
   source?: string;
   text: string;
+  top?: number;
 }
 
 export interface TrayHandover {
@@ -27,15 +40,18 @@ export interface TrayHandover {
 export interface Tray {
   add: (draft: TrayDraft) => string | undefined;
   count: ComputedRef<number>;
-  handOver: (prompt: string) => TrayHandover;
+  handOver: (prompt: string, id?: string) => TrayHandover;
   items: ComputedRef<TrayItem[]>;
+  patch: (id: string, next: Partial<Omit<TrayItem, "id">>) => void;
   remove: (id: string) => void;
 }
 
 function line(item: TrayItem): string {
   if (item.kind === "task") return `Task: ${item.text}`;
   const at = item.quote ? `“${item.quote}”` : item.source;
-  return at ? `${at} — ${item.text}` : item.text;
+  const head = at ? `${at} — ${item.text}` : item.text;
+  if (!item.chat?.length) return head;
+  return `${head}\n${item.chat.map((turn) => `${turn.role}: ${turn.text}`).join("\n")}`;
 }
 
 export function useTray(): Tray {
@@ -74,9 +90,18 @@ export function useTray(): Tray {
     );
   }
 
-  function handOver(prompt: string): TrayHandover {
+  function patch(id: string, next: Partial<Omit<TrayItem, "id">>): void {
     const key = sc.sessionKey.value;
-    const going = items.value;
+    if (!key) return;
+    write(
+      key,
+      items.value.map((row) => (row.id === id ? { ...row, ...next, id } : row)),
+    );
+  }
+
+  function handOver(prompt: string, id?: string): TrayHandover {
+    const key = sc.sessionKey.value;
+    const going = id ? items.value.filter((row) => row.id === id) : items.value;
     const sent = new Set(going.map((row) => row.id));
     const text = [prompt.trim(), ...going.map(line)].filter(Boolean).join("\n");
 
@@ -92,5 +117,5 @@ export function useTray(): Tray {
     return { settle, text };
   }
 
-  return { add, count, handOver, items, remove };
+  return { add, count, handOver, items, patch, remove };
 }

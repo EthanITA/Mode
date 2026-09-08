@@ -37,3 +37,16 @@ export interface ReviewThread {
 export interface ArtifactDetail extends ArtifactMeta {
   threads: ReviewThread[]
 }
+
+export type ArtifactEditAction = "accept" | "apply" | "revert"
+
+export interface ArtifactEditRequest {
+  action?: ArtifactEditAction
+  block?: string
+  replacement?: string
+  selection: string
+}
+
+export interface ArtifactEditReply {
+  id?: string
+}

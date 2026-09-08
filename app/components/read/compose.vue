@@ -1,12 +1,21 @@
 <script lang="ts" setup>
+import { MessageSquare, Pencil } from "@lucide/vue";
 import type { FrameSelection } from "~/types/frame";
 
-const { selection, slug } = defineProps<{ selection?: FrameSelection; slug: string }>();
+const { editable = true, open = false, selection, slug } = defineProps<{
+  editable?: boolean;
+  open?: boolean;
+  selection?: FrameSelection;
+  slug: string;
+}>();
 
-const emit = defineEmits<{ done: [] }>();
+const emit = defineEmits<{ done: []; edit: [] }>();
 
 interface Composing {
+  block: string;
   left: number;
+  mark: string;
+  markTop: number;
   quote: string;
   top: number;
 }
@@ -22,7 +31,10 @@ const box = ref<{ $el: HTMLTextAreaElement }>();
 function start(): void {
   if (!selection) return;
   composing.value = {
+    block: selection.mark.text,
     left: Math.max(0, selection.left - POPOVER_W / 2),
+    mark: selection.mark.key,
+    markTop: selection.mark.top,
     quote: selection.quote,
     top: selection.bottom + 8,
   };
@@ -40,7 +52,15 @@ function save(): void {
   const text = draft.value.trim();
   const held = composing.value;
   if (!text || !held) return;
-  tray.add({ kind: "comment", quote: held.quote, source: slug, text });
+  tray.add({
+    block: held.block,
+    kind: "comment",
+    mark: held.mark,
+    quote: held.quote,
+    source: slug,
+    text,
+    top: held.markTop,
+  });
   composing.value = undefined;
   draft.value = "";
   emit("done");
@@ -57,6 +77,15 @@ function onKey(event: KeyboardEvent): void {
   save();
 }
 
+watch(
+  () => open,
+  (on) => {
+    if (!on) return;
+    composing.value = undefined;
+    draft.value = "";
+  },
+);
+
 onMounted(() => {
   const onWindowKey = (event: KeyboardEvent): void => {
     if (event.key === "Escape" && composing.value) cancel();
@@ -67,22 +96,27 @@ onMounted(() => {
 </script>
 
 <template>
-  <button
-    v-if="selection && !composing"
+  <div
+    v-if="selection && !composing && !open"
     v-island-pop="'bottom center'"
-    v-press
-    class="raise focusable"
-    type="button"
+    class="raise"
     data-region="select-to-comment"
     :style="{ left: `${selection.left}px`, top: `${selection.top}px` }"
-    @mousedown.prevent
-    @click="start"
   >
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-    Comment
-  </button>
+    <UiIconButton :icon="MessageSquare" label="Comment" size="xs" @mousedown.prevent @click="start">
+      Comment
+    </UiIconButton>
+    <UiIconButton
+      v-if="editable"
+      :icon="Pencil"
+      label="Edit"
+      size="xs"
+      @mousedown.prevent
+      @click="emit('edit')"
+    >
+      Edit
+    </UiIconButton>
+  </div>
 
   <div v-if="composing" class="scrim" @click="cancel" />
 
@@ -111,29 +145,19 @@ onMounted(() => {
 .raise {
   align-items: center;
   background: var(--ink);
-  border: 0;
   border-radius: var(--radius-selector);
   box-shadow: var(--shadow-lg);
   color: var(--canvas);
-  cursor: pointer;
   display: inline-flex;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  gap: 6px;
-  padding: 7px 12px;
+  gap: 2px;
+  padding: 2px 4px;
   position: absolute;
   transform: translate(-50%, -100%);
   z-index: 30;
 }
 
-.raise svg {
-  fill: none;
-  height: 12px;
-  stroke: currentColor;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
-  width: 12px;
+.raise :deep(.icon-button) {
+  color: var(--canvas);
 }
 
 .scrim {

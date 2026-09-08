@@ -1,23 +1,54 @@
 <script lang="ts" setup>
 import type { ReviewThread } from "~~/shared/types/artifact";
+import type { TrayItem } from "~/composables/useTray";
 import type { FrameAnchor, FrameMark } from "~/types/frame";
 import type { Pin } from "~/utils/anchors";
 
 const {
   anchors = [],
+  live = true,
   marks = [],
   side = "left",
   threads,
 } = defineProps<{
   anchors?: FrameAnchor[];
+  live?: boolean;
   marks?: FrameMark[];
   side?: "left" | "right";
   threads: ReviewThread[];
 }>();
 
+const emit = defineEmits<{ reload: [] }>();
+
 const sc = useSidecar();
+const tray = useTray();
 
 const placed = computed(() => anchorThreads({ anchors, marks, threads }));
+
+function isGutterNote(item: TrayItem): boolean {
+  if (item.kind !== "comment") return false;
+  if (!item.mark && !item.block && !item.quote) return false;
+  return !item.source || item.source === sc.slug.value;
+}
+
+function topOf(item: TrayItem): number {
+  const exact = marks.find((mark) => item.mark && mark.key === item.mark && (!item.block || mark.text === item.block));
+  if (exact) return exact.top;
+  const byBlock = marks.find((mark) => item.block && mark.text === item.block);
+  if (byBlock) return byBlock.top;
+  const byQuote = marks.find((mark) => item.quote && mark.text.includes(item.quote));
+  if (byQuote) return byQuote.top;
+  return item.top ?? 0;
+}
+
+const placedNotes = computed(() => {
+  const pins = placed.value.pins;
+  return tray.items.value.filter(isGutterNote).map((item) => {
+    const raw = topOf(item);
+    const clash = pins.some((pin) => Math.abs(pin.top - raw) < 20);
+    return { item, top: clash ? raw + 28 : raw };
+  });
+});
 
 // Threads the rewrite left behind still have to be reachable, so they collect under one chip.
 const adrift = computed<Pin | undefined>(() => {
@@ -85,7 +116,23 @@ const away = computed(() => (side === "right" ? "left" : "right"));
       </UiPopover>
     </div>
 
-    <p v-if="!placed.pins.length && !adrift" class="none mono-meta">
+    <div
+      v-for="row in placedNotes"
+      :key="row.item.id"
+      class="perch perch-note"
+      :style="{ top: `${row.top}px` }"
+    >
+      <UiSurface pad="none" variant="raised">
+        <ReadNote
+          :item="row.item"
+          :live="live"
+          :slug="sc.slug.value ?? ''"
+          @reload="emit('reload')"
+        />
+      </UiSurface>
+    </div>
+
+    <p v-if="!placed.pins.length && !adrift && !placedNotes.length" class="none mono-meta">
       {{ threads.length ? "no notes here" : "no notes" }}
     </p>
   </div>
@@ -94,6 +141,7 @@ const away = computed(() => (side === "right" ? "left" : "right"));
 <style scoped>
 .gutter {
   bottom: 0;
+  overflow: visible;
   position: absolute;
   top: 0;
   width: var(--gutter-w);
@@ -114,6 +162,11 @@ const away = computed(() => (side === "right" ? "left" : "right"));
 
 .perch-foot {
   bottom: 16px;
+}
+
+.perch-note {
+  width: 280px;
+  z-index: 4;
 }
 
 /* An empty gutter with no words reads as broken, so it says so. */

@@ -22,3 +22,11 @@ export interface FrameSelection {
   quote: string;
   top: number;
 }
+
+export interface FramePending {
+  id: string;
+  left: number;
+  replacement: string;
+  selection: string;
+  top: number;
+}

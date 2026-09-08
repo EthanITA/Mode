@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 const chrome = useChrome();
+const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
+const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 
 const EDITABLE = "input, textarea, select, [contenteditable]:not([contenteditable='false'])";
 
@@ -11,6 +13,10 @@ function onKeyDown(event: KeyboardEvent): void {
   const meta = event.metaKey || event.ctrlKey;
   if (meta && event.key.toLowerCase() === "k") {
     event.preventDefault();
+    if (inlineArmed.value) {
+      inlineAsk.value = true;
+      return;
+    }
     chrome.jump.toggle();
     return;
   }

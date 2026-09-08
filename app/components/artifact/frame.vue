@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import type { FrameAnchor, FrameBlock, FrameMark, FrameSelection } from "~/types/frame";
+import type { FrameAnchor, FrameBlock, FrameMark, FramePending, FrameSelection } from "~/types/frame";
 
-const { html, slug, version } = defineProps<{
+const { edition, html, slug, version } = defineProps<{
+  edition?: number;
   html?: string;
   slug: string;
   version?: number;
@@ -10,7 +11,9 @@ const { html, slug, version } = defineProps<{
 const emit = defineEmits<{
   anchors: [anchors: FrameAnchor[]];
   block: [block?: FrameBlock];
+  edit: [];
   marks: [marks: FrameMark[]];
+  pending: [edits: FramePending[]];
   select: [selection?: FrameSelection];
 }>();
 
@@ -21,6 +24,7 @@ const BLOCKS = "p, li, h1, h2, h3, h4, blockquote, pre, table, figure";
 const LABEL_MAX = 44;
 const MIN_QUOTE = 3;
 const SUPPRESS_ID = "sidecar-suppress";
+const EDIT_ID = "sidecar-edit";
 
 interface Indexed {
   el: HTMLElement;
@@ -102,6 +106,7 @@ function reset(): void {
   teardown();
   emit("anchors", []);
   emit("block", undefined);
+  emit("pending", []);
   emit("select", undefined);
 }
 
@@ -117,10 +122,12 @@ function onLoad(): void {
     height.value = doc.body?.scrollHeight || doc.documentElement.scrollHeight;
     emit("anchors", readAnchors(doc));
     emit("marks", measure(doc));
+    emit("pending", readPending(doc));
   };
 
   syncTheme(doc);
   hidePageToggle(doc);
+  injectEditStyle(doc);
   remeasure();
   loaded.value = true;
 
@@ -162,15 +169,24 @@ function onLoad(): void {
     });
   };
 
+  const onKey = (event: KeyboardEvent): void => {
+    if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k") return;
+    event.preventDefault();
+    onSelect();
+    emit("edit");
+  };
+
   doc.addEventListener("mousemove", onMove);
   doc.addEventListener("mouseleave", onLeave);
   doc.addEventListener("mouseup", onSelect);
   doc.addEventListener("keyup", onSelect);
+  doc.addEventListener("keydown", onKey);
   watchers.push(() => {
     doc.removeEventListener("mousemove", onMove);
     doc.removeEventListener("mouseleave", onLeave);
     doc.removeEventListener("mouseup", onSelect);
     doc.removeEventListener("keyup", onSelect);
+    doc.removeEventListener("keydown", onKey);
   });
 }
 
@@ -194,6 +210,35 @@ function hidePageToggle(doc: Document): void {
   doc.head?.append(style);
 }
 
+function injectEditStyle(doc: Document): void {
+  if (doc.getElementById(EDIT_ID)) return;
+  const style = doc.createElement("style");
+  style.id = EDIT_ID;
+  style.textContent = `del[data-sc-edit]{color:var(--error);text-decoration:line-through}ins[data-sc-edit]{background:color-mix(in oklch,var(--success) 16%,transparent);color:var(--success);text-decoration:none}`;
+  doc.head?.append(style);
+}
+
+function readPending(doc: Document): FramePending[] {
+  const out: FramePending[] = [];
+  const seen = new Set<string>();
+  for (const del of doc.querySelectorAll("del[data-sc-edit]")) {
+    const id = del.getAttribute("data-sc-edit") ?? "";
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const ins = doc.querySelector(`ins[data-sc-edit="${CSS.escape(id)}"]`);
+    const box = (ins ?? del).getBoundingClientRect();
+    const scroll = doc.documentElement.scrollTop;
+    out.push({
+      id,
+      left: box.right,
+      replacement: norm(ins?.textContent || undefined),
+      selection: norm(del.textContent || undefined),
+      top: box.top + scroll,
+    });
+  }
+  return out;
+}
+
 onMounted(() => {
   const observer = new MutationObserver(() => {
     const doc = frame.value?.contentDocument;
@@ -203,7 +248,7 @@ onMounted(() => {
   onScopeDispose(() => observer.disconnect());
 });
 
-watch(() => [slug, version, html], reset);
+watch(() => [edition, html, slug, version], reset);
 
 onScopeDispose(teardown);
 
@@ -214,7 +259,7 @@ defineExpose({ clearSelection });
   <div class="sheet" :data-loaded="loaded ? '' : undefined">
     <iframe
       ref="frame"
-      :key="`${slug}:${version ?? 'head'}`"
+      :key="`${slug}:${version ?? 'head'}:${edition ?? 0}`"
       :src="html ? undefined : `/artifact/${slug}`"
       :srcdoc="html"
       :style="{ height: height ? `${height}px` : undefined }"
