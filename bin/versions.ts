@@ -109,10 +109,25 @@ function commit(key: string, { message, by, at }: { message: string; by: string;
   })
 }
 
+/* The mirror follows whatever the transcript last said a path was, and a path can be a file in one
+   turn and a directory in the next. Either shape blocks the other: rm on a directory throws EISDIR
+   and mkdir under a file throws ENOTDIR, and one such path aborted the whole build. */
+function clearShape(root: string, target: string): void {
+  if (statSync(target, { throwIfNoEntry: false })?.isDirectory()) rmSync(target, { force: true, recursive: true })
+  for (let dir = dirname(target); dir.startsWith(root) && dir !== root; dir = dirname(dir)) {
+    const found = statSync(dir, { throwIfNoEntry: false })
+    if (!found) continue
+    if (found.isDirectory()) break
+    rmSync(dir, { force: true })
+  }
+}
+
 function put({ key, path, content }: { key: string; path: string; content?: string }): void {
-  const target = join(treeDir(key), storePath(path))
+  const root = treeDir(key)
+  const target = join(root, storePath(path))
+  clearShape(root, target)
   if (typeof content !== "string") {
-    rmSync(target, { force: true })
+    rmSync(target, { force: true, recursive: true })
     return
   }
   mkdirSync(dirname(target), { recursive: true })
