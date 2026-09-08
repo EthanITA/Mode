@@ -31,16 +31,17 @@ function toggleComment(): void {
         :options="faces"
       />
 
-      <UiSurface class="pill" data-region="comment-arm" pad="none" shape="pill" variant="glass">
-        <UiChip
-          :selected="chrome.comment.armed.value"
-          title="Comment on anything · hold C"
-          @click="toggleComment"
-        >
-          <UiIcon :icon="MessageSquare" size="sm" />
-          Comment
-        </UiChip>
-      </UiSurface>
+      <!-- Bare: the chip already draws a background, so a surface behind it read as two. -->
+      <UiChip
+        class="comment"
+        data-region="comment-arm"
+        :selected="chrome.comment.armed.value"
+        title="Comment on anything · hold C"
+        @click="toggleComment"
+      >
+        <UiIcon :icon="MessageSquare" size="sm" />
+        Comment
+      </UiChip>
     </template>
 
     <UiSurface class="pill theme" data-region="theme-toggle" pad="none" shape="pill" variant="glass">
@@ -63,6 +64,11 @@ function toggleComment(): void {
   flex: none;
   height: var(--island-row-h);
   padding: 0 6px;
+}
+
+/* Sits in the row on its own height rather than being padded out to the row's. */
+.comment {
+  flex: none;
 }
 
 .theme {

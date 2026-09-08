@@ -2,13 +2,6 @@
 import { ArrowLeft } from "@lucide/vue";
 
 const { cwd, title } = defineProps<{ cwd?: string; title: string }>();
-
-const chrome = useChrome();
-
-const zoom = computed(() => {
-  const at = chrome.canvas.zoom.value;
-  return at ? `${Math.round(at * 100)}%` : undefined;
-});
 </script>
 
 <template>
@@ -25,17 +18,6 @@ const zoom = computed(() => {
       <span v-if="cwd" class="cwd mono-meta">{{ homePath(cwd) }}</span>
     </UiSurface>
 
-    <UiSurface v-if="zoom" class="pill" data-region="canvas-zoom" pad="none" shape="pill" variant="glass">
-      <button
-        v-press
-        class="zoom focusable plain-button"
-        type="button"
-        title="Zoom to fit · ⇧1"
-        @click="chrome.canvas.fit.value?.()"
-      >
-        {{ zoom }}
-      </button>
-    </UiSurface>
   </div>
 </template>
 
@@ -97,14 +79,4 @@ const zoom = computed(() => {
   white-space: nowrap;
 }
 
-.zoom {
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.zoom:hover {
-  color: var(--ink);
-}
 </style>
