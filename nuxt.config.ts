@@ -30,7 +30,7 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: "Mode sidecar",
+      title: "Claude Code Sidecar",
       script: [
         {
           // Stamped before Vue mounts so a dark-OS viewer never sees a light flash first.

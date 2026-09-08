@@ -1,5 +1,5 @@
 {
-  "name": "mode-sidecar",
+  "name": "claude-code-sidecar",
   "private": true,
   "type": "module",
   "scripts": {
