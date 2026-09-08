@@ -2,11 +2,11 @@
 import { execFileSync } from "node:child_process"
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs"
 import { dirname, isAbsolute, join, normalize } from "node:path"
-import { configRoot } from "../sidecar/server/utils/mode/paths.ts"
-import { splitLines } from "../sidecar/server/utils/mode/fsutil.ts"
-import { receiptsOf, turnsOf } from "../sidecar/server/utils/sessions/receipts.ts"
-import { identityOf, transcriptIndex } from "../sidecar/server/utils/sessions/transcripts.ts"
-import { planOf, storePath } from "../sidecar/server/utils/sessions/store.ts"
+import { configRoot } from "../server/utils/mode/paths.ts"
+import { splitLines } from "../server/utils/mode/fsutil.ts"
+import { receiptsOf, turnsOf } from "../server/utils/sessions/receipts.ts"
+import { identityOf, transcriptIndex } from "../server/utils/sessions/transcripts.ts"
+import { planOf, storePath } from "../server/utils/sessions/store.ts"
 import type {
   BaselineOrigin,
   ConversationVersions,
@@ -16,7 +16,7 @@ import type {
   FileVersion,
   RestoreResult,
   VersionContent,
-} from "../sidecar/shared/types/versions.ts"
+} from "../shared/types/versions.ts"
 
 const LOCK_STALE_MS = 60_000
 

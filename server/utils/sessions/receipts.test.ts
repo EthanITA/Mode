@@ -6,10 +6,13 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
 import { DELTA_KEY, RECEIPTS_DIR, useReceiptFixtures } from "./__fixtures__/env.ts"
+import { resolvePluginRoot } from "../mode/paths.ts"
 import { applyEdit, receiptsOf, removedPaths, turnsOf } from "./receipts.ts"
 import { invertEdit, planOf } from "./store.ts"
 
-const BIN = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "bin", "versions.ts")
+// Climbs to the folder holding .claude-plugin rather than counting "..": a hand-counted
+// depth silently walked out of the repo when the app was hoisted to the root.
+const BIN = join(resolvePluginRoot(dirname(fileURLToPath(import.meta.url)), ""), "bin", "versions.ts")
 
 let restore: () => void
 

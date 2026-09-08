@@ -14,7 +14,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@cela/design": "file:../../cela/packages/design",
+    "@cela/design": "file:../cela/packages/design",
     "@lucide/vue": "^1.16.0",
     "@vueuse/core": "^14.3.0",
     "animejs": "^4.4.1",
