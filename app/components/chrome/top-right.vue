@@ -24,24 +24,41 @@ function toggleComment(): void {
 <template>
   <div class="top-right" data-region="top-right">
     <template v-if="atConversation">
-      <UiSegmented
-        v-if="faces.length > 1"
-        v-model="face"
-        data-region="view-switcher"
-        :options="faces"
-      />
-
-      <!-- Bare: the chip already draws a background, so a surface behind it read as two. -->
-      <UiChip
-        class="comment"
-        data-region="comment-arm"
-        :selected="chrome.comment.armed.value"
-        title="Comment on anything · hold C"
-        @click="toggleComment"
+      <UiSurface
+        v-if="chrome.view.current.value === 'canvas'"
+        class="zoom"
+        data-region="canvas-zoom"
+        pad="none"
+        shape="pill"
+        variant="glass-liquid"
       >
-        <UiIcon :icon="MessageSquare" size="sm" />
-        Comment
-      </UiChip>
+        <UiCanvasZoom
+          :zoom="chrome.canvas.zoom.value ?? 1"
+          @step="chrome.canvas.step.value?.($event)"
+          @reset="chrome.canvas.reset.value?.()"
+        />
+      </UiSurface>
+
+      <UiSurface v-if="faces.length > 1" class="pill" pad="none" shape="pill" variant="glass">
+        <UiSegmented
+          v-model="face"
+          data-region="view-switcher"
+          :options="faces"
+        />
+      </UiSurface>
+
+      <UiSurface class="comment-cell" data-region="comment-arm" pad="none" shape="pill" variant="glass-liquid">
+        <button
+          type="button"
+          class="plain-button focusable comment"
+          :data-armed="chrome.comment.armed.value"
+          title="Comment on anything · hold C"
+          @click="toggleComment"
+        >
+          <UiIcon :icon="MessageSquare" size="sm" />
+          Comment
+        </button>
+      </UiSurface>
     </template>
 
     <UiSurface class="pill theme" data-region="theme-toggle" pad="none" shape="pill" variant="glass">
@@ -66,9 +83,34 @@ function toggleComment(): void {
   padding: 0 6px;
 }
 
-/* Sits in the row on its own height rather than being padded out to the row's. */
-.comment {
+.zoom,
+.comment-cell {
+  align-items: center;
+  display: flex;
   flex: none;
+  height: var(--island-row-h);
+}
+
+.comment-cell {
+  overflow: hidden;
+}
+
+.comment {
+  align-items: center;
+  background: transparent;
+  border-radius: inherit;
+  color: var(--ink);
+  display: inline-flex;
+  font-size: 12.5px;
+  font-weight: 600;
+  gap: 8px;
+  height: 100%;
+  padding: 0 14px;
+}
+
+.comment[data-armed="true"] {
+  background: var(--primary);
+  color: var(--primary-content);
 }
 
 .theme {

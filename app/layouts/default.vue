@@ -2,14 +2,30 @@
 import { useResizeObserver } from "@vueuse/core";
 
 const sc = useSidecar();
+const chrome = useChrome();
 
 const dockEl = useTemplateRef<HTMLElement>("dockEl");
+const boardEl = useTemplateRef<HTMLElement>("boardEl");
 const dockHeight = ref(0);
 
-// Published so a panelled face can reserve exactly what the dock covers: expanding the
-// transcript then lifts the reading surface instead of burying its last line.
+// --dock-h is the composer alone; frame.set also takes the board so the canvas can fit around both.
+function publish(dock: number, board: number): void {
+  dockHeight.value = dock;
+  chrome.frame.set({ dock, board });
+}
+
 useResizeObserver(dockEl, ([entry]) => {
-  dockHeight.value = Math.round(entry?.contentRect.height ?? 0);
+  publish(
+    Math.round(entry?.contentRect.height ?? 0),
+    Math.round(boardEl.value?.getBoundingClientRect().width ?? 0),
+  );
+});
+
+useResizeObserver(boardEl, ([entry]) => {
+  publish(
+    Math.round(dockEl.value?.getBoundingClientRect().height ?? 0),
+    Math.round(entry?.contentRect.width ?? 0),
+  );
 });
 </script>
 
@@ -29,8 +45,8 @@ useResizeObserver(dockEl, ([entry]) => {
 
     <!-- One row, so the composer takes whatever width the board leaves rather than
          the two hugging opposite corners and colliding in the middle. -->
-    <div ref="dockEl" class="foot" data-region="dock-row">
-      <div class="foot-dock" data-region="dock-corner">
+    <div class="foot" data-region="dock-row">
+      <div ref="dockEl" class="foot-dock" data-region="dock-corner">
         <p v-if="sc.failure.value" class="failure" role="alert">
           The sidecar server did not answer: {{ sc.failure.value }}
         </p>
@@ -38,7 +54,7 @@ useResizeObserver(dockEl, ([entry]) => {
         <slot name="dock" />
       </div>
 
-      <div class="foot-board" data-region="board-corner">
+      <div ref="boardEl" class="foot-board" data-region="board-corner">
         <slot name="board" />
       </div>
     </div>
@@ -58,7 +74,7 @@ useResizeObserver(dockEl, ([entry]) => {
 }
 
 .row {
-  align-items: flex-start;
+  align-items: center;
   display: flex;
   gap: 8px;
   left: var(--gutter);
