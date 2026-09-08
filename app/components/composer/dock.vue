@@ -5,8 +5,23 @@ import type { TranscriptState } from "./transcript.vue";
 const convo = useConversation();
 const tray = useTray();
 const { liveState, steps } = useScreen();
+const chrome = useChrome();
 
 const state = ref<TranscriptState>("preview");
+const remembered = ref<TranscriptState>("preview");
+
+watch(
+  () => chrome.islands.shelved.value,
+  (on) => {
+    if (on) {
+      remembered.value = state.value;
+      state.value = "minimized";
+      return;
+    }
+    state.value = remembered.value;
+  },
+  { immediate: true },
+);
 
 const load = computed(() => {
   const comments = tray.items.value.filter((item) => item.kind !== "task").length;

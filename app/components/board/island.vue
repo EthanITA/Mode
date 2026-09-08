@@ -3,12 +3,27 @@ import { ChevronDown, ChevronUp } from "@lucide/vue";
 
 const sc = useSidecar();
 const board = useBoard(sc.sessionKey);
+const chrome = useChrome();
 
 const open = ref(true);
+const remembered = ref(true);
 const newTask = ref("");
 const draggedId = ref<string>();
 const overId = ref<string>();
 const overEnd = ref(false);
+
+watch(
+  () => chrome.islands.shelved.value,
+  (on) => {
+    if (on) {
+      remembered.value = open.value;
+      open.value = false;
+      return;
+    }
+    open.value = remembered.value;
+  },
+  { immediate: true },
+);
 
 const agents = computed(() => sc.sessions.value.find((session) => session.key === sc.sessionKey.value)?.agents ?? []);
 const tasks = computed(() => board.summary.value?.tasks ?? []);

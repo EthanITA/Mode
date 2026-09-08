@@ -63,6 +63,7 @@ export interface Chrome {
     insets: Ref<FrameInsets>;
     set: (measure: { dock: number; board: number }) => void;
   };
+  islands: { shelved: Ref<boolean> };
   jump: { close: () => void; open: Ref<boolean>; toggle: () => void };
   toast: (text: string, tone?: ToastTone) => void;
   toasts: Ref<Toast[]>;
@@ -97,11 +98,20 @@ export function useChrome(): Chrome {
     bottom: 0,
     left: 0,
   }));
+  const shelved = useState<boolean>("sc:islands-shelved", () => false);
 
   // Clamping here rather than on the click is what makes an unbuilt view unreachable:
   // a stored pick whose domain never landed can never be the current face.
   const current = computed<Face>(() =>
     faces.value.includes(picked.value) ? picked.value : (faces.value[0] ?? "canvas"),
+  );
+
+  watch(
+    current,
+    (face) => {
+      shelved.value = face === "history" || face === "read";
+    },
+    { immediate: true },
   );
 
   // A colour asserts an outcome, and most of these only say a message left.
@@ -196,6 +206,7 @@ export function useChrome(): Chrome {
     },
     dismiss,
     frame: { insets, set },
+    islands: { shelved },
     jump: {
       close: () => {
         jumpOpen.value = false;
