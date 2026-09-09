@@ -28,7 +28,7 @@ export async function ensureServer(url: string, autoStart: boolean, timeoutMs: n
   }
 
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
-  const child: ChildProcess = spawn('npm', ['run', 'dev'], {
+  const child: ChildProcess = spawn('pnpm', ['run', 'dev'], {
     cwd: root,
     stdio: ['ignore', 'ignore', 'pipe'],
     detached: false,
@@ -54,7 +54,7 @@ export async function ensureServer(url: string, autoStart: boolean, timeoutMs: n
   }
   stop()
   throw new Error(
-    `Started \`npm run dev\` but ${url} never answered within ${timeoutMs}ms. ` +
+    `Started \`pnpm run dev\` but ${url} never answered within ${timeoutMs}ms. ` +
       `If the app is already running on another port, pass --url, or set NUXT_PORT.`,
   )
 }

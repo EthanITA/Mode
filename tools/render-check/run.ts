@@ -32,8 +32,8 @@ const HELP = `mode sidecar · render check
 Renders the running app in headless Chrome and reports what is actually on the
 screen, region by region. Structure and presence only — never taste.
 
-  npm run check:render                 attach to the running app
-  npm run check:render -- --json r.json  also write the structured report
+  pnpm check:render                attach to the running app
+  pnpm check:render --json r.json  also write the structured report
 
 It attaches to a server someone else is running and never starts or stops one,
 because two things managing one dev server is its own bug.
