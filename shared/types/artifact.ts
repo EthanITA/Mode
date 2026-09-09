@@ -45,9 +45,10 @@ export type ArtifactEditAction = "accept" | "apply" | "revert"
 
 export interface ArtifactEditRequest {
   action?: ArtifactEditAction
-  block?: string
+  id?: string
+  path: string
   replacement?: string
-  selection: string
+  selection?: string
 }
 
 export interface ArtifactEditReply {

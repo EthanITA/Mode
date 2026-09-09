@@ -43,6 +43,8 @@ let watchers: (() => void)[] = [];
 let indexed: Indexed[] = [];
 let hot: Element | undefined;
 let picked: Element | undefined;
+let raf = 0;
+let loadGen = 0;
 
 function norm(text: string | undefined): string {
   return (text || "").replace(/\s+/g, " ").trim();
@@ -162,6 +164,10 @@ function locate(hit?: { path: string; text: string }): Element | undefined {
 }
 
 function teardown(): void {
+  if (raf) {
+    cancelAnimationFrame(raf);
+    raf = 0;
+  }
   for (const off of watchers) off();
   watchers = [];
   indexed = [];
@@ -170,6 +176,7 @@ function teardown(): void {
 }
 
 function reset(): void {
+  loadGen += 1;
   loaded.value = false;
   height.value = 0;
   teardown();
@@ -181,6 +188,7 @@ function onLoad(): void {
   teardown();
   const doc = frame.value?.contentDocument;
   if (!doc) return;
+  const gen = loadGen;
 
   indexBlocks(doc);
 
@@ -203,9 +211,13 @@ function onLoad(): void {
   picked = restored;
   if (held && !restored) chrome.comment.select(undefined);
   publish();
-  emit("ready");
+  void nextTick(() => {
+    if (gen !== loadGen) return;
+    emit("ready");
+  });
 
-  const resize = new ResizeObserver(remeasure);
+  // rAF: a sync size write inside ResizeObserver re-notifies the same observer.
+  const resize = new ResizeObserver(() => scheduleRepublish());
   resize.observe(doc.body ?? doc.documentElement);
   watchers.push(() => resize.disconnect());
 
@@ -255,23 +267,21 @@ function onLoad(): void {
     if (event.key.toLowerCase() === "c") chrome.comment.release();
   };
 
-  const republish = (): void => publish();
-
   doc.addEventListener("mousemove", onMove);
   doc.addEventListener("mouseleave", onLeave);
   doc.addEventListener("click", onClick, true);
   doc.addEventListener("keydown", onKeyDown);
   doc.addEventListener("keyup", onKeyUp);
-  window.addEventListener("scroll", republish, true);
-  window.addEventListener("resize", republish);
+  window.addEventListener("scroll", scheduleRepublish, true);
+  window.addEventListener("resize", scheduleRepublish);
   watchers.push(() => {
     doc.removeEventListener("mousemove", onMove);
     doc.removeEventListener("mouseleave", onLeave);
     doc.removeEventListener("click", onClick, true);
     doc.removeEventListener("keydown", onKeyDown);
     doc.removeEventListener("keyup", onKeyUp);
-    window.removeEventListener("scroll", republish, true);
-    window.removeEventListener("resize", republish);
+    window.removeEventListener("scroll", scheduleRepublish, true);
+    window.removeEventListener("resize", scheduleRepublish);
   });
 }
 
@@ -296,6 +306,22 @@ function publish(): void {
     const hit = hitOf(hot);
     if (hit && chrome.comment.armed.value) chrome.comment.light(ringOf(hit));
   } else if (!picked && !hot) chrome.comment.light(undefined);
+}
+
+function scheduleRepublish(): void {
+  if (raf) return;
+  raf = requestAnimationFrame(() => {
+    raf = 0;
+    const doc = frame.value?.contentDocument;
+    if (doc) {
+      const next = doc.body?.scrollHeight || doc.documentElement.scrollHeight;
+      if (next !== height.value) height.value = next;
+      emit("anchors", readAnchors(doc));
+      emit("marks", measure(doc));
+      emit("pending", readPending(doc));
+    }
+    publish();
+  });
 }
 
 function clearPick(): void {
@@ -336,13 +362,15 @@ function readPending(doc: Document): FramePending[] {
     if (!id || seen.has(id)) continue;
     seen.add(id);
     const ins = doc.querySelector(`ins[data-sc-edit="${CSS.escape(id)}"]`);
+    const host = del.parentElement;
+    if (!host) continue;
     const box = (ins ?? del).getBoundingClientRect();
     const scroll = doc.documentElement.scrollTop;
     out.push({
       id,
       left: box.right,
+      path: pathOf(host),
       replacement: norm(ins?.textContent || undefined),
-      selection: norm(del.textContent || undefined),
       top: box.top + scroll,
     });
   }

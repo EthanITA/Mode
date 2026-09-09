@@ -23,8 +23,11 @@ const measured = ref(false);
 const panel = ref<FrameSelection>();
 const pendingEdits = ref<FramePending[]>([]);
 const edition = ref(0);
+const awaiting = ref(false);
+const closedIds = new Set<string>();
 const heldScroll = ref(false);
 const heldTop = ref(0);
+const frameReady = ref(false);
 const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
 
@@ -77,28 +80,43 @@ function stageOf(): HTMLElement | undefined {
   return (document.scrollingElement as HTMLElement | undefined) ?? undefined;
 }
 
-function rememberScroll(): void {
-  const root = stageOf();
-  if (!root) return;
-  heldScroll.value = true;
-  heldTop.value = root.scrollTop;
+function holdScroll(): void {
+  if (!heldScroll.value) {
+    const root = stageOf();
+    if (root) {
+      heldScroll.value = true;
+      heldTop.value = root.scrollTop;
+    }
+  }
+  frameReady.value = false;
 }
 
-function restoreScroll(): void {
-  if (!heldScroll.value) return;
+function tryRestore(): void {
+  if (!heldScroll.value || !frameReady.value) return;
   const root = stageOf();
   if (root) root.scrollTop = heldTop.value;
   heldScroll.value = false;
 }
 
 function bump(): void {
-  rememberScroll();
+  holdScroll();
   edition.value += 1;
 }
 
 function closeInline(): void {
+  awaiting.value = false;
   panel.value = undefined;
   frame.value?.clearPick();
+}
+
+function takePending(next: FramePending[]): void {
+  pendingEdits.value = next.filter((edit) => !closedIds.has(edit.id));
+}
+
+function onReady(): void {
+  frameReady.value = true;
+  tryRestore();
+  awaiting.value = pendingEdits.value.length > 0;
 }
 
 function openInline(): void {
@@ -108,22 +126,40 @@ function openInline(): void {
 }
 
 function onApplied(): void {
+  awaiting.value = true;
   bump();
-  pendingEdits.value = [];
-  closeInline();
+}
+
+function settleMessage(error: unknown): string {
+  if (typeof error !== "object" || !error) return "That change could not be settled";
+  const rec = error as { data?: unknown; statusMessage?: unknown };
+  const data = rec.data;
+  if (typeof data === "object" && data) {
+    const body = data as { statusMessage?: unknown; message?: unknown };
+    if (typeof body.statusMessage === "string" && body.statusMessage) return body.statusMessage;
+    if (typeof body.message === "string" && body.message) return body.message;
+  }
+  if (typeof rec.statusMessage === "string" && rec.statusMessage) return rec.statusMessage;
+  return "That change could not be settled";
 }
 
 async function settle(action: "accept" | "revert", edit: FramePending): Promise<void> {
   const slug = sc.slug.value;
   if (!slug) return;
+  holdScroll();
   try {
     await $fetch(`/api/artifacts/${slug}/edit`, {
-      body: { action, selection: edit.selection },
+      body: { action, id: edit.id, path: edit.path },
       method: "POST",
     });
+    closedIds.add(edit.id);
+    pendingEdits.value = pendingEdits.value.filter((row) => row.id !== edit.id);
+    if (!pendingEdits.value.length) closeInline();
     bump();
-  } catch {
-    chrome.toast("That change could not be settled", "destructive");
+  } catch (error) {
+    heldScroll.value = false;
+    frameReady.value = true;
+    chrome.toast(settleMessage(error), "destructive");
   }
 }
 
@@ -142,10 +178,25 @@ watch([() => sc.slug.value, () => versions.at.value], () => {
   measured.value = false;
   panel.value = undefined;
   pendingEdits.value = [];
+  awaiting.value = false;
+  closedIds.clear();
   chrome.comment.select(undefined);
 });
 
+function onWin(event: KeyboardEvent): void {
+  if (event.key !== "Escape") return;
+  const [edit] = pendingEdits.value;
+  if (!edit) return;
+  event.preventDefault();
+  void settle("revert", edit);
+}
+
+onMounted(() => {
+  window.addEventListener("keydown", onWin);
+});
+
 onScopeDispose(() => {
+  window.removeEventListener("keydown", onWin);
   inlineArmed.value = false;
 });
 </script>
@@ -183,8 +234,8 @@ onScopeDispose(() => {
         :version="versions.at.value"
         @edit="openInline"
         @marks="onMarks"
-        @pending="pendingEdits = $event"
-        @ready="restoreScroll"
+        @pending="takePending"
+        @ready="onReady"
       />
 
       <div v-else class="gap" data-region="read-gap">
@@ -204,6 +255,7 @@ onScopeDispose(() => {
 
       <ReadInline
         v-if="panel"
+        :held="awaiting || pendingEdits.length > 0"
         :live="live"
         :selection="panel"
         :slug="sc.slug.value"

@@ -40,7 +40,7 @@ export interface FrameSelection {
 export interface FramePending {
   id: string;
   left: number;
+  path: string;
   replacement: string;
-  selection: string;
   top: number;
 }

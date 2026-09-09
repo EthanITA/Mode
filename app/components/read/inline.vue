@@ -2,7 +2,8 @@
 import type { FastModelReply, FastModelRequest } from "~~/shared/types/models";
 import type { FrameSelection } from "~/types/frame";
 
-const { live = true, selection, slug } = defineProps<{
+const props = defineProps<{
+  held?: boolean;
   live?: boolean;
   selection: FrameSelection;
   slug: string;
@@ -19,8 +20,8 @@ const pending = ref(false);
 const field = ref<{ $el: HTMLInputElement }>();
 const panel = ref<HTMLElement>();
 
-const left = computed(() => Math.max(0, selection.left - PANEL_W / 2));
-const top = computed(() => selection.bottom + 8);
+const left = computed(() => Math.max(0, props.selection.left - PANEL_W / 2));
+const top = computed(() => props.selection.bottom + 8);
 
 function failStatus(error: unknown): number {
   if (typeof error !== "object" || !error) return 0;
@@ -35,27 +36,41 @@ function toastFail(error: unknown): void {
   const status = failStatus(error);
   if (status === 503) chrome.toast("No model credential is configured", "warning");
   else if (status === 502) chrome.toast("Both models failed", "destructive");
-  else if (status === 409) chrome.toast("That text is not unique on the page", "warning");
   else chrome.toast("The model could not finish that", "destructive");
 }
 
+function editMessage(error: unknown): string {
+  if (typeof error !== "object" || !error) return "The edit could not be applied";
+  const rec = error as { data?: unknown; statusMessage?: unknown };
+  const data = rec.data;
+  if (typeof data === "object" && data) {
+    const body = data as { statusMessage?: unknown; message?: unknown };
+    if (typeof body.statusMessage === "string" && body.statusMessage) return body.statusMessage;
+    if (typeof body.message === "string" && body.message) return body.message;
+  }
+  if (typeof rec.statusMessage === "string" && rec.statusMessage) return rec.statusMessage;
+  return "The edit could not be applied";
+}
+
 function contextOf(): string {
-  return [selection.mark.text, selection.path, sc.artifact.value?.path].filter(Boolean).join("\n");
+  return [props.selection.mark.text, props.selection.path, sc.artifact.value?.path].filter(Boolean).join("\n");
 }
 
 async function ask(): Promise<void> {
   const text = instruction.value.trim();
   if (!text || pending.value) return;
+  const { live = true, selection, slug } = props;
   if (!live) {
     chrome.toast("Switch to latest to change the page", "warning");
     return;
   }
+  const quote = selection.quote;
   pending.value = true;
   try {
     const body = {
       context: contextOf(),
       instruction: text,
-      selection: selection.quote,
+      selection: quote,
       task: "edit",
     } satisfies FastModelRequest;
     const reply = await $fetch<FastModelReply>("/api/models/fast", { body, method: "POST" });
@@ -63,12 +78,16 @@ async function ask(): Promise<void> {
       chrome.toast("The model answered instead of editing", "warning");
       return;
     }
-    await $fetch(`/api/artifacts/${slug}/edit`, {
-      body: { block: selection.mark.text, replacement: reply.replacement, selection: selection.quote },
-      method: "POST",
-    });
+    try {
+      await $fetch(`/api/artifacts/${slug}/edit`, {
+        body: { path: selection.path, replacement: reply.replacement, selection: quote },
+        method: "POST",
+      });
+    } catch (error) {
+      chrome.toast(editMessage(error), "destructive");
+      return;
+    }
     emit("applied");
-    emit("done");
   } catch (error) {
     toastFail(error);
   } finally {
@@ -76,9 +95,20 @@ async function ask(): Promise<void> {
   }
 }
 
+function dismiss(): void {
+  if (props.held) return;
+  emit("done");
+}
+
+function dismissIdle(): void {
+  // Disable-on-pending blurs the field; that must not abort the in-flight edit.
+  if (pending.value) return;
+  dismiss();
+}
+
 function onFieldKey(event: KeyboardEvent): void {
   if (event.key === "Escape") {
-    emit("done");
+    dismiss();
     return;
   }
   if (event.key !== "Enter" || event.shiftKey) return;
@@ -94,13 +124,13 @@ function outside(node: EventTarget | undefined): boolean {
 onMounted(() => {
   void nextTick(() => field.value?.$el.focus());
   const onWin = (event: KeyboardEvent): void => {
-    if (event.key === "Escape") emit("done");
+    if (event.key === "Escape") dismiss();
   };
   const onFocus = (event: FocusEvent): void => {
-    if (outside(event.relatedTarget ?? document.activeElement ?? undefined)) emit("done");
+    if (outside(event.relatedTarget ?? document.activeElement ?? undefined)) dismissIdle();
   };
   const onDown = (event: MouseEvent): void => {
-    if (outside(event.target ?? undefined)) emit("done");
+    if (outside(event.target ?? undefined)) dismissIdle();
   };
   window.addEventListener("keydown", onWin);
   window.addEventListener("mousedown", onDown);
