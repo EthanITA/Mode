@@ -7,15 +7,26 @@ export interface TrayChatLine {
   text: string;
 }
 
+export interface TrayReply {
+  at: string;
+  by: string;
+  id: string;
+  text: string;
+}
+
 export interface TrayItem {
   block?: string;
   chat?: TrayChatLine[];
+  file?: string;
   id: string;
   kind: TrayKind;
   mark?: string;
+  path?: string;
   quote?: string;
+  replies?: TrayReply[];
   source?: string;
   text: string;
+  thread?: string;
   top?: number;
 }
 
@@ -23,12 +34,16 @@ export interface TrayDraft {
   /** `<intent>:<entity>`, never the bare entity: two intents on one thread must coexist, a re-drop of one replace. */
   block?: string;
   chat?: TrayChatLine[];
+  file?: string;
   id?: string;
   kind: TrayKind;
   mark?: string;
+  path?: string;
   quote?: string;
+  replies?: TrayReply[];
   source?: string;
   text: string;
+  thread?: string;
   top?: number;
 }
 
@@ -49,9 +64,15 @@ export interface Tray {
 function line(item: TrayItem): string {
   if (item.kind === "task") return `Task: ${item.text}`;
   const at = item.quote ? `“${item.quote}”` : item.source;
-  const head = at ? `${at} — ${item.text}` : item.text;
-  if (!item.chat?.length) return head;
-  return `${head}\n${item.chat.map((turn) => `${turn.role}: ${turn.text}`).join("\n")}`;
+  const where = [item.path, item.file].filter(Boolean).join(" in ");
+  const loc = [at, where].filter(Boolean).join(" · ");
+  const head = loc ? `${loc} — ${item.text}` : item.text;
+  const extra = [
+    ...(item.replies ?? []).map((reply) => `${reply.by}: ${reply.text}`),
+    ...(item.chat ?? []).map((turn) => `${turn.role}: ${turn.text}`),
+  ];
+  if (!extra.length) return head;
+  return `${head}\n${extra.join("\n")}`;
 }
 
 export function useTray(): Tray {
@@ -110,7 +131,7 @@ export function useTray(): Tray {
       if (!key) return;
       write(
         key,
-        (held.value[key] ?? []).filter((row) => !sent.has(row.id)),
+        (held.value[key] ?? []).filter((row) => !sent.has(row.id) || row.kind === "comment"),
       );
     }
 

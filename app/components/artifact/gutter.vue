@@ -28,6 +28,7 @@ const placed = computed(() => anchorThreads({ anchors, marks, threads }));
 function isGutterNote(item: TrayItem): boolean {
   if (item.kind !== "comment") return false;
   if (!item.mark && !item.block && !item.quote) return false;
+  if (item.file && sc.artifact.value?.path && item.file !== sc.artifact.value.path) return false;
   return !item.source || item.source === sc.slug.value;
 }
 
@@ -50,6 +51,20 @@ const placedNotes = computed(() => {
   });
 });
 
+const linked = computed(() => new Set(placedNotes.value.map((row) => row.item.thread).filter(Boolean)));
+
+const pageCards = computed(() => {
+  const used = linked.value;
+  const out: { top: number; thread: (typeof threads)[number] }[] = [];
+  for (const pin of placed.value.pins) {
+    for (const thread of pin.threads) {
+      if (thread.status === "resolved" || used.has(thread.id)) continue;
+      out.push({ top: pin.top, thread });
+    }
+  }
+  return out;
+});
+
 // Threads the rewrite left behind still have to be reachable, so they collect under one chip.
 const adrift = computed<Pin | undefined>(() => {
   const loose = placed.value.orphans;
@@ -70,31 +85,13 @@ const away = computed(() => (side === "right" ? "left" : "right"));
 
 <template>
   <div class="gutter" data-region="gutter-markers" :data-side="side">
-    <div v-for="pin in placed.pins" :key="pin.key" class="perch" :style="{ top: `${pin.top}px` }">
-      <UiPopover :estimated-height="320" :placement="away" width="w-[380px]">
-        <template #trigger="{ open }">
-          <button
-            class="marker focusable plain-button"
-            type="button"
-            :data-open="open ? '' : undefined"
-            :data-resolved="pin.resolved ? '' : undefined"
-            :data-state="pin.state"
-            :title="pin.label || 'Somewhere on the page'"
-          >
-            <svg v-if="pin.resolved" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.3 4.8 8.6 9.5 3.9" /></svg>
-            <template v-else>
-              <svg class="bubble" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-              <span class="count">{{ pin.threads.length }}</span>
-            </template>
-          </button>
-        </template>
-
-        <template #default="{ close }">
-          <ReadThread :pin="pin" :slug="sc.slug.value ?? ''" @close="close" />
-        </template>
-      </UiPopover>
+    <div
+      v-for="row in pageCards"
+      :key="row.thread.id"
+      class="perch perch-note"
+      :style="{ top: `${row.top}px` }"
+    >
+      <ReadNote :live="live" :slug="sc.slug.value ?? ''" :thread="row.thread" @reload="emit('reload')" />
     </div>
 
     <div v-if="adrift" class="perch perch-foot">
@@ -122,17 +119,15 @@ const away = computed(() => (side === "right" ? "left" : "right"));
       class="perch perch-note"
       :style="{ top: `${row.top}px` }"
     >
-      <UiSurface pad="none" variant="raised">
-        <ReadNote
-          :item="row.item"
-          :live="live"
-          :slug="sc.slug.value ?? ''"
-          @reload="emit('reload')"
-        />
-      </UiSurface>
+      <ReadNote
+        :item="row.item"
+        :live="live"
+        :slug="sc.slug.value ?? ''"
+        @reload="emit('reload')"
+      />
     </div>
 
-    <p v-if="!placed.pins.length && !adrift && !placedNotes.length" class="none mono-meta">
+    <p v-if="!pageCards.length && !adrift && !placedNotes.length" class="none mono-meta">
       {{ threads.length ? "no notes here" : "no notes" }}
     </p>
   </div>
@@ -180,65 +175,6 @@ const away = computed(() => (side === "right" ? "left" : "right"));
   writing-mode: vertical-rl;
 }
 
-.marker {
-  align-items: center;
-  background: var(--raised);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-selector);
-  color: var(--muted);
-  display: flex;
-  gap: 3px;
-  height: 24px;
-  justify-content: center;
-  padding: 0 7px;
-  transition:
-    border-color var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out);
-}
-
-.marker:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  transform: scale(1.08);
-}
-
-.marker[data-open] {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-content);
-}
-
-.marker[data-resolved] {
-  border-color: color-mix(in oklch, var(--success) 45%, transparent);
-  color: var(--success);
-}
-
-/* A label match places the note in the right section, not on the right sentence. */
-.marker[data-state="label"] {
-  border-style: dashed;
-}
-
-.count {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 500;
-}
-
-.marker svg {
-  fill: none;
-  height: 11px;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-  width: 11px;
-}
-
-.bubble {
-  stroke-width: 2.2;
-}
-
 .loose {
   background: var(--raised);
   border: 1px dashed var(--border-strong);
@@ -253,9 +189,4 @@ const away = computed(() => (side === "right" ? "left" : "right"));
   color: var(--primary);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .marker {
-    transition: none;
-  }
-}
 </style>

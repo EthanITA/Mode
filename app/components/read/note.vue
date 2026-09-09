@@ -1,29 +1,33 @@
 <script lang="ts" setup>
-import { Pencil, Send, X, Zap } from "@lucide/vue";
+import { Check, Zap } from "@lucide/vue";
 import type { FastModelReply, FastModelRequest } from "~~/shared/types/models";
-import type { TrayItem } from "~/composables/useTray";
+import type { ArtifactReviewReply, ReviewThread } from "~~/shared/types/artifact";
+import type { TrayItem, TrayReply } from "~/composables/useTray";
 
-const { item, live = true, slug } = defineProps<{
-  item: TrayItem;
+const { item, live = true, slug, thread } = defineProps<{
+  item?: TrayItem;
   live?: boolean;
   slug: string;
+  thread?: ReviewThread;
 }>();
 
-const emit = defineEmits<{ close: []; reload: [] }>();
+const emit = defineEmits<{ reload: [] }>();
 
 const chrome = useChrome();
 const tray = useTray();
-const convo = useConversation();
-const draft = ref(item.text);
-const editing = ref(false);
-const busy = ref<"address" | "edit" | "quick">();
+const sc = useSidecar();
+const draft = ref("");
+const busy = ref<"ask" | "reply" | "resolve">();
 
-watch(
-  () => item.text,
-  (text) => {
-    if (!editing.value) draft.value = text;
-  },
-);
+const quote = computed(() => item?.quote || thread?.anchor?.quote || item?.block || thread?.anchor?.text);
+const label = computed(() => thread?.anchor?.label || item?.source);
+const body = computed(() => item?.text || thread?.body || "");
+const replies = computed<Array<{ at: string; by: string; id: string; text: string }>>(() => {
+  const fromItem = (item?.replies ?? []).map((row) => ({ at: row.at, by: row.by, id: row.id, text: row.text }));
+  const fromThread = (thread?.replies ?? []).map((row) => ({ at: row.at, by: row.by, id: row.id, text: row.body }));
+  if (fromItem.length) return fromItem;
+  return fromThread;
+});
 
 function failStatus(error: unknown): number {
   if (typeof error !== "object" || !error) return 0;
@@ -38,80 +42,114 @@ function toastFail(error: unknown): void {
   const status = failStatus(error);
   if (status === 503) chrome.toast("No model credential is configured", "warning");
   else if (status === 502) chrome.toast("Both models failed", "destructive");
-  else if (status === 409) chrome.toast("That text is not unique on the page", "warning");
   else chrome.toast("That note could not be sent", "destructive");
 }
 
-function save(): void {
-  const text = draft.value.trim();
-  if (!text) return;
-  tray.patch(item.id, { text });
-  editing.value = false;
+function filePath(): string | undefined {
+  return item?.file || sc.artifact.value?.path;
 }
 
-function discard(): void {
-  tray.remove(item.id);
-  emit("close");
+function elementPath(): string | undefined {
+  return item?.path || thread?.anchor?.sel;
 }
 
-function onKey(event: KeyboardEvent): void {
-  if (event.key === "Escape") {
-    draft.value = item.text;
-    editing.value = false;
-    return;
-  }
-  if (event.key !== "Enter" || event.shiftKey) return;
-  event.preventDefault();
-  save();
+function elementText(): string {
+  return item?.block || thread?.anchor?.text || quote.value || "";
 }
 
-async function address(): Promise<void> {
+function modelContext(): string {
+  return [elementText(), elementPath(), filePath()].filter(Boolean).join("\n");
+}
+
+async function refresh(threads: ReviewThread[]): Promise<void> {
+  if (!sc.artifact.value) return;
+  sc.artifact.value = { ...sc.artifact.value, threads };
+}
+
+async function onReply(text: string): Promise<void> {
   if (busy.value) return;
-  busy.value = "address";
+  busy.value = "reply";
   try {
-    const handover = tray.handOver("", item.id);
-    if (!handover.text) return;
-    if (!(await convo.deliver(handover.text))) {
-      chrome.toast("That note could not be sent", "destructive");
-      return;
+    if (item) {
+      const next: TrayReply = {
+        at: new Date().toISOString(),
+        by: "user",
+        id: crypto.randomUUID(),
+        text,
+      };
+      tray.patch(item.id, { replies: [...(item.replies ?? []), next] });
     }
-    handover.settle();
-    chrome.toast("Sent to Claude");
-    emit("close");
+    const id = item?.thread || thread?.id;
+    if (id) {
+      const got = await $fetch<ArtifactReviewReply>(`/api/artifacts/${slug}/review`, {
+        body: { action: "reply", body: text, by: "user", id },
+        method: "POST",
+      });
+      await refresh(got.threads);
+    }
+    draft.value = "";
+  } catch (error) {
+    toastFail(error);
   } finally {
     busy.value = undefined;
   }
 }
 
-async function quick(): Promise<void> {
+async function ask(): Promise<void> {
   if (busy.value) return;
-  if (!live) {
-    chrome.toast("Switch to latest to change the page", "warning");
-    return;
-  }
-  if (!item.quote) {
-    chrome.toast("This note has no selection to edit", "warning");
-    return;
-  }
-  busy.value = "quick";
+  busy.value = "ask";
+  const history = replies.value.map((row) => ({
+    role: (row.by === "user" ? "user" : "assistant") as "assistant" | "user",
+    text: row.text,
+  }));
   try {
-    const body = {
-      context: item.block,
-      instruction: item.text,
-      selection: item.quote,
-      task: "edit",
+    const request = {
+      context: modelContext(),
+      history: [{ role: "user", text: body.value }, ...history],
+      instruction: draft.value.trim() || body.value,
+      selection: elementText(),
+      task: "chat",
     } satisfies FastModelRequest;
-    const reply = await $fetch<FastModelReply>("/api/models/fast", { body, method: "POST" });
-    if (reply.kind !== "edit") {
-      chrome.toast("The model answered instead of editing", "warning");
-      return;
+    const reply = await $fetch<FastModelReply>("/api/models/fast", { body: request, method: "POST" });
+    const said = reply.kind === "answer" ? reply.text : reply.replacement;
+    const by = reply.by;
+    if (item) {
+      tray.patch(item.id, {
+        replies: [
+          ...(item.replies ?? []),
+          { at: new Date().toISOString(), by, id: crypto.randomUUID(), text: said },
+        ],
+      });
     }
-    await $fetch(`/api/artifacts/${slug}/edit`, {
-      body: { block: item.block, replacement: reply.replacement, selection: item.quote },
-      method: "POST",
-    });
-    emit("reload");
-    emit("close");
+    const id = item?.thread || thread?.id;
+    if (id) {
+      const got = await $fetch<ArtifactReviewReply>(`/api/artifacts/${slug}/review`, {
+        body: { action: "reply", body: said, by, id },
+        method: "POST",
+      });
+      await refresh(got.threads);
+    }
+    draft.value = "";
+  } catch (error) {
+    toastFail(error);
+  } finally {
+    busy.value = undefined;
+  }
+}
+
+async function resolve(): Promise<void> {
+  if (busy.value) return;
+  busy.value = "resolve";
+  try {
+    const id = item?.thread || thread?.id;
+    if (id) {
+      const got = await $fetch<ArtifactReviewReply>(`/api/artifacts/${slug}/review`, {
+        body: { action: "resolve", id },
+        method: "POST",
+      });
+      await refresh(got.threads);
+    }
+    if (item) tray.remove(item.id);
   } catch (error) {
     toastFail(error);
   } finally {
@@ -121,52 +159,48 @@ async function quick(): Promise<void> {
 </script>
 
 <template>
-  <div class="note" data-region="gutter-note" :data-busy="busy">
-    <blockquote v-if="item.quote" class="quote">{{ item.quote }}</blockquote>
+  <UiSurface
+    class="card"
+    data-region="comment-card"
+    pad="none"
+    variant="raised"
+    :data-busy="busy"
+    :data-live="live"
+  >
+    <p v-if="label" class="where mono-meta">{{ label }}</p>
+    <blockquote v-if="quote" class="quote">{{ quote }}</blockquote>
+    <p class="body">{{ body }}</p>
 
-    <UiTextarea
-      v-if="editing"
-      v-model="draft"
-      auto-fit
-      placeholder="Edit this note…"
-      :rows="2"
-      @keydown="onKey"
-    />
-    <p v-else class="body">{{ item.text }}</p>
+    <div v-for="row in replies" :key="row.id" class="reply" data-region="comment-reply" :data-by="row.by">
+      <span class="who mono-meta">{{ row.by }}</span>
+      <p>{{ row.text }}</p>
+    </div>
+
+    <ReadCompose v-model="draft" :disabled="!!busy" placeholder="Reply…" @save="onReply" />
 
     <footer>
-      <UiIconButton
-        :icon="Pencil"
-        label="Edit this note"
-        size="xs"
-        :disabled="!!busy"
-        @click="editing = !editing"
-      >
-        Edit
-      </UiIconButton>
-      <UiIconButton :icon="Send" label="Address this note" size="xs" :disabled="!!busy" @click="address">
-        Address
-      </UiIconButton>
-      <UiIconButton :icon="Zap" label="Quick edit from this note" size="xs" :disabled="!!busy" @click="quick">
-        Quick edit
-      </UiIconButton>
-      <UiIconButton :icon="X" label="Remove this note" size="xs" :disabled="!!busy" @click="discard">
-        Remove
-      </UiIconButton>
+      <UiIconButton :icon="Zap" label="Ask AI" size="xs" :disabled="!!busy" @click="ask">Ask AI</UiIconButton>
+      <UiIconButton :icon="Check" label="Resolve" size="xs" :disabled="!!busy" @click="resolve">Resolve</UiIconButton>
     </footer>
-  </div>
+  </UiSurface>
 </template>
 
 <style scoped>
-.note {
+.card {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 12px 14px;
+  width: 280px;
 }
 
-.note[data-busy] {
+.card[data-busy] {
   opacity: 0.72;
+}
+
+.where {
+  color: var(--subtle);
+  margin: 0;
 }
 
 .quote {
@@ -181,10 +215,28 @@ async function quick(): Promise<void> {
   padding: 6px 10px;
 }
 
-.body {
+.body,
+.reply p {
   font-size: 13px;
   line-height: 1.5;
   margin: 0;
+}
+
+.reply {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reply[data-by="haiku"],
+.reply[data-by="gemini"],
+.reply[data-by="claude"] {
+  border-left: 2px solid var(--success);
+  padding-left: 8px;
+}
+
+.who {
+  color: var(--subtle);
 }
 
 footer {

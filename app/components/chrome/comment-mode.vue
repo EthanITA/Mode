@@ -1,20 +1,12 @@
 <script lang="ts" setup>
+import { MessageSquare, Pencil } from "@lucide/vue";
 import type { CommentTarget } from "~/composables/useChrome";
-
-interface Hover {
-  height: number;
-  label: string;
-  left: number;
-  top: number;
-  width: number;
-  x: number;
-  y: number;
-}
 
 const route = useRoute();
 const chrome = useChrome();
+const sc = useSidecar();
+const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 
-const hover = ref<Hover>();
 let lit: HTMLElement | undefined;
 let seen: CommentTarget | undefined;
 
@@ -40,19 +32,25 @@ function target(event: MouseEvent): HTMLElement | undefined {
   return event.target.closest<HTMLElement>("[data-cmt]") ?? undefined;
 }
 
+function fromFrame(event: Event): boolean {
+  const node = event.target;
+  return node instanceof HTMLIFrameElement || (node instanceof Element && !!node.closest("iframe"));
+}
+
 function onMove(event: MouseEvent): void {
   if (!chrome.comment.armed.value || chrome.comment.spot.value) return;
+  if (fromFrame(event)) return;
   const el = target(event);
   if (el !== lit) {
     lit = el;
     seen = el && describe(el);
   }
   if (!lit || !seen) {
-    hover.value = undefined;
+    if (!chrome.comment.pick.value) chrome.comment.light(undefined);
     return;
   }
   const box = lit.getBoundingClientRect();
-  hover.value = {
+  chrome.comment.light({
     height: box.height,
     label: `${seen.kind} · ${seen.label}`,
     left: box.left,
@@ -60,23 +58,25 @@ function onMove(event: MouseEvent): void {
     width: box.width,
     x: Math.min(event.clientX + 14, window.innerWidth - 360),
     y: event.clientY + 16,
-  };
+  });
 }
 
 // pointer events fire before mouse events, so this is the only place a card's own drag can be stopped.
 function onPointerDown(event: PointerEvent): void {
+  if (fromFrame(event)) return;
   if (!chrome.comment.armed.value || chrome.comment.spot.value || !target(event)) return;
   event.stopPropagation();
 }
 
 function onDown(event: MouseEvent): void {
   if (!chrome.comment.armed.value || chrome.comment.spot.value) return;
+  if (fromFrame(event)) return;
   const el = target(event);
   const found = el && describe(el);
   if (!found) return;
   event.preventDefault();
   event.stopPropagation();
-  hover.value = undefined;
+  chrome.comment.light(undefined);
   lit = undefined;
   chrome.comment.open({
     ...found,
@@ -87,6 +87,7 @@ function onDown(event: MouseEvent): void {
 
 // The element's own click would still fire after the popover opened over it.
 function onClick(event: MouseEvent): void {
+  if (fromFrame(event)) return;
   if (!chrome.comment.armed.value || !target(event)) return;
   event.preventDefault();
   event.stopPropagation();
@@ -97,10 +98,33 @@ watch(() => route.fullPath, chrome.comment.disarm);
 
 watch(chrome.comment.armed, (on) => {
   if (on) return;
-  hover.value = undefined;
   lit = undefined;
   seen = undefined;
 });
+
+function onComment(): void {
+  const hit = chrome.comment.pick.value;
+  if (!hit) return;
+  chrome.comment.open({
+    block: hit.text,
+    excerpt: hit.text,
+    file: sc.artifact.value?.path,
+    kind: "block",
+    label: hit.label || hit.path,
+    mark: hit.key,
+    path: hit.path,
+    quote: hit.text,
+    tell: [hit.path, sc.artifact.value?.path].filter(Boolean).join(" · ") || "On this block",
+    top: hit.top,
+    x: Math.min(Math.max(12, hit.viewLeft), window.innerWidth - 432),
+    y: Math.min(hit.viewTop + hit.height + 8, window.innerHeight - 300),
+  });
+}
+
+function onEdit(): void {
+  if (!chrome.comment.pick.value) return;
+  inlineAsk.value = true;
+}
 
 onMounted(() => {
   document.addEventListener("mousemove", onMove, true);
@@ -123,18 +147,35 @@ onMounted(() => {
       <span class="hint mono-meta">esc cancel</span>
     </p>
 
-    <template v-if="hover">
+    <template v-if="chrome.comment.hover.value">
       <span
         class="ring"
+        :data-selected="Boolean(chrome.comment.pick.value)"
         :style="{
-          height: `${hover.height}px`,
-          left: `${hover.left}px`,
-          top: `${hover.top}px`,
-          width: `${hover.width}px`,
+          height: `${chrome.comment.hover.value.height}px`,
+          left: `${chrome.comment.hover.value.left}px`,
+          top: `${chrome.comment.hover.value.top}px`,
+          width: `${chrome.comment.hover.value.width}px`,
         }"
       />
-      <span class="chip" :style="{ left: `${hover.x}px`, top: `${hover.y}px` }">{{ hover.label }}</span>
+      <span
+        class="chip"
+        :style="{ left: `${chrome.comment.hover.value.x}px`, top: `${chrome.comment.hover.value.y}px` }"
+      >{{ chrome.comment.hover.value.label }}</span>
     </template>
+
+    <div
+      v-if="chrome.comment.pick.value"
+      class="acts"
+      data-region="element-actions"
+      :style="{
+        left: `${chrome.comment.pick.value.viewLeft}px`,
+        top: `${chrome.comment.pick.value.viewTop + chrome.comment.pick.value.height + 8}px`,
+      }"
+    >
+      <UiIconButton :icon="MessageSquare" label="Comment" size="xs" @click="onComment">Comment</UiIconButton>
+      <UiIconButton :icon="Pencil" label="Edit" size="xs" @click="onEdit">Edit</UiIconButton>
+    </div>
   </div>
 
   <ChromeCommentPopover v-if="chrome.comment.spot.value" :spot="chrome.comment.spot.value" />
@@ -197,5 +238,27 @@ onMounted(() => {
   position: absolute;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ring[data-selected="true"] {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.acts {
+  align-items: center;
+  background: var(--ink);
+  border-radius: var(--radius-selector);
+  box-shadow: var(--shadow-lg);
+  color: var(--canvas);
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px 4px;
+  pointer-events: auto;
+  position: absolute;
+}
+
+.acts :deep(.icon-button) {
+  color: var(--canvas);
 }
 </style>

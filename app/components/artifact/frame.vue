@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import type { FrameAnchor, FrameBlock, FrameMark, FramePending, FrameSelection } from "~/types/frame";
+import type { CommentHover } from "~/composables/useChrome";
+import type { FrameAnchor, FrameHit, FrameMark, FramePending } from "~/types/frame";
 
 const { edition, html, slug, version } = defineProps<{
   edition?: number;
@@ -10,19 +11,18 @@ const { edition, html, slug, version } = defineProps<{
 
 const emit = defineEmits<{
   anchors: [anchors: FrameAnchor[]];
-  block: [block?: FrameBlock];
   edit: [];
   marks: [marks: FrameMark[]];
   pending: [edits: FramePending[]];
-  select: [selection?: FrameSelection];
+  ready: [];
 }>();
 
 // Mirrors labelOf() in the review layer: the anchor label is the host section's own heading.
 const HOSTS = "section, article, figure, .panel, .stage";
 const HEADINGS = "h1, h2, h3, h4";
 const BLOCKS = "p, li, h1, h2, h3, h4, blockquote, pre, table, figure";
+const SELECT = `${BLOCKS}, ${HOSTS}`;
 const LABEL_MAX = 44;
-const MIN_QUOTE = 3;
 const SUPPRESS_ID = "sidecar-suppress";
 const EDIT_ID = "sidecar-edit";
 
@@ -33,12 +33,16 @@ interface Indexed {
   text: string;
 }
 
+const chrome = useChrome();
+
 const frame = ref<HTMLIFrameElement>();
 const height = ref(0);
 const loaded = ref(false);
 
 let watchers: (() => void)[] = [];
 let indexed: Indexed[] = [];
+let hot: Element | undefined;
+let picked: Element | undefined;
 
 function norm(text: string | undefined): string {
   return (text || "").replace(/\s+/g, " ").trim();
@@ -47,7 +51,24 @@ function norm(text: string | undefined): string {
 // The frame is a second realm, so `instanceof Element` from here is always false; duck-typing is the only test.
 function blockAt(target: unknown): Element | undefined {
   const node = target as { closest?: (selectors: string) => Element | null } | undefined; // external contract: DOM closest()
-  return node?.closest?.(BLOCKS) ?? undefined;
+  return node?.closest?.(SELECT) ?? undefined;
+}
+
+function pathOf(node: Element): string {
+  const parts: string[] = [];
+  const doc = node.ownerDocument;
+  for (let n: Element | undefined = node; n && n !== doc?.body; n = n.parentElement ?? undefined) {
+    if (n.id) {
+      const id = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(n.id) : n.id;
+      parts.unshift(`#${id}`);
+      break;
+    }
+    const tag = n.tagName.toLowerCase();
+    const parent = n.parentElement;
+    const kin = parent ? [...parent.children].filter((c) => c.tagName === n.tagName) : [];
+    parts.unshift(kin.length > 1 ? `${tag}:nth-of-type(${kin.indexOf(n) + 1})` : tag);
+  }
+  return parts.join(" > ");
 }
 
 function labelOf(el: Element): string {
@@ -76,6 +97,17 @@ function indexBlocks(doc: Document): void {
     if (!text) continue;
     indexed.push({ el, key: `${indexed.length}:${el.tagName.toLowerCase()}`, label: labelOf(el), text });
   }
+  for (const el of doc.querySelectorAll<HTMLElement>(HOSTS)) {
+    if (indexed.some((one) => one.el === el)) continue;
+    const text = norm(el.textContent);
+    if (!text) continue;
+    indexed.push({
+      el,
+      key: `h:${indexed.length}:${el.tagName.toLowerCase()}`,
+      label: labelOf(el) || text.slice(0, LABEL_MAX),
+      text,
+    });
+  }
 }
 
 function measure(doc: Document): FrameMark[] {
@@ -86,18 +118,55 @@ function measure(doc: Document): FrameMark[] {
   });
 }
 
-function markFor(doc: Document, node?: Node): FrameMark | undefined {
-  const held = indexed.find((one) => node && one.el.contains(node));
-  if (!held) return undefined;
-  const box = held.el.getBoundingClientRect();
+function indexedOf(el: Element): Indexed | undefined {
+  return indexed.find((one) => one.el === el) ?? indexed.find((one) => el.contains(one.el));
+}
+
+function hitOf(el: Element): FrameHit | undefined {
+  const held = indexedOf(el);
+  const box = el.getBoundingClientRect();
+  const frameBox = frame.value?.getBoundingClientRect();
+  const doc = el.ownerDocument;
+  if (!held || !frameBox || !doc) return undefined;
   const scroll = doc.documentElement.scrollTop;
-  return { height: box.height, key: held.key, label: held.label, text: held.text, top: box.top + scroll };
+  return {
+    height: box.height,
+    key: held.key,
+    label: held.label,
+    left: box.left,
+    path: pathOf(el),
+    text: held.text,
+    top: box.top + scroll,
+    viewLeft: frameBox.left + box.left,
+    viewTop: frameBox.top + box.top,
+    width: box.width,
+  };
+}
+
+function locate(hit?: { path: string; text: string }): Element | undefined {
+  const doc = frame.value?.contentDocument;
+  if (!doc || !hit) return undefined;
+  const want = hit.text.slice(0, 160);
+  if (want) {
+    const exact = indexed.filter((one) => one.text.slice(0, 160) === want);
+    if (exact[0]) return exact[0].el;
+    const head = want.slice(0, 60);
+    const near = indexed.filter((one) => one.text.startsWith(head));
+    if (near[0]) return near[0].el;
+  }
+  try {
+    return hit.path ? (doc.querySelector(hit.path) ?? undefined) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function teardown(): void {
   for (const off of watchers) off();
   watchers = [];
   indexed = [];
+  hot = undefined;
+  picked = undefined;
 }
 
 function reset(): void {
@@ -105,9 +174,7 @@ function reset(): void {
   height.value = 0;
   teardown();
   emit("anchors", []);
-  emit("block", undefined);
   emit("pending", []);
-  emit("select", undefined);
 }
 
 function onLoad(): void {
@@ -131,68 +198,111 @@ function onLoad(): void {
   remeasure();
   loaded.value = true;
 
+  const held = chrome.comment.pick.value;
+  const restored = locate(held);
+  picked = restored;
+  if (held && !restored) chrome.comment.select(undefined);
+  publish();
+  emit("ready");
+
   const resize = new ResizeObserver(remeasure);
   resize.observe(doc.body ?? doc.documentElement);
   watchers.push(() => resize.disconnect());
 
   const onMove = (event: MouseEvent): void => {
-    const block = blockAt(event.target);
-    if (!block) {
-      emit("block", undefined);
+    if (!chrome.comment.armed.value || chrome.comment.spot.value) return;
+    const next = blockAt(event.target);
+    if (next === hot) {
+      publish();
       return;
     }
-    const box = block.getBoundingClientRect();
-    emit("block", { height: box.height, top: box.top + doc.documentElement.scrollTop });
+    hot = next;
+    publish();
   };
-  const onLeave = (): void => emit("block", undefined);
-
-  const onSelect = (): void => {
-    const selection = doc.getSelection();
-    const quote = norm(selection?.toString());
-    if (!selection || selection.isCollapsed || quote.length < MIN_QUOTE) {
-      emit("select", undefined);
-      return;
-    }
-    const mark = markFor(doc, selection.anchorNode ?? undefined);
-    if (!mark) {
-      emit("select", undefined);
-      return;
-    }
-    const box = selection.getRangeAt(0).getBoundingClientRect();
-    const scroll = doc.documentElement.scrollTop;
-    emit("select", {
-      bottom: box.bottom + scroll,
-      left: box.left + box.width / 2,
-      mark,
-      quote,
-      top: box.top + scroll,
-    });
+  const onLeave = (): void => {
+    hot = undefined;
+    if (!picked) chrome.comment.light(undefined);
   };
 
-  const onKey = (event: KeyboardEvent): void => {
-    if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "k") return;
+  const onClick = (event: MouseEvent): void => {
+    if (!chrome.comment.armed.value || chrome.comment.spot.value) return;
+    const node = blockAt(event.target);
+    if (!node) return;
     event.preventDefault();
-    onSelect();
-    emit("edit");
+    event.stopPropagation();
+    picked = node;
+    hot = node;
+    const hit = hitOf(node);
+    if (hit) chrome.comment.select(hit);
   };
+
+  const onKeyDown = (event: KeyboardEvent): void => {
+    const meta = event.metaKey || event.ctrlKey;
+    if (meta && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      if (picked || hot) emit("edit");
+      else chrome.jump.toggle();
+      return;
+    }
+    if (event.key === "Escape") {
+      if (chrome.dismiss()) event.preventDefault();
+      return;
+    }
+    if (meta || event.altKey) return;
+    if (event.key.toLowerCase() === "c" && !event.repeat) chrome.comment.arm(true);
+  };
+  const onKeyUp = (event: KeyboardEvent): void => {
+    if (event.key.toLowerCase() === "c") chrome.comment.release();
+  };
+
+  const republish = (): void => publish();
 
   doc.addEventListener("mousemove", onMove);
   doc.addEventListener("mouseleave", onLeave);
-  doc.addEventListener("mouseup", onSelect);
-  doc.addEventListener("keyup", onSelect);
-  doc.addEventListener("keydown", onKey);
+  doc.addEventListener("click", onClick, true);
+  doc.addEventListener("keydown", onKeyDown);
+  doc.addEventListener("keyup", onKeyUp);
+  window.addEventListener("scroll", republish, true);
+  window.addEventListener("resize", republish);
   watchers.push(() => {
     doc.removeEventListener("mousemove", onMove);
     doc.removeEventListener("mouseleave", onLeave);
-    doc.removeEventListener("mouseup", onSelect);
-    doc.removeEventListener("keyup", onSelect);
-    doc.removeEventListener("keydown", onKey);
+    doc.removeEventListener("click", onClick, true);
+    doc.removeEventListener("keydown", onKeyDown);
+    doc.removeEventListener("keyup", onKeyUp);
+    window.removeEventListener("scroll", republish, true);
+    window.removeEventListener("resize", republish);
   });
 }
 
-function clearSelection(): void {
-  frame.value?.contentDocument?.getSelection()?.removeAllRanges();
-  emit("select", undefined);
+function ringOf(hit: FrameHit): CommentHover {
+  return {
+    height: hit.height,
+    label: hit.label || hit.path,
+    left: hit.viewLeft,
+    top: hit.viewTop,
+    width: hit.width,
+    x: Math.min(hit.viewLeft + hit.width + 12, window.innerWidth - 360),
+    y: hit.viewTop,
+  };
+}
+
+function publish(): void {
+  if (picked) {
+    const hit = hitOf(picked);
+    if (hit) chrome.comment.select(hit);
+  }
+  if (hot && hot !== picked) {
+    const hit = hitOf(hot);
+    if (hit && chrome.comment.armed.value) chrome.comment.light(ringOf(hit));
+  } else if (!picked && !hot) chrome.comment.light(undefined);
+}
+
+function clearPick(): void {
+  picked = undefined;
+  hot = undefined;
+  chrome.comment.select(undefined);
+  chrome.comment.light(undefined);
 }
 
 // The artifact carries its own theme stamp, so the frame follows the app's toggle rather than the OS.
@@ -252,7 +362,18 @@ watch(() => [edition, html, slug, version], reset);
 
 onScopeDispose(teardown);
 
-defineExpose({ clearSelection });
+watch(chrome.comment.armed, (on) => {
+  if (on) return;
+  hot = undefined;
+  picked = undefined;
+});
+
+watch(chrome.comment.pick, (hit) => {
+  if (hit) return;
+  picked = undefined;
+});
+
+defineExpose({ clearPick });
 </script>
 
 <template>

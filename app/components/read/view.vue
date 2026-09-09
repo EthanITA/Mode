@@ -1,11 +1,10 @@
 <script lang="ts" setup>
 import { Check, RotateCcw } from "@lucide/vue";
-import type { FrameMark, FramePending, FrameSelection } from "~/types/frame";
+import type { FrameHit, FrameMark, FramePending, FrameSelection } from "~/types/frame";
 import type { DiffGap } from "~~/shared/types/versions";
 
 type Stage = "live" | "reading" | "unreadable" | "version";
 
-// Same vocabulary History uses for the same gaps, worded for a version rather than a diff.
 const GAP: Record<DiffGap, string> = {
   "missing-content": "no version of this file was stored for this turn",
   "skipped": "this file is not versioned — it was over the size budget",
@@ -18,13 +17,14 @@ const sc = useSidecar();
 const chrome = useChrome();
 const { session } = useScreen();
 
-const frame = ref<{ clearSelection: () => void }>();
+const frame = ref<{ clearPick: () => void }>();
 const marks = ref<FrameMark[]>([]);
 const measured = ref(false);
-const selection = ref<FrameSelection>();
 const panel = ref<FrameSelection>();
 const pendingEdits = ref<FramePending[]>([]);
 const edition = ref(0);
+const heldScroll = ref(false);
+const heldTop = ref(0);
 const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
 
@@ -56,23 +56,59 @@ function onMarks(next: FrameMark[]): void {
   measured.value = true;
 }
 
-function clearSelection(): void {
-  selection.value = undefined;
-  frame.value?.clearSelection();
+function toSelection(hit: FrameHit): FrameSelection {
+  return {
+    bottom: hit.top + hit.height,
+    left: hit.left + hit.width / 2,
+    mark: { height: hit.height, key: hit.key, label: hit.label, text: hit.text, top: hit.top },
+    path: hit.path,
+    quote: hit.text,
+    top: hit.top,
+  };
 }
 
-function openInline(): void {
-  if (!selection.value) return;
-  panel.value = selection.value;
+function stageOf(): HTMLElement | undefined {
+  let node = document.querySelector("[data-region='read-view']")?.parentElement ?? undefined;
+  while (node && node !== document.body) {
+    const { overflowY } = getComputedStyle(node);
+    if (overflowY === "auto" || overflowY === "scroll") return node;
+    node = node.parentElement ?? undefined;
+  }
+  return (document.scrollingElement as HTMLElement | undefined) ?? undefined;
+}
+
+function rememberScroll(): void {
+  const root = stageOf();
+  if (!root) return;
+  heldScroll.value = true;
+  heldTop.value = root.scrollTop;
+}
+
+function restoreScroll(): void {
+  if (!heldScroll.value) return;
+  const root = stageOf();
+  if (root) root.scrollTop = heldTop.value;
+  heldScroll.value = false;
+}
+
+function bump(): void {
+  rememberScroll();
+  edition.value += 1;
 }
 
 function closeInline(): void {
   panel.value = undefined;
-  clearSelection();
+  frame.value?.clearPick();
+}
+
+function openInline(): void {
+  const hit = chrome.comment.pick.value;
+  if (!hit) return;
+  panel.value = toSelection(hit);
 }
 
 function onApplied(): void {
-  edition.value += 1;
+  bump();
   pendingEdits.value = [];
   closeInline();
 }
@@ -85,14 +121,14 @@ async function settle(action: "accept" | "revert", edit: FramePending): Promise<
       body: { action, selection: edit.selection },
       method: "POST",
     });
-    edition.value += 1;
+    bump();
   } catch {
     chrome.toast("That change could not be settled", "destructive");
   }
 }
 
-watch([selection, live], ([next, on]) => {
-  inlineArmed.value = Boolean(next) && on;
+watch([() => chrome.comment.pick.value, live], ([hit, on]) => {
+  inlineArmed.value = Boolean(hit) && on;
 });
 
 watch(inlineAsk, (ask) => {
@@ -101,13 +137,12 @@ watch(inlineAsk, (ask) => {
   openInline();
 });
 
-// Until the frame has measured once every thread looks adrift, so the gutter waits rather than lying.
 watch([() => sc.slug.value, () => versions.at.value], () => {
   marks.value = [];
   measured.value = false;
-  selection.value = undefined;
   panel.value = undefined;
   pendingEdits.value = [];
+  chrome.comment.select(undefined);
 });
 
 onScopeDispose(() => {
@@ -135,7 +170,7 @@ onScopeDispose(() => {
         :live="live"
         :marks="marks"
         :threads="threads"
-        @reload="edition += 1"
+        @reload="bump"
       />
 
       <ArtifactFrame
@@ -149,7 +184,7 @@ onScopeDispose(() => {
         @edit="openInline"
         @marks="onMarks"
         @pending="pendingEdits = $event"
-        @select="selection = $event"
+        @ready="restoreScroll"
       />
 
       <div v-else class="gap" data-region="read-gap">
@@ -166,16 +201,6 @@ onScopeDispose(() => {
           </button>
         </template>
       </div>
-
-      <ReadCompose
-        :key="`${sc.slug.value}:${versions.at.value ?? 'head'}`"
-        :editable="live"
-        :open="!!panel"
-        :selection="selection"
-        :slug="sc.slug.value"
-        @done="clearSelection"
-        @edit="openInline"
-      />
 
       <ReadInline
         v-if="panel"

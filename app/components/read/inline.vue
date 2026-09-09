@@ -13,31 +13,14 @@ const emit = defineEmits<{ applied: []; done: [] }>();
 const PANEL_W = 320;
 
 const chrome = useChrome();
+const sc = useSidecar();
 const instruction = ref("");
-const task = ref<"answer" | "edit">("edit");
-const pinned = ref(false);
 const pending = ref(false);
-const answer = ref<string>();
 const field = ref<{ $el: HTMLInputElement }>();
+const panel = ref<HTMLElement>();
 
 const left = computed(() => Math.max(0, selection.left - PANEL_W / 2));
 const top = computed(() => selection.bottom + 8);
-
-function readsAsQuestion(text: string): boolean {
-  const held = text.trim();
-  if (held.endsWith("?")) return true;
-  return /^(are|can|could|did|do|does|how|is|should|what|when|where|which|who|whose|why|will|would)\b/i.test(held);
-}
-
-watch(instruction, (text) => {
-  if (pinned.value) return;
-  task.value = readsAsQuestion(text) ? "answer" : "edit";
-});
-
-function pick(next: "answer" | "edit"): void {
-  pinned.value = true;
-  task.value = next;
-}
 
 function failStatus(error: unknown): number {
   if (typeof error !== "object" || !error) return 0;
@@ -56,24 +39,28 @@ function toastFail(error: unknown): void {
   else chrome.toast("The model could not finish that", "destructive");
 }
 
+function contextOf(): string {
+  return [selection.mark.text, selection.path, sc.artifact.value?.path].filter(Boolean).join("\n");
+}
+
 async function ask(): Promise<void> {
   const text = instruction.value.trim();
   if (!text || pending.value) return;
-  if (task.value === "edit" && !live) {
+  if (!live) {
     chrome.toast("Switch to latest to change the page", "warning");
     return;
   }
   pending.value = true;
   try {
     const body = {
-      context: selection.mark.text,
+      context: contextOf(),
       instruction: text,
       selection: selection.quote,
-      task: task.value,
+      task: "edit",
     } satisfies FastModelRequest;
     const reply = await $fetch<FastModelReply>("/api/models/fast", { body, method: "POST" });
-    if (reply.kind === "answer") {
-      answer.value = reply.text;
+    if (reply.kind !== "edit") {
+      chrome.toast("The model answered instead of editing", "warning");
       return;
     }
     await $fetch(`/api/artifacts/${slug}/edit`, {
@@ -99,81 +86,68 @@ function onFieldKey(event: KeyboardEvent): void {
   void ask();
 }
 
-function dismissAnswer(): void {
-  answer.value = undefined;
-  emit("done");
+function outside(node: EventTarget | undefined): boolean {
+  const el = node as { closest?: (sel: string) => Element | null } | undefined;
+  return !el?.closest?.("[data-region='inline-panel']");
 }
 
 onMounted(() => {
   void nextTick(() => field.value?.$el.focus());
   const onWin = (event: KeyboardEvent): void => {
-    if (event.key !== "Escape") return;
-    if (answer.value) dismissAnswer();
-    else emit("done");
+    if (event.key === "Escape") emit("done");
   };
-  const onClick = (event: MouseEvent): void => {
-    if (!answer.value) return;
-    const node = event.target as { closest?: (sel: string) => Element | null } | undefined;
-    if (node?.closest?.("[data-region='inline-answer']")) return;
-    dismissAnswer();
+  const onFocus = (event: FocusEvent): void => {
+    if (outside(event.relatedTarget ?? document.activeElement ?? undefined)) emit("done");
+  };
+  const onDown = (event: MouseEvent): void => {
+    if (outside(event.target ?? undefined)) emit("done");
   };
   window.addEventListener("keydown", onWin);
-  window.addEventListener("mousedown", onClick);
+  window.addEventListener("mousedown", onDown);
+  panel.value?.addEventListener("focusout", onFocus);
   onScopeDispose(() => {
     window.removeEventListener("keydown", onWin);
-    window.removeEventListener("mousedown", onClick);
+    window.removeEventListener("mousedown", onDown);
+    panel.value?.removeEventListener("focusout", onFocus);
   });
 });
 </script>
 
 <template>
+  <div ref="panel" class="wrap" data-region="inline-panel" :style="{ left: `${left}px`, top: `${top}px` }">
   <UiSurface
-    v-if="!answer"
     class="panel"
-    data-region="inline-panel"
     pad="none"
     variant="glass"
     :data-pending="pending"
-    :style="{ left: `${left}px`, top: `${top}px` }"
   >
     <UiTextInput
       ref="field"
       v-model="instruction"
       :disabled="pending"
-      :placeholder="task === 'answer' ? 'Ask about this…' : 'Change this to…'"
+      placeholder="Change this to…"
       @keydown="onFieldKey"
     />
     <footer>
-      <UiChip size="xs" :selected="task === 'edit'" :disabled="pending" @click="pick('edit')">Edit</UiChip>
-      <UiChip size="xs" :selected="task === 'answer'" :disabled="pending" @click="pick('answer')">Answer</UiChip>
-      <span class="hint mono-meta">{{ pending ? "working…" : "↵ run · esc close" }}</span>
+      <span class="hint mono-meta">{{ pending ? "working…" : "↵ edit · esc close" }}</span>
     </footer>
   </UiSurface>
-
-  <UiSurface
-    v-else
-    class="bubble"
-    data-region="inline-answer"
-    pad="none"
-    variant="raised"
-    :style="{ left: `${left}px`, top: `${top}px` }"
-  >
-    <p>{{ answer }}</p>
-    <span class="hint mono-meta">esc or click away</span>
-  </UiSurface>
+  </div>
 </template>
 
 <style scoped>
-.panel,
-.bubble {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.wrap {
   max-width: calc(100% - 24px);
-  padding: 10px 12px;
   position: absolute;
   width: 320px;
   z-index: 31;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
 }
 
 .panel[data-pending="true"] {
@@ -191,15 +165,8 @@ footer {
   margin-left: auto;
 }
 
-.bubble p {
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 0;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .panel,
-  .bubble {
+  .panel {
     transition: none;
   }
 }

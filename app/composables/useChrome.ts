@@ -1,6 +1,8 @@
 import type { CanvasFitOptions } from "@cela/design";
 import type { ComputedRef, Ref } from "vue";
 import type { Maybe, MaybeComputed } from "~/composables/useSidecar";
+import type { FrameHit } from "~/types/frame";
+import type { ArtifactReviewReply } from "~~/shared/types/artifact";
 
 export const FACES = ["canvas", "read", "history"] as const;
 export type Face = (typeof FACES)[number];
@@ -15,10 +17,26 @@ export interface Toast {
 
 /** Every field is read off the element's own `data-cmt-*`: chrome cannot describe what another domain drew. */
 export interface CommentTarget {
+  block?: string;
   excerpt?: string;
+  file?: string;
   kind: string;
   label: string;
+  mark?: string;
+  path?: string;
+  quote?: string;
   tell: string;
+  top?: number;
+}
+
+export interface CommentHover {
+  height: number;
+  label: string;
+  left: number;
+  top: number;
+  width: number;
+  x: number;
+  y: number;
 }
 
 export interface CommentSpot extends CommentTarget {
@@ -53,9 +71,13 @@ export interface Chrome {
     armed: Ref<boolean>;
     close: () => void;
     disarm: () => void;
+    hover: Maybe<CommentHover>;
+    light: (next?: CommentHover) => void;
     open: (at: CommentSpot) => void;
+    pick: Maybe<FrameHit>;
     release: () => void;
     save: (text: string) => void;
+    select: (hit?: FrameHit) => void;
     spot: Maybe<CommentSpot>;
   };
   dismiss: () => boolean;
@@ -84,6 +106,7 @@ let toastSeq = 0;
 
 export function useChrome(): Chrome {
   const tray = useTray();
+  const sc = useSidecar();
 
   const faces = useState<Face[]>("sc:faces", () => []);
   const picked = useState<Face>("sc:view", () => "canvas");
@@ -91,6 +114,8 @@ export function useChrome(): Chrome {
   const armed = useState<boolean>("sc:cmt-armed", () => false);
   const holding = useState<boolean>("sc:cmt-hold", () => false);
   const spot = useState<CommentSpot | undefined>("sc:cmt-spot");
+  const hover = useState<CommentHover | undefined>("sc:cmt-hover");
+  const pick = useState<FrameHit | undefined>("sc:cmt-pick");
   const toasts = useState<Toast[]>("sc:toasts", () => []);
   const insets = useState<FrameInsets>("sc:frame-insets", () => ({
     top: 0,
@@ -123,6 +148,8 @@ export function useChrome(): Chrome {
     armed.value = false;
     holding.value = false;
     spot.value = undefined;
+    hover.value = undefined;
+    pick.value = undefined;
   }
 
   // A held arm ends with its popover; one armed from the button survives, so several
@@ -136,18 +163,51 @@ export function useChrome(): Chrome {
     const at = spot.value;
     const body = text.trim();
     if (!at || !body) return;
-    tray.add({
-      kind: "element",
-      source: at.excerpt ? `${at.tell} — “${at.excerpt}”` : at.tell,
+    const id = tray.add({
+      block: at.block,
+      file: at.file,
+      kind: at.mark ? "comment" : "element",
+      mark: at.mark,
+      path: at.path,
+      quote: at.quote ?? at.excerpt,
+      source: at.mark ? (sc.slug.value ?? at.tell) : at.excerpt ? `${at.tell} — “${at.excerpt}”` : at.tell,
       text: body,
+      top: at.top,
     });
     close();
+    pick.value = undefined;
+    hover.value = undefined;
     toast("In the tray · sends with your next turn");
+    void persist(at, body, id);
+  }
+
+  async function persist(at: CommentSpot, body: string, id?: string): Promise<void> {
+    const slug = sc.slug.value;
+    if (!slug || !at.mark) return;
+    try {
+      const got = await $fetch<ArtifactReviewReply>(`/api/artifacts/${slug}/review`, {
+        body: {
+          action: "create",
+          anchor: { label: at.label, quote: at.quote ?? at.excerpt, sel: at.path, text: at.block },
+          body,
+        },
+        method: "POST",
+      });
+      if (id && got.thread) tray.patch(id, { thread: got.thread.id });
+      if (sc.artifact.value) sc.artifact.value = { ...sc.artifact.value, threads: got.threads };
+    } catch {
+      // A page with no review seed stays tray-only; the card still resolves locally.
+    }
   }
 
   function dismiss(): boolean {
     if (spot.value) {
       close();
+      return true;
+    }
+    if (pick.value) {
+      pick.value = undefined;
+      hover.value = undefined;
       return true;
     }
     if (armed.value) {
@@ -195,13 +255,32 @@ export function useChrome(): Chrome {
       armed,
       close,
       disarm,
+      hover,
+      light: (next) => {
+        hover.value = next;
+      },
       open: (at) => {
         spot.value = at;
       },
+      pick,
       release: () => {
-        if (holding.value && !spot.value) disarm();
+        if (holding.value && !spot.value && !pick.value) disarm();
       },
       save,
+      select: (hit) => {
+        pick.value = hit;
+        hover.value = hit
+          ? {
+              height: hit.height,
+              label: hit.label || hit.path,
+              left: hit.viewLeft,
+              top: hit.viewTop,
+              width: hit.width,
+              x: Math.min(hit.viewLeft + hit.width + 12, window.innerWidth - 360),
+              y: hit.viewTop,
+            }
+          : undefined;
+      },
       spot,
     },
     dismiss,

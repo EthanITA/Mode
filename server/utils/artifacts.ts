@@ -86,7 +86,9 @@ function toAnchor(raw: unknown): ThreadAnchor | undefined {
   if (!isRecord(raw)) return undefined
   const label = typeof raw.label === "string" ? raw.label : undefined
   const quote = typeof raw.quote === "string" ? raw.quote : undefined
-  return label || quote ? { label, quote } : undefined
+  const sel = typeof raw.sel === "string" ? raw.sel : undefined
+  const text = typeof raw.text === "string" ? raw.text : undefined
+  return label || quote || sel || text ? { label, quote, sel, text } : undefined
 }
 
 function toThread(raw: unknown): ReviewThread | undefined {
@@ -97,6 +99,7 @@ function toThread(raw: unknown): ReviewThread | undefined {
     n: raw.n,
     by: typeof raw.by === "string" ? raw.by : "user",
     at: typeof raw.at === "string" ? raw.at : "",
+    updated: typeof raw.updated === "string" ? raw.updated : undefined,
     body: typeof raw.body === "string" ? raw.body : "",
     status: raw.status === "resolved" ? "resolved" : "open",
     anchor: toAnchor(raw.anchor),
@@ -442,6 +445,97 @@ export function applyArtifactEdit(input: { block?: string; html: string; replace
 }
 
 const PAIR = /<del data-sc-edit="([^"]+)">([\s\S]*?)<\/del><ins data-sc-edit="\1">([\s\S]*?)<\/ins>/g
+
+function parseSeed(html: string): Record<string, unknown> | undefined {
+  const captured = RV_SEED.exec(html)?.[1]
+  if (!captured) return undefined
+  try {
+    const doc = JSON.parse(captured) as unknown
+    return isRecord(doc) ? doc : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function writeSeed(html: string, seed: Record<string, unknown>): string {
+  const json = JSON.stringify(seed).replace(/</g, "\\u003c")
+  if (!RV_SEED.test(html)) return html
+  return html.replace(RV_SEED, `<script type="application/json" id="rv-seed">${json}</script>`)
+}
+
+function nowIso(): string {
+  return new Date().toISOString()
+}
+
+function uid8(): string {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 8)
+}
+
+export type ArtifactReviewFail = "invalid" | "not-found" | "no-seed"
+
+export type ArtifactReviewOutcome =
+  | { ok: true; html: string; thread?: ReviewThread; threads: ReviewThread[] }
+  | { ok: false; reason: ArtifactReviewFail }
+
+export function applyReviewChange(input: {
+  action: "create" | "reply" | "resolve"
+  anchor?: ThreadAnchor
+  body?: string
+  by?: string
+  html: string
+  id?: string
+}): ArtifactReviewOutcome {
+  const seed = parseSeed(input.html)
+  if (!seed) return { ok: false, reason: "no-seed" }
+  const threads = Array.isArray(seed.threads)
+    ? seed.threads.map(toThread).filter((t): t is ReviewThread => Boolean(t))
+    : []
+
+  if (input.action === "create") {
+    const body = input.body?.trim()
+    if (!body) return { ok: false, reason: "invalid" }
+    const thread: ReviewThread = {
+      id: uid8(),
+      n: threads.reduce((max, one) => Math.max(max, one.n), 0) + 1,
+      by: "user",
+      at: nowIso(),
+      updated: nowIso(),
+      body,
+      status: "open",
+      anchor: input.anchor,
+      replies: [],
+    }
+    const next = [...threads, thread]
+    return {
+      ok: true,
+      html: writeSeed(input.html, { ...seed, threads: next }),
+      thread,
+      threads: next,
+    }
+  }
+
+  if (!input.id) return { ok: false, reason: "invalid" }
+  const at = threads.findIndex((one) => one.id === input.id)
+  const held = threads[at]
+  if (at < 0 || !held) return { ok: false, reason: "not-found" }
+
+  if (input.action === "resolve") {
+    const thread: ReviewThread = { ...held, status: "resolved", updated: nowIso() }
+    const next = threads.map((one, i) => (i === at ? thread : one))
+    return { ok: true, html: writeSeed(input.html, { ...seed, threads: next }), thread, threads: next }
+  }
+
+  const body = input.body?.trim()
+  if (!body) return { ok: false, reason: "invalid" }
+  const reply: ThreadReply = { id: uid8(), by: input.by || "user", at: nowIso(), body }
+  const thread: ReviewThread = {
+    ...held,
+    updated: nowIso(),
+    replies: [...held.replies, reply],
+  }
+  const next = threads.map((one, i) => (i === at ? thread : one))
+  return { ok: true, html: writeSeed(input.html, { ...seed, threads: next }), thread, threads: next }
+}
 
 export function resolveArtifactEdit(input: { action: "accept" | "revert"; html: string; selection: string }): ArtifactEditOutcome {
   const selection = input.selection.replace(/\s+/g, " ").trim()
