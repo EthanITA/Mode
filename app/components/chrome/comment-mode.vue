@@ -1,11 +1,8 @@
 <script lang="ts" setup>
-import { MessageSquare, Pencil } from "@lucide/vue";
 import type { CommentTarget } from "~/composables/useChrome";
 
 const route = useRoute();
 const chrome = useChrome();
-const sc = useSidecar();
-const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 
 let lit: HTMLElement | undefined;
 let seen: CommentTarget | undefined;
@@ -36,21 +33,6 @@ function fromFrame(event: Event): boolean {
   const node = event.target;
   return node instanceof HTMLIFrameElement || (node instanceof Element && !!node.closest("iframe"));
 }
-
-// Approximate box for a bar that must be positioned before it renders; sized generously, like the popover's own clamp below.
-const ACTS_W = 180;
-const ACTS_H = 44;
-
-// A computed (not a one-shot read) because frame.vue republishes pick on scroll and resize, and the bar must follow.
-const actsStyle = computed(() => {
-  const pick = chrome.comment.pick.value;
-  if (!pick) return undefined;
-  const left = Math.min(Math.max(12, pick.viewLeft), window.innerWidth - ACTS_W);
-  const below = pick.viewTop + pick.height + 8;
-  // Flip above the element rather than clamp into it: a clamped bar would sit on top of the very thing being commented on.
-  const top = below + ACTS_H > window.innerHeight ? Math.max(12, pick.viewTop - ACTS_H - 8) : below;
-  return { left: `${left}px`, top: `${top}px` };
-});
 
 function onMove(event: MouseEvent): void {
   if (!chrome.comment.armed.value || chrome.comment.spot.value) return;
@@ -117,30 +99,6 @@ watch(chrome.comment.armed, (on) => {
   seen = undefined;
 });
 
-function onComment(): void {
-  const hit = chrome.comment.pick.value;
-  if (!hit) return;
-  chrome.comment.open({
-    block: hit.text,
-    excerpt: hit.text,
-    file: sc.artifact.value?.path,
-    kind: "block",
-    label: hit.label || hit.path,
-    mark: hit.key,
-    path: hit.path,
-    quote: hit.text,
-    tell: [hit.path, sc.artifact.value?.path].filter(Boolean).join(" · ") || "On this block",
-    top: hit.top,
-    x: Math.min(Math.max(12, hit.viewLeft), window.innerWidth - 432),
-    y: Math.min(hit.viewTop + hit.height + 8, window.innerHeight - 300),
-  });
-}
-
-function onEdit(): void {
-  if (!chrome.comment.pick.value) return;
-  inlineAsk.value = true;
-}
-
 onMounted(() => {
   document.addEventListener("mousemove", onMove, true);
   document.addEventListener("pointerdown", onPointerDown, true);
@@ -156,8 +114,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="chrome.comment.armed.value" class="armed" data-region="comment-mode">
-    <p class="banner" data-region="comment-banner">
+  <!-- The frame is always a review surface, so its ring shows unarmed; the banner belongs to the explicit arm. -->
+  <div v-if="chrome.comment.armed.value || chrome.comment.hover.value" class="armed" data-region="comment-mode">
+    <p v-if="chrome.comment.armed.value" class="banner" data-region="comment-banner">
       Pick anything to comment on
       <span class="hint mono-meta">esc cancel</span>
     </p>
@@ -178,11 +137,6 @@ onMounted(() => {
         :style="{ left: `${chrome.comment.hover.value.x}px`, top: `${chrome.comment.hover.value.y}px` }"
       >{{ chrome.comment.hover.value.label }}</span>
     </template>
-
-    <div v-if="actsStyle" class="acts" data-region="element-actions" :style="actsStyle">
-      <UiIconButton :icon="MessageSquare" label="Comment" size="xs" @click="onComment">Comment</UiIconButton>
-      <UiIconButton :icon="Pencil" label="Edit" size="xs" @click="onEdit">Edit</UiIconButton>
-    </div>
   </div>
 
   <ChromeCommentPopover v-if="chrome.comment.spot.value" :spot="chrome.comment.spot.value" />
@@ -250,22 +204,5 @@ onMounted(() => {
 .ring[data-selected="true"] {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
-}
-
-.acts {
-  align-items: center;
-  background: var(--ink);
-  border-radius: var(--radius-selector);
-  box-shadow: var(--shadow-lg);
-  color: var(--canvas);
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px 4px;
-  pointer-events: auto;
-  position: absolute;
-}
-
-.acts :deep(.icon-button) {
-  color: var(--canvas);
 }
 </style>

@@ -70,6 +70,7 @@ export interface Chrome {
     arm: (holding?: boolean) => void;
     armed: Ref<boolean>;
     close: () => void;
+    compose: (hit: FrameHit) => void;
     disarm: () => void;
     hover: Maybe<CommentHover>;
     light: (next?: CommentHover) => void;
@@ -98,6 +99,26 @@ function readChromeTokens(): { gutter: number; stageTop: number } {
   const island = Number.parseFloat(style.getPropertyValue("--island-row-h")) || 0;
   const stageTop = Number.parseFloat(style.getPropertyValue("--stage-top")) || gutter * 2 + island;
   return { gutter, stageTop };
+}
+
+const POPOVER_W = 420;
+const POPOVER_H = 300;
+const EDGE = 12;
+
+function clamp(at: number, box: number, axis = window.innerWidth): number {
+  return Math.max(EDGE, Math.min(at, axis - box - EDGE));
+}
+
+export function ringOf(hit: FrameHit): CommentHover {
+  return {
+    height: hit.height,
+    label: hit.label || hit.path,
+    left: hit.viewLeft,
+    top: hit.viewTop,
+    width: hit.width,
+    x: Math.min(hit.viewLeft + hit.width + 12, window.innerWidth - 360),
+    y: hit.viewTop,
+  };
 }
 
 // Not useState: a callback is nothing to hydrate, and the mounted canvas is the only writer.
@@ -157,6 +178,26 @@ export function useChrome(): Chrome {
   function close(): void {
     spot.value = undefined;
     if (holding.value) disarm();
+  }
+
+  // One step, because a picked block that then asks for a second click is the whole friction.
+  function compose(hit: FrameHit): void {
+    pick.value = hit;
+    hover.value = ringOf(hit);
+    spot.value = {
+      block: hit.text,
+      excerpt: hit.text,
+      file: sc.artifact.value?.path,
+      kind: "block",
+      label: hit.label || hit.path,
+      mark: hit.key,
+      path: hit.path,
+      quote: hit.text,
+      tell: [hit.path, sc.artifact.value?.path].filter(Boolean).join(" · ") || "On this block",
+      top: hit.top,
+      x: clamp(hit.viewLeft, POPOVER_W),
+      y: clamp(hit.viewTop + hit.height + 8, POPOVER_H, window.innerHeight),
+    };
   }
 
   function save(text: string): void {
@@ -254,6 +295,7 @@ export function useChrome(): Chrome {
       },
       armed,
       close,
+      compose,
       disarm,
       hover,
       light: (next) => {
@@ -269,17 +311,7 @@ export function useChrome(): Chrome {
       save,
       select: (hit) => {
         pick.value = hit;
-        hover.value = hit
-          ? {
-              height: hit.height,
-              label: hit.label || hit.path,
-              left: hit.viewLeft,
-              top: hit.viewTop,
-              width: hit.width,
-              x: Math.min(hit.viewLeft + hit.width + 12, window.innerWidth - 360),
-              y: hit.viewTop,
-            }
-          : undefined;
+        hover.value = hit && ringOf(hit);
       },
       spot,
     },

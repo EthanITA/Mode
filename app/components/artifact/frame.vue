@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import type { CommentHover } from "~/composables/useChrome";
 import type { FrameAnchor, FrameHit, FrameMark, FramePending } from "~/types/frame";
 
 const { edition, html, slug, version } = defineProps<{
@@ -20,14 +19,17 @@ const emit = defineEmits<{
 // Mirrors labelOf() in the review layer: the anchor label is the host section's own heading.
 const HOSTS = "section, article, figure, .panel, .stage";
 const HEADINGS = "h1, h2, h3, h4";
-const BLOCKS = "p, li, h1, h2, h3, h4, blockquote, pre, table, figure";
-const SELECT = `${BLOCKS}, ${HOSTS}`;
+// A block is whatever a container holds directly, so an unnamed div is as pickable as a <p>.
+const WALK = "body, main, section, article, .page, .panel, .stage";
+const OUTER = `html, ${WALK}`;
+const OWN = "li, tr, dt, dd, figcaption";
+const SKIP = "script, style, template, noscript";
 const LABEL_MAX = 44;
 const SUPPRESS_ID = "sidecar-suppress";
 const EDIT_ID = "sidecar-edit";
 
 interface Indexed {
-  el: HTMLElement;
+  el: Element;
   key: string;
   label: string;
   text: string;
@@ -50,10 +52,31 @@ function norm(text: string | undefined): string {
   return (text || "").replace(/\s+/g, " ").trim();
 }
 
+function boxy(el: Element): boolean {
+  const display = el.ownerDocument?.defaultView?.getComputedStyle(el).display ?? "block";
+  return display !== "inline" && display !== "contents";
+}
+
+// A wrapper holding one block child with the same words is not a block of its own.
+function tighten(el: Element): Element {
+  let node = el;
+  for (;;) {
+    const [only] = node.children;
+    if (node.children.length !== 1 || !only || !boxy(only)) return node;
+    if (norm(node.textContent) !== norm(only.textContent)) return node;
+    node = only;
+  }
+}
+
 // The frame is a second realm, so `instanceof Element` from here is always false; duck-typing is the only test.
 function blockAt(target: unknown): Element | undefined {
-  const node = target as { closest?: (selectors: string) => Element | null } | undefined; // external contract: DOM closest()
-  return node?.closest?.(SELECT) ?? undefined;
+  const node = target as Element | undefined;
+  if (!node?.closest) return undefined;
+  const own = node.closest(OWN);
+  if (own) return own;
+  let el: Element | undefined = node;
+  while (el?.parentElement && !el.parentElement.matches(OUTER)) el = el.parentElement;
+  return el && !el.matches(OUTER) && !el.matches(SKIP) ? tighten(el) : undefined;
 }
 
 function pathOf(node: Element): string {
@@ -89,27 +112,28 @@ function readAnchors(doc: Document): FrameAnchor[] {
   return out;
 }
 
-// Walked once per load, so a mark keeps its key while the page reflows under it.
+// The mirror of blockAt(): a pick this walk misses has no key and cannot be anchored.
 function indexBlocks(doc: Document): void {
   indexed = [];
-  for (const el of doc.querySelectorAll<HTMLElement>(BLOCKS)) {
-    // A figure wrapping a paragraph would otherwise carry a second, overlapping mark.
-    if (el.querySelector(BLOCKS)) continue;
+  const held = new Set<Element>();
+  const take = (el: Element): void => {
+    if (held.has(el) || el.matches(SKIP)) return;
     const text = norm(el.textContent);
-    if (!text) continue;
-    indexed.push({ el, key: `${indexed.length}:${el.tagName.toLowerCase()}`, label: labelOf(el), text });
-  }
-  for (const el of doc.querySelectorAll<HTMLElement>(HOSTS)) {
-    if (indexed.some((one) => one.el === el)) continue;
-    const text = norm(el.textContent);
-    if (!text) continue;
+    if (!text) return;
+    held.add(el);
     indexed.push({
       el,
-      key: `h:${indexed.length}:${el.tagName.toLowerCase()}`,
+      key: `${indexed.length}:${el.tagName.toLowerCase()}`,
       label: labelOf(el) || text.slice(0, LABEL_MAX),
       text,
     });
+  };
+  for (const host of doc.querySelectorAll(WALK)) {
+    for (const child of host.children) {
+      if (!child.matches(OUTER)) take(tighten(child));
+    }
   }
+  for (const el of doc.querySelectorAll(OWN)) take(el);
 }
 
 function measure(doc: Document): FrameMark[] {
@@ -201,7 +225,7 @@ function onLoad(): void {
   };
 
   syncTheme(doc);
-  hidePageToggle(doc);
+  suppressPageChrome(doc);
   injectEditStyle(doc);
   remeasure();
   loaded.value = true;
@@ -222,7 +246,7 @@ function onLoad(): void {
   watchers.push(() => resize.disconnect());
 
   const onMove = (event: MouseEvent): void => {
-    if (!chrome.comment.armed.value || chrome.comment.spot.value) return;
+    if (chrome.comment.spot.value) return;
     const next = blockAt(event.target);
     if (next === hot) {
       publish();
@@ -237,7 +261,14 @@ function onLoad(): void {
   };
 
   const onClick = (event: MouseEvent): void => {
-    if (!chrome.comment.armed.value || chrome.comment.spot.value) return;
+    if (chrome.comment.spot.value) return;
+    // A receipt opens away rather than in here, which would navigate the artifact out of its own frame.
+    const link = (event.target as Element | undefined)?.closest?.("a[href^='http']");
+    if (link) {
+      event.preventDefault();
+      window.open(link.getAttribute("href") ?? "", "_blank", "noopener");
+      return;
+    }
     const node = blockAt(event.target);
     if (!node) return;
     event.preventDefault();
@@ -245,7 +276,7 @@ function onLoad(): void {
     picked = node;
     hot = node;
     const hit = hitOf(node);
-    if (hit) chrome.comment.select(hit);
+    if (hit) chrome.comment.compose(hit);
   };
 
   const onKeyDown = (event: KeyboardEvent): void => {
@@ -285,18 +316,6 @@ function onLoad(): void {
   });
 }
 
-function ringOf(hit: FrameHit): CommentHover {
-  return {
-    height: hit.height,
-    label: hit.label || hit.path,
-    left: hit.viewLeft,
-    top: hit.viewTop,
-    width: hit.width,
-    x: Math.min(hit.viewLeft + hit.width + 12, window.innerWidth - 360),
-    y: hit.viewTop,
-  };
-}
-
 function publish(): void {
   if (picked) {
     const hit = hitOf(picked);
@@ -304,7 +323,7 @@ function publish(): void {
   }
   if (hot && hot !== picked) {
     const hit = hitOf(hot);
-    if (hit && chrome.comment.armed.value) chrome.comment.light(ringOf(hit));
+    if (hit) chrome.comment.light(ringOf(hit));
   } else if (!picked && !hot) chrome.comment.light(undefined);
 }
 
@@ -337,12 +356,12 @@ function syncTheme(doc: Document): void {
   if (theme) doc.documentElement.setAttribute("data-theme", theme);
 }
 
-// Every Cela artifact ships a fixed theme toggle; a second one floating over the app is a bug, like the review layer.
-function hidePageToggle(doc: Document): void {
+// The page ships its own theme toggle and the frame is sized to its content: both would be a second one over the app.
+function suppressPageChrome(doc: Document): void {
   if (doc.getElementById(SUPPRESS_ID)) return;
   const style = doc.createElement("style");
   style.id = SUPPRESS_ID;
-  style.textContent = ".theme-toggle { display: none !important; }";
+  style.textContent = ".theme-toggle{display:none !important}html{overflow:hidden !important}";
   doc.head?.append(style);
 }
 
@@ -389,12 +408,6 @@ onMounted(() => {
 watch(() => [edition, html, slug, version], reset);
 
 onScopeDispose(teardown);
-
-watch(chrome.comment.armed, (on) => {
-  if (on) return;
-  hot = undefined;
-  picked = undefined;
-});
 
 watch(chrome.comment.pick, (hit) => {
   if (hit) return;

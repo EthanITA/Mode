@@ -4,6 +4,7 @@ import type { CommentSpot } from "~/composables/useChrome";
 const { spot } = defineProps<{ spot: CommentSpot }>();
 
 const chrome = useChrome();
+const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 
 const draft = ref("");
 const pen = useTemplateRef<HTMLElement>("pen");
@@ -21,6 +22,11 @@ function onKey(event: KeyboardEvent): void {
   if (event.key !== "Enter" || event.shiftKey) return;
   event.preventDefault();
   chrome.comment.save(draft.value);
+}
+
+// The pick is left standing: the artifact page reads it to place the edit panel, then closes this one.
+function onEdit(): void {
+  inlineAsk.value = true;
 }
 </script>
 
@@ -54,6 +60,9 @@ function onKey(event: KeyboardEvent): void {
 
     <p class="foot">
       <span class="hint mono-meta">↵ to tray · esc cancel</span>
+      <button v-if="spot.kind === 'block'" v-press class="cancel focusable" type="button" @click="onEdit">
+        Edit
+      </button>
       <button v-press class="cancel focusable" type="button" @click="chrome.comment.close()">Cancel</button>
       <button
         v-press
