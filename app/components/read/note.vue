@@ -169,11 +169,11 @@ async function resolve(): Promise<void> {
   >
     <p v-if="label" class="where mono-meta">{{ label }}</p>
     <blockquote v-if="quote" class="quote">{{ quote }}</blockquote>
-    <p class="body">{{ body }}</p>
+    <Prose class="body" :value="body" />
 
     <div v-for="row in replies" :key="row.id" class="reply" data-region="comment-reply" :data-by="row.by">
       <span class="who mono-meta">{{ row.by }}</span>
-      <p>{{ row.text }}</p>
+      <Prose class="body" :value="row.text" />
     </div>
 
     <ReadCompose v-model="draft" :disabled="!!busy" placeholder="Reply…" @save="onReply" />
@@ -215,17 +215,16 @@ async function resolve(): Promise<void> {
   padding: 6px 10px;
 }
 
-.body,
-.reply p {
-  font-size: 13px;
-  line-height: 1.5;
+.body {
   margin: 0;
+  min-width: 0;
 }
 
 .reply {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .reply[data-by="haiku"],

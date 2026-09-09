@@ -19,6 +19,7 @@ export default defineNuxtConfig({
     },
     { path: "~/components", priority: 10 },
   ],
+  modules: ["@comark/nuxt"],
   css: ["~/assets/css/main.css", "~/assets/css/sidecar.css"],
   // A scoped <style> block is its own Tailwind entry point, so every SFC needs an
   // @reference to the theme before it can @apply anything from the package.

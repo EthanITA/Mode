@@ -105,7 +105,7 @@ function onKey(event: KeyboardEvent): void {
     <div v-for="message in messages" :key="message.id" class="message">
       <span class="who" :data-you="authorOf(message.by) === 'you' ? '' : undefined">{{ initialOf(message.by) }}</span>
       <div class="said">
-        <p class="body">{{ message.body }}</p>
+        <Prose class="body" :value="message.body" />
         <span class="meta mono-meta">{{ authorOf(message.by) }} · {{ relativeAge(message.at) }}</span>
       </div>
     </div>
@@ -246,8 +246,6 @@ header {
 }
 
 .body {
-  font-size: 13px;
-  line-height: 1.5;
   margin: 0;
 }
 

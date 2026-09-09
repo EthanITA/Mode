@@ -81,7 +81,7 @@ watch([() => turns.length, () => state], () => nextTick(toBottom), { flush: "pos
           :data-cmt-excerpt="turn.text.slice(0, EXCERPT)"
         >
           <span class="who mono-meta">{{ who(turn) }} · {{ ageOf(turn) }}</span>
-          <p class="text">{{ turn.text }}</p>
+          <Prose class="text" :value="turn.text" />
         </article>
       </div>
     </template>
@@ -210,11 +210,8 @@ watch([() => turns.length, () => state], () => nextTick(toBottom), { flush: "pos
 .text {
   background: var(--sunken);
   border-radius: var(--radius-box);
-  font-size: 13px;
-  line-height: 1.5;
   margin: 0;
   padding: 8px 12px;
-  white-space: pre-wrap;
 }
 
 .turn[data-role="user"] .text {
