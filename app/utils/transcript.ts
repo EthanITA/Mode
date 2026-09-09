@@ -1,3 +1,6 @@
+// Explicit, not auto-imported: the test glob runs this file under bare node, which has no Nuxt.
+import { plural, shorten } from "./label.ts";
+
 export type TurnSegment =
   | { kind: "prose"; text: string }
   | { body: string; kind: "block"; summary: string; tag: string };
