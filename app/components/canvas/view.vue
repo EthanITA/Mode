@@ -88,8 +88,9 @@ function noteHere(close: () => void): void {
   close();
 }
 
+// The islands float over the plane, so a fit that ignores them parks content underneath.
 function fit(options?: CanvasFitOptions): void {
-  canvasEl.value?.zoomToFit(options);
+  canvasEl.value?.zoomToFit(options ?? { inset: chrome.frame.insets.value });
 }
 
 function step(factor: number): void {
@@ -111,7 +112,7 @@ watch(
     await nextTick();
     if (here !== sc.sessionKey.value || viewports.value[here]) return;
     viewports.value = { ...viewports.value, [here]: { x: 0, y: 0, zoom: 1 } };
-    canvasEl.value?.zoomToFit({ inset: chrome.frame.insets.value });
+    fit();
   },
   { immediate: true },
 );
@@ -187,7 +188,7 @@ watch(
         </UiMenuItem>
         <UiMenuItem :icon="StickyNote" @click="noteHere(close)">Leave a note</UiMenuItem>
         <UiMenuItem :icon="LayoutGrid" @click="canvasEl?.organize(); close()">Tidy up</UiMenuItem>
-        <UiMenuItem :icon="Scan" @click="canvasEl?.zoomToFit(); close()">Fit to view</UiMenuItem>
+        <UiMenuItem :icon="Scan" @click="fit(); close()">Fit to view</UiMenuItem>
         <UiMenuItem :icon="MousePointerSquareDashed" @click="canvasEl?.selectAll(); close()">
           Select all
         </UiMenuItem>
