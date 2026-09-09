@@ -11,6 +11,8 @@ const bridge = useActionBridge();
 const chrome = useChrome();
 const {
   addNote,
+  approve,
+  approved,
   cards,
   empty,
   frames,
@@ -36,8 +38,6 @@ const shown = computed(() => cards.value.filter((card) => !card.frame || !shut.v
 
 const target = computed(() => cards.value.find((card) => card.slug === menu.value?.targetId));
 
-// Survives a tab switch, so a card that was sent does not offer to send itself again.
-const acted = useState<Record<string, string>>("sc:canvas-acted", () => ({}));
 const acting = ref<string[]>([]);
 
 /* Every card here came from /api/artifacts, so it is an artifact rather than a loose
@@ -45,7 +45,7 @@ const acting = ref<string[]>([]);
    Publish for all of them, which pushes a page to claude.ai — never a default. */
 function actionOf(card: CardView): CardAction {
   return {
-    done: acted.value[card.slug],
+    done: approved.value.includes(card.slug) ? SPEC_ACTION.done : undefined,
     hint: SPEC_ACTION.hint,
     label: SPEC_ACTION.label,
     pending: acting.value.includes(card.slug),
@@ -55,11 +55,11 @@ function actionOf(card: CardView): CardAction {
 }
 
 async function act(card: CardView): Promise<void> {
-  if (acting.value.includes(card.slug) || acted.value[card.slug]) return;
+  if (acting.value.includes(card.slug) || approved.value.includes(card.slug)) return;
   acting.value = [...acting.value, card.slug];
   try {
     const outcome = await bridge.perform(SPEC_ACTION, { file: card.file, slug: card.slug });
-    if (outcome.delivered) acted.value = { ...acted.value, [card.slug]: SPEC_ACTION.done };
+    if (outcome.delivered) approve(card.slug);
     chrome.toast(outcome.toast, outcome.delivered ? "success" : "destructive");
   } finally {
     acting.value = acting.value.filter((slug) => slug !== card.slug);
@@ -68,6 +68,7 @@ async function act(card: CardView): Promise<void> {
 
 function open(slug: string): void {
   sc.slug.value = slug;
+  chrome.view.set("read");
   emit("open", slug);
 }
 
