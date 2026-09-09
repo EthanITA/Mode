@@ -24,8 +24,11 @@ const BLOCK = new RegExp(`<(${WRAPPERS.join("|")})>([\\s\\S]*?)</\\1>`, "g");
 const FENCE = /^[ \t]{0,3}(`{3,}|~{3,}).*$/gm;
 const INLINE = /`[^`\n]+`/g;
 const SUMMARY_CHARS = 72;
+const SKILL_PREFIX = "Base directory for this skill: ";
 
 export function turnSegments(text: string): TurnSegment[] {
+  const skill = skillSegment(text);
+  if (skill) return [skill];
   const guarded = guardedRanges(text);
   const out: TurnSegment[] = [];
   let at = 0;
@@ -46,8 +49,17 @@ function addProse(out: TurnSegment[], text: string): void {
   if (trimmed) out.push({ kind: "prose", text: trimmed });
 }
 
-function summaryOf(body: string): string {
-  const head = shorten(body, SUMMARY_CHARS);
+function skillSegment(text: string): TurnSegment | undefined {
+  if (!text.startsWith(SKILL_PREFIX)) return;
+  const eol = text.indexOf("\n");
+  const dir = (eol < 0 ? text : text.slice(0, eol)).slice(SKILL_PREFIX.length).trim();
+  const name = dir.startsWith("/") ? dir.split("/").filter(Boolean).at(-1) : undefined;
+  if (!name) return;
+  return { body: text, kind: "block", summary: summaryOf(text, name), tag: "skill" };
+}
+
+function summaryOf(body: string, label = body): string {
+  const head = shorten(label, SUMMARY_CHARS);
   const lines = body ? body.split("\n").length : 0;
   if (lines < 2) return head;
   return head ? `${head} · ${plural(lines, "line")}` : plural(lines, "line");

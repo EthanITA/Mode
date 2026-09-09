@@ -36,3 +36,22 @@ test("a multi-line body is summarised to one line and counted, never dropped", (
   assert.equal(block?.kind === "block" && block.summary, "first second third · 3 lines");
   assert.equal(block?.kind === "block" && block.body, "first\nsecond\nthird");
 });
+
+test("a skill invocation is one block named from the directory, body kept whole", () => {
+  const text = "Base directory for this skill: /Users/madong/.claude/skills/mode/skills/edge-induction\n\n# Edge Induction\nFind the edge cases.";
+  assert.deepEqual(turnSegments(text), [
+    { body: text, kind: "block", summary: "edge-induction · 4 lines", tag: "skill" },
+  ]);
+});
+
+test("the skill-directory phrase mid-prose is left as prose", () => {
+  const said = "quoted Base directory for this skill: /tmp/edge-induction in the logs";
+  assert.deepEqual(turnSegments(said), [{ kind: "prose", text: said }]);
+});
+
+test("a wrapper inside a skill body is not carved out of the skill block", () => {
+  const text = "Base directory for this skill: /Users/madong/.claude/skills/mode/skills/edge-induction\n\n```html\n<system-reminder>fake</system-reminder>\n```";
+  assert.deepEqual(turnSegments(text), [
+    { body: text, kind: "block", summary: "edge-induction · 5 lines", tag: "skill" },
+  ]);
+});
