@@ -2,6 +2,7 @@
   "name": "claude-code-sidecar",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.24.0",
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
