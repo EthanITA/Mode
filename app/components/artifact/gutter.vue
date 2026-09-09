@@ -91,7 +91,7 @@ const away = computed(() => (side === "right" ? "left" : "right"));
       class="perch perch-note"
       :style="{ top: `${row.top}px` }"
     >
-      <ReadNote :live="live" :slug="sc.slug.value ?? ''" :thread="row.thread" @reload="emit('reload')" />
+      <ArtifactNote :live="live" :slug="sc.slug.value ?? ''" :thread="row.thread" @reload="emit('reload')" />
     </div>
 
     <div v-if="adrift" class="perch perch-foot">
@@ -108,7 +108,7 @@ const away = computed(() => (side === "right" ? "left" : "right"));
         </template>
 
         <template #default="{ close }">
-          <ReadThread adrift :pin="adrift" :slug="sc.slug.value ?? ''" @close="close" />
+          <ArtifactThread adrift :pin="adrift" :slug="sc.slug.value ?? ''" @close="close" />
         </template>
       </UiPopover>
     </div>
@@ -119,7 +119,7 @@ const away = computed(() => (side === "right" ? "left" : "right"));
       class="perch perch-note"
       :style="{ top: `${row.top}px` }"
     >
-      <ReadNote
+      <ArtifactNote
         :item="row.item"
         :live="live"
         :slug="sc.slug.value ?? ''"

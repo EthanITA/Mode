@@ -176,7 +176,7 @@ async function resolve(): Promise<void> {
       <Prose class="body" :value="row.text" />
     </div>
 
-    <ReadCompose v-model="draft" :disabled="!!busy" placeholder="Reply…" @save="onReply" />
+    <ArtifactCompose v-model="draft" :disabled="!!busy" placeholder="Reply…" @save="onReply" />
 
     <footer>
       <UiIconButton :icon="Zap" label="Ask AI" size="xs" :disabled="!!busy" @click="ask">Ask AI</UiIconButton>

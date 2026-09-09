@@ -13,9 +13,14 @@ const GAP: Record<DiffGap, string> = {
   "unresolved-target": "there is no version of this file at the point being asked for",
 };
 
+const route = useRoute();
 const sc = useSidecar();
 const chrome = useChrome();
 const { session } = useScreen();
+
+const key = computed(() => String(route.params.key ?? ""));
+const slug = computed(() => String(route.params.slug ?? ""));
+const title = computed(() => sc.artifact.value?.title || deslug(slug.value));
 
 const frame = ref<{ clearPick: () => void }>();
 const marks = ref<FrameMark[]>([]);
@@ -71,7 +76,7 @@ function toSelection(hit: FrameHit): FrameSelection {
 }
 
 function stageOf(): HTMLElement | undefined {
-  let node = document.querySelector("[data-region='read-view']")?.parentElement ?? undefined;
+  let node = document.querySelector("[data-region='artifact-view']")?.parentElement ?? undefined;
   while (node && node !== document.body) {
     const { overflowY } = getComputedStyle(node);
     if (overflowY === "auto" || overflowY === "scroll") return node;
@@ -119,9 +124,11 @@ function onReady(): void {
   awaiting.value = pendingEdits.value.length > 0;
 }
 
+// The comment popover and the edit panel both anchor to the pick, so only one may be open.
 function openInline(): void {
   const hit = chrome.comment.pick.value;
   if (!hit) return;
+  chrome.comment.close();
   panel.value = toSelection(hit);
 }
 
@@ -173,6 +180,14 @@ watch(inlineAsk, (ask) => {
   openInline();
 });
 
+// Re-asserted after every pull, like the conversation key: the poll re-picks a slug whenever the held one is unknown.
+watch([key, slug, () => sc.sessions.value], () => {
+  sc.sessionKey.value = key.value;
+  sc.slug.value = slug.value;
+}, { immediate: true });
+
+loadSidecar();
+
 watch([() => sc.slug.value, () => versions.at.value], () => {
   marks.value = [];
   measured.value = false;
@@ -202,101 +217,121 @@ onScopeDispose(() => {
 </script>
 
 <template>
-  <div class="read" data-region="read-view">
-    <ReadVersions
-      v-model="versions.at.value"
-      :baseline="versions.baseline.value"
-      :head="versions.head.value"
-      :list="versions.list.value"
-      :reading="versions.reading.value"
-      :skipped="versions.skipped.value"
-      :slug="sc.slug.value ?? ''"
-      :unreachable="versions.unreachable.value"
-    />
+  <NuxtLayout>
+    <template #lead>
+      <ArtifactHead :conversation="key" :title="title" />
+    </template>
 
-    <div v-if="sc.slug.value && sc.artifact.value" class="stack">
-      <ArtifactGutter
-        v-if="measured"
-        side="right"
-        :live="live"
-        :marks="marks"
-        :threads="threads"
-        @reload="bump"
-      />
+    <template #dock>
+      <ComposerDock />
+    </template>
 
-      <ArtifactFrame
-        v-if="stage === 'live' || stage === 'version'"
-        ref="frame"
-        data-region="artifact-page"
-        :edition="edition"
-        :html="html"
-        :slug="sc.slug.value"
-        :version="versions.at.value"
-        @edit="openInline"
-        @marks="onMarks"
-        @pending="takePending"
-        @ready="onReady"
-      />
+    <main class="stage">
+      <div class="page" data-region="artifact-view">
+        <ArtifactVersions
+          v-model="versions.at.value"
+          :baseline="versions.baseline.value"
+          :head="versions.head.value"
+          :list="versions.list.value"
+          :reading="versions.reading.value"
+          :skipped="versions.skipped.value"
+          :slug="slug"
+          :unreachable="versions.unreachable.value"
+        />
 
-      <div v-else class="gap" data-region="read-gap">
-        <p v-if="stage === 'reading'" class="mono-meta">reading t{{ versions.at.value }}…</p>
-        <template v-else>
-          <p class="title">This version could not be read back.</p>
-          <p class="why">{{ gap }}.</p>
-          <p class="why">
-            Nothing is drawn here rather than a blank page, which would read as though t{{ versions.at.value }} of
-            <b>{{ sc.slug.value }}</b> changed nothing.
+        <div v-if="sc.artifact.value?.slug === slug" class="stack">
+          <ArtifactGutter
+            v-if="measured"
+            side="right"
+            :live="live"
+            :marks="marks"
+            :threads="threads"
+            @reload="bump"
+          />
+
+          <ArtifactFrame
+            v-if="stage === 'live' || stage === 'version'"
+            ref="frame"
+            data-region="artifact-page"
+            :edition="edition"
+            :html="html"
+            :slug="slug"
+            :version="versions.at.value"
+            @edit="openInline"
+            @marks="onMarks"
+            @pending="takePending"
+            @ready="onReady"
+          />
+
+          <div v-else class="gap" data-region="version-gap">
+            <p v-if="stage === 'reading'" class="mono-meta">reading t{{ versions.at.value }}…</p>
+            <template v-else>
+              <p class="title">This version could not be read back.</p>
+              <p class="why">{{ gap }}.</p>
+              <p class="why">
+                Nothing is drawn here rather than a blank page, which would read as though t{{ versions.at.value }} of
+                <b>{{ slug }}</b> changed nothing.
+              </p>
+              <button v-press class="back focusable" type="button" @click="versions.at.value = undefined">
+                Back to latest
+              </button>
+            </template>
+          </div>
+
+          <ArtifactInline
+            v-if="panel"
+            :held="awaiting || pendingEdits.length > 0"
+            :live="live"
+            :selection="panel"
+            :slug="slug"
+            @applied="onApplied"
+            @done="closeInline"
+          />
+
+          <UiSurface
+            v-for="edit in pendingEdits"
+            :key="edit.id"
+            class="settle"
+            data-region="inline-panel"
+            pad="none"
+            variant="raised"
+            :style="{ left: `${edit.left}px`, top: `${edit.top}px` }"
+          >
+            <UiIconButton :icon="Check" label="Keep the new text" size="xs" @click="settle('accept', edit)">
+              Accept
+            </UiIconButton>
+            <UiIconButton :icon="RotateCcw" label="Restore the old text" size="xs" @click="settle('revert', edit)">
+              Revert
+            </UiIconButton>
+          </UiSurface>
+        </div>
+
+        <div v-else class="blank">
+          <p v-if="!sc.ready.value" class="mono-meta">reading {{ slug }}…</p>
+          <p v-else-if="session && !session.artifacts.includes(slug)">
+            <b>{{ slug }}</b> is not stamped against <b>{{ nameOf(session) }}</b>.
           </p>
-          <button v-press class="back focusable" type="button" @click="versions.at.value = undefined">
-            Back to latest
-          </button>
-        </template>
+          <p v-else>
+            <b>{{ slug }}</b> could not be read from the artifacts directory.
+          </p>
+          <NuxtLink class="back focusable" :to="`/c/${key}`">Back to the conversation</NuxtLink>
+        </div>
       </div>
-
-      <ReadInline
-        v-if="panel"
-        :held="awaiting || pendingEdits.length > 0"
-        :live="live"
-        :selection="panel"
-        :slug="sc.slug.value"
-        @applied="onApplied"
-        @done="closeInline"
-      />
-
-      <UiSurface
-        v-for="edit in pendingEdits"
-        :key="edit.id"
-        class="settle"
-        data-region="inline-panel"
-        pad="none"
-        variant="raised"
-        :style="{ left: `${edit.left}px`, top: `${edit.top}px` }"
-      >
-        <UiIconButton :icon="Check" label="Keep the new text" size="xs" @click="settle('accept', edit)">
-          Accept
-        </UiIconButton>
-        <UiIconButton :icon="RotateCcw" label="Restore the old text" size="xs" @click="settle('revert', edit)">
-          Revert
-        </UiIconButton>
-      </UiSurface>
-    </div>
-
-    <div v-else class="blank">
-      <p v-if="!session">No conversation is selected, so there is no artifact to show.</p>
-      <p v-else-if="!session.artifacts.length">
-        <b>{{ nameOf(session) }}</b> has stamped no artifact yet. One appears here the moment it does.
-      </p>
-      <p v-else-if="!sc.slug.value">Pick an artifact above.</p>
-      <p v-else>
-        <b>{{ sc.slug.value }}</b> is listed against this conversation but could not be read from the artifacts
-        directory.
-      </p>
-    </div>
-  </div>
+    </main>
+  </NuxtLayout>
 </template>
 
 <style scoped>
-.read {
+/* The page owns the scroll — the frame inside it is sized to its content and never scrolls itself. */
+.stage {
+  box-sizing: border-box;
+  inset: 0;
+  overflow-y: auto;
+  padding: var(--stage-top) var(--gutter) var(--gutter);
+  position: absolute;
+}
+
+.page {
   display: flex;
   flex-direction: column;
   margin: 0 auto;
@@ -343,16 +378,19 @@ onScopeDispose(() => {
 }
 
 .back {
+  align-items: center;
   background: var(--raised);
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--ink);
   cursor: pointer;
+  display: inline-flex;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
   margin-top: 14px;
   padding: 6px 12px;
+  text-decoration: none;
 }
 
 .back:hover {

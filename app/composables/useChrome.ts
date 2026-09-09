@@ -4,7 +4,7 @@ import type { Maybe, MaybeComputed } from "~/composables/useSidecar";
 import type { FrameHit } from "~/types/frame";
 import type { ArtifactReviewReply } from "~~/shared/types/artifact";
 
-export const FACES = ["canvas", "read", "history"] as const;
+export const FACES = ["canvas", "history"] as const;
 export type Face = (typeof FACES)[number];
 
 export type ToastTone = "destructive" | "neutral" | "success" | "warning";
@@ -134,7 +134,7 @@ export function useChrome(): Chrome {
   watch(
     current,
     (face) => {
-      shelved.value = face === "history" || face === "read";
+      shelved.value = face === "history";
     },
     { immediate: true },
   );

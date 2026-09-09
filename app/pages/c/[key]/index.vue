@@ -7,19 +7,18 @@ const chrome = useChrome();
 
 // Read off disk at build: an unbuilt face is unreachable, with no list kept by hand.
 const parts = import.meta.glob<Component>(
-  "../../components/{board/island,canvas/view,composer/dock,history/view,read/view}.vue",
+  "../../../components/{board/island,canvas/view,composer/dock,history/view}.vue",
   { import: "default" },
 );
 
 function part(path: string): Component | undefined {
-  const load = parts[`../../components/${path}.vue`];
+  const load = parts[`../../../components/${path}.vue`];
   return load && defineAsyncComponent(load);
 }
 
 const built: Record<Face, Component | undefined> = {
   canvas: part("canvas/view"),
   history: part("history/view"),
-  read: part("read/view"),
 };
 const dock = part("composer/dock");
 const board = part("board/island");
@@ -75,8 +74,7 @@ loadSidecar();
 /* The canvas draws to the edges under the floating chrome and owns its own gestures;
    the panelled faces do not, so the stage is what scrolls them. The bottom follows the
    dock's measured height, so it clears whatever state the dock is in. */
-.stage[data-face="history"],
-.stage[data-face="read"] {
+.stage[data-face="history"] {
   box-sizing: border-box;
   overflow-y: auto;
   padding: var(--stage-top) var(--gutter) calc(var(--dock-h, var(--dock-rest-h)) + var(--gutter) * 2);

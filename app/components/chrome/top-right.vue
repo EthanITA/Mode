@@ -4,9 +4,11 @@ import { MessageSquare } from "@lucide/vue";
 const route = useRoute();
 const chrome = useChrome();
 
-const LABELS: Record<Face, string> = { canvas: "Canvas", history: "History", read: "Read" };
+const LABELS: Record<Face, string> = { canvas: "Canvas", history: "History" };
 
-const atConversation = computed(() => route.path.startsWith("/c/"));
+const inSession = computed(() => route.path.startsWith("/c/"));
+// The faces belong to the conversation; an artifact has its own page and nothing to switch between.
+const onFaces = computed(() => inSession.value && !route.params.slug);
 
 const faces = computed(() => chrome.view.faces.value.map((face) => ({ label: LABELS[face], value: face })));
 
@@ -23,9 +25,9 @@ function toggleComment(): void {
 
 <template>
   <div class="top-right" data-region="top-right">
-    <template v-if="atConversation">
+    <template v-if="inSession">
       <UiCanvasZoom
-        v-if="chrome.view.current.value === 'canvas'"
+        v-if="onFaces && chrome.view.current.value === 'canvas'"
         class="zoom"
         data-region="canvas-zoom"
         variant="glass-liquid"
@@ -34,7 +36,7 @@ function toggleComment(): void {
         @reset="chrome.canvas.reset.value?.()"
       />
 
-      <UiSurface v-if="faces.length > 1" class="pill" pad="none" shape="pill" variant="glass">
+      <UiSurface v-if="onFaces && faces.length > 1" class="pill" pad="none" shape="pill" variant="glass">
         <UiSegmented
           v-model="face"
           data-region="view-switcher"

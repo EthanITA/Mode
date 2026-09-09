@@ -4,8 +4,7 @@ import { LayoutGrid, Maximize2, MousePointerSquareDashed, Scan, StickyNote } fro
 import { CARD_H, CARD_W, NOTE_H, NOTE_W, type CardView } from "~/composables/useCanvas";
 import type { CardAction } from "~/types/canvas-action";
 
-const emit = defineEmits<{ open: [slug: string] }>();
-
+const route = useRoute();
 const sc = useSidecar();
 const bridge = useActionBridge();
 const chrome = useChrome();
@@ -68,8 +67,7 @@ async function act(card: CardView): Promise<void> {
 
 function open(slug: string): void {
   sc.slug.value = slug;
-  chrome.view.set("read");
-  emit("open", slug);
+  void navigateTo(`/c/${route.params.key}/${slug}`);
 }
 
 function onMenu(event: CanvasMenuEvent): void {
