@@ -81,7 +81,7 @@ watch([() => turns.length, () => state], () => nextTick(toBottom), { flush: "pos
           :data-cmt-excerpt="turn.text.slice(0, EXCERPT)"
         >
           <span class="who mono-meta">{{ who(turn) }} · {{ ageOf(turn) }}</span>
-          <Prose class="text" :value="turn.text" />
+          <ComposerTurnText class="text" :value="turn.text" />
         </article>
       </div>
     </template>
