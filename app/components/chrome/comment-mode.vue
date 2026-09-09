@@ -37,6 +37,21 @@ function fromFrame(event: Event): boolean {
   return node instanceof HTMLIFrameElement || (node instanceof Element && !!node.closest("iframe"));
 }
 
+// Approximate box for a bar that must be positioned before it renders; sized generously, like the popover's own clamp below.
+const ACTS_W = 180;
+const ACTS_H = 44;
+
+// A computed (not a one-shot read) because frame.vue republishes pick on scroll and resize, and the bar must follow.
+const actsStyle = computed(() => {
+  const pick = chrome.comment.pick.value;
+  if (!pick) return undefined;
+  const left = Math.min(Math.max(12, pick.viewLeft), window.innerWidth - ACTS_W);
+  const below = pick.viewTop + pick.height + 8;
+  // Flip above the element rather than clamp into it: a clamped bar would sit on top of the very thing being commented on.
+  const top = below + ACTS_H > window.innerHeight ? Math.max(12, pick.viewTop - ACTS_H - 8) : below;
+  return { left: `${left}px`, top: `${top}px` };
+});
+
 function onMove(event: MouseEvent): void {
   if (!chrome.comment.armed.value || chrome.comment.spot.value) return;
   if (fromFrame(event)) return;
@@ -164,15 +179,7 @@ onMounted(() => {
       >{{ chrome.comment.hover.value.label }}</span>
     </template>
 
-    <div
-      v-if="chrome.comment.pick.value"
-      class="acts"
-      data-region="element-actions"
-      :style="{
-        left: `${chrome.comment.pick.value.viewLeft}px`,
-        top: `${chrome.comment.pick.value.viewTop + chrome.comment.pick.value.height + 8}px`,
-      }"
-    >
+    <div v-if="actsStyle" class="acts" data-region="element-actions" :style="actsStyle">
       <UiIconButton :icon="MessageSquare" label="Comment" size="xs" @click="onComment">Comment</UiIconButton>
       <UiIconButton :icon="Pencil" label="Edit" size="xs" @click="onEdit">Edit</UiIconButton>
     </div>
