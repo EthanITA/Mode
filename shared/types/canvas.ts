@@ -22,9 +22,10 @@ export interface CanvasPlacement {
   notes: CanvasNote[]
   // Frame ids the reader collapsed. Frames are derived, so only the deviation persists.
   collapsed: string[]
+  approved: string[]
   at?: number
 }
 
 export function emptyPlacement(key: string): CanvasPlacement {
-  return { key, cards: {}, notes: [], collapsed: [] }
+  return { key, cards: {}, notes: [], collapsed: [], approved: [] }
 }

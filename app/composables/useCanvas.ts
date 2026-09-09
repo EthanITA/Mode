@@ -45,6 +45,8 @@ export interface LinkView {
 
 export interface Canvas {
   addNote: (at: CanvasPoint) => void;
+  approve: (slug: string) => void;
+  approved: ComputedRef<string[]>;
   cards: ComputedRef<CardView[]>;
   empty: ComputedRef<boolean>;
   frames: ComputedRef<FrameView[]>;
@@ -275,6 +277,8 @@ export function useCanvas(): Canvas {
 
   const notes = computed(() => placement.value.notes);
 
+  const approved = computed(() => placement.value.approved);
+
   const empty = computed(() => !cards.value.length && !notes.value.length);
 
   function schedule(): void {
@@ -313,6 +317,12 @@ export function useCanvas(): Canvas {
   function toggleFrame(id: string): void {
     const collapsed = placement.value.collapsed;
     placement.value.collapsed = collapsed.includes(id) ? collapsed.filter((f) => f !== id) : [...collapsed, id];
+    schedule();
+  }
+
+  function approve(slug: string): void {
+    const approved = placement.value.approved;
+    placement.value.approved = approved.includes(slug) ? approved : [...approved, slug];
     schedule();
   }
 
@@ -374,6 +384,8 @@ export function useCanvas(): Canvas {
 
   return {
     addNote,
+    approve,
+    approved,
     cards,
     empty,
     frames,

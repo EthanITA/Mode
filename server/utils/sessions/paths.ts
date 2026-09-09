@@ -17,6 +17,10 @@ export function artifactListsHome(): string {
   return join(configRoot(), "artifacts")
 }
 
+export function canvasHome(): string {
+  return join(configRoot(), "canvas")
+}
+
 export function teamsHome(): string {
   return join(configRoot(), "teams")
 }
