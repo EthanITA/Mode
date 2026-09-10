@@ -293,11 +293,10 @@ function onLoad(): void {
       if (chrome.dismiss()) event.preventDefault();
       return;
     }
-    if (meta || event.altKey) return;
-    if (event.key.toLowerCase() === "c" && !event.repeat) chrome.comment.arm(true);
+    if (event.key === "Alt" && !event.repeat) chrome.comment.arm(true);
   };
   const onKeyUp = (event: KeyboardEvent): void => {
-    if (event.key.toLowerCase() === "c") chrome.comment.release();
+    if (event.key === "Alt") chrome.comment.release();
   };
 
   doc.addEventListener("mousemove", onMove);

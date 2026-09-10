@@ -24,19 +24,24 @@ function onKeyDown(event: KeyboardEvent): void {
     if (chrome.dismiss()) event.preventDefault();
     return;
   }
+  // A modifier rather than a letter: the composer holds focus by default, so a letter lands in it
+  // as text and the shortcut never fires.
+  if (event.key === "Alt" && !event.repeat) {
+    chrome.comment.arm(true);
+    return;
+  }
   if (meta || event.altKey || typing(event)) return;
-  if (event.key.toLowerCase() === "c" && !event.repeat) chrome.comment.arm(true);
-  else if (event.key === "!") chrome.canvas.fit.value?.();
+  if (event.key === "!") chrome.canvas.fit.value?.();
 }
 
 function onKeyUp(event: KeyboardEvent): void {
-  if (event.key.toLowerCase() === "c") chrome.comment.release();
+  if (event.key === "Alt") chrome.comment.release();
 }
 
 onMounted(() => {
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
-  // A held C loses its keyup on blur, and would leave the page swallowing every click.
+  // A held modifier loses its keyup on blur, and would leave the page swallowing every click.
   window.addEventListener("blur", chrome.comment.disarm);
   onScopeDispose(() => {
     window.removeEventListener("keydown", onKeyDown);

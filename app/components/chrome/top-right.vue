@@ -49,7 +49,7 @@ function toggleComment(): void {
           type="button"
           class="plain-button focusable comment"
           :data-armed="chrome.comment.armed.value"
-          title="Comment on anything · hold C"
+          title="Comment on anything · hold ⌥"
           @click="toggleComment"
         >
           <UiIcon :icon="MessageSquare" size="sm" />
