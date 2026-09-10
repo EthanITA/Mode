@@ -154,9 +154,12 @@ watch(
 </template>
 
 <style scoped>
+/* Shrinkable, so a squeezed island takes it out of the scroller rather than the header. */
 .transcript {
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
+  min-height: 0;
 }
 
 .transcript[data-state="preview"],
@@ -165,9 +168,11 @@ watch(
   margin-bottom: 2px;
 }
 
+/* Never shrinks: it is the row that disappears first when the island is squeezed. */
 .head {
   align-items: center;
   display: flex;
+  flex: none;
   gap: 2px;
   padding: 5px 6px 7px;
 }
@@ -236,9 +241,12 @@ watch(
    scrollers here pushed the head off the top of the screen. */
 .body {
   display: flex;
+  /* Never grows past its content, always shrinks below the cap when the island is squeezed. */
+  flex: 0 1 auto;
   flex-direction: column;
   gap: 10px;
   max-height: var(--transcript-max-h);
+  min-height: 0;
   overflow-y: auto;
   padding: 0 4px 8px 2px;
   scrollbar-width: thin;

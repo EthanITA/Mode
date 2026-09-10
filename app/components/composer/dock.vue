@@ -177,10 +177,14 @@ onMounted(() => {
   width: 100%;
 }
 
+/* The island is bottom-anchored inside a clipping box, so whatever does not fit is cut
+   off the top, where the header is. Bounding the measured content is what stops that. */
 .island-body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  max-height: calc(100vh - var(--stage-top) - var(--gutter));
+  min-height: 0;
   padding: 6px 6px 6px 8px;
 }
 
@@ -198,6 +202,7 @@ onMounted(() => {
 .row {
   align-items: flex-end;
   display: flex;
+  flex: none;
   gap: 10px;
   min-height: 36px;
   padding: 2px 4px 3px 8px;
@@ -246,6 +251,7 @@ onMounted(() => {
 .slots {
   align-items: center;
   display: flex;
+  flex: none;
   gap: 6px;
   height: 30px;
   padding: 0 4px 0 2px;
