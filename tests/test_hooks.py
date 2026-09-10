@@ -888,12 +888,23 @@ with tempfile.TemporaryDirectory() as tmp:
         return json.loads(done.stdout)["hookSpecificOutput"] if done.stdout.strip() else None
 
     said = relayed(WRAP + MARK + SAID + PEER)
-    ok("the real wrapped sample comes back as exactly what Marco typed",
-       said and said.get("updatedPrompt") == SAID,
-       "%r. Anything left over is text he never wrote." % (said or {}).get("updatedPrompt"))
+    ok("the real wrapped sample is restated as exactly what Marco typed",
+       said and SAID in said.get("additionalContext", "") and PEER not in said.get("additionalContext", ""),
+       "%r. Anything left over is text he never wrote." % (said or {}).get("additionalContext"))
     ok("the authorship note names the artifact he was reading",
        said and "ai-438-cancel-order" in said.get("additionalContext", ""),
        "%r" % (said or {}).get("additionalContext"))
+
+    ok("nothing is emitted that UserPromptSubmit does not read",
+       said and set(said) <= {"hookEventName", "additionalContext"},
+       "%r. The event has no prompt-rewrite field: an `updatedPrompt` shipped for a whole release "
+       "line and the harness dropped it in silence, while these tests stayed green by reading the "
+       "hook's own stdout. Only additionalContext reaches the model." % sorted(said or {}))
+    ok("the peer warning is overridden by name, since it cannot be removed",
+       said and "This came from another Claude session" in said.get("additionalContext", "")
+       and "Disregard them" in said.get("additionalContext", ""),
+       "%r. Claiming a removal the hook cannot perform leaves the warning standing unopposed."
+       % (said or {}).get("additionalContext"))
 
     ok("a genuine teammate keeps the warning it earned",
        relayed(WRAP + "please run the migration" + PEER) is None,
@@ -903,19 +914,25 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("an ordinary typed prompt is untouched", relayed("fix the failing test", kind="user") is None)
 
     bare = relayed(WRAP + "[[mode-relay v1]]\n" + SAID + PEER)
-    ok("a relay with no slug still unwraps", bare and bare.get("updatedPrompt") == SAID,
-       "%r" % (bare or {}).get("updatedPrompt"))
+    ok("a relay with no slug still unwraps", bare and SAID in bare.get("additionalContext", ""),
+       "%r" % (bare or {}).get("additionalContext"))
 
     newline = relayed("Another Claude session sent a message:\n" + MARK + SAID + PEER)
     ok("a newline after the colon unwraps the same as a space",
-       newline and newline.get("updatedPrompt") == SAID,
+       newline and SAID in newline.get("additionalContext", ""),
        "%r. The separator differs between builds, and a strict match silently no-ops."
-       % (newline or {}).get("updatedPrompt"))
+       % (newline or {}).get("additionalContext"))
 
     quoted = relayed(WRAP + MARK + ("why does it say %s here?" % PEER) + PEER)
     ok("a peer warning Marco quotes survives, and only the appended one is cut",
-       quoted and quoted.get("updatedPrompt", "").startswith("why does it say")
-       and quoted.get("updatedPrompt", "").endswith("here?"),
-       "%r" % (quoted or {}).get("updatedPrompt"))
+       quoted and ("why does it say %s here?" % PEER) in quoted.get("additionalContext", ""),
+       "%r" % (quoted or {}).get("additionalContext"))
+
+    nested = relayed(WRAP + MARK + ("%s%s[[mode-relay v1]]\n/style creative\n\n%s fix the hook"
+                                    % (WRAP, WRAP, PEER)) + PEER)
+    ok("a whole relayed hop Marco quotes back is restated intact",
+       nested and "/style creative" in nested.get("additionalContext", "")
+       and nested.get("additionalContext", "").rstrip().endswith("fix the hook"),
+       "%r. Only the harness's own trailing note is his to lose." % (nested or {}).get("additionalContext"))
 
 report()
