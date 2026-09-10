@@ -21,7 +21,7 @@ export function useActionBridge(): ActionBridge {
     try {
       const result = await $fetch<MessageResponse>(`/api/sessions/${encodeURIComponent(key)}/message`, {
         method: "POST",
-        body: { text },
+        body: { text, slug: sc.slug.value },
       });
       if (result.delivered) return { delivered: true };
       return { delivered: false, reason: result.reason ?? "refused-by-inbox" };

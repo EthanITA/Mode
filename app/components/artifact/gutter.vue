@@ -18,7 +18,7 @@ const {
   threads: ReviewThread[];
 }>();
 
-const emit = defineEmits<{ reload: [] }>();
+const emit = defineEmits<{ reload: []; notes: [count: number] }>();
 
 const sc = useSidecar();
 const tray = useTray();
@@ -81,6 +81,9 @@ const adrift = computed<Pin | undefined>(() => {
 });
 
 const away = computed(() => (side === "right" ? "left" : "right"));
+
+// The page sizes its notes column off this, so an empty one costs no width at all.
+watchEffect(() => emit("notes", pageCards.value.length + placedNotes.value.length + (adrift.value ? 1 : 0)));
 </script>
 
 <template>
@@ -127,32 +130,21 @@ const away = computed(() => (side === "right" ? "left" : "right"));
       />
     </div>
 
-    <p v-if="!pageCards.length && !adrift && !placedNotes.length" class="none mono-meta">
-      {{ threads.length ? "no notes here" : "no notes" }}
-    </p>
   </div>
 </template>
 
 <style scoped>
+/* A column of its own, never an overlay: a note pushes the page narrower instead of covering it. */
 .gutter {
-  bottom: 0;
+  height: 100%;
   overflow: visible;
-  position: absolute;
-  top: 0;
-  width: var(--gutter-w);
-}
-
-.gutter[data-side="left"] {
-  left: calc(-1 * var(--gutter-w));
-}
-
-.gutter[data-side="right"] {
-  right: calc(-1 * var(--gutter-w));
+  position: relative;
 }
 
 .perch {
+  left: 0;
   position: absolute;
-  right: 8px;
+  right: 0;
 }
 
 .perch-foot {
@@ -160,19 +152,7 @@ const away = computed(() => (side === "right" ? "left" : "right"));
 }
 
 .perch-note {
-  width: 280px;
   z-index: 4;
-}
-
-/* An empty gutter with no words reads as broken, so it says so. */
-.none {
-  color: var(--subtle);
-  margin: 0;
-  position: absolute;
-  right: 10px;
-  top: 24px;
-  transform: rotate(180deg);
-  writing-mode: vertical-rl;
 }
 
 .loose {

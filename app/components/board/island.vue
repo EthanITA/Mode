@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { ChevronDown, ChevronUp } from "@lucide/vue";
+import { ChevronDown, ChevronRight, ChevronUp } from "@lucide/vue";
+import { compareBoardTasks, isTaskBlocked } from "~~/app/utils/board";
 
 const sc = useSidecar();
 const board = useBoard(sc.sessionKey);
@@ -7,6 +8,7 @@ const chrome = useChrome();
 
 const open = ref(true);
 const remembered = ref(true);
+const showDone = ref(false);
 const newTask = ref("");
 const draggedId = ref<string>();
 const overId = ref<string>();
@@ -27,6 +29,17 @@ watch(
 
 const agents = computed(() => sc.sessions.value.find((session) => session.key === sc.sessionKey.value)?.agents ?? []);
 const tasks = computed(() => board.summary.value?.tasks ?? []);
+const activeTasks = computed(() => {
+  const all = tasks.value;
+  return all
+    .filter((task) => !task.done && task.status !== "completed")
+    .sort((a, b) => compareBoardTasks(a, b, all));
+});
+const doneTasks = computed(() => {
+  return tasks.value
+    .filter((task) => task.done || task.status === "completed")
+    .sort((a, b) => Number(a.id) - Number(b.id));
+});
 const count = computed(() => board.summary.value?.count ?? 0);
 const waiting = computed(() => board.summary.value?.waitingOnMarco ?? 0);
 const pct = computed(() => {
@@ -72,7 +85,7 @@ function onEnter(event: KeyboardEvent): void {
     variant="glass-liquid"
     :shape="open ? 'island' : 'pill'"
     pad="none"
-    :responsive="{ anchorX: 'end', anchorY: 'end', order: 'height', case: open ? 'panel' : 'pill' }"
+    :responsive="{ anchorX: 'start', anchorY: 'end', order: 'height', case: open ? 'panel' : 'pill' }"
   >
     <template #panel>
       <div class="panel">
@@ -85,10 +98,11 @@ function onEnter(event: KeyboardEvent): void {
 
         <div class="list">
           <BoardItem
-            v-for="task in tasks"
+            v-for="task in activeTasks"
             :key="task.id"
             :task="task"
             :agents="agents"
+            :blocked="isTaskBlocked(task, tasks)"
             :drop-highlight="overId === task.id"
             @toggle="board.toggleDone(task)"
             @reassign="board.reassign(task, $event)"
@@ -99,6 +113,7 @@ function onEnter(event: KeyboardEvent): void {
           />
 
           <p v-if="!tasks.length" class="empty">Nothing on the board yet.</p>
+          <p v-else-if="!activeTasks.length && doneTasks.length" class="empty">All open tasks completed.</p>
 
           <div
             class="add"
@@ -115,6 +130,34 @@ function onEnter(event: KeyboardEvent): void {
               variant="bare"
               @keydown="onEnter"
             />
+          </div>
+
+          <div v-if="doneTasks.length" class="done-section">
+            <button
+              v-press
+              class="done-toggle plain-button focusable"
+              type="button"
+              :aria-expanded="showDone"
+              title="Toggle completed tasks"
+              @click="showDone = !showDone"
+            >
+              <span class="done-chevron" :data-open="showDone ? '' : undefined">
+                <UiIcon :icon="ChevronRight" size="xs" />
+              </span>
+              <span class="done-title mono-meta">Done</span>
+              <span class="done-count mono-meta">{{ doneTasks.length }}</span>
+            </button>
+
+            <div v-if="showDone" class="done-items">
+              <BoardItem
+                v-for="task in doneTasks"
+                :key="task.id"
+                :task="task"
+                :agents="agents"
+                @toggle="board.toggleDone(task)"
+                @reassign="board.reassign(task, $event)"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -207,6 +250,58 @@ function onEnter(event: KeyboardEvent): void {
   padding: 0 4px;
 }
 
+.done-section {
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+  padding-top: 4px;
+}
+
+.done-toggle {
+  align-items: center;
+  border-radius: 6px;
+  color: var(--muted);
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+.done-toggle:hover {
+  background: var(--sunken);
+  color: var(--ink);
+}
+
+.done-chevron {
+  align-items: center;
+  color: var(--subtle);
+  display: inline-flex;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.done-chevron[data-open] {
+  transform: rotate(90deg);
+}
+
+.done-title {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.done-count {
+  background: var(--sunken);
+  border-radius: 999px;
+  color: var(--subtle);
+  font-size: 9.5px;
+  padding: 1px 6px;
+}
+
+.done-items {
+  display: flex;
+  flex-direction: column;
+}
+
 /* Resting height must equal --island-row-h: shape="pill" only clips to a full
    circle when the box is no taller than that (see design-system/components/island.md). */
 .pill {
@@ -269,7 +364,8 @@ function onEnter(event: KeyboardEvent): void {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fill {
+  .fill,
+  .done-chevron {
     transition: none;
   }
 }

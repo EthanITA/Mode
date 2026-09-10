@@ -11,9 +11,14 @@ const session = computed(() => sc.sessions.value.find((s) => s.key === conversat
 <template>
   <div class="head" data-region="artifact-head">
     <UiSurface class="pill" pad="none" shape="pill" variant="glass">
-      <NuxtLink v-press class="back focusable" :to="`/c/${conversation}`">
+      <NuxtLink
+        v-press
+        class="back focusable"
+        :aria-label="`Back to ${session ? nameOf(session) : 'the conversation'}`"
+        :title="session ? nameOf(session) : 'conversation'"
+        :to="`/c/${conversation}`"
+      >
         <UiIcon :icon="ArrowLeft" size="sm" />
-        {{ session ? nameOf(session) : "conversation" }}
       </NuxtLink>
     </UiSurface>
 
@@ -43,6 +48,13 @@ const session = computed(() => sc.sessions.value.find((s) => s.key === conversat
   padding: 0 14px;
 }
 
+/* Square, so an icon-only pill reads as a button rather than as a clipped label. */
+.pill:has(> .back) {
+  justify-content: center;
+  padding: 0;
+  width: var(--island-row-h);
+}
+
 .what {
   flex: 0 1 auto;
   min-width: 0;
@@ -53,14 +65,10 @@ const session = computed(() => sc.sessions.value.find((s) => s.key === conversat
   align-items: center;
   color: var(--ink);
   display: inline-flex;
-  font-size: 12.5px;
-  font-weight: 600;
-  gap: 8px;
-  max-width: 220px;
-  overflow: hidden;
+  justify-content: center;
+  height: 100%;
   text-decoration: none;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  width: 100%;
 }
 
 .back:hover {

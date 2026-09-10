@@ -434,11 +434,9 @@ defineExpose({ clearPick });
 </template>
 
 <style scoped>
+/* No card: a border and a shadow here read as a document sitting on a surface, and what this
+   is meant to read as is the file itself. */
 .sheet {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-box);
-  box-shadow: var(--shadow-lg);
   min-height: 240px;
   overflow: hidden;
   position: relative;

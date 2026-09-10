@@ -8,11 +8,21 @@ const dockEl = useTemplateRef<HTMLElement>("dockEl");
 const boardEl = useTemplateRef<HTMLElement>("boardEl");
 const dockHeight = ref(0);
 
-// --dock-h is the composer alone; frame.set also takes the board so the canvas can fit around both.
+let queued = 0;
+let sent = { dock: -1, board: -1 };
+
+// rAF: dock and board are flex siblings, so a sync write re-notifies the other observer.
 function publish(dock: number, board: number): void {
-  dockHeight.value = dock;
-  chrome.frame.set({ dock, board });
+  if (dock === sent.dock && board === sent.board) return;
+  sent = { dock, board };
+  cancelAnimationFrame(queued);
+  queued = requestAnimationFrame(() => {
+    dockHeight.value = dock;
+    chrome.frame.set({ dock, board });
+  });
 }
+
+onScopeDispose(() => cancelAnimationFrame(queued));
 
 useResizeObserver(dockEl, ([entry]) => {
   publish(
@@ -46,16 +56,16 @@ useResizeObserver(boardEl, ([entry]) => {
     <!-- One row, so the composer takes whatever width the board leaves rather than
          the two hugging opposite corners and colliding in the middle. -->
     <div class="foot" data-region="dock-row">
+      <div ref="boardEl" class="foot-board" data-region="board-corner">
+        <slot name="board" />
+      </div>
+
       <div ref="dockEl" class="foot-dock" data-region="dock-corner">
         <p v-if="sc.failure.value" class="failure" role="alert">
           The sidecar server did not answer: {{ sc.failure.value }}
         </p>
 
         <slot name="dock" />
-      </div>
-
-      <div ref="boardEl" class="foot-board" data-region="board-corner">
-        <slot name="board" />
       </div>
     </div>
   </div>
@@ -107,6 +117,10 @@ useResizeObserver(boardEl, ([entry]) => {
 
 .foot-board {
   flex: none;
+}
+
+.foot-board:not(:has(*)) {
+  display: none;
 }
 
 .row > :deep(*),

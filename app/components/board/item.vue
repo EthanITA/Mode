@@ -2,10 +2,11 @@
 import type { BoardTask } from "~~/shared/types/board";
 import type { SessionAgent } from "~~/shared/types/session";
 
-const { task, agents, dropHighlight = false } = defineProps<{
+const { task, agents, dropHighlight = false, blocked = false } = defineProps<{
   task: BoardTask;
   agents: SessionAgent[];
   dropHighlight?: boolean;
+  blocked?: boolean;
 }>();
 
 defineEmits<{
@@ -35,10 +36,14 @@ const ownerLabel = computed(() => {
   if (task.category === "USER") return "Marco";
   return ownerAgent.value?.name ?? "Claude";
 });
-const blockedTitle = computed(() =>
-  task.blockedBy.length ? `Blocked by #${task.blockedBy.join(", #")}` : undefined,
-);
-const commentTell = computed(() => `On task #${task.id}, ${task.text}`);
+const taskId = computed(() => (task.id.startsWith("#") ? task.id : `#${task.id}`));
+const blockedTitle = computed(() => {
+  if (task.blockedBy.length) return `Blocked by #${task.blockedBy.join(", #")}`;
+  if (task.category === "WAIT") return "Waiting on external dependency";
+  return undefined;
+});
+const commentTell = computed(() => `On task ${taskId.value}, ${task.text}`);
+const commentLabel = computed(() => `${taskId.value} ${task.text}`);
 </script>
 
 <template>
@@ -47,7 +52,7 @@ const commentTell = computed(() => `On task #${task.id}, ${task.text}`);
     draggable="true"
     data-cmt="task"
     :data-cmt-id="task.id"
-    :data-cmt-label="task.text"
+    :data-cmt-label="commentLabel"
     :data-cmt-tell="commentTell"
     :data-drop="dropHighlight ? '' : undefined"
     :title="blockedTitle"
@@ -60,17 +65,28 @@ const commentTell = computed(() => `On task #${task.id}, ${task.text}`);
       <i v-for="n in 6" :key="n" class="pip" />
     </span>
 
-    <button v-press class="box plain-button focusable" type="button" :aria-pressed="task.done" @click="$emit('toggle')">
+    <button
+      v-press
+      class="box plain-button focusable"
+      type="button"
+      :aria-pressed="task.done"
+      :data-in-progress="task.status === 'in_progress' && !task.done ? '' : undefined"
+      @click="$emit('toggle')"
+    >
       <svg v-if="task.done" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M20 6 9 17l-5-5" />
       </svg>
+      <span v-else-if="task.status === 'in_progress'" class="progress-dot" />
     </button>
+
+    <span class="id mono-meta" :data-done="task.done ? '' : undefined">{{ taskId }}</span>
 
     <span class="text" :data-done="task.done ? '' : undefined">{{ task.text }}</span>
 
     <BoardOwnerMenu :agents="agents" @pick="$emit('reassign', $event)">
       <UiChip size="xs" :title="`Owner: ${ownerLabel}`" :data-category="task.category">
         <span v-if="task.category === 'WAIT'" class="waiting mono-meta">wait</span>
+        <span v-else-if="blocked && !task.done" class="blocked mono-meta">blocked</span>
         <span v-flip="task.owner" class="owner-mark">
           <UiAvatar
             v-if="task.category === 'USER' || ownerAgent"
@@ -137,6 +153,17 @@ const commentTell = computed(() => `On task #${task.id}, ${task.text}`);
   border-color: var(--primary);
 }
 
+.box[data-in-progress] {
+  border-color: var(--primary);
+}
+
+.progress-dot {
+  background: var(--primary);
+  border-radius: 999px;
+  height: 5px;
+  width: 5px;
+}
+
 .box svg {
   fill: none;
   height: 9px;
@@ -145,6 +172,17 @@ const commentTell = computed(() => `On task #${task.id}, ${task.text}`);
   stroke-linejoin: round;
   stroke-width: 3;
   width: 9px;
+}
+
+.id {
+  color: var(--muted);
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.id[data-done] {
+  color: var(--subtle);
 }
 
 .text {
@@ -160,7 +198,8 @@ const commentTell = computed(() => `On task #${task.id}, ${task.text}`);
   text-decoration: line-through;
 }
 
-.waiting {
+.waiting,
+.blocked {
   color: var(--warning);
 }
 

@@ -33,6 +33,7 @@ const closedIds = new Set<string>();
 const heldScroll = ref(false);
 const heldTop = ref(0);
 const frameReady = ref(false);
+const noteCount = ref(0);
 const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
 
@@ -195,7 +196,8 @@ watch([() => sc.slug.value, () => versions.at.value], () => {
   pendingEdits.value = [];
   awaiting.value = false;
   closedIds.clear();
-  chrome.comment.select(undefined);
+  // Armed from the button, comment mode is sticky and global; the document it was armed against is gone.
+  chrome.comment.disarm();
 });
 
 function onWin(event: KeyboardEvent): void {
@@ -206,6 +208,11 @@ function onWin(event: KeyboardEvent): void {
   void settle("revert", edit);
 }
 
+// `shelved` follows the conversation's face, and this route has no face to follow.
+watchEffect(() => {
+  chrome.islands.shelved.value = false;
+});
+
 onMounted(() => {
   window.addEventListener("keydown", onWin);
 });
@@ -213,6 +220,7 @@ onMounted(() => {
 onScopeDispose(() => {
   window.removeEventListener("keydown", onWin);
   inlineArmed.value = false;
+  chrome.comment.disarm();
 });
 </script>
 
@@ -239,19 +247,11 @@ onScopeDispose(() => {
           :unreachable="versions.unreachable.value"
         />
 
-        <div v-if="sc.artifact.value?.slug === slug" class="stack">
-          <ArtifactGutter
-            v-if="measured"
-            side="right"
-            :live="live"
-            :marks="marks"
-            :threads="threads"
-            @reload="bump"
-          />
-
+        <div v-if="sc.artifact.value?.slug === slug" class="stack" :data-notes="noteCount > 0">
           <ArtifactFrame
             v-if="stage === 'live' || stage === 'version'"
             ref="frame"
+            class="sheet-cell"
             data-region="artifact-page"
             :edition="edition"
             :html="html"
@@ -261,6 +261,17 @@ onScopeDispose(() => {
             @marks="onMarks"
             @pending="takePending"
             @ready="onReady"
+          />
+
+          <ArtifactGutter
+            v-if="measured"
+            class="notes-cell"
+            side="right"
+            :live="live"
+            :marks="marks"
+            :threads="threads"
+            @notes="noteCount = $event"
+            @reload="bump"
           />
 
           <div v-else class="gap" data-region="version-gap">
@@ -327,25 +338,48 @@ onScopeDispose(() => {
   box-sizing: border-box;
   inset: 0;
   overflow-y: auto;
-  padding: var(--stage-top) var(--gutter) var(--gutter);
+  padding: var(--stage-top) 0 calc(var(--dock-h, var(--dock-rest-h)) + var(--gutter) * 2);
   position: absolute;
 }
 
 .page {
   display: flex;
   flex-direction: column;
-  margin: 0 auto;
-  max-width: var(--page-w);
   min-height: 100%;
-  padding-bottom: 24px;
   width: 100%;
 }
 
-/* The gutter hangs off the right edge, so the column leaves it room rather than clipping it. */
+/* Two columns: a note narrows the artifact rather than covering it. */
 .stack {
-  margin-right: var(--gutter-w);
-  margin-top: 16px;
+  column-gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 0;
   position: relative;
+  transition: grid-template-columns var(--duration-base) var(--ease-out);
+}
+
+.stack[data-notes="true"] {
+  grid-template-columns: minmax(0, 1fr) var(--notes-w);
+  padding-right: var(--gutter);
+}
+
+/* Named rather than left to source order: the overlays between them are out of flow. */
+.sheet-cell,
+.gap {
+  grid-column: 1;
+}
+
+.notes-cell {
+  grid-column: 2;
+}
+
+/* Only the artifact runs to the edges; its chrome insets itself. */
+.page > :deep([data-region="version-tabs"]) {
+  box-sizing: border-box;
+  margin-inline: auto;
+  max-width: var(--page-w);
+  padding-inline: var(--gutter);
+  width: 100%;
 }
 
 .gap,
@@ -353,10 +387,14 @@ onScopeDispose(() => {
   background: var(--raised);
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-box);
+  box-sizing: border-box;
   color: var(--muted);
   font-size: 14px;
+  margin-inline: auto;
+  max-width: var(--page-w);
   padding: 40px 28px;
   text-align: center;
+  width: 100%;
 }
 
 .gap p,
@@ -405,5 +443,11 @@ onScopeDispose(() => {
   position: absolute;
   transform: translate(8px, -50%);
   z-index: 28;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stack {
+    transition: none;
+  }
 }
 </style>

@@ -273,9 +273,9 @@ export function useChrome(): Chrome {
     const { gutter, stageTop } = readChromeTokens();
     insets.value = {
       top: stageTop,
-      right: measure.board + 2 * gutter,
+      right: gutter,
       bottom: measure.dock + 2 * gutter,
-      left: gutter,
+      left: measure.board ? measure.board + 2 * gutter : gutter,
     };
   }
 
