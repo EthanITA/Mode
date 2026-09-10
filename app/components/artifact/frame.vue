@@ -246,7 +246,7 @@ function onLoad(): void {
   watchers.push(() => resize.disconnect());
 
   const onMove = (event: MouseEvent): void => {
-    if (chrome.comment.spot.value) return;
+    if (!chrome.comment.armed.value || chrome.comment.spot.value) return;
     const next = blockAt(event.target);
     if (next === hot) {
       publish();
@@ -269,6 +269,8 @@ function onLoad(): void {
       window.open(link.getAttribute("href") ?? "", "_blank", "noopener");
       return;
     }
+    // Unarmed the artifact is being read, so a block click stays the page's own: no ring, no composer.
+    if (!chrome.comment.armed.value) return;
     const node = blockAt(event.target);
     if (!node) return;
     event.preventDefault();
@@ -412,6 +414,10 @@ onScopeDispose(teardown);
 watch(chrome.comment.pick, (hit) => {
   if (hit) return;
   picked = undefined;
+});
+
+watch(chrome.comment.armed, (on) => {
+  if (!on) clearPick();
 });
 
 defineExpose({ clearPick });

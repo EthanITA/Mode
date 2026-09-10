@@ -114,7 +114,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- The frame is always a review surface, so its ring shows unarmed; the banner belongs to the explicit arm. -->
+  <!-- Reading is not reviewing: the ring and the banner both belong to the explicit arm. -->
   <div v-if="chrome.comment.armed.value || chrome.comment.hover.value" class="armed" data-region="comment-mode">
     <p v-if="chrome.comment.armed.value" class="banner" data-region="comment-banner">
       Pick anything to comment on
