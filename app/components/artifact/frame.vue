@@ -305,11 +305,6 @@ function onLoad(): void {
       if (chrome.dismiss()) event.preventDefault();
       return;
     }
-    if (event.key === "Alt" && !event.repeat) {
-      armKey = "alt";
-      chrome.comment.arm(true);
-      return;
-    }
     if (meta || event.altKey || typing(event.target)) return;
     if (event.key.toLowerCase() === "c" && !event.repeat) {
       armKey = "c";

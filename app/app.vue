@@ -31,12 +31,6 @@ function onKeyDown(event: KeyboardEvent): void {
     if (chrome.dismiss()) event.preventDefault();
     return;
   }
-  // Option also arms, because C is a letter and dies the moment the composer holds focus.
-  if (event.key === "Alt" && !event.repeat) {
-    armKey = "alt";
-    chrome.comment.arm(true);
-    return;
-  }
   if (meta || event.altKey || typing(event)) return;
   if (event.key.toLowerCase() === "c" && !event.repeat) {
     armKey = "c";
