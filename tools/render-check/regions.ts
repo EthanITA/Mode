@@ -194,7 +194,7 @@ export const REGIONS: RegionSpec[] = [
   {
     id: 'composer-dock',
     label: 'composer',
-    design: 'Bottom left: the prompt, the tray, the transcript, the mode and style pickers.',
+    design: 'Bottom right: the prompt, the tray, the transcript, the mode and style pickers.',
     selectors: ['[data-region="composer-dock"]'],
     demand: 'required',
     states: [...CONVERSATION, 'comment'],
@@ -237,7 +237,7 @@ export const REGIONS: RegionSpec[] = [
   {
     id: 'board-island',
     label: 'board island',
-    design: 'Bottom right: the shared board, open or minimized to a pill.',
+    design: 'Bottom left: the shared board, open or minimized to a pill.',
     selectors: ['[data-region="board-island"]'],
     demand: 'required',
     states: [...CONVERSATION],
