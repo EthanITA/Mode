@@ -10,10 +10,19 @@ const draft = ref("");
 const pen = useTemplateRef<HTMLElement>("pen");
 let cameFrom: HTMLElement | undefined;
 
+function focusPen(): void {
+  pen.value?.querySelector("textarea")?.focus();
+}
+
 onMounted(async () => {
   cameFrom = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
   await nextTick();
-  pen.value?.querySelector("textarea")?.focus();
+  // A key still held owns the keyboard, so focusing now would type the shortcut itself into the draft.
+  if (!chrome.comment.held.value) focusPen();
+});
+
+watch(chrome.comment.held, (down) => {
+  if (!down) focusPen();
 });
 
 onBeforeUnmount(() => cameFrom?.focus());

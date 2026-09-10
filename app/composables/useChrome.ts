@@ -72,6 +72,7 @@ export interface Chrome {
     close: () => void;
     compose: (hit: FrameHit) => void;
     disarm: () => void;
+    held: Ref<boolean>;
     hover: Maybe<CommentHover>;
     light: (next?: CommentHover) => void;
     open: (at: CommentSpot) => void;
@@ -134,6 +135,8 @@ export function useChrome(): Chrome {
   const jumpOpen = useState<boolean>("sc:jump", () => false);
   const armed = useState<boolean>("sc:cmt-armed", () => false);
   const holding = useState<boolean>("sc:cmt-hold", () => false);
+  // Distinct from `holding`: that says the arm belongs to a hold, this says the key is down right now.
+  const held = useState<boolean>("sc:cmt-held", () => false);
   const spot = useState<CommentSpot | undefined>("sc:cmt-spot");
   const hover = useState<CommentHover | undefined>("sc:cmt-hover");
   const pick = useState<FrameHit | undefined>("sc:cmt-pick");
@@ -168,6 +171,7 @@ export function useChrome(): Chrome {
   function disarm(): void {
     armed.value = false;
     holding.value = false;
+    held.value = false;
     spot.value = undefined;
     hover.value = undefined;
     pick.value = undefined;
@@ -290,6 +294,7 @@ export function useChrome(): Chrome {
     comment: {
       arm: (down = false) => {
         if (!armed.value) holding.value = down;
+        held.value = down;
         armed.value = true;
         spot.value = undefined;
       },
@@ -297,6 +302,7 @@ export function useChrome(): Chrome {
       close,
       compose,
       disarm,
+      held,
       hover,
       light: (next) => {
         hover.value = next;
@@ -306,6 +312,7 @@ export function useChrome(): Chrome {
       },
       pick,
       release: () => {
+        held.value = false;
         if (holding.value && !spot.value && !pick.value) disarm();
       },
       save,
