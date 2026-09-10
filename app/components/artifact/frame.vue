@@ -45,6 +45,7 @@ let watchers: (() => void)[] = [];
 let indexed: Indexed[] = [];
 let hot: Element | undefined;
 let picked: Element | undefined;
+let armKey: string | undefined;
 let raf = 0;
 let loadGen = 0;
 
@@ -289,6 +290,11 @@ function onLoad(): void {
 
   const onKeyDown = (event: KeyboardEvent): void => {
     const meta = event.metaKey || event.ctrlKey;
+    // A held key auto-repeats into the popover box its own click just focused.
+    if (armKey && event.key.toLowerCase() === armKey) {
+      event.preventDefault();
+      return;
+    }
     if (meta && event.key.toLowerCase() === "k") {
       event.preventDefault();
       if (picked || hot) emit("edit");
@@ -300,15 +306,20 @@ function onLoad(): void {
       return;
     }
     if (event.key === "Alt" && !event.repeat) {
+      armKey = "alt";
       chrome.comment.arm(true);
       return;
     }
     if (meta || event.altKey || typing(event.target)) return;
-    if (event.key.toLowerCase() === "c" && !event.repeat) chrome.comment.arm(true);
+    if (event.key.toLowerCase() === "c" && !event.repeat) {
+      armKey = "c";
+      chrome.comment.arm(true);
+    }
   };
   const onKeyUp = (event: KeyboardEvent): void => {
-    if (typing(event.target)) return;
-    if (event.key === "Alt" || event.key.toLowerCase() === "c") chrome.comment.release();
+    if (!armKey || event.key.toLowerCase() !== armKey) return;
+    armKey = undefined;
+    chrome.comment.release();
   };
 
   doc.addEventListener("mousemove", onMove);
