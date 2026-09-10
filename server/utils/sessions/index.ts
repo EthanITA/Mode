@@ -1,3 +1,4 @@
+import type { LiveSession } from "../../../shared/types/session.ts"
 import { pipelineFor } from "../mode/pipeline.ts"
 import { slotOf } from "../mode/slot.ts"
 import { sessions as modeSessions } from "../mode/sessions.ts"
@@ -8,7 +9,6 @@ import { keyOf } from "./paths.ts"
 import { liveEntries, type RegistryEntry } from "./registry.ts"
 import { cwdFromSlug } from "./slug.ts"
 import { identityOf, transcriptIndex, type TranscriptIdentity, type TranscriptRef } from "./transcripts.ts"
-import type { LiveSession } from "./types.ts"
 
 // The rejected build rendered a bare hex id as a title; a name that IS the id is not a name.
 function realName(candidate: string | undefined, key: string, id: string): string | undefined {
@@ -63,5 +63,3 @@ export function liveSessions(): LiveSession[] {
   }
   return out.sort(order)
 }
-
-export type { LiveSession, SessionAgent, SessionStatus } from "./types.ts"

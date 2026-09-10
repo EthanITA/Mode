@@ -1,9 +1,9 @@
 import { readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
+import type { SessionAgent } from "../../../shared/types/session.ts"
 import { readTextSafe } from "../mode/fsutil.ts"
 import { projectsHome, teamsHome } from "./paths.ts"
 import type { TranscriptRef } from "./transcripts.ts"
-import type { SessionAgent } from "./types.ts"
 
 function text(value: unknown): string | undefined {
   return typeof value === "string" && !!value.trim() ? value.trim() : undefined

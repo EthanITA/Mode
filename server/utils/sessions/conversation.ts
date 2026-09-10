@@ -1,9 +1,23 @@
+import { plain } from "./relay.ts"
+import { argOf, readOut } from "./speaker.ts"
 import { readWindow, transcriptIndex, usableLines } from "./transcripts.ts"
 
+// Narration and answer share the provider's `text` block, told apart only by position.
+export type TurnKind = "thinking" | "narration" | "answer" | "acting" | "note" | "drop" | "done"
+
 export type ConversationTurn = {
-  role: "user" | "assistant"
+  role: "user" | "assistant" | "system"
   text: string
   at: number
+  kind?: TurnKind
+  tool?: string
+  arg?: string
+  /** The provider's tool_use id, so a result pairs back to its call. */
+  ref?: string
+  /** Started with run_in_background, so it is long-running by construction. */
+  bg?: true
+  /** Typed but not yet delivered, so the turn it belongs to has not started. */
+  queued?: boolean
 }
 
 export type ConversationSlice = {
@@ -31,16 +45,21 @@ export function conversationOf({ key, since = 0 }: ConversationQuery): Conversat
   const turns: ConversationTurn[] = []
   // The harness re-queues a mid-turn message, writing it twice with replies in between.
   const echo = new Map<string, number>()
+  // A result carries no tool name of its own; only the call it pairs to does.
+  const toolByRef = new Map<string, string>()
   for (const line of usableLines({ text: prefix, whole: true }, "head")) {
-    const turn = turnOf(line)
-    if (!turn) continue
-    if (turn.role === "user") {
-      const said = echo.get(turn.text)
-      if (said && turn.at - said < QUEUE_ECHO_MS) continue
-      echo.set(turn.text, turn.at)
+    for (const turn of turnOf(line)) {
+      if (turn.role === "user") {
+        const said = echo.get(turn.text)
+        if (said && turn.at - said < QUEUE_ECHO_MS) continue
+        echo.set(turn.text, turn.at)
+      }
+      if (turn.kind === "acting" && turn.ref && turn.tool) toolByRef.set(turn.ref, turn.tool)
+      else if (turn.kind === "done" && turn.ref) turn.tool = toolByRef.get(turn.ref)
+      turns.push(turn)
     }
-    turns.push(turn)
   }
+  settle(turns)
   return { turns, offset: start + Buffer.byteLength(prefix, "utf8") }
 }
 
@@ -53,43 +72,104 @@ function throughLastNewline(text: string): string | undefined {
 }
 
 // A mid-turn message lands only here: the copy that reached the model is buried in a
-// tool_result the text scan skips, and remove/popAll repeat the same words.
-function queuedOf(entry: Record<string, unknown>): ConversationTurn | undefined {
-  if (entry.operation !== "enqueue") return undefined
+// tool_result the text scan skips.
+function queuedOf(entry: Record<string, unknown>): ConversationTurn[] {
+  const at = atOf(entry.timestamp)
+  if (!at) return []
   const { content } = entry
-  if (typeof content !== "string" || !content.trim()) return undefined
-  const at = atOf(entry.timestamp)
-  return at ? { role: "user", text: content, at } : undefined
+  const said = typeof content === "string" ? content : ""
+  if (entry.operation === "enqueue") return said.trim() ? spoke(said, at, true) : []
+  // Cancelled, or handed to the model as a real turn: either way the queued copy stops standing.
+  if (entry.operation === "remove") return [{ role: "system", kind: "drop", text: plain(said), at }]
+  if (entry.operation === "dequeue" || entry.operation === "popAll") {
+    return [{ role: "system", kind: "drop", text: "", at }]
+  }
+  return []
 }
 
-function turnOf(line: string): ConversationTurn | undefined {
+// One entry can hold a withdrawn ask, an interruption and a live ask, and all three keep their order.
+function spoke(text: string, at: number, queued = false): ConversationTurn[] {
+  return readOut(text).map((piece) =>
+    piece.kind === "note"
+      ? { role: "system" as const, text: piece.label, at, kind: "note" as const }
+      : { role: "user" as const, text: plain(piece.text), at, queued: queued || undefined },
+  )
+}
+
+function turnOf(line: string): ConversationTurn[] {
   const entry = record(line)
-  if (!entry) return undefined
+  if (!entry) return []
   if (entry.type === "queue-operation") return queuedOf(entry)
-  if (entry.type !== "user" && entry.type !== "assistant") return undefined
-  if (entry.isSidechain) return undefined
-  const message = entry.message
-  if (typeof message !== "object" || !message) return undefined
-  const text = textOf((message as Record<string, unknown>).content)
-  if (!text) return undefined
+  if (entry.type !== "user" && entry.type !== "assistant") return []
+  if (entry.isSidechain) return []
   const at = atOf(entry.timestamp)
-  if (!at) return undefined
-  return { role: entry.type, text, at }
+  if (!at) return []
+  // The 28KB summary body is never worth carrying into a turn; only its presence is.
+  if (entry.isCompactSummary) return [{ role: "system", text: "Compacted", at, kind: "note" }]
+  const message = entry.message
+  if (typeof message !== "object" || !message) return []
+  const content = (message as Record<string, unknown>).content
+  // A result-only entry has no text, thinking or tool_use block, so saidOf below would drop it.
+  if (entry.type === "user") {
+    const ref = resultRefOf(content)
+    if (ref) return [{ role: "system", text: "", at, kind: "done", ref }]
+  }
+  const said = saidOf(content)
+  if (!said) return []
+  if (entry.type === "user") return spoke(said.text, at)
+  return [{ role: "assistant", text: said.text, at, kind: said.kind, tool: said.tool, arg: said.arg, ref: said.ref, bg: said.bg }]
 }
 
-function textOf(content: unknown): string | undefined {
-  if (typeof content === "string") return content.trim() ? content : undefined
+function resultRefOf(content: unknown): string | undefined {
+  const first = Array.isArray(content) ? content[0] : undefined
+  if (typeof first !== "object" || !first) return undefined
+  const rec = first as Record<string, unknown>
+  return rec.type === "tool_result" && typeof rec.tool_use_id === "string" ? rec.tool_use_id : undefined
+}
+
+type Said = { text: string; kind: TurnKind; tool?: string; arg?: string; ref?: string; bg?: true }
+
+// An assistant turn carries one block type at a time, so the first kind present decides the turn.
+function saidOf(content: unknown): Said | undefined {
+  if (typeof content === "string") return content.trim() ? { text: content, kind: "narration" } : undefined
   if (!Array.isArray(content)) return undefined
-  const parts: string[] = []
+  const spoken: string[] = []
+  const thought: string[] = []
+  let tool: string | undefined
+  let arg: string | undefined
+  let ref: string | undefined
+  let bg: true | undefined
   for (const part of content) {
     if (typeof part !== "object" || !part) continue
     const rec = part as Record<string, unknown>
-    if (rec.type !== "text" || typeof rec.text !== "string") continue
-    parts.push(rec.text)
+    if (rec.type === "text" && typeof rec.text === "string") spoken.push(rec.text)
+    else if (rec.type === "thinking" && typeof rec.thinking === "string") thought.push(rec.thinking)
+    else if (rec.type === "tool_use" && typeof rec.name === "string" && !tool) {
+      tool = rec.name
+      arg = argOf(rec.name, rec.input)
+      ref = typeof rec.id === "string" ? rec.id : undefined
+      const input = rec.input as Record<string, unknown> | undefined
+      bg = input?.run_in_background === true ? true : undefined
+    }
   }
-  if (!parts.length) return undefined
-  const joined = parts.join("")
-  return joined.trim() ? joined : undefined
+  const say = spoken.join("")
+  if (say.trim()) return { text: say, kind: "narration" }
+  const think = thought.join("")
+  if (think.trim()) return { text: think, kind: "thinking" }
+  return tool ? { text: tool, kind: "acting", tool, arg, ref, bg } : undefined
+}
+
+// Nothing marks an answer at the time it is written; it is the last thing said before the user speaks.
+function settle(turns: ConversationTurn[]): void {
+  let latest: ConversationTurn | undefined
+  for (const turn of turns) {
+    if (turn.role === "user") {
+      if (latest) latest.kind = "answer"
+      latest = undefined
+    } else if (turn.kind === "narration") {
+      latest = turn
+    }
+  }
 }
 
 function atOf(value: unknown): number | undefined {

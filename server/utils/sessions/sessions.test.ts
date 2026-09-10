@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import { after, before, test } from "node:test"
 import { ALPHA_ID, BETA_ID, useFixtures } from "./__fixtures__/env.ts"
 import { liveSessions } from "./index.ts"
-import type { LiveSession } from "./types.ts"
+import type { LiveSession } from "../../../shared/types/session.ts"
 
 let restore: () => void
 

@@ -4,8 +4,6 @@ import { applyEdit, type FileEdit, type FileTouch, type ParsedTurn } from "./rec
 export const MAX_FILE_BYTES = 512 * 1024
 export const MAX_STORE_BYTES = 64 * 1024 * 1024
 
-export type { BaselineOrigin } from "../../../shared/types/versions.ts"
-
 export interface FileState {
   path: string
   by: string
