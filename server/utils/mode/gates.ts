@@ -1,7 +1,7 @@
+import type { Gate } from "../../../shared/types/mode.ts"
 import { AUTO, GATES } from "./constants.ts"
 import { metaOf, truthy } from "./contracts.ts"
 import { approvedSlug, guardsArmed, held, redStanding } from "./state.ts"
-import type { Gate } from "./types.ts"
 
 export function gatesFor(sid?: string): Gate[] {
   const name = held("mode", sid)

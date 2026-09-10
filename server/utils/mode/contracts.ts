@@ -1,5 +1,6 @@
 import { join } from "node:path"
-import { AUTO, type Axis, FALSEY } from "./constants.ts"
+import type { Axis, ContractLoop, PipelineStep } from "../../../shared/types/mode.ts"
+import { AUTO, FALSEY } from "./constants.ts"
 import { splitFrontMatter } from "./frontmatter.ts"
 import { isFile, listMd, readTextSafe } from "./fsutil.ts"
 import { contractDirs } from "./paths.ts"
@@ -37,9 +38,7 @@ export function alternatives(meta: Record<string, string>, key: string): string[
   return (meta[key] || "").split("|").map((p) => p.trim().toLowerCase()).filter(Boolean)
 }
 
-export type PipelineStep = { label: string; gate: boolean; event: string }
-
-export function pipelineSteps(axis: Axis, name: string): PipelineStep[] {
+function steps(axis: Axis, name: string): PipelineStep[] {
   const raw = metaOf(axis, name).steps || ""
   const out: PipelineStep[] = []
   for (const token of raw.split(",")) {
@@ -53,12 +52,10 @@ export function pipelineSteps(axis: Axis, name: string): PipelineStep[] {
   return out
 }
 
-export type ContractLoop = { from: string; to: string }
-
 // A loop naming a step that no longer exists drops the arc rather than the whole drawing, same as
 // bin/mode's arcs().
-export function pipelineLoops(axis: Axis, name: string, steps: PipelineStep[]): ContractLoop[] {
-  const labels = new Set(steps.map((s) => s.label.toLowerCase()))
+function loops(axis: Axis, name: string, drawn: PipelineStep[]): ContractLoop[] {
+  const labels = new Set(drawn.map((s) => s.label.toLowerCase()))
   const raw = metaOf(axis, name).loops || ""
   const out: ContractLoop[] = []
   for (const pair of raw.split(",")) {
@@ -70,3 +67,6 @@ export function pipelineLoops(axis: Axis, name: string, steps: PipelineStep[]): 
   }
   return out
 }
+
+// Named for the drawing a contract declares, not for Pipeline, which is the live state of one.
+export const Flow = { steps, loops } as const

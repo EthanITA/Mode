@@ -1,5 +1,6 @@
 import { join } from "node:path"
-import { AUTO, type Axis, AXES, OFF, SHARED_PIN_FILE } from "./constants.ts"
+import type { Axis } from "../../../shared/types/mode.ts"
+import { AUTO, AXES, OFF, SHARED_PIN_FILE } from "./constants.ts"
 import { names } from "./contracts.ts"
 import { unquote } from "./frontmatter.ts"
 import { readTextSafe, splitLines } from "./fsutil.ts"

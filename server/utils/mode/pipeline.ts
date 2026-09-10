@@ -1,7 +1,7 @@
+import type { Pipeline, PipelineStep } from "../../../shared/types/mode.ts"
 import { AUTO } from "./constants.ts"
-import { type PipelineStep, pipelineSteps } from "./contracts.ts"
+import { Flow } from "./contracts.ts"
 import { declared, held } from "./state.ts"
-import type { Pipeline } from "./types.ts"
 
 export function furthest(sid: string | undefined, steps: PipelineStep[]): number {
   const recorded = declared("mode", sid)
@@ -27,7 +27,7 @@ export function furthest(sid: string | undefined, steps: PipelineStep[]): number
 
 export function pipelineFor(sid?: string): Pipeline | undefined {
   const name = held("mode", sid)
-  const steps = name && name !== AUTO ? pipelineSteps("mode", name) : []
+  const steps = name && name !== AUTO ? Flow.steps("mode", name) : []
   if (!steps.length) return undefined
   const labels = steps.map((s) => s.label)
   const at = furthest(sid, steps)

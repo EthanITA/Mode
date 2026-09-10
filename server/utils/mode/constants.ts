@@ -1,5 +1,7 @@
-export const AXES = ["mode", "style"] as const
-export type Axis = (typeof AXES)[number]
+import type { Axis } from "../../../shared/types/mode.ts"
+
+// `satisfies` guards the members; FOLDER below is a Record<Axis, …>, so it guards the omissions.
+export const AXES = ["mode", "style"] as const satisfies readonly Axis[]
 
 export const AUTO = "auto"
 export const OFF = "off"

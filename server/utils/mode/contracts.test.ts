@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { afterEach, test } from "node:test"
 import { useFixtures } from "./__fixtures__/env.ts"
-import { alternatives, names, pipelineLoops, pipelineSteps, truthy } from "./contracts.ts"
+import { Flow, alternatives, names, truthy } from "./contracts.ts"
 
 let restore: () => void
 afterEach(() => restore?.())
@@ -12,9 +12,9 @@ test("names lists the fixture contracts, sorted", () => {
   assert.deepEqual(names("style"), ["plain"])
 })
 
-test("pipelineSteps parses the gate marker and the @event off each step", () => {
+test("Flow.steps parses the gate marker and the @event off each step", () => {
   restore = useFixtures()
-  assert.deepEqual(pipelineSteps("mode", "gated"), [
+  assert.deepEqual(Flow.steps("mode", "gated"), [
     { label: "intake", gate: false, event: "" },
     { label: "spec", gate: false, event: "artifact" },
     { label: "approval", gate: true, event: "approve" },
@@ -22,13 +22,13 @@ test("pipelineSteps parses the gate marker and the @event off each step", () => 
     { label: "integrate", gate: false, event: "" },
     { label: "deliver", gate: false, event: "commit" },
   ])
-  assert.deepEqual(pipelineSteps("mode", "demo"), [])
+  assert.deepEqual(Flow.steps("mode", "demo"), [])
 })
 
-test("pipelineLoops drops an arc naming a step that no longer exists", () => {
+test("Flow.loops drops an arc naming a step that no longer exists", () => {
   restore = useFixtures()
-  const steps = pipelineSteps("mode", "gated")
-  assert.deepEqual(pipelineLoops("mode", "gated", steps), [
+  const steps = Flow.steps("mode", "gated")
+  assert.deepEqual(Flow.loops("mode", "gated", steps), [
     { from: "approval", to: "spec" },
     { from: "integrate", to: "dispatch" },
     { from: "deliver", to: "intake" },

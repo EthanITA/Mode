@@ -1,8 +1,8 @@
 import { readdirSync } from "node:fs"
+import type { Pipeline, Slot } from "../../../shared/types/mode.ts"
 import { pipelineFor } from "./pipeline.ts"
 import { stateHome } from "./paths.ts"
 import { slotOf } from "./slot.ts"
-import type { Pipeline, Slot } from "./types.ts"
 
 export type Session = { id: string; slots: { mode: Slot; style: Slot }; pipeline?: Pipeline }
 

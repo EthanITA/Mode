@@ -1,5 +1,6 @@
 import { join } from "node:path"
-import { type Axis, FALSEY, GREEN, RED } from "./constants.ts"
+import type { Axis } from "../../../shared/types/mode.ts"
+import { FALSEY, GREEN, RED } from "./constants.ts"
 import { readTextSafe, splitLines } from "./fsutil.ts"
 import { modeHome, stateHome } from "./paths.ts"
 

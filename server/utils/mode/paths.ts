@@ -2,7 +2,8 @@ import { existsSync, realpathSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { type Axis, FOLDER, PINS_FILE } from "./constants.ts"
+import type { Axis } from "../../../shared/types/mode.ts"
+import { FOLDER, PINS_FILE } from "./constants.ts"
 
 const moduleDir = dirname(fileURLToPath(import.meta.url))
 
