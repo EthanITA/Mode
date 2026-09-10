@@ -5,6 +5,28 @@ export type TurnSegment =
   | { kind: "prose"; text: string }
   | { body: string; kind: "block"; summary: string; tag: string };
 
+export interface Sequenced {
+  kind?: string;
+  role: string;
+  text: string;
+}
+
+// Arrival order, never `at`: a compaction rewinds the clock, so the timestamps are not monotonic.
+export function freshAnswer<T extends Sequenced>(turns: T[]): T | undefined {
+  let said = -1;
+  let asked = -1;
+  turns.forEach((turn, index) => {
+    if (turn.role === "user") asked = index;
+    else if (turn.role === "assistant" && turn.kind === "answer") said = index;
+  });
+  return said > asked ? turns[said] : undefined;
+}
+
+// A compaction emits the same note from two entries seconds apart, so `at` cannot join them.
+export function echoesNote(turn: Sequenced, previous?: Sequenced): boolean {
+  return !!previous && turn.role === "system" && previous.role === "system" && previous.text === turn.text;
+}
+
 const WRAPPERS = [
   "bash-input",
   "bash-stderr",

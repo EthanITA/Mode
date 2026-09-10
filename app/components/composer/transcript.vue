@@ -4,9 +4,18 @@ export type TranscriptState = "expanded" | "minimized" | "preview";
 
 <script lang="ts" setup>
 import { ChevronUp, Minus } from "@lucide/vue";
-import type { ConversationTurn } from "~/composables/useConversation";
+import type { MascotState } from "~/components/claude/mascot.vue";
+import type { Beat, ConversationTurn } from "~/composables/useConversation";
 
-const { state, turns } = defineProps<{ state: TranscriptState; turns: ConversationTurn[] }>();
+const { beat, mascot, porting, state, turns } = defineProps<{
+  beat?: Beat;
+  mascot: MascotState;
+  porting?: boolean;
+  state: TranscriptState;
+  turns: ConversationTurn[];
+}>();
+
+const working = computed(() => mascot !== "idle");
 
 defineEmits<{ minimize: []; toggle: [] }>();
 
@@ -16,6 +25,9 @@ const scroller = ref<HTMLElement>();
 
 const expanded = computed(() => state === "expanded");
 const last = computed(() => turns.at(-1));
+const answer = computed(() => freshAnswer(turns));
+// Where the newest thing is: at the foot of a history or a running beat, at the head of a settled reply.
+const tail = computed(() => expanded.value || !!beat || working.value || !!porting);
 
 const meta = computed(() => {
   if (!last.value) return "nothing yet";
@@ -37,12 +49,16 @@ function tell(turn: ConversationTurn): string {
     : `About your reply from ${ageOf(turn)} ago in this conversation`;
 }
 
-function toBottom(): void {
+function reveal(): void {
   const box = scroller.value;
-  if (box) box.scrollTop = box.scrollHeight;
+  if (box) box.scrollTop = tail.value ? box.scrollHeight : 0;
 }
 
-watch([() => turns.length, () => state], () => nextTick(toBottom), { flush: "post" });
+watch(
+  [() => turns.length, () => state, () => tail.value, () => beat?.head?.at, () => beat?.actions.length],
+  () => nextTick(reveal),
+  { flush: "post" },
+);
 </script>
 
 <template>
@@ -65,24 +81,73 @@ watch([() => turns.length, () => state], () => nextTick(toBottom), { flush: "pos
         <UiIconButton :icon="Minus" label="Minimize · just the prompt" size="xs" @click="$emit('minimize')" />
       </div>
 
-      <div v-if="state === 'preview'" class="preview">
-        <p class="line">{{ last?.text || "Nothing in this conversation yet." }}</p>
-      </div>
+      <div ref="scroller" class="body">
+        <div v-if="state === 'expanded'" class="turns">
+          <template v-for="(turn, index) in turns" :key="`${turn.at}:${turn.role}:${index}`">
+            <p v-if="turn.role === 'system'" class="note mono-meta" data-region="system-note">
+              {{ turn.text }}
+            </p>
 
-      <div v-if="state === 'expanded'" ref="scroller" class="turns">
-        <article
-          v-for="(turn, index) in turns"
-          :key="`${turn.at}:${turn.role}:${index}`"
-          class="turn"
-          :data-role="turn.role"
-          data-cmt="turn"
-          :data-cmt-label="`${who(turn)} · ${ageOf(turn)}`"
-          :data-cmt-tell="tell(turn)"
-          :data-cmt-excerpt="turn.text.slice(0, EXCERPT)"
-        >
-          <span class="who mono-meta">{{ who(turn) }} · {{ ageOf(turn) }}</span>
-          <ComposerTurnText class="text" :value="turn.text" />
-        </article>
+            <article
+              v-else
+              class="turn"
+              :data-queued="turn.queued"
+              :data-role="turn.role"
+              data-cmt="turn"
+              :data-cmt-label="`${who(turn)} · ${ageOf(turn)}`"
+              :data-cmt-tell="tell(turn)"
+              :data-cmt-excerpt="turn.text.slice(0, EXCERPT)"
+            >
+              <span class="who mono-meta">
+                {{ who(turn) }} · {{ ageOf(turn) }}<template v-if="turn.queued"> · queued</template>
+              </span>
+              <ComposerTurnText class="text" :value="turn.text" />
+            </article>
+          </template>
+        </div>
+
+        <div class="stage" :data-state="state">
+          <Transition name="swap">
+            <article v-if="beat || working || porting" class="turn beat" data-region="beat">
+              <div class="beat-head">
+                <span class="perch">
+                  <ClaudeMascot :porting="porting" :show="working" :size="44" :state="mascot" />
+                </span>
+
+                <div class="beat-say">
+                  <Transition name="think">
+                    <p v-if="!beat?.head" key="wait" class="beat-text shimmer" data-waiting="true">
+                      Thinking<span class="dots" />
+                    </p>
+
+                    <ComposerTurnText
+                      v-else
+                      :key="beat!.head!.at"
+                      class="beat-text"
+                      :data-thinking="beat!.head!.kind === 'thinking'"
+                      :value="beat!.head!.text"
+                    />
+                  </Transition>
+                </div>
+              </div>
+
+              <ComposerActionLine
+                v-if="beat?.actions.length"
+                class="acts"
+                :actions="beat.actions"
+                :busy="mascot === 'running'"
+              />
+            </article>
+
+            <ComposerTurnText
+              v-else-if="state === 'preview' && answer"
+              class="answer"
+              :value="answer.text"
+            />
+
+            <p v-else-if="state === 'preview'" class="empty mono-meta">Nothing in this conversation yet.</p>
+          </Transition>
+        </div>
       </div>
     </template>
   </div>
@@ -167,24 +232,48 @@ watch([() => turns.length, () => state], () => nextTick(toBottom), { flush: "pos
   transform: rotate(180deg);
 }
 
-.line {
+/* The one scroller, and the head is not in it: the dock grows upward, so two stacked
+   scrollers here pushed the head off the top of the screen. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: var(--transcript-max-h);
+  overflow-y: auto;
+  padding: 0 4px 8px 2px;
+  scrollbar-width: thin;
+}
+
+/* Positioned, so a leaving beat or answer is contained here rather than escaping the island. */
+.stage {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.stage:empty {
+  display: none;
+}
+
+.answer {
   color: var(--ink);
   font-size: 13px;
-  line-height: 1.5;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  color: var(--subtle);
   margin: 0;
-  overflow: hidden;
-  padding: 0 8px 10px 6px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .turns {
   display: flex;
+  flex: none;
   flex-direction: column;
   gap: 10px;
-  max-height: 38vh;
-  overflow-y: auto;
-  padding: 0 4px 8px 2px;
 }
 
 .turn {
@@ -218,8 +307,132 @@ watch([() => turns.length, () => state], () => nextTick(toBottom), { flush: "pos
   background: var(--primary-soft);
 }
 
+/* Sent but not yet picked up, so it reads as pending rather than as part of the exchange. */
+.turn[data-queued="true"] .text {
+  background: none;
+  border: 1px dashed var(--border-strong);
+}
+
+.beat {
+  align-self: flex-start;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.beat-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 8px;
+}
+
+/* The narration's own column, positioned: an abspos leaver in a flex row would snap to the perch. */
+.beat-say {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+/* Fixed, so the row keeps its shape through the gap between vanishing and arriving. */
+.perch {
+  align-items: center;
+  display: flex;
+  flex: none;
+  height: 44px;
+  justify-content: center;
+  width: 50px;
+}
+
+.perch.small {
+  height: 34px;
+  width: 38px;
+}
+
+.beat-text[data-waiting="true"] {
+  font-style: italic;
+}
+
+.dots::after {
+  animation: dots 1.4s steps(1, end) infinite;
+  content: "";
+}
+
+@keyframes dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+}
+
+/* Wraps in full: neither the narration nor an action line may be clipped. */
+.beat-text {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding-top: 6px;
+}
+
+/* Prose renders at the transcript's size, so it is scaled down to a narration's weight here. */
+.beat-text :deep(p),
+.beat-text :deep(li) {
+  font-size: 12.5px;
+  margin: 0;
+}
+
+.beat-text :deep(code) {
+  font-size: 11.5px;
+}
+
+.beat-text :deep(strong) {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.beat-text[data-thinking="true"] {
+  color: var(--subtle);
+  font-style: italic;
+}
+
+.acts {
+  padding-left: 52px;
+}
+
+.note {
+  align-self: center;
+  color: var(--subtle);
+  margin: 0;
+  opacity: 0.85;
+}
+
+/* Held back until the outgoing one has gone, so two paragraphs never overlap mid-fade. */
+.swap-enter-active,
+.think-enter-active {
+  transition: opacity var(--duration-moderate) var(--ease-out) var(--duration-fast);
+}
+
+/* Out of flow, so the arriving text sets the height and the box tweens to it instead of snapping. */
+.swap-leave-active,
+.think-leave-active {
+  inset: 0 0 auto;
+  position: absolute;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.swap-enter-from,
+.swap-leave-to,
+.think-enter-from,
+.think-leave-to {
+  opacity: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .chevron {
+  .chevron,
+  .swap-enter-active,
+  .swap-leave-active,
+  .think-enter-active,
+  .think-leave-active {
     transition: none;
   }
 }

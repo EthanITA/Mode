@@ -3,6 +3,7 @@
 
 :root {
   --gutter-w: 44px;
+  --notes-w: 300px;
   --page-w: 880px;
   --step: 8px;
 
@@ -12,6 +13,8 @@
   --island-row-h: 40px;
   --dock-rest-h: 64px;
   --shell-max-w: 1536px;
+  /* Half a 1080p panel: 60vh reaches 540px on the ~900px viewport such a screen leaves. */
+  --transcript-max-h: clamp(160px, 60vh, 540px);
 
   /* What a panelled face leaves clear to sit under the island row. The bottom is not a
      token: the layout measures the dock and publishes --dock-h, with --dock-rest-h the
@@ -28,6 +31,27 @@
   --tint-rose: var(--error);
   --tint-cyan: color-mix(in oklch, var(--info) 62%, var(--success));
   --tint-orange: color-mix(in oklch, var(--warning) 68%, var(--error));
+
+  /* The one literal colour here: the Claude Code mark is a brand mark, and recolouring it through
+     a token would be wrong in both themes. Same carve-out cela makes for ui/provider-icon.vue. */
+  --mascot: #d97757;
+  --mascot-eye: #ffffff;
+
+  /* The props are objects, not the brand, so they carry object colours and only the body is coral. */
+  --prop-dark: color-mix(in oklch, var(--ink) 82%, var(--canvas));
+  --prop-screen: color-mix(in oklch, var(--info) 26%, var(--ink));
+  --prop-code: var(--info);
+  --prop-deck: var(--border-strong);
+  --prop-key: var(--canvas);
+  --prop-glass: var(--info);
+  --prop-cloud: var(--muted);
+  --prop-tweed: color-mix(in oklch, var(--warning) 34%, var(--ink));
+  /* A portal is an object with its own fixed colour, like the mark; no token can stand in. */
+  --portal-1: #5b1f96;
+  --portal-2: #7429b8;
+  --portal-3: #8f3fd4;
+  --portal-4: #ab5ce8;
+  --portal-spark: #d98cff;
   --tint-slate: var(--subtle);
 }
 
@@ -96,4 +120,27 @@ body {
 
 .plain-button:disabled {
   cursor: not-allowed;
+}
+
+/* A sweep reads as progress where a pulse reads as a fault; ported from mf-ui's ShimmerText. */
+.shimmer {
+  animation: shimmer-sweep 2s linear infinite;
+  background-clip: text;
+  background-image: linear-gradient(93deg, var(--subtle) 0%, var(--ink) 50%, var(--subtle) 100%);
+  background-size: 200% 100%;
+  color: transparent;
+  -webkit-background-clip: text;
+}
+
+@keyframes shimmer-sweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    animation: none;
+    background-image: none;
+    color: var(--muted);
+  }
 }

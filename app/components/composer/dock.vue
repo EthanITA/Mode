@@ -10,6 +10,11 @@ const chrome = useChrome();
 const state = ref<TranscriptState>("preview");
 const remembered = ref<TranscriptState>("preview");
 
+const working = computed(() => convo.mascot.value !== "idle");
+const shrunk = computed(() => state.value === "minimized");
+// Minimized hides Claude's output entirely, so the mascot keeps its place beside the prompt.
+const perched = computed(() => !working.value || shrunk.value);
+
 watch(
   () => chrome.islands.shelved.value,
   (on) => {
@@ -86,7 +91,10 @@ onMounted(() => {
     >
       <div class="island-body">
         <ComposerTranscript
+          :mascot="convo.mascot.value"
+          :porting="convo.porting.value"
           :state="state"
+          :beat="convo.beat.value"
           :turns="convo.turns.value"
           @minimize="state = 'minimized'"
           @toggle="state = state === 'expanded' ? 'preview' : 'expanded'"
@@ -94,7 +102,7 @@ onMounted(() => {
 
         <div class="row">
           <UiIconButton
-            v-if="state === 'minimized'"
+            v-if="shrunk"
             :icon="ChevronUp"
             label="Show the transcript"
             size="xs"
@@ -102,6 +110,10 @@ onMounted(() => {
           >
             {{ plural(convo.turns.value.length, "turn") }}
           </UiIconButton>
+
+          <span class="perch">
+            <ClaudeMascot :porting="convo.porting.value" :show="perched" :size="40" :state="convo.mascot.value" />
+          </span>
 
           <UiTextarea
             v-model="convo.draft.value"
@@ -142,6 +154,7 @@ onMounted(() => {
             {{ liveState.label }}
           </span>
         </div>
+
       </div>
     </UiSurface>
 
@@ -171,6 +184,17 @@ onMounted(() => {
   padding: 6px 6px 6px 8px;
 }
 
+/* Fixed, so the row keeps its shape through the gap between vanishing and arriving. */
+.perch {
+  align-items: center;
+  display: flex;
+  flex: none;
+  height: 40px;
+  justify-content: center;
+  width: 45px;
+}
+
+
 .row {
   align-items: flex-end;
   display: flex;
@@ -190,6 +214,7 @@ onMounted(() => {
   flex: 1;
   min-width: 0;
 }
+
 
 .send {
   align-items: center;
