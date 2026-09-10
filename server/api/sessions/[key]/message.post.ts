@@ -7,10 +7,15 @@ type MessageResponse =
   | { delivered: true; session: string }
   | { delivered: false; reason: "no-live-session" | "refused-by-inbox" }
 
-function payloadOf(raw: unknown): { text: string } | undefined {
+type MessageBody = { text: string; slug?: string }
+
+function payloadOf(raw: unknown): MessageBody | undefined {
   if (typeof raw !== "object" || !raw) return undefined
-  const text = (raw as Record<string, unknown>).text
-  return typeof text === "string" && text ? { text } : undefined
+  const record = raw as Record<string, unknown>
+  const text = record.text
+  if (typeof text !== "string" || !text) return undefined
+  const slug = record.slug
+  return { text, slug: typeof slug === "string" && slug ? slug : undefined }
 }
 
 export default defineEventHandler(async (event): Promise<MessageResponse> => {
@@ -26,7 +31,7 @@ export default defineEventHandler(async (event): Promise<MessageResponse> => {
   const token = readTextSafe(keyFileOf(entry.pid))?.trim()
   if (!entry.messagingSocketPath || !token) return { delivered: false, reason: "refused-by-inbox" }
 
-  const result = await sendToInbox({ socketPath: entry.messagingSocketPath, token, text: body.text })
+  const result = await sendToInbox({ socketPath: entry.messagingSocketPath, token, text: body.text, slug: body.slug })
   if (!result.ok) return { delivered: false, reason: "refused-by-inbox" }
   return { delivered: true, session: keyOf(entry.id) }
 })

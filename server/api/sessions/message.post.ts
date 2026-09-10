@@ -45,7 +45,7 @@ export default defineEventHandler(async (event): Promise<MessageResponse> => {
   const token = readTextSafe(keyFileOf(entry.pid))?.trim()
   if (!entry.messagingSocketPath || !token) return { delivered: false, reason: "refused-by-inbox" }
 
-  const result = await sendToInbox({ socketPath: entry.messagingSocketPath, token, text: body.text })
+  const result = await sendToInbox({ socketPath: entry.messagingSocketPath, token, text: body.text, slug: body.slug })
   if (!result.ok) return { delivered: false, reason: "refused-by-inbox" }
   return { delivered: true, session: keyOf(entry.id) }
 })
