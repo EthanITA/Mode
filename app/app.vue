@@ -24,18 +24,18 @@ function onKeyDown(event: KeyboardEvent): void {
     if (chrome.dismiss()) event.preventDefault();
     return;
   }
-  // A modifier rather than a letter: the composer holds focus by default, so a letter lands in it
-  // as text and the shortcut never fires.
+  // Option also arms, because C is a letter and dies the moment the composer holds focus.
   if (event.key === "Alt" && !event.repeat) {
     chrome.comment.arm(true);
     return;
   }
   if (meta || event.altKey || typing(event)) return;
-  if (event.key === "!") chrome.canvas.fit.value?.();
+  if (event.key.toLowerCase() === "c" && !event.repeat) chrome.comment.arm(true);
+  else if (event.key === "!") chrome.canvas.fit.value?.();
 }
 
 function onKeyUp(event: KeyboardEvent): void {
-  if (event.key === "Alt") chrome.comment.release();
+  if (event.key === "Alt" || event.key.toLowerCase() === "c") chrome.comment.release();
 }
 
 onMounted(() => {

@@ -68,6 +68,12 @@ function tighten(el: Element): Element {
   }
 }
 
+// An artifact is operated, so it owns real inputs; a letter typed into one is never a shortcut.
+function typing(target: unknown): boolean {
+  const node = target as Element | undefined;
+  return Boolean(node?.closest?.("input, textarea, select, [contenteditable]:not([contenteditable='false'])"));
+}
+
 // The frame is a second realm, so `instanceof Element` from here is always false; duck-typing is the only test.
 function blockAt(target: unknown): Element | undefined {
   const node = target as Element | undefined;
@@ -293,10 +299,16 @@ function onLoad(): void {
       if (chrome.dismiss()) event.preventDefault();
       return;
     }
-    if (event.key === "Alt" && !event.repeat) chrome.comment.arm(true);
+    if (event.key === "Alt" && !event.repeat) {
+      chrome.comment.arm(true);
+      return;
+    }
+    if (meta || event.altKey || typing(event.target)) return;
+    if (event.key.toLowerCase() === "c" && !event.repeat) chrome.comment.arm(true);
   };
   const onKeyUp = (event: KeyboardEvent): void => {
-    if (event.key === "Alt") chrome.comment.release();
+    if (typing(event.target)) return;
+    if (event.key === "Alt" || event.key.toLowerCase() === "c") chrome.comment.release();
   };
 
   doc.addEventListener("mousemove", onMove);
