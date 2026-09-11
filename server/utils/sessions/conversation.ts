@@ -5,6 +5,9 @@ import { readWindow, transcriptIndex, usableLines } from "./transcripts.ts"
 // Narration and answer share the provider's `text` block, told apart only by position.
 export type TurnKind = "thinking" | "narration" | "answer" | "acting" | "note" | "drop" | "done"
 
+export type AskOption = { label: string; description?: string }
+export type Ask = { question: string; header?: string; multi?: true; options: AskOption[] }
+
 export type ConversationTurn = {
   role: "user" | "assistant" | "system"
   text: string
@@ -12,6 +15,8 @@ export type ConversationTurn = {
   kind?: TurnKind
   tool?: string
   arg?: string
+  /** AskUserQuestion only, so the chat can offer the options instead of an opaque tool row. */
+  ask?: Ask[]
   /** The provider's tool_use id, so a result pairs back to its call. */
   ref?: string
   /** Started with run_in_background, so it is long-running by construction. */
@@ -117,7 +122,7 @@ function turnOf(line: string): ConversationTurn[] {
   const said = saidOf(content)
   if (!said) return []
   if (entry.type === "user") return spoke(said.text, at)
-  return [{ role: "assistant", text: said.text, at, kind: said.kind, tool: said.tool, arg: said.arg, ref: said.ref, bg: said.bg }]
+  return [{ role: "assistant", text: said.text, at, kind: said.kind, tool: said.tool, arg: said.arg, ref: said.ref, bg: said.bg, ask: said.ask }]
 }
 
 function resultRefOf(content: unknown): string | undefined {
@@ -127,7 +132,33 @@ function resultRefOf(content: unknown): string | undefined {
   return rec.type === "tool_result" && typeof rec.tool_use_id === "string" ? rec.tool_use_id : undefined
 }
 
-type Said = { text: string; kind: TurnKind; tool?: string; arg?: string; ref?: string; bg?: true }
+type Said = { text: string; kind: TurnKind; tool?: string; arg?: string; ref?: string; bg?: true; ask?: Ask[] }
+
+function optionsOf(raw: unknown): AskOption[] {
+  if (!Array.isArray(raw)) return []
+  return raw.flatMap((one) => {
+    const rec = one as Record<string, unknown>
+    if (typeof rec?.label !== "string" || !rec.label) return []
+    return [{ label: rec.label, description: typeof rec.description === "string" ? rec.description : undefined }]
+  })
+}
+
+function asksOf(input: unknown): Ask[] | undefined {
+  if (typeof input !== "object" || !input) return undefined
+  const { questions } = input as { questions?: unknown }
+  if (!Array.isArray(questions)) return undefined
+  const out = questions.flatMap((one) => {
+    const rec = one as Record<string, unknown>
+    if (typeof rec?.question !== "string" || !rec.question) return []
+    return [{
+      question: rec.question,
+      header: typeof rec.header === "string" ? rec.header : undefined,
+      multi: rec.multiSelect === true ? (true as const) : undefined,
+      options: optionsOf(rec.options),
+    }]
+  })
+  return out.length ? out : undefined
+}
 
 // An assistant turn carries one block type at a time, so the first kind present decides the turn.
 function saidOf(content: unknown): Said | undefined {
@@ -139,6 +170,7 @@ function saidOf(content: unknown): Said | undefined {
   let arg: string | undefined
   let ref: string | undefined
   let bg: true | undefined
+  let ask: Ask[] | undefined
   for (const part of content) {
     if (typeof part !== "object" || !part) continue
     const rec = part as Record<string, unknown>
@@ -147,6 +179,7 @@ function saidOf(content: unknown): Said | undefined {
     else if (rec.type === "tool_use" && typeof rec.name === "string" && !tool) {
       tool = rec.name
       arg = argOf(rec.name, rec.input)
+      ask = rec.name === "AskUserQuestion" ? asksOf(rec.input) : undefined
       ref = typeof rec.id === "string" ? rec.id : undefined
       const input = rec.input as Record<string, unknown> | undefined
       bg = input?.run_in_background === true ? true : undefined
@@ -156,7 +189,7 @@ function saidOf(content: unknown): Said | undefined {
   if (say.trim()) return { text: say, kind: "narration" }
   const think = thought.join("")
   if (think.trim()) return { text: think, kind: "thinking" }
-  return tool ? { text: tool, kind: "acting", tool, arg, ref, bg } : undefined
+  return tool ? { text: tool, kind: "acting", tool, arg, ref, bg, ask } : undefined
 }
 
 // Nothing marks an answer at the time it is written; it is the last thing said before the user speaks.

@@ -45,6 +45,10 @@ test("an action carries the one argument worth reading", () => {
   assert.equal(argOf("Grep", { pattern: "mode-relay", output_mode: "content" }), "mode-relay")
   assert.equal(argOf("Skill", { skill: "create-artifact" }), "create-artifact")
   assert.equal(argOf("TaskUpdate", { taskId: "42", status: "completed" }), "42")
+  assert.equal(
+    argOf("AskUserQuestion", { questions: [{ question: "Which binding?", header: "Binding", options: [] }] }),
+    "Which binding?",
+  )
 })
 
 // Bash prefers the description because the command is often long and quoted.

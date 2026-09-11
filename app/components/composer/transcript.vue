@@ -17,7 +17,10 @@ const { beat, mascot, porting, state, turns } = defineProps<{
 
 const working = computed(() => mascot !== "idle");
 
-defineEmits<{ minimize: []; toggle: [] }>();
+// A new narration replaces the whole beat, so a question still in it is one nobody has answered.
+const asking = computed(() => beat?.actions.findLast((one) => one.ask)?.ask);
+
+defineEmits<{ answer: [text: string]; minimize: []; toggle: [] }>();
 
 const EXCERPT = 200;
 
@@ -137,6 +140,8 @@ watch(
                 :actions="beat.actions"
                 :busy="mascot === 'running'"
               />
+
+              <ComposerAsk v-if="asking" :ask="asking" @pick="$emit('answer', $event)" />
             </article>
 
             <ComposerTurnText

@@ -6,6 +6,18 @@ type TurnRole = "assistant" | "user" | "system";
 
 export type TurnKind = "thinking" | "narration" | "answer" | "acting" | "note" | "drop" | "done";
 
+export interface AskOption {
+  label: string;
+  description?: string;
+}
+
+export interface Ask {
+  question: string;
+  header?: string;
+  multi?: true;
+  options: AskOption[];
+}
+
 export interface ConversationTurn {
   at: number;
   role: TurnRole;
@@ -13,6 +25,8 @@ export interface ConversationTurn {
   kind?: TurnKind;
   tool?: string;
   arg?: string;
+  /** AskUserQuestion only, so the chat can offer the options instead of an opaque tool row. */
+  ask?: Ask[];
   /** The provider's tool_use id, so a result pairs back to its call. */
   ref?: string;
   /** Started with run_in_background, so it is long-running by construction. */
@@ -85,7 +99,30 @@ function asTurn(value: unknown): ConversationTurn | undefined {
     ref: typeof ref === "string" && ref ? ref : undefined,
     bg: "bg" in value && value.bg === true ? true : undefined,
     queued: "queued" in value && value.queued === true ? true : undefined,
+    ask: "ask" in value ? asAsks(value.ask) : undefined,
   };
+}
+
+function asAsks(value: unknown): Ask[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const out = value.flatMap((one) => {
+    const rec = one as Record<string, unknown>;
+    if (typeof rec?.question !== "string" || !rec.question) return [];
+    const options = Array.isArray(rec.options)
+      ? rec.options.flatMap((opt) => {
+          const o = opt as Record<string, unknown>;
+          if (typeof o?.label !== "string" || !o.label) return [];
+          return [{ label: o.label, description: typeof o.description === "string" ? o.description : undefined }];
+        })
+      : [];
+    return [{
+      question: rec.question,
+      header: typeof rec.header === "string" ? rec.header : undefined,
+      multi: rec.multi === true ? (true as const) : undefined,
+      options,
+    }];
+  });
+  return out.length ? out : undefined;
 }
 
 function isKind(value: unknown): value is TurnKind {

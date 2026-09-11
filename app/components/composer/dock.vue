@@ -96,6 +96,7 @@ onMounted(() => {
           :state="state"
           :beat="convo.beat.value"
           :turns="convo.turns.value"
+          @answer="command"
           @minimize="state = 'minimized'"
           @toggle="state = state === 'expanded' ? 'preview' : 'expanded'"
         />

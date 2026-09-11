@@ -72,12 +72,24 @@ const ARG_KEYS = ["file_path", "path", "pattern", "url", "skill", "command", "su
 export function argOf(tool: string, input: unknown): string | undefined {
   if (typeof input !== "object" || !input) return undefined
   const rec = input as Record<string, unknown>
+  // The question is the argument, and it is nested a level deeper than every other tool's.
+  if (tool === "AskUserQuestion") return firstQuestion(rec)
   const preferred = tool === "Bash" ? ["description", "command"] : ARG_KEYS
   for (const key of preferred) {
     const value = rec[key]
     if (typeof value !== "string" || !value.trim()) continue
     const one = value.trim().split("\n")[0] ?? ""
     return key === "file_path" || key === "path" ? shorten(one) : one
+  }
+  return undefined
+}
+
+function firstQuestion(rec: Record<string, unknown>): string | undefined {
+  const { questions } = rec as { questions?: unknown }
+  if (!Array.isArray(questions)) return undefined
+  for (const one of questions) {
+    const asked = (one as Record<string, unknown>)?.question
+    if (typeof asked === "string" && asked.trim()) return asked.trim()
   }
   return undefined
 }

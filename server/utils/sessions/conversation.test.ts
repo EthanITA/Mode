@@ -97,3 +97,53 @@ test("a foreground call carries no bg flag", () => {
   const { turns } = conversationOf({ key })
   assert.equal(turns[0]?.bg, undefined)
 })
+
+test("a question carries its options, so the chat can offer them instead of an opaque tool row", () => {
+  const key = "eeeeeeee"
+  writeTranscript(key, "-tmp-delta4", [
+    {
+      type: "assistant",
+      cwd: "/tmp/delta4",
+      timestamp: "2026-01-01T09:00:00.000Z",
+      message: {
+        role: "assistant",
+        content: [{
+          type: "tool_use",
+          id: "toolu_ask1",
+          name: "AskUserQuestion",
+          input: {
+            questions: [{
+              question: "Which binding?",
+              header: "Binding",
+              multiSelect: true,
+              options: [{ label: "Hold C", description: "the original" }, { label: "Hold Option" }],
+            }],
+          },
+        }],
+      },
+    },
+  ])
+
+  const [turn] = conversationOf({ key }).turns
+  assert.equal(turn?.arg, "Which binding?")
+  assert.deepEqual(turn?.ask, [{
+    question: "Which binding?",
+    header: "Binding",
+    multi: true,
+    options: [{ label: "Hold C", description: "the original" }, { label: "Hold Option", description: undefined }],
+  }])
+})
+
+test("a tool that is not a question carries no ask", () => {
+  const key = "dddddddd"
+  writeTranscript(key, "-tmp-delta5", [
+    {
+      type: "assistant",
+      cwd: "/tmp/delta5",
+      timestamp: "2026-01-01T09:00:00.000Z",
+      message: { role: "assistant", content: [{ type: "tool_use", id: "toolu_r1", name: "Read", input: { file_path: "/tmp/x" } }] },
+    },
+  ])
+
+  assert.equal(conversationOf({ key }).turns[0]?.ask, undefined)
+})
