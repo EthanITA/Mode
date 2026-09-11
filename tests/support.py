@@ -59,7 +59,15 @@ def skip(name, why):
     SKIPPED.append(name)
 
 
+_SECTION = [None, 0.0]
+
+
 def section(title):
+    import time
+    now = time.time()
+    if _SECTION[0] and os.environ.get("MODE_TEST_TIMING"):
+        print("        %.1fs" % (now - _SECTION[1]))
+    _SECTION[0], _SECTION[1] = title, now
     print("\n" + title)
 
 

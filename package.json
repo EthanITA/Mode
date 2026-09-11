@@ -1,0 +1,37 @@
+{
+  "name": "claude-code-sidecar",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.24.0",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "typecheck": "nuxi typecheck",
+    "test": "node --test --experimental-strip-types \"server/utils/**/*.test.ts\" \"app/utils/**/*.test.ts\"",
+    "check:render": "node tools/render-check/run.ts",
+    "check:render:types": "tsc -p tools/render-check/tsconfig.json --noEmit",
+    "check:render:self": "node tools/render-check/selftest.ts",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@cela/design": "file:../cela/packages/design",
+    "@comark/nuxt": "^0.6.2",
+    "@comark/vue": "^0.6.2",
+    "@lucide/vue": "^1.16.0",
+    "@vueuse/core": "^14.3.0",
+    "animejs": "^4.4.1",
+    "comark": "^0.6.2",
+    "nuxt": "^4.4.5",
+    "vue": "^3.5.34"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.0",
+    "@types/node": "^25.8.0",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3",
+    "vite-plugin-vue-tailwind-auto-reference": "^2.0.2",
+    "vue-tsc": "^3.2.9"
+  }
+}

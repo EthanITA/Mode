@@ -5,6 +5,7 @@ repo uses, so a test that passes is a test the tool actually answered.
 """
 
 import os
+import subprocess
 import sys
 import tempfile
 
@@ -1209,5 +1210,20 @@ with tempfile.TemporaryDirectory() as tmp:
     p = run(bare, config, "mode", "set", "lead", "--session", "s-bare")
     ok("set against an empty contracts folder exits non-zero without a traceback",
        p.returncode != 0 and not crashed(p), "rc=%s err=%r" % (p.returncode, p.stderr[-300:]))
+
+    section("artifact stamp, title taken from the page")
+    arts = os.path.join(tmp, "artifacts")
+    page = os.path.join(arts, "alpha.html")
+    write(page, "<!doctype html>\n<title>Alpha &middot; Beta&#8230;</title>\n")
+    env = dict(os.environ, NOTES_ARTIFACTS=arts, CLAUDE_PLUGIN_ROOT=root, CLAUDE_CONFIG_DIR=config)
+    env.pop("CLAUDE_CODE_SESSION_ID", None)
+    tool = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                         os.pardir, "bin", "artifact"))
+    p = subprocess.run([sys.executable, tool, "stamp", "alpha"],
+                       capture_output=True, text=True, env=env)
+    body = open(page).read()
+    ok("a title derived from the page is unescaped into the stamp",
+       p.returncode == 0 and "title:   Alpha · Beta…" in body,
+       "rc=%s out=%r err=%r body=%r" % (p.returncode, p.stdout, p.stderr, body))
 
 report()

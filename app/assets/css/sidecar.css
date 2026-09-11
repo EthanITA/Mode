@@ -1,0 +1,146 @@
+/* Screen-wide tokens for the sidecar shell. Everything here resolves out of the
+   vendored Cela tokens in cela.css — no literal colour, no literal duration. */
+
+:root {
+  --gutter-w: 44px;
+  --notes-w: 300px;
+  --page-w: 880px;
+  --step: 8px;
+
+  /* The island geometry, in one place: the layout anchors its zones off these and
+     the stage derives the room it must leave, so moving a row moves the content. */
+  --gutter: 16px;
+  --island-row-h: 40px;
+  --dock-rest-h: 64px;
+  --shell-max-w: 1536px;
+  /* Half a 1080p panel: 60vh reaches 540px on the ~900px viewport such a screen leaves. */
+  --transcript-max-h: clamp(160px, 60vh, 540px);
+
+  /* What a panelled face leaves clear to sit under the island row. The bottom is not a
+     token: the layout measures the dock and publishes --dock-h, with --dock-rest-h the
+     fallback for the frame before the observer has reported. The canvas opts out of
+     both and draws to the edges, with the islands floating over it. */
+  --stage-top: calc(var(--gutter) * 2 + var(--island-row-h));
+
+  /* Session and contract colours arrive as terminal colour names. Cela carries four
+     of the hues outright; the rest are mixed from them so nothing here is a raw hex. */
+  --tint-violet: var(--primary);
+  --tint-amber: var(--warning);
+  --tint-blue: var(--info);
+  --tint-green: var(--success);
+  --tint-rose: var(--error);
+  --tint-cyan: color-mix(in oklch, var(--info) 62%, var(--success));
+  --tint-orange: color-mix(in oklch, var(--warning) 68%, var(--error));
+
+  /* The one literal colour here: the Claude Code mark is a brand mark, and recolouring it through
+     a token would be wrong in both themes. Same carve-out cela makes for ui/provider-icon.vue. */
+  --mascot: #d97757;
+  --mascot-eye: #ffffff;
+
+  /* The props are objects, not the brand, so they carry object colours and only the body is coral. */
+  --prop-dark: color-mix(in oklch, var(--ink) 82%, var(--canvas));
+  --prop-screen: color-mix(in oklch, var(--info) 26%, var(--ink));
+  --prop-code: var(--info);
+  --prop-deck: var(--border-strong);
+  --prop-key: var(--canvas);
+  --prop-glass: var(--info);
+  --prop-cloud: var(--muted);
+  --prop-tweed: color-mix(in oklch, var(--warning) 34%, var(--ink));
+  /* A portal is an object with its own fixed colour, like the mark; no token can stand in. */
+  --portal-1: #5b1f96;
+  --portal-2: #7429b8;
+  --portal-3: #8f3fd4;
+  --portal-4: #ab5ce8;
+  --portal-spark: #d98cff;
+  --tint-slate: var(--subtle);
+}
+
+[data-tint="violet"] { --tint: var(--tint-violet); }
+[data-tint="amber"] { --tint: var(--tint-amber); }
+[data-tint="blue"] { --tint: var(--tint-blue); }
+[data-tint="green"] { --tint: var(--tint-green); }
+[data-tint="rose"] { --tint: var(--tint-rose); }
+[data-tint="cyan"] { --tint: var(--tint-cyan); }
+[data-tint="orange"] { --tint: var(--tint-orange); }
+[data-tint="slate"] { --tint: var(--tint-slate); }
+
+html,
+body,
+#__nuxt {
+  height: 100%;
+}
+
+body {
+  overflow: hidden; /* the stage owns the scroll, so the floating islands never drift */
+}
+
+/* --- shared vocabulary -----------------------------------------------------
+   Small primitives the whole screen reuses. Component-local rules stay scoped;
+   these are the ones repeated across four or more components. */
+
+.mono-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.dot {
+  border-radius: 999px;
+  flex: none;
+  height: var(--dot-size, 7px);
+  width: var(--dot-size, 7px);
+}
+
+/* Marks a region drawn from the design that no data can fill yet, so a drawing is
+   never read as a description. */
+[data-scaffold] {
+  position: relative;
+}
+
+[data-scaffold] > .scaffold-body {
+  opacity: 0.55;
+}
+
+.focusable:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.plain-button {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.plain-button:disabled {
+  cursor: not-allowed;
+}
+
+/* A sweep reads as progress where a pulse reads as a fault; ported from mf-ui's ShimmerText. */
+.shimmer {
+  animation: shimmer-sweep 2s linear infinite;
+  background-clip: text;
+  background-image: linear-gradient(93deg, var(--subtle) 0%, var(--ink) 50%, var(--subtle) 100%);
+  background-size: 200% 100%;
+  color: transparent;
+  -webkit-background-clip: text;
+}
+
+@keyframes shimmer-sweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    animation: none;
+    background-image: none;
+    color: var(--muted);
+  }
+}
