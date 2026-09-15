@@ -174,7 +174,9 @@ export function useHistory(): History {
       touched.map(async (path): Promise<HistoryFile> => {
         // A file the store holds no record of is genuinely unknown, not silently unchanged.
         const file = store.files.find((one) => one.path === path) ?? { path, baseline: "unknown" as const, versions: [] };
-        const query = `path=${encodeURIComponent(path)}&from=${turn}&to=${to}`;
+        // vs head reads from before this turn's edit; from=turn would diff the edit against itself and read as unchanged.
+        const from = to === "head" ? turn - 1 : turn;
+        const query = `path=${encodeURIComponent(path)}&from=${from}&to=${to}`;
         const diff = await $fetch<FileDiff>(`/api/sessions/${at}/versions/diff?${query}`).catch(() => undefined);
         return {
           path,
