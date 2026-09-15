@@ -29,7 +29,10 @@ const note = computed(() => Diff.stateNote(state));
 .rows {
   display: flex;
   flex-direction: column;
+  max-height: var(--transcript-max-h);
+  overflow-y: auto;
   padding: 6px 0;
+  scrollbar-width: thin;
 }
 
 .row {

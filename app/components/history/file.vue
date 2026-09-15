@@ -130,7 +130,10 @@ const against = computed(() => (compare === "head" ? "against the newest version
 .rows {
   display: flex;
   flex-direction: column;
+  max-height: var(--transcript-max-h);
+  overflow-y: auto;
   padding: 6px 0;
+  scrollbar-width: thin;
 }
 
 .row {
