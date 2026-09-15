@@ -71,6 +71,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   history.** It lived in a local ref that reset to the same state on every page mount, so switching
   views always landed back on the same view regardless of what was open before. It is now shared
   state, defaulting to minimized.
+- **History's default view now shows what a turn actually changed.** Selecting the latest turn
+  compared its own result against itself, so "vs head" always read as unchanged even when the turn
+  wrote real content; it now diffs from just before that turn's edit. A past version of a `.md` that
+  already existed renders that diff too, instead of the whole document — a `.md` a turn created still
+  shows the full page, since there is nothing to diff against.
 
 ## 0.15.1
 
