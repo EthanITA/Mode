@@ -38,20 +38,23 @@ const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
 
 const path = computed(() => sc.artifact.value?.path);
-const versions = useReadVersions({ path, sessionKey: sc.sessionKey });
-
 const threads = computed(() => sc.artifact.value?.threads ?? []);
-const live = computed(() => !versions.at.value);
 const markdown = computed(() => sc.artifact.value?.format === "md");
+const versions = useReadVersions({ path, sessionKey: sc.sessionKey, diffable: markdown });
+const live = computed(() => !versions.at.value);
 // A stored .md version is raw text, so the render route draws it rather than srcdoc.
 const versionSrc = computed(() =>
   markdown.value && versions.at.value
     ? `/artifact/${slug.value}?session=${encodeURIComponent(key.value)}&turn=${versions.at.value}`
     : undefined,
 );
+const createdVersion = computed(() => versions.list.value.find((one) => one.turn === versions.at.value)?.created);
+// A .md a turn created has nothing to diff against, so it keeps the full rendered view.
+const showDiff = computed(() => markdown.value && !!versions.at.value && !createdVersion.value);
 
 const stage = computed<Stage>(() => {
   if (!versions.at.value) return "live";
+  if (showDiff.value) return versions.diffState.value ? "version" : "reading";
   const got = versions.content.value;
   if (!got) return "reading";
   return got.found ? "version" : "unreadable";
@@ -238,7 +241,7 @@ onScopeDispose(() => {
     </template>
 
     <template #dock>
-      <ComposerDock />
+      <ComposerDock compact />
     </template>
 
     <template #board>
@@ -259,8 +262,15 @@ onScopeDispose(() => {
         />
 
         <div v-if="sc.artifact.value?.slug === slug" class="stack" :data-notes="noteCount > 0">
+          <ArtifactDiff
+            v-if="showDiff && stage === 'version'"
+            class="sheet-cell"
+            data-region="artifact-page"
+            :state="versions.diffState.value!"
+          />
+
           <ArtifactFrame
-            v-if="stage === 'live' || stage === 'version'"
+            v-else-if="stage === 'live' || stage === 'version'"
             ref="frame"
             class="sheet-cell"
             data-region="artifact-page"
@@ -276,7 +286,7 @@ onScopeDispose(() => {
           />
 
           <ArtifactGutter
-            v-if="measured"
+            v-if="measured && !showDiff"
             class="notes-cell"
             side="right"
             :live="live"
@@ -286,7 +296,7 @@ onScopeDispose(() => {
             @reload="bump"
           />
 
-          <div v-else class="gap" data-region="version-gap">
+          <div v-if="showDiff ? stage !== 'version' : !measured" class="gap" data-region="version-gap">
             <p v-if="stage === 'reading'" class="mono-meta">reading t{{ versions.at.value }}…</p>
             <template v-else>
               <p class="title">This version could not be read back.</p>
