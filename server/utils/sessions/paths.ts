@@ -12,6 +12,10 @@ export function projectsHome(): string {
   return join(configRoot(), "projects")
 }
 
+export function jobsHome(): string {
+  return join(configRoot(), "jobs")
+}
+
 // One file per session, `session-<key>`, holding artifact slugs a line at a time.
 export function artifactListsHome(): string {
   return join(configRoot(), "artifacts")

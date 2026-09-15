@@ -22,8 +22,28 @@ test("a session keyed by its artifact list is skipped when nothing on disk can i
   const all = liveSessions()
   assert.deepEqual(
     all.map((session) => session.key),
-    ["aaaaaaaa", "bbbbbbbb"],
+    ["aaaaaaaa", "cccccccc", "bbbbbbbb"],
   )
+})
+
+test("a job identifies a session its artifact list alone could not, and supplies the name and cwd", () => {
+  const gamma = find(liveSessions(), "cccccccc")
+  assert.equal(gamma.name, "Gamma, as the job knows it")
+  assert.equal(gamma.cwd, "/tmp/gamma")
+  assert.equal(gamma.lane?.name, "working")
+  assert.equal(gamma.archived, undefined)
+})
+
+// The CLI derives the lane, so a lane read off the file has to say so rather than pass for the CLI's.
+test("a lane read from disk is marked derived", () => {
+  assert.equal(find(liveSessions(), "cccccccc").lane?.derived, true)
+})
+
+test("a session no job owns is archived, and a job directory with no state file is no session", () => {
+  const all = liveSessions()
+  assert.equal(find(all, "aaaaaaaa").archived, true)
+  assert.equal(find(all, "bbbbbbbb").archived, true)
+  assert.equal(all.some((session) => session.key === "eeeeeeee"), false)
 })
 
 test("a live process supplies the id, the name and the cwd, and outranks the transcript", () => {

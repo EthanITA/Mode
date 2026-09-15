@@ -1,14 +1,20 @@
 <script lang="ts" setup>
 import type { DeskCard } from "~/composables/useDesk";
 
-defineProps<{ card: DeskCard }>();
-defineEmits<{ open: [] }>();
+const LANE_LABEL = {
+  review: "Ready for review",
+  blocked: "Needs input",
+  working: "Working",
+  done: "Completed",
+} as const;
+
+const { card } = defineProps<{ card: DeskCard }>();
+
+const laneLabel = computed(() => (card.lane ? LANE_LABEL[card.lane.name] : undefined));
 </script>
 
 <template>
   <UiSurface
-    as="button"
-    type="button"
     variant="card"
     pad="md"
     interactive
@@ -16,10 +22,10 @@ defineEmits<{ open: [] }>();
     data-region="desk-card"
     data-cmt="conversation"
     :data-tint="card.tint"
+    :data-archived="card.archived"
     :data-cmt-label="card.title"
     :data-cmt-tell="`the ${card.title} conversation card`"
     :data-cmt-excerpt="card.cwd"
-    @click="$emit('open')"
   >
     <div class="head">
       <span class="dot" :data-live="card.live ? '' : undefined" />
@@ -31,7 +37,13 @@ defineEmits<{ open: [] }>();
       {{ card.cwd }}<template v-if="card.gitBranch"> · {{ card.gitBranch }}</template>
     </div>
 
+    <DeskPreview v-if="card.boxes.length" :boxes="card.boxes" />
+
     <div class="badges">
+      <span v-if="laneLabel" class="badge" :data-tone="card.lane?.name">
+        {{ laneLabel }}<template v-if="card.lane?.derived">*</template>
+      </span>
+      <span v-if="card.archived" class="badge" data-tone="quiet">archived</span>
       <span v-if="card.waiting" class="badge" data-tone="waiting">{{ card.waitText }}</span>
       <span v-if="card.hasNew" class="badge" data-tone="new">{{ card.newText }}</span>
       <span v-if="card.running" class="badge" data-tone="running"><span class="write" />running</span>
@@ -59,8 +71,13 @@ defineEmits<{ open: [] }>();
   display: flex;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
   text-align: left;
   width: 100%;
+}
+
+.card[data-archived="true"] {
+  opacity: 0.72;
 }
 
 .head {
@@ -122,6 +139,28 @@ defineEmits<{ open: [] }>();
   gap: 6px;
   height: 22px;
   padding: 0 9px;
+}
+
+.badge[data-tone="working"] {
+  background: var(--primary);
+  color: var(--primary-content);
+}
+
+.badge[data-tone="blocked"] {
+  background: var(--warning-soft);
+  border: 1px solid var(--warning);
+  color: var(--warning);
+}
+
+.badge[data-tone="review"] {
+  background: var(--info-soft);
+  border: 1px solid var(--info);
+  color: var(--info);
+}
+
+.badge[data-tone="done"] {
+  border: 1px solid var(--border);
+  color: var(--muted);
 }
 
 .badge[data-tone="waiting"] {
