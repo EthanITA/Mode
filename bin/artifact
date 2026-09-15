@@ -35,6 +35,10 @@ ART_DIR = artifacts_dir()
 SESSION_DIR = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")) / "artifacts"
 BLOCK_RE = re.compile(r"<!--\s*artifact\b(.*?)-->", re.S)
 TITLE_RE = re.compile(r"<title>(.*?)</title>", re.S | re.I)
+COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
+FENCE_RE = re.compile(r"^(```|~~~).*?^\1", re.S | re.M)
+H1_RE = re.compile(r"^#[ \t]+(.+?)[ \t#]*$", re.M)
+FRONTMATTER_RE = re.compile(r"\A---\n.*?\n---\n", re.S)
 FIELDS = ("slug", "title", "url", "target", "ds", "updated")
 
 
@@ -75,9 +79,10 @@ def die(msg: str, code: int = 1):
 def artifact_files() -> list[Path]:
     if not ART_DIR.is_dir():
         return []
-    return sorted(
-        p for p in ART_DIR.glob("*.html") if not p.name.endswith(".src.html")
-    )
+    pages = [p for p in ART_DIR.glob("*.html") if not p.name.endswith(".src.html")]
+    taken = {p.stem for p in pages}
+    # A .md beside a same-named page is that page's brief, never a second artifact under one slug.
+    return sorted(pages + [p for p in ART_DIR.glob("*.md") if p.stem not in taken])
 
 
 def read_meta(path: Path) -> dict:
@@ -91,11 +96,15 @@ def read_meta(path: Path) -> dict:
                 k = k.strip().lower()
                 if k in FIELDS:
                     meta[k] = v.strip()
-    if "title" not in meta:
+    markdown = path.suffix == ".md"
+    if "title" not in meta and markdown:
+        t = H1_RE.search(FENCE_RE.sub("", COMMENT_RE.sub("", head)))
+        meta["title"] = t.group(1) if t else ""
+    elif "title" not in meta:
         t = TITLE_RE.search(head)
         meta["title"] = " ".join(html.unescape(t.group(1)).split()) if t else ""
-    # A local showpiece owns its own doctype; a published one never does.
-    meta.setdefault("target", "s" if head[:20].lower().lstrip().startswith("<!doctype") else "b")
+    # A local showpiece owns its own doctype; a published one never does, and a .md is never published.
+    meta.setdefault("target", "s" if markdown or head[:20].lower().lstrip().startswith("<!doctype") else "b")
     return meta
 
 
@@ -105,7 +114,7 @@ def resolve(token: str) -> Path:
     files = artifact_files()
     if not files:
         die(f"no artifacts in {ART_DIR}")
-    token = re.sub(r"\.html$", "", token)
+    token = re.sub(r"\.(html|md)$", "", token)
 
     recorded = set(session_slugs())
     pools = [[p for p in files if p.stem in recorded]] if recorded else []
@@ -229,6 +238,10 @@ def cmd_stamp(args):
 
     if BLOCK_RE.search(text[:4000]):
         text = BLOCK_RE.sub(lambda _: block, text, count=1)
+    elif path.suffix == ".md":
+        front = FRONTMATTER_RE.match(text)
+        at = front.end() if front else 0
+        text = text[:at] + block + "\n" + text[at:]
     else:
         t = TITLE_RE.search(text[:4000])
         if not t:
@@ -278,6 +291,9 @@ def cmd_comments(args):
 
 def cmd_wait(args):
     path = resolve(args.slug)
+    if path.suffix == ".md":
+        die(f"{path.name} has no page to send from: the sidecar writes its comments straight into the file. "
+            f"Read them with: artifact comments {path.stem}", 2)
     until = ("approve",) if args.approve else ("approve", "send")
     action = _review.serve(path, until=until, timeout=args.timeout)
     if not action:

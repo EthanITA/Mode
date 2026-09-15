@@ -4,6 +4,7 @@ Nothing here reads the shipped modes or styles. The fixtures carry names no cont
 repo uses, so a test that passes is a test the tool actually answered.
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -1225,5 +1226,43 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("a title derived from the page is unescaped into the stamp",
        p.returncode == 0 and "title:   Alpha · Beta…" in body,
        "rc=%s out=%r err=%r body=%r" % (p.returncode, p.stdout, p.stderr, body))
+
+    section("artifact on a .md, read and commented like a page")
+
+    def artifact(*args):
+        return subprocess.run([sys.executable, tool] + list(args), capture_output=True, text=True, env=env)
+
+    note = os.path.join(arts, "plan.md")
+    write(note, "# The plan\n\nShip it.\n")
+    write(os.path.join(arts, "alpha.md"), "# A brief for the alpha page\n")
+    p = artifact("list", "--tsv")
+    rows = sorted(r.split("\t")[0] for r in p.stdout.splitlines())
+    ok("a .md is listed, and a .md sharing a page's slug is not",
+       rows == ["alpha", "plan"] and "alpha.md" not in p.stdout,
+       "%r. Two rows under one slug leave resolve and the sidecar opening different files." % p.stdout)
+
+    p = artifact("stamp", "plan")
+    body = open(note).read()
+    ok("stamp puts the block on top and takes the title from the first heading",
+       p.returncode == 0 and body.startswith("<!-- artifact\n") and "title:   The plan" in body
+       and "target:  s" in body, "rc=%s err=%r body=%r" % (p.returncode, p.stderr, body))
+
+    sent = os.path.join(tmp, "plan.comments.json")
+    write(sent, json.dumps({"threads": [{"id": "t1", "n": 1, "by": "user", "at": "a", "updated": "a",
+                                         "body": "before --> after", "status": "open", "replies": []}]}))
+    artifact("comments", "plan", "--ingest", sent)
+    p = artifact("comments", "plan", "--reply", "1", "done")
+    body = open(note).read()
+    ok("a thread lands in one trailing comment block that its own --> cannot close",
+       p.returncode == 0 and body.count("<!-- rv:seed") == 1 and "--> after" not in body
+       and body.endswith("-->\n"), "rc=%s err=%r body=%r" % (p.returncode, p.stderr, body))
+    doc = json.loads(artifact("comments", "plan", "--json", "--no-ingest").stdout or "{}")
+    ok("and reads back whole",
+       [(t.get("body"), len(t.get("replies") or [])) for t in doc.get("threads") or []] == [("before --> after", 1)],
+       repr(doc))
+
+    p = artifact("wait", "plan")
+    ok("wait refuses a .md, since no page will ever post to it",
+       p.returncode == 2 and "artifact comments plan" in p.stderr, "rc=%s err=%r" % (p.returncode, p.stderr))
 
 report()
