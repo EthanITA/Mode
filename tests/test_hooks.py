@@ -721,6 +721,23 @@ with tempfile.TemporaryDirectory() as tmp:
            "copilot" in registry and "edu" in registry,
            "%r. Saving a contract no longer refreshes what the manual lists." % registry[:400])
 
+    section("observe.py records a .md the conversation wrote")
+    doc = os.path.join(tmp, "notes", "plan.md")
+    write(doc, "# Plan\n")
+    listed = os.path.join(config, "artifacts", "session-d0c5e55a")
+    payload = {"session_id": "d0c5e55a-hook", "hook_event_name": "PostToolUse", "tool_name": "Write",
+               "cwd": tmp, "tool_input": {"file_path": doc}}
+    p = fire("observe.py", payload, config)
+    got = open(listed).read().splitlines() if os.path.isfile(listed) else []
+    ok("a Write to a .md lands in the conversation's artifact list by its path",
+       p.returncode == 0 and doc in got,
+       "rc=%s err=%r list=%r. The sidecar lists a conversation's documents from this file alone."
+       % (p.returncode, p.stderr[-200:], got))
+    payload["tool_input"] = {"file_path": os.path.join(tmp, "notes", "plan.ts")}
+    fire("observe.py", payload, config)
+    got = open(listed).read() if os.path.isfile(listed) else ""
+    ok("and a file that is not a .md stays out of it", "plan.ts" not in got, repr(got))
+
     # -------------------------------------------------------------- guards
 
     section("the guards, and the switch that disarms them")
