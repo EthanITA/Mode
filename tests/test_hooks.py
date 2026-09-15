@@ -852,6 +852,26 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("under another contract it says nothing at all", not spawn("nobody", "anything").strip(),
        "Only swarm holds a roster, so every other mode must spawn untouched.")
 
+    section("router-guard.py, PreToolUse on a write while swarm is held")
+    rgd = os.path.join(HOOKS, "guards", "router-guard.py")
+    router_sid = "h-router"
+    mode(router_sid, "set", "swarm")
+
+    def router_fire(payload):
+        return subprocess.run([sys.executable, rgd], capture_output=True, text=True,
+                              env=hook_env(PLUGIN, config), input=json.dumps(payload))
+
+    base = {"session_id": router_sid, "hook_event_name": "PreToolUse", "tool_name": "Write",
+            "tool_input": {"file_path": "/repo/src/thing.ts"}}
+    p = router_fire(base)
+    ok("the router's own write is denied while swarm is held", decision(p)[0] == "deny",
+       "verdict=%r. Swarm routes and does not build, so the router itself must not write." % decision(p)[0])
+
+    p = router_fire(dict(base, agent_id="sub-123"))
+    ok("a subagent's write passes, carrying agent_id", not decision(p)[0],
+       "denied with %r. agent_id only appears inside a subagent call, so an owner building under swarm "
+       "must not be caught by the router's own ban." % decision(p)[1][:200])
+
     section("board-cap, which keeps open USER work bounded")
     cap_guard = os.path.join(HOOKS, "guards", "board-cap.py")
     cap_sid = "h-board-cap"
