@@ -16,6 +16,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   (`googleLogin` beside `googleSignout`, which want to be `Google.login()`), and `export *`, which
   turns a curated index into a firehose. Verb prefixes such as `format` and `create`, and the
   `use` of a composable, are exempt because they name an action rather than a domain.
+- **`board-cap` bounds open USER work on the board.** It guards `TaskCreate` and `TaskUpdate`, denying
+  past the cap and naming the alternative: fold the work in, or take the default and proceed.
 
 ## 0.15.1
 

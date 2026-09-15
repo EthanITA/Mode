@@ -852,6 +852,70 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("under another contract it says nothing at all", not spawn("nobody", "anything").strip(),
        "Only swarm holds a roster, so every other mode must spawn untouched.")
 
+    section("board-cap, which keeps open USER work bounded")
+    cap_guard = os.path.join(HOOKS, "guards", "board-cap.py")
+    cap_sid = "h-board-cap"
+    cap_dir = os.path.join(config, "tasks", "session-%s" % cap_sid[:8])
+    os.makedirs(cap_dir, exist_ok=True)
+
+    def seed_cap(*tasks):
+        for stale in _glob.glob(os.path.join(cap_dir, "*.json")):
+            os.remove(stale)
+        for task in tasks:
+            write(os.path.join(cap_dir, "%s.json" % task["id"]), json.dumps(task))
+
+    def cap_task(task_id, subject, status="pending"):
+        return {"id": str(task_id), "subject": subject, "status": status}
+
+    def cap_call(tool_name, tool_input):
+        return subprocess.run(
+            [sys.executable, cap_guard], capture_output=True, text=True, env=hook_env(PLUGIN, config),
+            input=json.dumps({"session_id": cap_sid, "hook_event_name": "PreToolUse",
+                              "tool_name": tool_name, "tool_input": tool_input}),
+        )
+
+    seed_cap(cap_task(1, "[USER] one"), cap_task(2, "[USER] two", "in_progress"))
+    p = cap_call("TaskCreate", {"subject": "[USER] three"})
+    ok("two open USER slots allow a third USER task", not p.stdout.strip(),
+       "out=%r. The cap should leave the final slot available." % p.stdout[:200])
+
+    seed_cap(cap_task(1, "[USER] one"), cap_task(2, "[USER] two"), cap_task(3, "[USER] three"))
+    p = cap_call("TaskCreate", {"subject": "[USER] four"})
+    verdict, why = decision(p)
+    ok("three open USER slots deny a fourth USER task", verdict == "deny" and "3" in why and "cap" in why.lower(),
+       "verdict=%r reason=%r. A fourth USER item must be refused at the stated cap." % (verdict, why[:240]))
+    ok("the cap denial names folding in or taking the default instead", "fold" in why.lower() and "default" in why.lower(),
+       "reason=%r. The agent needs the alternative to opening another USER item." % why[:240])
+
+    seed_cap(cap_task(1, "[USER] one"), cap_task(2, "[USER] two"), cap_task(3, "[USER] three"))
+    ai = cap_call("TaskCreate", {"subject": "[AI] four"})
+    ok("an AI task is never judged at the cap", not ai.stdout.strip(),
+       "out=%r. Only USER-category subjects belong to this cap." % ai.stdout[:200])
+    wait = cap_call("TaskCreate", {"subject": "[WAIT] four"})
+    ok("a WAIT task is never judged at the cap", not wait.stdout.strip(),
+       "out=%r. Only USER-category subjects belong to this cap." % wait.stdout[:200])
+
+    p = cap_call("TaskUpdate", {"taskId": "1", "status": "in_progress"})
+    ok("a status-only TaskUpdate is never judged", not p.stdout.strip(),
+       "out=%r. Updates without a subject carry no category decision." % p.stdout[:200])
+
+    seed_cap(cap_task(1, "[USER] one"), cap_task(2, "[USER] two"), cap_task(3, "[USER] three"))
+    p = cap_call("TaskUpdate", {"taskId": "1", "subject": "[USER] renamed"})
+    ok("renaming an open USER task does not count against itself", not p.stdout.strip(),
+       "out=%r. The task being updated must be excluded from its own count." % p.stdout[:200])
+
+    seed_cap(cap_task(1, "[USER] one"), cap_task(2, "[USER] two"), cap_task(3, "[USER] three"),
+             cap_task(4, "[AI] four"))
+    p = cap_call("TaskUpdate", {"taskId": "4", "subject": "[USER] four"})
+    verdict, why = decision(p)
+    ok("turning an AI task into USER is judged over the cap", verdict == "deny",
+       "verdict=%r reason=%r. Changing category must apply the USER cap." % (verdict, why[:240]))
+
+    seed_cap(cap_task(1, "[USER] finished", "completed"), cap_task(2, "[USER] one"), cap_task(3, "[USER] two"))
+    p = cap_call("TaskCreate", {"subject": "[USER] three"})
+    ok("completed USER tasks do not count toward the cap", not p.stdout.strip(),
+       "out=%r. Only pending and in-progress USER items are open." % p.stdout[:200])
+
     section("the board replay, which is what a compact leaves behind")
     sys.path.insert(0, os.path.join(HOOKS, "guards"))
     from _transcript import board_from_transcript
