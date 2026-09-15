@@ -15,6 +15,8 @@ TESTS = re.compile(
     r"tests?/run\.py|make\s+(test|check))\b"
 )
 COMMIT = re.compile(r"\bgit\s+(commit|cherry-pick)\b")
+# Only at the top of the folder: a .md one level down is a page's build brief, not an artifact.
+ARTIFACT_MD = re.compile(r"/artifacts/[^/]+\.md$")
 
 
 def observed(data):
@@ -30,7 +32,8 @@ def observed(data):
         return "" if failed else "artifact"
     if tool in ("Write", "Edit", "NotebookEdit"):
         path = str(args.get("file_path") or "")
-        return "artifact" if not failed and "/artifacts/" in path and path.endswith(".html") else ""
+        made = "/artifacts/" in path and (path.endswith(".html") or ARTIFACT_MD.search(path))
+        return "artifact" if not failed and made else ""
     if tool == "Bash":
         command = str(args.get("command") or "")
         if COMMIT.search(command):
