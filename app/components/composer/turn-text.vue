@@ -1,11 +1,20 @@
 <script lang="ts" setup>
 const { value } = defineProps<{ value: string }>();
 
-const segments = computed(() => turnSegments(value));
+const split = computed(() => splitXyz(value));
+const segments = computed(() => turnSegments(split.value.body));
 </script>
 
 <template>
   <div class="turn-text">
+    <details v-if="split.xyz" open class="xyz" data-region="turn-xyz">
+      <summary v-press class="focusable">
+        <span class="caret" />
+        <span class="xyz-label mono-meta">X / Y / Z read</span>
+      </summary>
+      <pre class="xyz-body">{{ split.xyz }}</pre>
+    </details>
+
     <template v-for="(part, index) in segments" :key="index">
       <Prose v-if="part.kind === 'prose'" :value="part.text" />
       <details v-else class="folded" data-region="turn-block">
@@ -35,6 +44,13 @@ const segments = computed(() => turnSegments(value));
   min-width: 0;
 }
 
+.xyz {
+  background: var(--primary-soft);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-field);
+  min-width: 0;
+}
+
 summary {
   align-items: center;
   cursor: pointer;
@@ -58,13 +74,20 @@ summary::-webkit-details-marker {
   width: 0;
 }
 
-.folded[open] .caret {
+.folded[open] .caret,
+.xyz[open] .caret {
   transform: rotate(90deg);
 }
 
 .tag {
   color: var(--muted);
   flex: none;
+}
+
+.xyz-label {
+  color: var(--primary-deep, var(--ink));
+  flex: none;
+  font-weight: 600;
 }
 
 .gist {
@@ -87,6 +110,11 @@ pre {
   max-width: 100%;
   overflow: auto;
   padding: 6px 8px;
+}
+
+/* Prose, not code: it wraps instead of scrolling sideways. */
+.xyz-body {
+  white-space: pre-wrap;
 }
 
 @media (prefers-reduced-motion: reduce) {

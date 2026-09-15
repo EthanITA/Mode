@@ -2,13 +2,16 @@
 import { ChevronUp } from "@lucide/vue";
 import type { TranscriptState } from "./transcript.vue";
 
+const { compact = false } = defineProps<{ compact?: boolean }>();
+
 const convo = useConversation();
 const tray = useTray();
 const { liveState, steps } = useScreen();
 const chrome = useChrome();
 
-const state = ref<TranscriptState>("preview");
-const remembered = ref<TranscriptState>("preview");
+// Shared state: a page navigation must not reset how open the panel is.
+const state = useState<TranscriptState>("sc:transcript-state", () => "minimized");
+const remembered = useState<TranscriptState>("sc:transcript-remembered", () => "minimized");
 
 const working = computed(() => convo.mascot.value !== "idle");
 const shrunk = computed(() => state.value === "minimized");
@@ -66,6 +69,15 @@ async function command(text: string): Promise<void> {
   await convo.deliver(text);
 }
 
+// Compact starts closed over the artifact; engagement opens it, and it never auto-closes.
+function onFocus(): void {
+  if (compact && state.value === "minimized") state.value = "preview";
+}
+
+watch(working, (now) => {
+  if (compact && now && state.value === "minimized") state.value = "preview";
+});
+
 onMounted(() => {
   // The chips are deliberately not persisted, so a refresh would drop typed words with no receipt.
   function warn(event: BeforeUnloadEvent): void {
@@ -79,7 +91,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="dock" :data-state="state" data-region="composer-dock">
+  <div class="dock" :data-compact="compact" :data-state="state" data-region="composer-dock">
     <ComposerTray />
 
     <UiSurface
@@ -125,6 +137,7 @@ onMounted(() => {
             :placeholder="placeholder"
             :disabled="!convo.live.value"
             aria-label="Prompt this session"
+            @focus="onFocus"
             @keydown="onKey"
           />
 
@@ -176,6 +189,13 @@ onMounted(() => {
 .island {
   box-sizing: border-box;
   width: 100%;
+}
+
+/* Closed over the artifact by default: a slim pill, not a panel competing with the reading
+   surface. Growing back to the full cell width is what "engaging with it" earns. */
+.dock[data-compact="true"][data-state="minimized"] .island {
+  max-width: 360px;
+  transition: max-width var(--duration-base) var(--ease-out);
 }
 
 /* The island is bottom-anchored inside a clipping box, so whatever does not fit is cut

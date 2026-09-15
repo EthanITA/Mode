@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { echoesNote, freshAnswer, turnSegments } from "./transcript.ts";
+import { echoesNote, freshAnswer, splitXyz, turnSegments } from "./transcript.ts";
 
 test("a wrapper folds to its own row and the prose either side survives", () => {
   const got = turnSegments("hi\n\n<command-name>/code-review</command-name>\n\nbye");
@@ -74,4 +74,15 @@ test("only a note repeated back to back is an echo", () => {
   assert.equal(echoesNote(note, { ...note }), true);
   assert.equal(echoesNote(note, undefined), false);
   assert.equal(echoesNote(note, { role: "assistant", text: "Command(compact)" }), false);
+});
+
+test("an X/Y/Z read opening a turn is split from the body", () => {
+  const got = splitXyz("X — did a thing\nY — meant another\nZ — so also this\n\nHere is the rest.");
+  assert.equal(got.xyz, "X — did a thing\nY — meant another\nZ — so also this");
+  assert.equal(got.body, "Here is the rest.");
+});
+
+test("text that merely starts with an X line but has no Y/Z is left whole", () => {
+  const said = "X — marks the spot\n\nrest of the turn";
+  assert.deepEqual(splitXyz(said), { body: said });
 });

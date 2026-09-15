@@ -27,6 +27,24 @@ export function echoesNote(turn: Sequenced, previous?: Sequenced): boolean {
   return !!previous && turn.role === "system" && previous.role === "system" && previous.text === turn.text;
 }
 
+export interface XyzSplit {
+  body: string;
+  xyz?: string;
+}
+
+const XYZ_HEAD = /^X\s*[—-]\s+/;
+const XYZ_Y = /^Y\s*[—-]\s+/m;
+const XYZ_Z = /^Z\s*[—-]\s+/m;
+
+// Requiring a Y and a Z line inside the same span rules out text that merely starts with "X —".
+export function splitXyz(text: string): XyzSplit {
+  if (!XYZ_HEAD.test(text)) return { body: text };
+  const blank = text.indexOf("\n\n");
+  const head = blank < 0 ? text : text.slice(0, blank);
+  if (!XYZ_Y.test(head) || !XYZ_Z.test(head)) return { body: text };
+  return { body: blank < 0 ? "" : text.slice(blank + 2), xyz: head.trim() };
+}
+
 const WRAPPERS = [
   "bash-input",
   "bash-stderr",

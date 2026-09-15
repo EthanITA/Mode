@@ -13,8 +13,11 @@
   --island-row-h: 40px;
   --dock-rest-h: 64px;
   --shell-max-w: 1536px;
-  /* Half a 1080p panel: 60vh reaches 540px on the ~900px viewport such a screen leaves. */
-  --transcript-max-h: clamp(160px, 60vh, 540px);
+  /* Half a 1080p panel: 60vh reaches 540px on the ~900px viewport such a screen leaves. Only
+     the expanded (full-history) transcript gets this much room. */
+  --transcript-max-h: clamp(160px, 50vh, 480px);
+  /* Preview shows one turn, not a history: it must not dominate the panel by default. */
+  --transcript-preview-max-h: clamp(100px, 26vh, 220px);
 
   /* What a panelled face leaves clear to sit under the island row. The bottom is not a
      token: the layout measures the dock and publishes --dock-h, with --dock-rest-h the

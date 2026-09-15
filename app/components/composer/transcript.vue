@@ -110,48 +110,47 @@ watch(
         </div>
 
         <div class="stage" :data-state="state">
-          <Transition name="swap">
-            <article v-if="beat || working || porting" class="turn beat" data-region="beat">
-              <div class="beat-head">
-                <span class="perch">
-                  <ClaudeMascot :porting="porting" :show="working" :size="44" :state="mascot" />
-                </span>
+          <span class="perch" data-region="transcript-perch">
+            <ClaudeMascot :porting="porting" :show="working" :size="44" :state="mascot" />
+          </span>
 
-                <div class="beat-say">
-                  <Transition name="think">
-                    <p v-if="!beat?.head" key="wait" class="beat-text shimmer" data-waiting="true">
-                      Thinking<span class="dots" />
-                    </p>
+          <div class="stage-body">
+            <Transition name="swap">
+              <div v-if="beat" key="beat" class="beat" data-region="beat">
+                <Transition name="think">
+                  <p v-if="!beat.head" key="wait" class="beat-text shimmer" data-waiting="true">
+                    Thinking<span class="dots" />
+                  </p>
 
-                    <ComposerTurnText
-                      v-else
-                      :key="beat!.head!.at"
-                      class="beat-text"
-                      :data-thinking="beat!.head!.kind === 'thinking'"
-                      :value="beat!.head!.text"
-                    />
-                  </Transition>
-                </div>
+                  <ComposerTurnText
+                    v-else
+                    :key="beat.head.at"
+                    class="beat-text"
+                    :data-thinking="beat.head.kind === 'thinking'"
+                    :value="beat.head.text"
+                  />
+                </Transition>
+
+                <ComposerActionLine
+                  v-if="beat.actions.length"
+                  class="acts"
+                  :actions="beat.actions"
+                  :busy="mascot === 'running'"
+                />
+
+                <ComposerAsk v-if="asking" :ask="asking" @pick="$emit('answer', $event)" />
               </div>
 
-              <ComposerActionLine
-                v-if="beat?.actions.length"
-                class="acts"
-                :actions="beat.actions"
-                :busy="mascot === 'running'"
+              <ComposerTurnText
+                v-else-if="state === 'preview' && answer"
+                key="answer"
+                class="answer"
+                :value="answer.text"
               />
 
-              <ComposerAsk v-if="asking" :ask="asking" @pick="$emit('answer', $event)" />
-            </article>
-
-            <ComposerTurnText
-              v-else-if="state === 'preview' && answer"
-              class="answer"
-              :value="answer.text"
-            />
-
-            <p v-else-if="state === 'preview'" class="empty mono-meta">Nothing in this conversation yet.</p>
-          </Transition>
+              <p v-else-if="state === 'preview'" key="empty" class="empty mono-meta">Nothing in this conversation yet.</p>
+            </Transition>
+          </div>
         </div>
       </div>
     </template>
@@ -257,17 +256,25 @@ watch(
   scrollbar-width: thin;
 }
 
-/* Positioned, so a leaving beat or answer is contained here rather than escaping the island. */
+/* Preview is the ambient default (one turn, no history), so it gets the tighter cap. */
+.transcript[data-state="preview"] .body {
+  max-height: var(--transcript-preview-max-h);
+}
+
+/* A row: the perch is a fixed-size sibling of the swapped text, so the mascot never changes the
+   text's box when it teleports in or out. */
 .stage {
+  align-items: flex-start;
   display: flex;
   flex: none;
-  flex-direction: column;
   gap: 8px;
   position: relative;
 }
 
-.stage:empty {
-  display: none;
+.stage-body {
+  flex: 1;
+  min-width: 0;
+  position: relative;
 }
 
 .answer {
@@ -327,25 +334,14 @@ watch(
 }
 
 .beat {
-  align-self: flex-start;
-  gap: 6px;
-  max-width: 100%;
-}
-
-.beat-head {
-  align-items: flex-start;
   display: flex;
-  gap: 8px;
-}
-
-/* The narration's own column, positioned: an abspos leaver in a flex row would snap to the perch. */
-.beat-say {
-  flex: 1;
+  flex-direction: column;
+  gap: 6px;
   min-width: 0;
-  position: relative;
 }
 
-/* Fixed, so the row keeps its shape through the gap between vanishing and arriving. */
+/* Fixed, so the row keeps its shape through the gap between vanishing and arriving. Always
+   mounted: the box never changes when the mascot teleports in or out. */
 .perch {
   align-items: center;
   display: flex;

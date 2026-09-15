@@ -320,6 +320,8 @@ export function useConversation(): Conversation {
         const turn = asTurn(row);
         if (turn) append(turn);
       }
+      // A replay can leave a beat dangling on the live-stream timers; settle now so reload skips the flash.
+      if (session.value?.status !== "busy") settle();
       listen(key);
     } catch (caught) {
       if (mine !== ticket) return;

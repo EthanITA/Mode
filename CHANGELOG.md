@@ -46,6 +46,31 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   `use` of a composable, are exempt because they name an action rather than a domain.
 - **`board-cap` bounds open USER work on the board.** It guards `TaskCreate` and `TaskUpdate`, denying
   past the cap and naming the alternative: fold the work in, or take the default and proceed.
+- **The chat panel parses an assistant turn's X/Y/Z read into its own panel**, tinted apart from the
+  rest of the answer and open by default, so the read Marco actually wants first is not buried inside
+  the prose. A turn without one renders exactly as before.
+- **The chat panel takes a `compact` mode.** Over the artifact page it now starts as a narrow closed
+  pill instead of a full-width, half-height block; focusing the prompt or new assistant activity opens
+  it, and it never auto-closes once open.
+
+### Fixed
+
+- **The chat panel no longer replays a flash of "thinking" on reload.** A page load replayed a
+  finished exchange through the same timers a live stream uses, so a reload showed the mascot land on
+  the answer, flip back to "thinking" for a couple of seconds, then show the answer again at a
+  different width. The composable now settles a dangling turn immediately when the session is not
+  busy, so a reload renders the final state once.
+- **The mascot's reserved space no longer collapses when it teleports.** Its perch in the transcript
+  was mounted only while a beat was active, so settling could tear down the whole row — including the
+  answer's layout — for the ~2s hand-over animation. The perch is now a permanent sibling of the
+  swapped text; only the mascot's own opacity toggles.
+- **The transcript panel is shorter by default.** Its cap only ever grew with the conversation; the
+  ambient single-turn preview now caps well below the full-history view, which still gets the old
+  room when expanded.
+- **The panel's open/closed state survives navigating between the conversation, the artifact page and
+  history.** It lived in a local ref that reset to the same state on every page mount, so switching
+  views always landed back on the same view regardless of what was open before. It is now shared
+  state, defaulting to minimized.
 
 ## 0.15.1
 
