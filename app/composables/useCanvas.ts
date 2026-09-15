@@ -216,7 +216,7 @@ export function useCanvas(): Canvas {
         file: basename(meta.path),
         fresh: !!since && stamp > since,
         frame: frameOf(meta),
-        kind: meta.ds || "artifact",
+        kind: meta.ds || (meta.format === "md" ? "markdown" : "artifact"),
         meta: [meta.target === "b" ? "published" : "local", relativeAge(meta.updated)].filter(Boolean).join(" · "),
         placement: held,
         slug: meta.slug,

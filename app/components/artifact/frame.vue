@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import type { FrameAnchor, FrameHit, FrameMark, FramePending } from "~/types/frame";
 
-const { edition, html, slug, version } = defineProps<{
+const { edition, html, slug, src, version } = defineProps<{
   edition?: number;
   html?: string;
   slug: string;
+  src?: string;
   version?: number;
 }>();
 
@@ -445,7 +446,7 @@ defineExpose({ clearPick });
     <iframe
       ref="frame"
       :key="`${slug}:${version ?? 'head'}:${edition ?? 0}`"
-      :src="html ? undefined : `/artifact/${slug}`"
+      :src="html ? undefined : src || `/artifact/${slug}`"
       :srcdoc="html"
       :style="{ height: height ? `${height}px` : undefined }"
       :title="`Artifact ${slug}`"

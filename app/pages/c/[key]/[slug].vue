@@ -42,6 +42,13 @@ const versions = useReadVersions({ path, sessionKey: sc.sessionKey });
 
 const threads = computed(() => sc.artifact.value?.threads ?? []);
 const live = computed(() => !versions.at.value);
+const markdown = computed(() => sc.artifact.value?.format === "md");
+// A stored .md version is raw text, so the render route draws it rather than srcdoc.
+const versionSrc = computed(() =>
+  markdown.value && versions.at.value
+    ? `/artifact/${slug.value}?session=${encodeURIComponent(key.value)}&turn=${versions.at.value}`
+    : undefined,
+);
 
 const stage = computed<Stage>(() => {
   if (!versions.at.value) return "live";
@@ -128,7 +135,7 @@ function onReady(): void {
 // The comment popover and the edit panel both anchor to the pick, so only one may be open.
 function openInline(): void {
   const hit = chrome.comment.pick.value;
-  if (!hit) return;
+  if (!hit || markdown.value) return;
   chrome.comment.close();
   panel.value = toSelection(hit);
 }
@@ -171,8 +178,8 @@ async function settle(action: "accept" | "revert", edit: FramePending): Promise<
   }
 }
 
-watch([() => chrome.comment.pick.value, live], ([hit, on]) => {
-  inlineArmed.value = Boolean(hit) && on;
+watch([() => chrome.comment.pick.value, live, markdown], ([hit, on, md]) => {
+  inlineArmed.value = Boolean(hit) && on && !md;
 });
 
 watch(inlineAsk, (ask) => {
@@ -254,8 +261,9 @@ onScopeDispose(() => {
             class="sheet-cell"
             data-region="artifact-page"
             :edition="edition"
-            :html="html"
+            :html="markdown ? undefined : html"
             :slug="slug"
+            :src="versionSrc"
             :version="versions.at.value"
             @edit="openInline"
             @marks="onMarks"

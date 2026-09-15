@@ -1,11 +1,18 @@
 import { open, readdir, readFile, stat, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
-import type { ArtifactDetail, ArtifactMeta, ReviewThread, ThreadAnchor, ThreadReply } from "../../shared/types/artifact"
+import type { ArtifactDetail, ArtifactFormat, ArtifactMeta, ReviewThread, ThreadAnchor, ThreadReply } from "../../shared/types/artifact"
+import { Markdown } from "./markdown.ts"
 
 const META_BLOCK = /<!--\s*artifact\b([\s\S]*?)-->/
 const TITLE_TAG = /<title>([\s\S]*?)<\/title>/i
 const RV_SEED = /<script type="application\/json" id="rv-seed">([\s\S]*?)<\/script>/
+// A .md has no <script> to hold its threads, so they ride in one trailing comment. Mirrors MD_SEED_RE in bin/_review.py.
+const MD_SEED = /<!-- rv:seed\n([\s\S]*?)\n-->\n?/
+const MD_SEED_START = "<!-- rv:seed\n"
+const COMMENT = /<!--[\s\S]*?-->/g
+const FENCE = /^(```|~~~)[\s\S]*?^\1/gm
+const H1 = /^#[ \t]+(.+?)[ \t#]*$/m
 // Mirrors BLOCK_RE in skills/mode/bin/_review.py, the one writer of this layer.
 const RV_LAYER = /<!-- rv:start -->[\s\S]*?<!-- rv:end -->\n?/
 const RV_LAYER_START = /<!-- rv:start -->/
@@ -16,6 +23,8 @@ const HEAD_BYTES = 4000
 const SAFE_SLUG = /^[a-zA-Z0-9._-]+$/
 // A pre-build source, never an artifact. One constant, so listing and direct access cannot diverge.
 const SRC_SUFFIX = ".src.html"
+// Precedence on a slug clash: a page beside a same-named .md is the artifact, and the .md its brief.
+const FORMATS: ArtifactFormat[] = ["html", "md"]
 
 function expandHome(path: string): string {
   return path.startsWith("~") ? join(homedir(), path.slice(1)) : path
@@ -50,12 +59,18 @@ async function readHead(path: string, bytes: number = HEAD_BYTES): Promise<strin
 }
 
 interface ParseMetaInput {
+  format: ArtifactFormat
   head: string
   fallbackSlug: string
   path: string
 }
 
-function parseMeta({ head, fallbackSlug, path }: ParseMetaInput): ArtifactMeta {
+function titleOf(head: string, format: ArtifactFormat): string {
+  if (format === "html") return TITLE_TAG.exec(head)?.[1]?.trim() || ""
+  return H1.exec(head.replace(COMMENT, "").replace(FENCE, ""))?.[1] || ""
+}
+
+function parseMeta({ format, head, fallbackSlug, path }: ParseMetaInput): ArtifactMeta {
   const fields: Partial<Record<MetaField, string>> = {}
   const block = META_BLOCK.exec(head)?.[1]
   if (block) {
@@ -66,10 +81,10 @@ function parseMeta({ head, fallbackSlug, path }: ParseMetaInput): ArtifactMeta {
       if (META_FIELDS.has(key)) fields[key] = line.slice(i + 1).trim()
     }
   }
-  const title = fields.title || TITLE_TAG.exec(head)?.[1]?.trim() || ""
-  // A local showpiece owns its own doctype; a published one never does. Mirrors bin/artifact's read_meta.
-  const target = fields.target || (/^\s*<!doctype/i.test(head) ? "s" : "b")
-  return { slug: fields.slug || fallbackSlug, title, url: fields.url, target, ds: fields.ds, updated: fields.updated, path }
+  const title = fields.title || titleOf(head, format)
+  // A local showpiece owns its own doctype; a published one never does, and a .md is never published. Mirrors bin/artifact's read_meta.
+  const target = fields.target || (format === "md" || /^\s*<!doctype/i.test(head) ? "s" : "b")
+  return { slug: fields.slug || fallbackSlug, title, url: fields.url, target, ds: fields.ds, updated: fields.updated, path, format }
 }
 
 // external contract: validating the shape of raw JSON.parse output read off disk
@@ -107,8 +122,12 @@ function toThread(raw: unknown): ReviewThread | undefined {
   }
 }
 
-function parseThreads(html: string): ReviewThread[] {
-  const captured = RV_SEED.exec(html)?.[1]
+function seedOf(text: string, format: ArtifactFormat): string | undefined {
+  return (format === "md" ? MD_SEED : RV_SEED).exec(text)?.[1]
+}
+
+function parseThreads(text: string, format: ArtifactFormat): ReviewThread[] {
+  const captured = seedOf(text, format)
   if (!captured) return []
   let doc: unknown
   try {
@@ -156,31 +175,57 @@ async function readTail(path: string, size: number): Promise<string> {
 }
 
 // Undefined rather than 0 when the window missed the seed: no layer and an unread one differ.
-function countThreads(tail: string): number | undefined {
+function countThreads({ format, tail, whole }: { format: ArtifactFormat; tail: string; whole: boolean }): number | undefined {
+  if (format === "md") {
+    if (tail.includes(MD_SEED_START)) return parseThreads(tail, format).length
+    // A .md grows its block with the first thread, so a file read whole without one has none.
+    return whole ? 0 : undefined
+  }
   if (!RV_LAYER_START.test(tail)) return undefined
-  return RV_SEED.test(tail) ? parseThreads(tail).length : undefined
+  return RV_SEED.test(tail) ? parseThreads(tail, format).length : undefined
 }
 
-async function artifactFiles(dir: string): Promise<string[]> {
+interface ArtifactFile {
+  format: ArtifactFormat
+  name: string
+  slug: string
+}
+
+function fileOf(name: string): ArtifactFile | undefined {
+  if (name.endsWith(SRC_SUFFIX)) return undefined
+  const format = FORMATS.find((one) => name.endsWith(`.${one}`))
+  return format ? { format, name, slug: name.slice(0, -format.length - 1) } : undefined
+}
+
+async function artifactFiles(dir: string): Promise<ArtifactFile[]> {
+  let names: string[]
   try {
-    const entries = await readdir(dir)
-    return entries.filter((name) => name.endsWith(".html") && !name.endsWith(SRC_SUFFIX)).sort()
+    names = await readdir(dir)
   } catch {
     return []
   }
+  const files = names.map(fileOf).filter((file): file is ArtifactFile => Boolean(file))
+  const pages = new Set(files.filter((file) => file.format === "html").map((file) => file.slug))
+  return files.filter((file) => file.format === "html" || !pages.has(file.slug)).sort((a, b) => a.name.localeCompare(b.name))
 }
 
 // Each row costs 160 KB of reads, so a list that has not changed on disk is answered from here.
 const listed = new Map<string, { size: number; mtimeMs: number; meta: ArtifactMeta }>()
 
-async function metaOf(path: string, slug: string, stats: { size: number; mtimeMs: number }): Promise<ArtifactMeta> {
+interface MetaOfInput {
+  file: ArtifactFile
+  path: string
+  stats: { size: number; mtimeMs: number }
+}
+
+async function metaOf({ file, path, stats }: MetaOfInput): Promise<ArtifactMeta> {
   const hit = listed.get(path)
   if (hit && hit.size === stats.size && hit.mtimeMs === stats.mtimeMs) return hit.meta
   const [head, tail] = await Promise.all([readHead(path, BODY_BYTES), readTail(path, stats.size)])
   const meta: ArtifactMeta = {
-    ...parseMeta({ head: head.slice(0, HEAD_BYTES), fallbackSlug: slug, path }),
-    threadCount: countThreads(tail),
-    preview: previewOf(head),
+    ...parseMeta({ format: file.format, head: head.slice(0, HEAD_BYTES), fallbackSlug: file.slug, path }),
+    threadCount: countThreads({ format: file.format, tail, whole: stats.size <= TAIL_BYTES }),
+    preview: previewOf(file.format === "md" ? `<body>${await Markdown.body(head)}` : head),
   }
   listed.set(path, { size: stats.size, mtimeMs: stats.mtimeMs, meta })
   return meta
@@ -189,11 +234,11 @@ async function metaOf(path: string, slug: string, stats: { size: number; mtimeMs
 export async function listArtifacts(): Promise<ArtifactMeta[]> {
   const dir = await artifactsDir()
   const rows: { meta: ArtifactMeta; mtime: number }[] = []
-  for (const name of await artifactFiles(dir)) {
-    const path = join(dir, name)
+  for (const file of await artifactFiles(dir)) {
+    const path = join(dir, file.name)
     try {
       const stats = await stat(path)
-      rows.push({ meta: await metaOf(path, name.replace(/\.html$/, ""), stats), mtime: stats.mtimeMs })
+      rows.push({ meta: await metaOf({ file, path, stats }), mtime: stats.mtimeMs })
     } catch {
       // vanished or unreadable between the readdir and the read: drop it rather than fail the whole list
     }
@@ -201,11 +246,16 @@ export async function listArtifacts(): Promise<ArtifactMeta[]> {
   return rows.sort((a, b) => b.mtime - a.mtime).map((r) => r.meta)
 }
 
-export async function artifactPath(slug: string): Promise<string | undefined> {
+async function artifactFile(slug: string): Promise<(ArtifactFile & { path: string }) | undefined> {
   if (!SAFE_SLUG.test(slug)) return undefined
-  const name = `${slug}.html`
-  if (name.endsWith(SRC_SUFFIX)) return undefined
-  return join(await artifactsDir(), name)
+  const dir = await artifactsDir()
+  for (const format of FORMATS) {
+    const file = fileOf(`${slug}.${format}`)
+    const path = file ? join(dir, file.name) : undefined
+    const stats = path ? await stat(path).catch(() => undefined) : undefined
+    if (file && path && stats?.isFile()) return { ...file, path }
+  }
+  return undefined
 }
 
 async function readWhole(path: string): Promise<string | undefined> {
@@ -216,9 +266,15 @@ async function readWhole(path: string): Promise<string | undefined> {
   }
 }
 
-export async function readArtifactHtml(slug: string): Promise<string | undefined> {
-  const path = await artifactPath(slug)
-  return path ? readWhole(path) : undefined
+export interface ArtifactSource extends ArtifactMeta {
+  text: string
+}
+
+export async function readArtifact(slug: string): Promise<ArtifactSource | undefined> {
+  const file = await artifactFile(slug)
+  const text = file ? await readWhole(file.path) : undefined
+  if (!file || !text) return undefined
+  return { ...parseMeta({ format: file.format, head: text.slice(0, HEAD_BYTES), fallbackSlug: slug, path: file.path }), text }
 }
 
 /** The sidecar draws the notes in its own gutter, so the page's own comment surface would be a second one. */
@@ -227,18 +283,15 @@ export function stripReviewLayer(html: string): string {
 }
 
 export async function getArtifact(slug: string): Promise<ArtifactDetail | undefined> {
-  const path = await artifactPath(slug)
-  const html = path ? await readWhole(path) : undefined
-  if (!path || !html) return undefined
-  return { ...parseMeta({ head: html.slice(0, HEAD_BYTES), fallbackSlug: slug, path }), threads: parseThreads(html) }
+  const source = await readArtifact(slug)
+  if (!source) return undefined
+  const { text, ...meta } = source
+  return { ...meta, threads: parseThreads(text, meta.format) }
 }
 
-export async function writeArtifactHtml(slug: string, html: string): Promise<boolean> {
-  const path = await artifactPath(slug)
-  if (!path) return false
-  await writeFile(path, html, "utf8")
+export async function writeArtifact({ path, text }: { path: string; text: string }): Promise<void> {
+  await writeFile(path, text, "utf8")
   listed.delete(path)
-  return true
 }
 
 const SKIP_TAGS = new Set(["script", "style", "svg", "template"])
@@ -497,8 +550,10 @@ export function applyArtifactEdit(input: { html: string; path: string; replaceme
   return { html: `${page.slice(0, found.el.innerFrom)}${wrapped}${page.slice(found.el.innerTo)}${tail}`, id, ok: true }
 }
 
-function parseSeed(html: string): Record<string, unknown> | undefined {
-  const captured = RV_SEED.exec(html)?.[1]
+function parseSeed(text: string, format: ArtifactFormat): Record<string, unknown> | undefined {
+  // A .md has nothing to install first, so no block is an empty one; an unreadable block is still refused.
+  if (format === "md" && !MD_SEED.test(text)) return { v: 1, threads: [] }
+  const captured = seedOf(text, format)
   if (!captured) return undefined
   try {
     const doc = JSON.parse(captured) as unknown
@@ -508,10 +563,22 @@ function parseSeed(html: string): Record<string, unknown> | undefined {
   }
 }
 
-function writeSeed(html: string, seed: Record<string, unknown>): string {
+interface WriteSeedInput {
+  format: ArtifactFormat
+  seed: Record<string, unknown>
+  text: string
+}
+
+// Replacer functions, not strings: a `$&` typed into a comment would otherwise be expanded by String.replace.
+function writeSeed({ format, seed, text }: WriteSeedInput): string {
+  if (format === "md") {
+    // `-->` in a comment body would end the block early; the escape reads back as the same text.
+    const block = `${MD_SEED_START}${JSON.stringify(seed).replace(/-->/g, "--\\u003e")}\n-->\n`
+    return MD_SEED.test(text) ? text.replace(MD_SEED, () => block) : `${text.replace(/\n*$/, "\n\n")}${block}`
+  }
+  if (!RV_SEED.test(text)) return text
   const json = JSON.stringify(seed).replace(/</g, "\\u003c")
-  if (!RV_SEED.test(html)) return html
-  return html.replace(RV_SEED, `<script type="application/json" id="rv-seed">${json}</script>`)
+  return text.replace(RV_SEED, () => `<script type="application/json" id="rv-seed">${json}</script>`)
 }
 
 function nowIso(): string {
@@ -525,7 +592,7 @@ function uid8(): string {
 export type ArtifactReviewFail = "invalid" | "not-found" | "no-seed"
 
 export type ArtifactReviewOutcome =
-  | { ok: true; html: string; thread?: ReviewThread; threads: ReviewThread[] }
+  | { ok: true; text: string; thread?: ReviewThread; threads: ReviewThread[] }
   | { ok: false; reason: ArtifactReviewFail }
 
 export function applyReviewChange(input: {
@@ -533,14 +600,16 @@ export function applyReviewChange(input: {
   anchor?: ThreadAnchor
   body?: string
   by?: string
-  html: string
+  format: ArtifactFormat
   id?: string
+  text: string
 }): ArtifactReviewOutcome {
-  const seed = parseSeed(input.html)
+  const seed = parseSeed(input.text, input.format)
   if (!seed) return { ok: false, reason: "no-seed" }
   const threads = Array.isArray(seed.threads)
     ? seed.threads.map(toThread).filter((t): t is ReviewThread => Boolean(t))
     : []
+  const save = (next: ReviewThread[]): string => writeSeed({ format: input.format, seed: { ...seed, threads: next }, text: input.text })
 
   if (input.action === "create") {
     const body = input.body?.trim()
@@ -557,12 +626,7 @@ export function applyReviewChange(input: {
       replies: [],
     }
     const next = [...threads, thread]
-    return {
-      ok: true,
-      html: writeSeed(input.html, { ...seed, threads: next }),
-      thread,
-      threads: next,
-    }
+    return { ok: true, text: save(next), thread, threads: next }
   }
 
   if (!input.id) return { ok: false, reason: "invalid" }
@@ -573,7 +637,7 @@ export function applyReviewChange(input: {
   if (input.action === "resolve") {
     const thread: ReviewThread = { ...held, status: "resolved", updated: nowIso() }
     const next = threads.map((one, i) => (i === at ? thread : one))
-    return { ok: true, html: writeSeed(input.html, { ...seed, threads: next }), thread, threads: next }
+    return { ok: true, text: save(next), thread, threads: next }
   }
 
   const body = input.body?.trim()
@@ -585,7 +649,7 @@ export function applyReviewChange(input: {
     replies: [...held.replies, reply],
   }
   const next = threads.map((one, i) => (i === at ? thread : one))
-  return { ok: true, html: writeSeed(input.html, { ...seed, threads: next }), thread, threads: next }
+  return { ok: true, text: save(next), thread, threads: next }
 }
 
 export function resolveArtifactEdit(input: { action: "accept" | "revert"; html: string; id: string; path: string }): ArtifactEditOutcome {

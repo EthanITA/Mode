@@ -1,4 +1,4 @@
-import { applyReviewChange, readArtifactHtml, writeArtifactHtml } from "~~/server/utils/artifacts"
+import { applyReviewChange, readArtifact, writeArtifact } from "~~/server/utils/artifacts"
 import type { ArtifactReviewReply, ArtifactReviewRequest, ThreadAnchor } from "~~/shared/types/artifact"
 
 function anchorOf(raw: unknown): ThreadAnchor | undefined {
@@ -31,10 +31,10 @@ export default defineEventHandler(async (event): Promise<ArtifactReviewReply> =>
   const body = payloadOf(await readBody(event))
   if (!body) throw createError({ statusCode: 400, statusMessage: "invalid review" })
 
-  const html = await readArtifactHtml(slug)
-  if (!html) throw createError({ statusCode: 404, statusMessage: `no artifact matching '${slug}'` })
+  const source = await readArtifact(slug)
+  if (!source) throw createError({ statusCode: 404, statusMessage: `no artifact matching '${slug}'` })
 
-  const outcome = applyReviewChange({ ...body, html })
+  const outcome = applyReviewChange({ ...body, format: source.format, text: source.text })
   if (!outcome.ok) {
     throw createError({
       statusCode: outcome.reason === "invalid" ? 400 : outcome.reason === "no-seed" ? 404 : 409,
@@ -42,9 +42,6 @@ export default defineEventHandler(async (event): Promise<ArtifactReviewReply> =>
     })
   }
 
-  if (!(await writeArtifactHtml(slug, outcome.html))) {
-    throw createError({ statusCode: 404, statusMessage: `no artifact matching '${slug}'` })
-  }
-
+  await writeArtifact({ path: source.path, text: outcome.text })
   return { thread: outcome.thread, threads: outcome.threads }
 })

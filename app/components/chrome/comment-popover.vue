@@ -4,7 +4,9 @@ import type { CommentSpot } from "~/composables/useChrome";
 const { spot } = defineProps<{ spot: CommentSpot }>();
 
 const chrome = useChrome();
+const sc = useSidecar();
 const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
+const editable = computed(() => sc.artifact.value?.format !== "md");
 
 const draft = ref("");
 const pen = useTemplateRef<HTMLElement>("pen");
@@ -69,7 +71,7 @@ function onEdit(): void {
 
     <p class="foot">
       <span class="hint mono-meta">↵ to tray · esc cancel</span>
-      <button v-if="spot.kind === 'block'" v-press class="cancel focusable" type="button" @click="onEdit">
+      <button v-if="spot.kind === 'block' && editable" v-press class="cancel focusable" type="button" @click="onEdit">
         Edit
       </button>
       <button v-press class="cancel focusable" type="button" @click="chrome.comment.close()">Cancel</button>

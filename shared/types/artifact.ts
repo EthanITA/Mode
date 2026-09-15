@@ -1,3 +1,5 @@
+export type ArtifactFormat = "html" | "md"
+
 export interface ArtifactMeta {
   slug: string
   title: string
@@ -6,6 +8,7 @@ export interface ArtifactMeta {
   ds?: string
   updated?: string
   path: string
+  format: ArtifactFormat
   // Not `threads`: ArtifactDetail already owns that name for the array itself.
   threadCount?: number
   preview?: string

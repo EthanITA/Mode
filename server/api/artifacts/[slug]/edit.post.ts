@@ -1,8 +1,8 @@
 import {
   applyArtifactEdit,
-  readArtifactHtml,
+  readArtifact,
   resolveArtifactEdit,
-  writeArtifactHtml,
+  writeArtifact,
   type ArtifactEditFail,
 } from "~~/server/utils/artifacts"
 import type { ArtifactEditReply, ArtifactEditRequest } from "~~/shared/types/artifact"
@@ -41,9 +41,12 @@ export default defineEventHandler(async (event): Promise<ArtifactEditReply> => {
   const body = payloadOf(await readBody(event))
   if (!body) throw createError({ statusCode: 400, statusMessage: "invalid edit" })
 
-  const html = await readArtifactHtml(slug)
-  if (!html) throw createError({ statusCode: 404, statusMessage: `no artifact matching '${slug}'` })
+  const source = await readArtifact(slug)
+  if (!source) throw createError({ statusCode: 404, statusMessage: `no artifact matching '${slug}'` })
+  // An edit addresses an element of the rendered page, and a .md has no page of its own to write it back into.
+  if (source.format === "md") throw createError({ statusCode: 409, statusMessage: "A markdown artifact takes comments, not inline edits" })
 
+  const html = source.text
   const outcome =
     body.action === "accept" || body.action === "revert"
       ? resolveArtifactEdit({ action: body.action, html, id: body.id || "", path: body.path })
@@ -56,9 +59,6 @@ export default defineEventHandler(async (event): Promise<ArtifactEditReply> => {
     })
   }
 
-  if (!(await writeArtifactHtml(slug, outcome.html))) {
-    throw createError({ statusCode: 404, statusMessage: `no artifact matching '${slug}'` })
-  }
-
+  await writeArtifact({ path: source.path, text: outcome.html })
   return { id: outcome.id }
 })
