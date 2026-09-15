@@ -147,6 +147,42 @@ test("an unknown baseline inside a git tree is reconstructed from the last track
   }
 })
 
+test("a git-reconstructed baseline carries into a second turn's edit, not just the first", () => {
+  const root = mkdtempSync(join(tmpdir(), "sidecar-git-baseline-2-"))
+  const repo = join(root, "repo")
+  const config = join(root, "config")
+  const target = join(repo, "tracked.ts")
+  const key = "eeeeffff"
+  try {
+    mkdirSync(repo, { recursive: true })
+    mkdirSync(join(config, "projects", "-tmp-tracked2"), { recursive: true })
+    writeFileSync(target, "alpha\n")
+    execFileSync("git", ["-C", repo, "init", "-q", "-b", "main"])
+    execFileSync("git", ["-C", repo, "config", "user.name", "fixture"])
+    execFileSync("git", ["-C", repo, "config", "user.email", "fixture@local"])
+    execFileSync("git", ["-C", repo, "add", "tracked.ts"])
+    execFileSync("git", ["-C", repo, "commit", "-q", "-m", "seed", "--author", "fixture <fixture@local>"], {
+      env: { ...process.env, GIT_AUTHOR_DATE: "2026-01-01T09:00:00.000Z", GIT_COMMITTER_DATE: "2026-01-01T09:00:00.000Z" },
+    })
+    writeFileSync(join(config, "projects", "-tmp-tracked2", `${key}-1111-2222-3333-444444444444.jsonl`), twiceEditTranscript(target))
+    const run = (args: string[]): string =>
+      execFileSync(process.execPath, ["--experimental-strip-types", BIN, ...args], {
+        encoding: "utf8",
+        env: { ...process.env, CLAUDE_CONFIG_DIR: config },
+      })
+    run(["build", key])
+    // Before the fix, this second turn's edit resolved to no content, which put() read as a delete.
+    const diff = JSON.parse(run(["diff", key, "--path", target, "--from", "2", "--to", "3"]))
+    assert.equal(diff.computed, true)
+    assert.match(diff.patch, /-beta\n\+gamma/)
+    assert.doesNotMatch(diff.patch, /deleted file/)
+    const listed = JSON.parse(run(["list", key, "--path", target]))
+    assert.equal(listed.files[0].versions.at(-1)?.deleted, undefined)
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
 test("restore refuses to clobber a file that moved on since the store's head", () => {
   const root = mkdtempSync(join(tmpdir(), "sidecar-restore-"))
   const target = join(root, "target.ts")
@@ -201,6 +237,33 @@ function editTranscript(target: string): string {
       message: { role: "user", content: [{ type: "tool_result", tool_use_id: "e1", content: "ok" }] },
       toolUseResult: { filePath: target, oldString: "alpha", newString: "beta", originalFile: null, replaceAll: false, structuredPatch: [{ oldStart: 1 }] },
     },
+  ]
+    .map((one) => JSON.stringify(one))
+    .join("\n")
+}
+
+function twiceEditTranscript(target: string): string {
+  const cwd = dirname(target)
+  const edit = (id: string, at: string, prompt: string, oldWord: string, newWord: string): object[] => [
+    { type: "user", cwd, timestamp: at, message: { role: "user", content: prompt } },
+    {
+      type: "assistant",
+      cwd,
+      timestamp: at,
+      message: { role: "assistant", content: [{ type: "tool_use", id, name: "Edit", input: { file_path: target, old_string: oldWord, new_string: newWord } }] },
+    },
+    {
+      type: "user",
+      cwd,
+      timestamp: at,
+      message: { role: "user", content: [{ type: "tool_result", tool_use_id: id, content: "ok" }] },
+      toolUseResult: { filePath: target, oldString: oldWord, newString: newWord, originalFile: null, replaceAll: false, structuredPatch: [{ oldStart: 1 }] },
+    },
+  ]
+  return [
+    { type: "user", cwd, timestamp: "2026-01-01T12:00:00.000Z", message: { role: "user", content: "look at it" } },
+    ...edit("e1", "2026-01-01T12:05:00.000Z", "now fix the old one", "alpha", "beta"),
+    ...edit("e2", "2026-01-01T12:10:00.000Z", "fix it again", "beta", "gamma"),
   ]
     .map((one) => JSON.stringify(one))
     .join("\n")

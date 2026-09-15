@@ -181,9 +181,14 @@ function replay(content: string, touches: FileTouch[]): string | undefined {
   return next
 }
 
-function touchesAt({ turns, turn, path }: { turns: ParsedTurn[]; turn: number; path: string }): FileTouch[] {
-  const found = turns.find((one) => one.receipt.turn === turn)
-  return found?.touches.filter((one) => one.path === path) || []
+// Cumulative: a git-reconstructed baseline only patches the turn that found it, so later turns replay the whole chain.
+function touchesUpTo({ turns, turn, path }: { turns: ParsedTurn[]; turn: number; path: string }): FileTouch[] {
+  const out: FileTouch[] = []
+  for (const one of turns) {
+    if (one.receipt.turn > turn) break
+    out.push(...one.touches.filter((t) => t.path === path))
+  }
+  return out
 }
 
 function build(key: string): StoreIndex {
@@ -203,6 +208,7 @@ function build(key: string): StoreIndex {
   // Built over every turn, not only the newly committed ones, so an incremental run keeps the
   // attribution of versions it is not re-committing.
   const marks = new Map<string, Map<number, { by: string; deleted?: true }>>()
+  const gitBaselines = new Map<string, string>()
   for (const turn of plan.plans) {
     const gitBases: { path: string; content: string; sha: string }[] = []
     for (const file of turn.files) {
@@ -210,9 +216,12 @@ function build(key: string): StoreIndex {
         const found = trackedBaseline({ path: file.path, at: turn.at })
         if (found) {
           plan.baselines.set(file.path, "reconstructed")
-          file.content = replay(found.content, touchesAt({ turns, turn: turn.turn, path: file.path }))
+          gitBaselines.set(file.path, found.content)
           gitBases.push({ path: file.path, ...found })
         }
+      }
+      if (typeof file.content !== "string" && gitBaselines.has(file.path)) {
+        file.content = replay(gitBaselines.get(file.path)!, touchesUpTo({ turns, turn: turn.turn, path: file.path }))
       }
       const byTurn = marks.get(file.path) || new Map<number, { by: string; deleted?: true }>()
       byTurn.set(turn.turn, { by: file.by || who, deleted: typeof file.content === "string" ? undefined : true })

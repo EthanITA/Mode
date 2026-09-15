@@ -77,7 +77,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   already existed renders that diff too, instead of the whole document — a `.md` a turn created still
   shows the full page, since there is nothing to diff against. The rendered changes, in History and on
   the artifact page alike, now sit in the same capped, scrollable height as the chat transcript instead
-  of growing without limit.
+  of growing without limit. A file whose baseline had to be reconstructed from git no longer shows every
+  turn after its first as a full deletion: the reconstructed content only patched that first turn, so a
+  later edit folded from nothing and the store read it as removing the whole file. Every turn for such a
+  file now replays the full chain from that same baseline.
 
 ## 0.15.1
 
