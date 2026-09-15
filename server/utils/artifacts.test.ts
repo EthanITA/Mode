@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { test } from "node:test"
 import { applyReviewChange } from "./artifacts.ts"
 import { Markdown } from "./markdown.ts"
+import { Documents } from "./sessions/artifact-lists.ts"
 
 const NOTE = "<!-- artifact\ntitle:   The plan\n-->\n# The plan\n\nShip it <b>today</b>.\n\n## Risks\n\n- [ ] a < b\n"
 
@@ -14,6 +15,10 @@ test("a .md takes its first thread with no layer installed, below its own text, 
   if (!replied.ok) assert.fail(replied.reason)
   assert.equal(replied.text.split("<!-- rv:seed").length, 2)
   assert.deepEqual(replied.threads.map((one) => [one.body, one.replies.length]), [["why today", 1]])
+})
+
+test("a document's slug is its stem made url-safe plus six hex of its path, exactly as bin/artifact names it", () => {
+  assert.equal(Documents.slug("/tmp/notes/analysis/My Plan.md"), "My-Plan--5471ce")
 })
 
 test("the page is one section per h1 or h2, and no comment block leaks into it", async () => {

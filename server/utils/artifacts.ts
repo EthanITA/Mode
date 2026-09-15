@@ -1,8 +1,9 @@
 import { open, readdir, readFile, stat, writeFile } from "node:fs/promises"
 import { homedir } from "node:os"
-import { join } from "node:path"
+import { basename, join } from "node:path"
 import type { ArtifactDetail, ArtifactFormat, ArtifactMeta, ReviewThread, ThreadAnchor, ThreadReply } from "../../shared/types/artifact"
 import { Markdown } from "./markdown.ts"
+import { Documents } from "./sessions/artifact-lists.ts"
 
 const META_BLOCK = /<!--\s*artifact\b([\s\S]*?)-->/
 const TITLE_TAG = /<title>([\s\S]*?)<\/title>/i
@@ -81,7 +82,8 @@ function parseMeta({ format, head, fallbackSlug, path }: ParseMetaInput): Artifa
       if (META_FIELDS.has(key)) fields[key] = line.slice(i + 1).trim()
     }
   }
-  const title = fields.title || titleOf(head, format)
+  // A document's slug carries a hash, so its own file name reads better than a deslugged fallback.
+  const title = fields.title || titleOf(head, format) || (format === "md" ? basename(path, ".md") : "")
   // A local showpiece owns its own doctype; a published one never does, and a .md is never published. Mirrors bin/artifact's read_meta.
   const target = fields.target || (format === "md" || /^\s*<!doctype/i.test(head) ? "s" : "b")
   return { slug: fields.slug || fallbackSlug, title, url: fields.url, target, ds: fields.ds, updated: fields.updated, path, format }
@@ -233,9 +235,10 @@ async function metaOf({ file, path, stats }: MetaOfInput): Promise<ArtifactMeta>
 
 export async function listArtifacts(): Promise<ArtifactMeta[]> {
   const dir = await artifactsDir()
+  const documents = [...Documents.paths()].map(([slug, path]) => ({ file: documentFile({ path, slug }), path }))
+  const sources = [...(await artifactFiles(dir)).map((file) => ({ file, path: join(dir, file.name) })), ...documents]
   const rows: { meta: ArtifactMeta; mtime: number }[] = []
-  for (const file of await artifactFiles(dir)) {
-    const path = join(dir, file.name)
+  for (const { file, path } of sources) {
     try {
       const stats = await stat(path)
       rows.push({ meta: await metaOf({ file, path, stats }), mtime: stats.mtimeMs })
@@ -255,7 +258,13 @@ async function artifactFile(slug: string): Promise<(ArtifactFile & { path: strin
     const stats = path ? await stat(path).catch(() => undefined) : undefined
     if (file && path && stats?.isFile()) return { ...file, path }
   }
-  return undefined
+  const recorded = Documents.paths().get(slug)
+  const stats = recorded ? await stat(recorded).catch(() => undefined) : undefined
+  return recorded && stats?.isFile() ? { ...documentFile({ path: recorded, slug }), path: recorded } : undefined
+}
+
+function documentFile({ path, slug }: { path: string; slug: string }): ArtifactFile {
+  return { format: "md", name: basename(path), slug }
 }
 
 async function readWhole(path: string): Promise<string | undefined> {
