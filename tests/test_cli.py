@@ -4,6 +4,7 @@ Nothing here reads the shipped modes or styles. The fixtures carry names no cont
 repo uses, so a test that passes is a test the tool actually answered.
 """
 
+import hashlib
 import json
 import os
 import subprocess
@@ -1264,5 +1265,20 @@ with tempfile.TemporaryDirectory() as tmp:
     p = artifact("wait", "plan")
     ok("wait refuses a .md, since no page will ever post to it",
        p.returncode == 2 and "artifact comments plan" in p.stderr, "rc=%s err=%r" % (p.returncode, p.stderr))
+
+    section("a .md outside the folder, recorded by its path")
+    doc = os.path.join(tmp, "notes", "analysis", "Gold timeline.md")
+    write(doc, "# Gold order timeline\n\nSaxo said unknown.\n")
+    slug = "Gold-timeline--" + hashlib.sha1(doc.encode()).hexdigest()[:6]
+    mine = dict(env, CLAUDE_CODE_SESSION_ID="d0c5e55a-cli")
+    p = subprocess.run([sys.executable, tool, "touch", doc], capture_output=True, text=True, env=mine)
+    ok("touch on a path records the file and names its document slug",
+       p.returncode == 0 and slug in p.stdout, "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
+    p = subprocess.run([sys.executable, tool, "list", "--session", "--tsv"], capture_output=True, text=True, env=mine)
+    ok("the conversation's listing carries it under that slug",
+       "%s\t%s" % (slug, doc) in p.stdout, "%r. The sidecar shows it, so the CLI has to name it the same way." % p.stdout)
+    p = artifact("path", slug)
+    ok("and the slug resolves back to the file from any conversation",
+       out(p) == doc, "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
 
 report()
