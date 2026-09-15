@@ -11,6 +11,34 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **The sidecar's home page shows the conversations `claude agents` shows, and deletes them the same
+  way.** The list used to be built from whichever sessions had left an artifact list behind, which on
+  this machine meant 89 rows against the agent view's 9. It now takes its set from
+  `claude agents --json --all`, cached for one poll, so the names and the lane each conversation sits
+  in are the CLI's own rather than something re-derived; reading the job files directly is a fallback
+  for a machine with no CLI, and a lane that came from there is marked as derived. Everything the
+  sidecar kept but no background job owns is still returned and still reachable by link, flagged
+  archived and folded behind a toggle in the header.
+- **The home page is a canvas.** Conversations are cards on the same pannable, zoomable plane the
+  session canvas uses, arranged where you drop them, with the layout held in this browser rather than
+  in the conversation. Each card carries a thumbnail of that conversation's own canvas, drawn from the
+  placement it saved or from the fallback grid when it never saved one. Double-click opens it.
+- **A conversation can be deleted from the sidecar.** The card's context menu asks a second time in
+  place, the way `claude agents` wants ctrl+x twice. It stops the worker before it removes anything,
+  and gives up rather than escalating if the worker will not stop, so a live one is never stranded.
+  It removes the job directory and the six places the sidecar keeps per-session state. It never
+  touches the transcript, the file history, or a document that a conversation's artifact list merely
+  points at, and it refuses outright on a job running in worktree isolation.
+
+- **The sidecar's board writes Claude Code's task store directly.** Ticking a task complete, adding
+  one, or reassigning it in the Board panel now writes the task file itself, stamped
+  `#id [CATEGORY] subject` exactly as a `TaskCreate` would be, and sends nothing to the chat. The
+  agent learns what moved from one line of injected context on its next `PostToolUse`,
+  `UserPromptSubmit` or `SessionStart`, so a board edit costs it no turn and never arrives looking
+  like something the user typed. Ids are claimed the way the harness claims them, highest plus one
+  and written only if absent, so the two writers cannot collide. The drag order is a webapp-only
+  preference kept outside the task store, where the agent never reads it.
+
 - **`namespace-guard`, a fourth style guard on `Write|Edit`.** It reads the whole file after the
   edit and flags what the domain-namespace rule bans: two or more exports sharing a prefix
   (`googleLogin` beside `googleSignout`, which want to be `Google.login()`), and `export *`, which
