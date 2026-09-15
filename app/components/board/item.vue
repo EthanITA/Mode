@@ -18,6 +18,8 @@ defineEmits<{
   drop: [];
 }>();
 
+const expanded = ref(false);
+
 const ownerAgent = computed<SessionAgent | undefined>(() =>
   task.category === "USER" ? undefined : agents.find((agent) => agent.name === task.owner),
 );
@@ -81,34 +83,42 @@ const commentLabel = computed(() => `${taskId.value} ${task.text}`);
 
     <span class="id mono-meta" :data-done="task.done ? '' : undefined">{{ taskId }}</span>
 
-    <span class="text" :data-done="task.done ? '' : undefined">{{ task.text }}</span>
+    <span v-if="task.category === 'WAIT'" class="tag mono-meta">wait</span>
+    <span v-else-if="blocked && !task.done" class="tag mono-meta">blocked</span>
+
+    <button
+      class="text plain-button focusable"
+      type="button"
+      :data-done="task.done ? '' : undefined"
+      :data-expanded="expanded"
+      :title="task.text"
+      @click="expanded = !expanded"
+    >
+      {{ task.text }}
+    </button>
 
     <BoardOwnerMenu :agents="agents" @pick="$emit('reassign', $event)">
-      <UiChip size="xs" :title="`Owner: ${ownerLabel}`" :data-category="task.category">
-        <span v-if="task.category === 'WAIT'" class="waiting mono-meta">wait</span>
-        <span v-else-if="blocked && !task.done" class="blocked mono-meta">blocked</span>
-        <span v-flip="task.owner" class="owner-mark">
-          <UiAvatar
-            v-if="task.category === 'USER' || ownerAgent"
-            :initials="ownerInitials"
-            :variant="task.category === 'USER' ? 'secondary' : 'neutral'"
-            size="xs"
-          />
-          <span v-else class="claude-avatar"><i class="claude-mark" /></span>
-        </span>
-      </UiChip>
+      <span v-flip="task.owner" class="owner-mark" :title="`Owner: ${ownerLabel}`">
+        <UiAvatar
+          v-if="task.category === 'USER' || ownerAgent"
+          :initials="ownerInitials"
+          :variant="task.category === 'USER' ? 'secondary' : 'neutral'"
+          size="xs"
+        />
+        <span v-else class="claude-avatar"><i class="claude-mark" /></span>
+      </span>
     </BoardOwnerMenu>
   </div>
 </template>
 
 <style scoped>
 .row {
-  align-items: flex-start;
+  align-items: center;
   border-radius: 8px;
   border-top: 2px solid transparent;
   display: flex;
-  gap: 8px;
-  padding: 7px 8px;
+  gap: 7px;
+  padding: 2px 6px;
 }
 
 .row[data-drop] {
@@ -120,19 +130,24 @@ const commentLabel = computed(() => `${taskId.value} ${task.text}`);
 }
 
 .handle {
+  cursor: grab;
   display: inline-grid;
   flex: none;
   gap: 2px;
-  grid-template-columns: repeat(2, 3px);
-  margin-top: 5px;
-  cursor: grab;
+  grid-template-columns: repeat(2, 2px);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.row:hover .handle {
+  opacity: 1;
 }
 
 .pip {
   background: var(--subtle);
   border-radius: 999px;
-  height: 3px;
-  width: 3px;
+  height: 2px;
+  width: 2px;
 }
 
 .box {
@@ -142,10 +157,9 @@ const commentLabel = computed(() => `${taskId.value} ${task.text}`);
   box-sizing: border-box;
   display: grid;
   flex: none;
-  height: 15px;
+  height: 13px;
   justify-content: center;
-  margin-top: 2px;
-  width: 15px;
+  width: 13px;
 }
 
 .box[aria-pressed="true"] {
@@ -160,37 +174,51 @@ const commentLabel = computed(() => `${taskId.value} ${task.text}`);
 .progress-dot {
   background: var(--primary);
   border-radius: 999px;
-  height: 5px;
-  width: 5px;
+  height: 4px;
+  width: 4px;
 }
 
 .box svg {
   fill: none;
-  height: 9px;
+  height: 8px;
   stroke: var(--primary-content);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 3;
-  width: 9px;
+  width: 8px;
 }
 
 .id {
   color: var(--muted);
   flex: none;
   font-variant-numeric: tabular-nums;
-  margin-top: 2px;
 }
 
 .id[data-done] {
   color: var(--subtle);
 }
 
+.tag {
+  color: var(--warning);
+  flex: none;
+}
+
 .text {
   color: var(--ink);
   flex: 1;
   font-size: 12.5px;
-  line-height: 1.45;
+  line-height: 1.3;
   min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text[data-expanded="true"] {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .text[data-done] {
@@ -198,13 +226,15 @@ const commentLabel = computed(() => `${taskId.value} ${task.text}`);
   text-decoration: line-through;
 }
 
-.waiting,
-.blocked {
-  color: var(--warning);
-}
-
 .owner-mark {
   display: inline-flex;
+  flex: none;
+}
+
+.owner-mark :deep([data-size="xs"]) {
+  font-size: 7px;
+  height: 16px;
+  width: 16px;
 }
 
 .claude-avatar {
@@ -215,9 +245,9 @@ const commentLabel = computed(() => `${taskId.value} ${task.text}`);
   box-sizing: border-box;
   display: inline-flex;
   flex: none;
-  height: 20px;
+  height: 16px;
   justify-content: center;
-  width: 20px;
+  width: 16px;
 }
 
 /* mask-image, not an <img>: the source SVG's own fill can't reach a token, but the mask's alpha
@@ -225,8 +255,8 @@ const commentLabel = computed(() => `${taskId.value} ${task.text}`);
 .claude-mark {
   background-color: var(--muted);
   display: block;
-  height: 11px;
-  width: 11px;
+  height: 9px;
+  width: 9px;
   -webkit-mask-image: url(/assets/entity-static.svg);
   -webkit-mask-position: center;
   -webkit-mask-repeat: no-repeat;

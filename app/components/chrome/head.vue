@@ -63,8 +63,8 @@ const { cwd, title } = defineProps<{ cwd?: string; title: string }>();
 
 .title {
   color: var(--ink);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   letter-spacing: -0.02em;
   min-width: 0;
   overflow: hidden;

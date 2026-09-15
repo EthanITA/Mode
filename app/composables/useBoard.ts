@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter } from "vue";
-import type { BoardSummary, BoardTask } from "~~/shared/types/board";
+import type { BoardAction, BoardSummary, BoardTask } from "~~/shared/types/board";
 import type { Maybe } from "./useSidecar";
 
 const REFRESH_MS = 5000;
@@ -9,12 +9,11 @@ export interface Board {
   toggleDone: (task: BoardTask) => Promise<void>;
   reassign: (task: BoardTask, owner: string) => Promise<void>;
   addTask: (text: string) => Promise<void>;
-  reorder: (task: BoardTask, beforeId?: string) => Promise<void>;
+  reorder: (ids: string[]) => Promise<void>;
 }
 
 export function useBoard(key: MaybeRefOrGetter<string | undefined>): Board {
   const summary = ref<BoardSummary>();
-  const bridge = useActionBridge();
 
   async function pull(): Promise<void> {
     const value = toValue(key);
@@ -26,11 +25,18 @@ export function useBoard(key: MaybeRefOrGetter<string | undefined>): Board {
     }
   }
 
-  // Writes never touch the task files directly: that would race the live session's own
-  // task tool, so every write goes through the action bridge's message channel instead.
-  async function send(text: string): Promise<void> {
-    await bridge.say(text);
-    await pull();
+  // Never through the chat: the board hooks tell the agent, so this costs it no turn.
+  async function act(action: BoardAction): Promise<void> {
+    const value = toValue(key);
+    if (!value) return;
+    try {
+      summary.value = await $fetch<BoardSummary>(`/api/sessions/${value}/board`, {
+        method: "POST",
+        body: action,
+      });
+    } catch {
+      await pull();
+    }
   }
 
   onMounted(() => {
@@ -43,14 +49,9 @@ export function useBoard(key: MaybeRefOrGetter<string | undefined>): Board {
 
   return {
     summary,
-    toggleDone: (task) => send(`Mark task #${task.id} as ${task.done ? "not done" : "done"} on the board.`),
-    reassign: (task, owner) => send(`Reassign task #${task.id} on the board to ${owner}.`),
-    addTask: (text) => send(`Add a new task to the board: "${text}"`),
-    reorder: (task, beforeId) =>
-      send(
-        beforeId
-          ? `Reorder the board: move task #${task.id} to sit just before task #${beforeId}.`
-          : `Reorder the board: move task #${task.id} to the end.`,
-      ),
+    toggleDone: (task) => act({ kind: "done", id: task.id, done: !task.done }),
+    reassign: (task, owner) => act({ kind: "owner", id: task.id, owner }),
+    addTask: (text) => act({ kind: "add", text }),
+    reorder: (ids) => act({ kind: "order", ids }),
   };
 }

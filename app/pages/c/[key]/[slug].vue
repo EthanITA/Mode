@@ -241,6 +241,10 @@ onScopeDispose(() => {
       <ComposerDock />
     </template>
 
+    <template #board>
+      <BoardIsland />
+    </template>
+
     <main class="stage">
       <div class="page" data-region="artifact-view">
         <ArtifactVersions

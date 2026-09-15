@@ -1,9 +1,11 @@
+import json
 import os
 import re
 import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _board import news_line
 from _shared import ROOT, payload, run, sid
 
 # Only the mode axis: a mode is a pipeline and a style has no steps, so a style ledger would only grow.
@@ -63,6 +65,15 @@ try:
     if token:
         run(AXIS, "done", token, *sid(data.get("session_id") or ""))
     record_document(data)
+
+    # Only on the success event: a failed call already owes the model an error, not a board aside.
+    if data.get("hook_event_name") == "PostToolUse":
+        board = news_line(data.get("session_id") or "")
+        if board:
+            print(json.dumps({
+                "hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": board},
+                "suppressOutput": True,
+            }))
 except Exception:
     pass
 

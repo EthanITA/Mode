@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { BoardTask } from "../../shared/types/board.ts";
-import { compareBoardTasks, isTaskBlocked, taskPriority } from "./board.ts";
+import { compareBoardTasks, isTaskBlocked, orderedTasks, taskPriority } from "./board.ts";
 
 function makeTask(overrides: Partial<BoardTask> & { id: string }): BoardTask {
   return {
@@ -45,6 +45,14 @@ test("isTaskBlocked stays blocked when prerequisite task is unfinished", () => {
 
   assert.equal(isTaskBlocked(dependent, [blocker, dependent]), true);
   assert.equal(taskPriority(dependent, [blocker, dependent]), 3);
+});
+
+test("orderedTasks puts the dragged order first and ranks the rest by priority", () => {
+  const tasks = [makeTask({ id: "1" }), makeTask({ id: "2" }), makeTask({ id: "3" })];
+
+  assert.deepEqual(orderedTasks({ tasks, order: ["3", "1"] }).map((t) => t.id), ["3", "1", "2"]);
+  assert.deepEqual(orderedTasks({ tasks, order: [] }).map((t) => t.id), ["1", "2", "3"]);
+  assert.deepEqual(orderedTasks({ tasks, order: ["9"] }).map((t) => t.id), ["1", "2", "3"]);
 });
 
 test("compareBoardTasks sorts according to prio and breaks ties by id", () => {

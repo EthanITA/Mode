@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import type { BoardTask } from "../../../shared/types/board.ts"
-import { compareBoardTasks, isTaskBlocked, subjectOf, taskPriority } from "./board.ts"
+import { compareBoardTasks, isTaskBlocked, stampSubject, subjectOf, taskPriority } from "./board.ts"
 
 function makeTask(overrides: Partial<BoardTask> & { id: string }): BoardTask {
   return {
@@ -37,6 +37,19 @@ test("subjectOf parses plain subjects without id or category", () => {
 
 test("subjectOf preserves lone id subject when no description follows", () => {
   assert.deepEqual(subjectOf("#5"), { category: "AI", text: "#5" })
+})
+
+test("stampSubject pads the id to the column the plugin's board guards expect", () => {
+  assert.equal(stampSubject("4", "AI", "a task"), "#4  [AI] a task")
+  assert.equal(stampSubject("15", "AI", "a task"), "#15 [AI] a task")
+  assert.equal(stampSubject("100", "AI", "a task"), "#100 [AI] a task")
+})
+
+test("a sidecar-stamped subject reads back as the text it was given", () => {
+  assert.deepEqual(subjectOf(stampSubject("7", "AI", "Chase the invoice")), {
+    category: "AI",
+    text: "Chase the invoice",
+  })
 })
 
 test("taskPriority ranks in progress > todo > blocked > done", () => {

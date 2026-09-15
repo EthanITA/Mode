@@ -77,8 +77,8 @@ const session = computed(() => sc.sessions.value.find((s) => s.key === conversat
 
 .title {
   color: var(--ink);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   letter-spacing: -0.02em;
   min-width: 0;
   overflow: hidden;

@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 
@@ -28,6 +29,15 @@ try:
     # The first chance a pin gets. adopt fills only an untouched slot, so a resumed conversation
     # that already holds a contract walks past this untouched.
     run("adopt", "--path", data.get("cwd") or os.getcwd(), *sid(session))
+
+    from _board import news_line
+
+    board = news_line(session)
+    if board:
+        print(json.dumps({
+            "hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": board},
+            "suppressOutput": True,
+        }))
 except Exception:
     pass
 

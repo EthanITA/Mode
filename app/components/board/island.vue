@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ChevronDown, ChevronRight, ChevronUp } from "@lucide/vue";
-import { compareBoardTasks, isTaskBlocked } from "~~/app/utils/board";
+import { isTaskBlocked, orderedTasks } from "~~/app/utils/board";
 
 const sc = useSidecar();
 const board = useBoard(sc.sessionKey);
@@ -31,9 +31,11 @@ const agents = computed(() => sc.sessions.value.find((session) => session.key ==
 const tasks = computed(() => board.summary.value?.tasks ?? []);
 const activeTasks = computed(() => {
   const all = tasks.value;
-  return all
-    .filter((task) => !task.done && task.status !== "completed")
-    .sort((a, b) => compareBoardTasks(a, b, all));
+  return orderedTasks({
+    tasks: all.filter((task) => !task.done && task.status !== "completed"),
+    order: board.summary.value?.order ?? [],
+    all,
+  });
 });
 const doneTasks = computed(() => {
   return tasks.value
@@ -53,15 +55,22 @@ function resetDrag(): void {
   overEnd.value = false;
 }
 
+function sequence(dragged: string, beforeId?: string): string[] {
+  const ids = activeTasks.value.map((task) => task.id).filter((id) => id !== dragged);
+  const at = beforeId ? ids.indexOf(beforeId) : -1;
+  const cut = at < 0 ? ids.length : at;
+  return [...ids.slice(0, cut), dragged, ...ids.slice(cut)];
+}
+
 function onDrop(beforeId: string): void {
-  const dragged = tasks.value.find((task) => task.id === draggedId.value);
-  if (dragged && dragged.id !== beforeId) void board.reorder(dragged, beforeId);
+  const dragged = draggedId.value;
+  if (dragged && dragged !== beforeId) void board.reorder(sequence(dragged, beforeId));
   resetDrag();
 }
 
 function onEndDrop(): void {
-  const dragged = tasks.value.find((task) => task.id === draggedId.value);
-  if (dragged) void board.reorder(dragged, undefined);
+  const dragged = draggedId.value;
+  if (dragged) void board.reorder(sequence(dragged));
   resetDrag();
 }
 
@@ -196,8 +205,10 @@ function onEnter(event: KeyboardEvent): void {
 }
 
 .title {
-  font-size: 12.5px;
-  font-weight: 700;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .meta {
@@ -213,7 +224,7 @@ function onEnter(event: KeyboardEvent): void {
   flex-direction: column;
   min-height: 0;
   overflow-y: auto;
-  padding: 6px 6px 4px;
+  padding: 4px 5px 3px;
 }
 
 .empty {
@@ -245,7 +256,7 @@ function onEnter(event: KeyboardEvent): void {
   color: var(--ink);
   flex: 1;
   font-size: 12.5px;
-  height: 30px;
+  height: 24px;
   outline: none;
   padding: 0 4px;
 }
