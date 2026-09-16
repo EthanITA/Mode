@@ -71,12 +71,11 @@ loadSidecar();
   position: absolute;
 }
 
-/* The canvas draws to the edges under the floating chrome and owns its own gestures;
-   the panelled faces do not, so the stage is what scrolls them. The bottom follows the
-   dock's measured height, so it clears whatever state the dock is in. */
+/* History owns two independently scrolling panes, so the stage clips instead of scrolling
+   them. The bottom follows the dock's measured height, whatever state the dock is in. */
 .stage[data-face="history"] {
   box-sizing: border-box;
-  overflow-y: auto;
+  overflow: hidden;
   padding: var(--stage-top) var(--gutter) calc(var(--dock-h, var(--dock-rest-h)) + var(--gutter) * 2);
 }
 
