@@ -36,6 +36,7 @@ const highlighted = useHighlightedRows(rows, lang);
       <p v-for="(row, index) in rows" :key="index" class="row" :data-kind="row.kind">
         <span class="mark" aria-hidden="true" />
         <span class="code" v-html="highlighted[index] ?? ''" />
+      </p>
     </div>
 
     <p v-if="note" class="note" :data-tone="note.tone">{{ note.text }}</p>
