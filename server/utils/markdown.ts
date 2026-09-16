@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { createMarkdownParser } from "comark"
 import type { MarkdownDocument } from "comark"
+import { Syntax } from "../../shared/utils/highlight.ts"
 import { pluginRoot } from "./mode/paths.ts"
 
 type MdNode = MarkdownDocument["nodes"][number]
@@ -38,18 +39,30 @@ function attrsOf(props: Record<string, unknown>): string {
   return out
 }
 
-function htmlOf(node: MdNode): string {
+// A fence's own child holds its raw text once, so highlighting it here beats reaching back in from `code`.
+function fenceOf(node: MdNode): { pre: Record<string, unknown>; code: Record<string, unknown>; lang: string; text: string } | undefined {
+  if (typeof node === "string") return undefined
+  const [tag, pre, child] = node
+  if (tag !== "pre" || typeof pre.language !== "string" || typeof child === "string" || !child) return undefined
+  const [codeTag, code, text] = child
+  return codeTag === "code" && typeof text === "string" ? { pre, code, lang: pre.language, text } : undefined
+}
+
+async function htmlOf(node: MdNode): Promise<string> {
   if (typeof node === "string") return escapeHtml(node)
+  const fence = fenceOf(node)
+  if (fence) return `<pre${attrsOf(fence.pre)}><code${attrsOf(fence.code)}>${await Syntax.code(fence.text, fence.lang)}</code></pre>`
   const [tag, props, ...children] = node
   if (!tag) return ""
   const open = `<${tag}${attrsOf(props)}>`
-  return VOID.has(tag) ? open : `${open}${children.map(htmlOf).join("")}</${tag}>`
+  if (VOID.has(tag)) return open
+  return `${open}${(await Promise.all(children.map(htmlOf))).join("")}</${tag}>`
 }
 
-function sectionsOf(nodes: MdNode[]): string {
+async function sectionsOf(nodes: MdNode[]): Promise<string> {
   const sections: string[][] = []
   for (const node of nodes) {
-    const html = htmlOf(node)
+    const html = await htmlOf(node)
     if (!html.trim()) continue
     // Each h1 or h2 opens a section, which is the host the read view takes a comment's label from.
     const opens = typeof node !== "string" && (node[0] === "h1" || node[0] === "h2")

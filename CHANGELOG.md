@@ -52,6 +52,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **The chat panel takes a `compact` mode.** Over the artifact page it now starts as a narrow closed
   pill instead of a full-width, half-height block; focusing the prompt or new assistant activity opens
   it, and it never auto-closes once open.
+- **Code is syntax highlighted**, in History's and the artifact page's diff rows (by the file's own
+  extension) and in a `.md` artifact's fenced code blocks (by the fence's language). One shared util,
+  `Syntax` (`shared/utils/highlight.ts`, re-exported from `app/utils/highlight.ts` for the client),
+  wraps `@speed-highlight/core` and maps its token classes onto the app's own light/dark theme colours
+  rather than a bundled theme, so it reads like the rest of the sidecar in either mode.
 
 ### Fixed
 

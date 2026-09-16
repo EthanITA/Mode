@@ -20,6 +20,7 @@
     "@comark/nuxt": "^0.6.2",
     "@comark/vue": "^0.6.2",
     "@lucide/vue": "^1.16.0",
+    "@speed-highlight/core": "^1.2.24",
     "@vueuse/core": "^14.3.0",
     "animejs": "^4.4.1",
     "comark": "^0.6.2",

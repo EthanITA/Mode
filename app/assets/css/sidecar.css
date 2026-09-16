@@ -147,3 +147,37 @@ body {
     color: var(--muted);
   }
 }
+
+/* Global, not scoped: speed-highlight's spans arrive via v-html, which scoped CSS never reaches. */
+.shj-syn-kwd, .shj-syn-section {
+  color: var(--tint-violet);
+}
+
+.shj-syn-str, .shj-syn-insert {
+  color: var(--tint-green);
+}
+
+.shj-syn-num, .shj-syn-esc {
+  color: var(--tint-orange);
+}
+
+.shj-syn-func {
+  color: var(--tint-blue);
+}
+
+.shj-syn-class, .shj-syn-type, .shj-syn-bool {
+  color: var(--tint-cyan);
+}
+
+.shj-syn-cmnt {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.shj-syn-oper, .shj-syn-var {
+  color: var(--subtle);
+}
+
+.shj-syn-err, .shj-syn-deleted {
+  color: var(--tint-rose);
+}

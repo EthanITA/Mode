@@ -266,6 +266,7 @@ onScopeDispose(() => {
             v-if="showDiff && stage === 'version'"
             class="sheet-cell"
             data-region="artifact-page"
+            :path="path!"
             :state="versions.diffState.value!"
           />
 

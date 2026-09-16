@@ -9,6 +9,8 @@ const note = computed(() => Diff.stateNote(file.state));
 const rows = computed(() => (file.state.kind === "changed" ? file.state.rows : []));
 const churn = computed(() => (file.state.kind === "changed" ? file.state : undefined));
 const against = computed(() => (compare === "head" ? "against the newest version" : "against the next version"));
+const lang = computed(() => Syntax.languageOf(file.path));
+const highlighted = useHighlightedRows(rows, lang);
 </script>
 
 <template>
@@ -33,8 +35,7 @@ const against = computed(() => (compare === "head" ? "against the newest version
     <div v-if="rows.length" class="rows">
       <p v-for="(row, index) in rows" :key="index" class="row" :data-kind="row.kind">
         <span class="mark" aria-hidden="true" />
-        <span class="code">{{ row.text }}</span>
-      </p>
+        <span class="code" v-html="highlighted[index] ?? ''" />
     </div>
 
     <p v-if="note" class="note" :data-tone="note.tone">{{ note.text }}</p>

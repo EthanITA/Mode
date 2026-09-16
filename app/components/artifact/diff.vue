@@ -1,8 +1,10 @@
 <script lang="ts" setup>
-const { state } = defineProps<{ state: DiffState }>();
+const { path, state } = defineProps<{ path: string; state: DiffState }>();
 
 const rows = computed(() => (state.kind === "changed" ? state.rows : []));
 const note = computed(() => Diff.stateNote(state));
+const lang = computed(() => Syntax.languageOf(path));
+const highlighted = useHighlightedRows(rows, lang);
 </script>
 
 <template>
@@ -10,7 +12,7 @@ const note = computed(() => Diff.stateNote(state));
     <div v-if="rows.length" class="rows">
       <p v-for="(row, index) in rows" :key="index" class="row" :data-kind="row.kind">
         <span class="mark" aria-hidden="true" />
-        <span class="code">{{ row.text }}</span>
+        <span class="code" v-html="highlighted[index] ?? ''" />
       </p>
     </div>
 
