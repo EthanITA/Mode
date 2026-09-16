@@ -2,6 +2,7 @@
 import { createMarkdownParser } from "comark";
 import taskList from "comark/plugins/task-list";
 import type { MarkdownDocument as Tree } from "comark";
+import ProseCode from "./prose-code.vue";
 import ProseLink from "./prose-link.vue";
 
 const parse = createMarkdownParser({
@@ -12,7 +13,7 @@ const parse = createMarkdownParser({
   registerDefaultPlugins: false,
 });
 
-const COMPONENTS = { a: ProseLink };
+const COMPONENTS = { a: ProseLink, pre: ProseCode };
 </script>
 
 <script lang="ts" setup>
