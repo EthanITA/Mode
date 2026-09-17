@@ -59,6 +59,14 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   its token classes onto the app's own light/dark theme colours rather than a bundled theme, so it
   reads like the rest of the sidecar in either mode.
 
+### Changed
+
+- **The `prose` ground rule is written from how colleagues type to each other at work.** It came out of
+  setting human messages beside an agent's in the same threads. It now asks for the fact that settles a
+  question and nothing after it, a quote of the words being answered, no headers or bold-labelled
+  bullets in a short reply, and no colon or parentheses standing in for a banned dash. The
+  `prose-check` hook's rewrite hint stopped suggesting those two as the substitute.
+
 ### Fixed
 
 - **The chat panel no longer replays a flash of "thinking" on reload.** A page load replayed a
