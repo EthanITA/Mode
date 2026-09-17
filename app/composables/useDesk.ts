@@ -75,6 +75,7 @@ function readLayout(): Record<string, { x: number; y: number }> {
 
 export function useDeskLayout(): {
   at: (key: string, index: number) => { x: number; y: number };
+  held: Ref<Record<string, { x: number; y: number }>>;
   move: (key: string, to: { x: number; y: number }) => void;
   archive: WritableComputedRef<boolean>;
 } {
@@ -101,29 +102,21 @@ export function useDeskLayout(): {
     localStorage.setItem(LAYOUT_KEY, JSON.stringify(held.value));
   }
 
-  return { at, move, archive };
+  return { at, held, move, archive };
 }
 
 function shutGates(why: Why | undefined): number {
   return why?.gates.filter((gate) => gate.state === "shut").length ?? 0;
 }
 
-/* The stored plane when the reader arranged one, otherwise the same three-column fallback the
-   session canvas lays out, so a conversation never previews as empty just for being untouched. */
+// No stored canvas means no preview, rather than faking one from the artifact count.
 function boxesOf(session: LiveSession): DeskBox[] {
   const stored = session.preview;
-  if (stored) {
-    return [
-      ...stored.cards.map((card) => ({ x: card.x, y: card.y, w: card.width ?? CARD_W, h: CARD_H })),
-      ...stored.notes.map((note) => ({ x: note.x, y: note.y, w: note.width ?? NOTE_W, h: NOTE_H, note: true })),
-    ];
-  }
-  return session.artifacts.map((_, index) => ({
-    x: (index % COLS) * (CARD_W + GAP),
-    y: Math.floor(index / COLS) * (CARD_H + GAP),
-    w: CARD_W,
-    h: CARD_H,
-  }));
+  if (!stored) return [];
+  return [
+    ...stored.cards.map((card) => ({ x: card.x, y: card.y, w: card.width ?? CARD_W, h: CARD_H })),
+    ...stored.notes.map((note) => ({ x: note.x, y: note.y, w: note.width ?? NOTE_W, h: NOTE_H, note: true })),
+  ];
 }
 
 function slotLabel(slot: Slot): string {

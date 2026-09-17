@@ -22,7 +22,7 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **The home page is a canvas.** Conversations are cards on the same pannable, zoomable plane the
   session canvas uses, arranged where you drop them, with the layout held in this browser rather than
   in the conversation. Each card carries a thumbnail of that conversation's own canvas, drawn from the
-  placement it saved or from the fallback grid when it never saved one. Double-click opens it.
+  placement it saved, or nothing when it never saved one. Double-click opens it.
 - **A conversation can be deleted from the sidecar.** The card's context menu asks a second time in
   place, the way `claude agents` wants ctrl+x twice. It stops the worker before it removes anything,
   and gives up rather than escalating if the worker will not stop, so a live one is never stranded.
@@ -87,6 +87,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   turn after its first as a full deletion: the reconstructed content only patched that first turn, so a
   later edit folded from nothing and the store read it as removing the whole file. Every turn for such a
   file now replays the full chain from that same baseline.
+- **A home canvas card no longer spills past its own box.** The card slot forced a fixed height that
+  ignored its content, so a card with many badges or artifact chips overflowed onto the row below;
+  the slot now grows with the card the way the canvas primitive already does for every other item.
+  A card with no saved spot on first load could still land close enough to overlap its neighbour once
+  it grew past that guess; the unplaced ones now settle the same way "Tidy up" packs a selection, by
+  their real measured height.
 
 ## 0.15.1
 

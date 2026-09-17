@@ -1,13 +1,13 @@
 <script lang="ts" setup>
 import { Canvas, ContextMenu, type CanvasMenuEvent } from "@cela/design";
 import { LayoutGrid, Maximize2, Scan, Trash2 } from "@lucide/vue";
-import { CARD_H, CARD_W } from "~/composables/useCanvas";
+import { CARD_W } from "~/composables/useCanvas";
 import type { DeskCard } from "~/composables/useDesk";
 
 const sc = useSidecar();
 const chrome = useChrome();
 const { cards } = useDeskCards();
-const { move } = useDeskLayout();
+const { held, move } = useDeskLayout();
 loadDeskBoards();
 
 const emit = defineEmits<{ open: [key: string]; remove: [card: DeskCard] }>();
@@ -47,6 +47,20 @@ function fit(): void {
   canvasEl.value?.zoomToFit({ inset: chrome.frame.insets.value });
 }
 
+// A card's naive index slot ignores real height; pack the unplaced ones like "Tidy up" does.
+async function settle(): Promise<void> {
+  const pending = cards.value.filter((card) => !(card.key in held.value)).map((card) => card.key);
+  if (!pending.length) return;
+  await nextTick();
+  const before = selection.value;
+  selection.value = pending;
+  canvasEl.value?.organize();
+  selection.value = before;
+}
+
+onMounted(() => void settle());
+watch(() => cards.value.map((card) => card.key).join(","), () => void settle());
+
 chrome.canvas.register({
   fit,
   reset: () => canvasEl.value?.zoomReset(),
@@ -70,7 +84,6 @@ chrome.canvas.register({
         :key="card.key"
         fixed
         :position="card.at"
-        :style="{ height: `${CARD_H}px` }"
         :width="CARD_W"
         @dblclick="open(card)"
         @update:position="move(card.key, $event)"
