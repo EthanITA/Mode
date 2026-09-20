@@ -96,6 +96,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   turn after its first as a full deletion: the reconstructed content only patched that first turn, so a
   later edit folded from nothing and the store read it as removing the whole file. Every turn for such a
   file now replays the full chain from that same baseline.
+- **Comment mode has something to pick in the chat and in a diff.** Arming it and clicking the reply in
+  the dock, the narration of a running turn, or a changed file in History did nothing at all: only the
+  board rows, the mode and style chips, the pipeline strip, canvas cards and blocks inside an artifact
+  carried a target, so most of the screen ignored the click without saying so. The settled answer and
+  the live beat now describe themselves the way an expanded turn already did, and a file in History's
+  Changes pane picks as a whole, with its path and its churn in what Claude gets told.
 - **A home canvas card no longer spills past its own box.** The card slot forced a fixed height that
   ignored its content, so a card with many badges or artifact chips overflowed onto the row below;
   the slot now grows with the card the way the canvas primitive already does for every other item.

@@ -116,7 +116,16 @@ watch(
 
           <div class="stage-body">
             <Transition name="swap">
-              <div v-if="beat" key="beat" class="beat" data-region="beat">
+              <div
+                v-if="beat"
+                key="beat"
+                class="beat"
+                data-region="beat"
+                data-cmt="beat"
+                data-cmt-label="claude · right now"
+                data-cmt-tell="About what you are doing right now in this conversation"
+                :data-cmt-excerpt="beat.head?.text.slice(0, EXCERPT)"
+              >
                 <Transition name="think">
                   <p v-if="!beat.head" key="wait" class="beat-text shimmer" data-waiting="true">
                     Thinking<span class="dots" />
@@ -145,6 +154,10 @@ watch(
                 v-else-if="state === 'preview' && answer"
                 key="answer"
                 class="answer"
+                data-cmt="turn"
+                :data-cmt-label="`${who(answer)} · ${ageOf(answer)}`"
+                :data-cmt-tell="tell(answer)"
+                :data-cmt-excerpt="answer.text.slice(0, EXCERPT)"
                 :value="answer.text"
               />
 

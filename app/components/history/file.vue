@@ -11,10 +11,22 @@ const churn = computed(() => (file.state.kind === "changed" ? file.state : undef
 const against = computed(() => (compare === "head" ? "against the newest version" : "against the next version"));
 const lang = computed(() => Syntax.languageOf(file.path));
 const highlighted = useHighlightedRows(rows, lang);
+
+const tell = computed(() => {
+  const what = churn.value ? `+${churn.value.added} −${churn.value.removed} this turn` : note.value?.text ?? "unchanged";
+  return `About ${homePath(file.path)}, ${what}:`;
+});
 </script>
 
 <template>
-  <article class="file" :data-state="file.state.kind">
+  <article
+    class="file"
+    :data-state="file.state.kind"
+    data-cmt="file"
+    :data-cmt-label="file.name"
+    :data-cmt-tell="tell"
+    :data-cmt-excerpt="homePath(file.path)"
+  >
     <header class="head">
       <span class="name">{{ file.name }}</span>
       <span v-if="churn" class="churn mono-meta">
