@@ -96,6 +96,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   turn after its first as a full deletion: the reconstructed content only patched that first turn, so a
   later edit folded from nothing and the store read it as removing the whole file. Every turn for such a
   file now replays the full chain from that same baseline.
+- **Picking a block on an open artifact opens the composer again.** The app disarmed comment mode on
+  every window blur, so a held C could not leave the page swallowing clicks, but clicking into the
+  artifact frame moves focus into it and blurs the app window too. The mousedown on a block turned the
+  mode off and the click that followed found nothing armed. Focus entering the frame no longer counts
+  as leaving the app, and a hold of C that began in the app window now ends when C comes up inside the
+  frame.
 - **Comment mode has something to pick in the chat and in a diff.** Arming it and clicking the reply in
   the dock, the narration of a running turn, or a changed file in History did nothing at all: only the
   board rows, the mode and style chips, the pipeline strip, canvas cards and blocks inside an artifact

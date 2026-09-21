@@ -312,8 +312,9 @@ function onLoad(): void {
       chrome.comment.arm(true);
     }
   };
+  // A hold begun in the app window ends here once a click has carried focus into the frame.
   const onKeyUp = (event: KeyboardEvent): void => {
-    if (!armKey || event.key.toLowerCase() !== armKey) return;
+    if (event.key.toLowerCase() !== "c" || (!armKey && !chrome.comment.held.value)) return;
     armKey = undefined;
     chrome.comment.release();
   };

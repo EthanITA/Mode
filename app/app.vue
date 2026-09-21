@@ -46,6 +46,8 @@ function onKeyUp(event: KeyboardEvent): void {
 
 function onBlur(): void {
   armKey = undefined;
+  // Clicking into the artifact frame blurs this window too, and that is not leaving the app.
+  if (document.activeElement instanceof HTMLIFrameElement) return;
   chrome.comment.disarm();
 }
 
