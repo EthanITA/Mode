@@ -49,7 +49,11 @@ The first four are preparation and they are the ones that get skipped. Skipping 
 
 **4. Cases, by induction rather than memory.** Run the edge-induction skill, which ships with this plugin, over each thing on the surface: what grows or advances, the degenerate and empty instances, the preconditions of each transition, whether every path terminates, and events arriving outside the expected order. Generating cases from structure finds the ones nobody remembers. Listing cases from experience finds the ones that were already fixed.
 
+**Anything that guards is tested as a pair.** Run the same call with the guard on and with it off. One run on its own only shows a refusal, and a refusal is also what a broken build, a stale token or a missing permission produces. The two runs together show the guard caused it, and the gap between what ran downstream in each is the actual proof.
+
 **5. Execute, for real.** Scripts where the thing is scriptable, the browser where it is a page, direct calls where it is an endpoint. Every case ends in an observation: a response, a rendered result, a log line, a screenshot, an exit code. **An untested case is reported as untested**, never quietly folded into a pass. Where a case cannot be reached, say what blocked it.
+
+**What you captured is not yet the receipt.** A response body you printed is your own transcript, and a reader has nothing but your word for it. The receipt is the system's own record of that same event, linked where it lives: the log line in the observability tool, the trace, the pipeline job, the row that was written. So capture the correlation id the call hands back, at the moment you make it. That id is what turns "it answered 400" into something somebody else can open, and it is nearly impossible to recover afterwards.
 
 **6. Report.** One artifact, verdict first. See below.
 
@@ -69,7 +73,10 @@ One artifact, small, built with whatever artifact tooling the project has. Its j
 - **Environment and preconditions**, so the run is reproducible and its scope is honest.
 - **What was covered**, and how the surface was enumerated.
 - **Each failure**: what was run, what was expected, what happened, and how to reproduce it. Ranked by consequence, not by discovery order.
+- **A receipt beside every claim about a running system**, linked rather than pasted. A quoted log line is a convenience for the reader; the link is the proof, because only the link shows what sat around that line.
 - **What was not tested**, and why. This section is what stops a partial sweep from reading as a full one.
+
+**The report is not the only place the receipt belongs.** Where the work is tracked, a ticket or a pull request, the receipt goes there too, in the form that project already uses. Read what is on the ticket before writing anything: a team that pairs a screenshot with a linked trace has told you the shape it expects, and matching it is cheaper than being asked twice.
 
 State confidence honestly per finding: executed, observed once, intermittent, or blocked. An intermittent failure reported as a clean pass is the most expensive mistake available here.
 
@@ -90,4 +97,6 @@ Until then the split holds because it is held. When a fix is tempting, say in th
 - Establish the environment and preconditions before any case. A failure caused by a service being down is noise, not a finding.
 - Enumerate the surface, then generate cases from its structure rather than from memory.
 - Run them for real and record what happened. An untested case is reported untested, never folded into a pass.
+- Test a guard as a pair, on and off. A refusal on its own proves nothing about what caused it.
+- Capture the correlation id as you call, and link the system's own record. Your transcript is an observation, the receipt is what somebody else can open.
 - Report a verdict and fix nothing. A tester who fixes is reporting on their own work.

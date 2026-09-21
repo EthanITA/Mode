@@ -15,6 +15,8 @@ from pathlib import Path
 
 BLOCK_RE = re.compile(r"<!-- rv:start -->.*?<!-- rv:end -->\n?", re.S)
 SEED_RE = re.compile(r'(<script type="application/json" id="rv-seed">)(.*?)(</script>)', re.S)
+# A .md has no <script> to hold its threads, so they ride in one trailing comment. Mirrors MD_SEED in server/utils/artifacts.ts.
+MD_SEED_RE = re.compile(r"(<!-- rv:seed\n)(.*?)(\n-->\n?)", re.S)
 PORT = 7391
 
 
@@ -47,8 +49,12 @@ def now() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
+def seed_re(path: Path) -> re.Pattern:
+    return MD_SEED_RE if path.suffix == ".md" else SEED_RE
+
+
 def read_doc(path: Path) -> dict:
-    m = SEED_RE.search(path.read_text(errors="replace"))
+    m = seed_re(path).search(path.read_text(errors="replace"))
     if not m:
         return {"v": 1, "slug": path.stem, "threads": []}
     try:
@@ -63,10 +69,16 @@ def read_doc(path: Path) -> dict:
 
 def write_doc(path: Path, doc: dict) -> None:
     text = path.read_text()
-    if not SEED_RE.search(text):
-        raise SystemExit(f"{path.name} carries no review layer. Run: artifact review {path.stem}")
     body = json.dumps(doc, ensure_ascii=False)
-    path.write_text(SEED_RE.sub(lambda m: m.group(1) + body + m.group(3), text, count=1))
+    if path.suffix == ".md":
+        # `-->` in a comment body would end the block early; the escape reads back as the same text.
+        body = body.replace("-->", "--\\u003e")
+        if not MD_SEED_RE.search(text):
+            path.write_text(text.rstrip("\n") + "\n\n<!-- rv:seed\n" + body + "\n-->\n")
+            return
+    elif not SEED_RE.search(text):
+        raise SystemExit(f"{path.name} carries no review layer. Run: artifact review {path.stem}")
+    path.write_text(seed_re(path).sub(lambda m: m.group(1) + body + m.group(3), text, count=1))
 
 
 def merge(a: list[dict], b: list[dict]) -> list[dict]:
@@ -96,6 +108,12 @@ def ingest(path: Path, incoming: dict) -> tuple[int, int]:
 
 def install(path: Path, sink: str = "", sidecar: str = "") -> str:
     """Inject or refresh the layer in place, carrying whatever threads the page already holds."""
+    if path.suffix == ".md":
+        # The sidecar is a .md's comment surface, so its whole layer is the trailing block.
+        if MD_SEED_RE.search(path.read_text(errors="replace")):
+            return "already present"
+        write_doc(path, read_doc(path))
+        return "added"
     layer_src = layer_file()
     if not layer_src.is_file():
         raise SystemExit(f"no review layer at {layer_src}")

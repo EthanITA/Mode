@@ -31,6 +31,8 @@ Every local artifact ships a review layer, so a page you are asked to change may
 
 **Waiting for the user.** `artifact wait <slug>` listens on localhost until the page sends its comments or Approve is pressed, then prints what arrived. The page finds that sink by itself and falls back to a downloaded file when nothing is listening, so the artifact still works alone on a laptop with no session running.
 
+**A `.md` in the artifacts directory is an artifact too.** The sidecar renders it in the house style and takes comments on it the way it does on a page, writing them into one `<!-- rv:seed -->` comment block at the end of the file. `artifact comments`, `--reply` and `--resolve` work on it unchanged. `artifact review` only adds the empty block, and `artifact wait` refuses it, because no page will ever post to it. A `<slug>.md` beside `<slug>.html` is that page's brief and is never listed. Beyond that folder, every `.md` a conversation writes or edits is recorded against it by the PostToolUse hook, shows in the sidecar as `<stem>--<hash>`, and answers to `artifact comments <that slug or its path>`. A comment on one lands in that file, wherever it lives.
+
 **In copilot mode this is the approval gate.** Approve pressed with no open threads is the yes: record it with `mode approve <slug>` and dispatch. Approve pressed with threads still open is an approval with named changes, so those threads are the work. Anything weaker is not an approval, and silence never is.
 
 ## 2. Pick the profile

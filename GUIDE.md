@@ -84,7 +84,7 @@ Seven ship with the plugin:
 | `scope` | The diff stays inside the ask; fix causes, not symptoms; docs move with the code |
 | `board` | Autonomous work runs on a visible task board, and a ticked box is a receipt |
 | `collaboration` | Execute what is reversible, escalate what is genuinely yours, challenge by default |
-| `prose` | Write the sentence you would say aloud; no em dashes; no symbols in prose |
+| `prose` | Write like a colleague typing to a colleague: the fact that settles it, then stop; no em dashes, symbols or chat formatting |
 | `deliverable` | Name what will land before producing it, then route it |
 | `artifact` | Scoped: fires only when a page is on the way, carrying the theming and interactivity contract |
 

@@ -4,7 +4,10 @@ Nothing here reads the shipped modes or styles. The fixtures carry names no cont
 repo uses, so a test that passes is a test the tool actually answered.
 """
 
+import hashlib
+import json
 import os
+import subprocess
 import sys
 import tempfile
 
@@ -1209,5 +1212,73 @@ with tempfile.TemporaryDirectory() as tmp:
     p = run(bare, config, "mode", "set", "lead", "--session", "s-bare")
     ok("set against an empty contracts folder exits non-zero without a traceback",
        p.returncode != 0 and not crashed(p), "rc=%s err=%r" % (p.returncode, p.stderr[-300:]))
+
+    section("artifact stamp, title taken from the page")
+    arts = os.path.join(tmp, "artifacts")
+    page = os.path.join(arts, "alpha.html")
+    write(page, "<!doctype html>\n<title>Alpha &middot; Beta&#8230;</title>\n")
+    env = dict(os.environ, NOTES_ARTIFACTS=arts, CLAUDE_PLUGIN_ROOT=root, CLAUDE_CONFIG_DIR=config)
+    env.pop("CLAUDE_CODE_SESSION_ID", None)
+    tool = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                         os.pardir, "bin", "artifact"))
+    p = subprocess.run([sys.executable, tool, "stamp", "alpha"],
+                       capture_output=True, text=True, env=env)
+    body = open(page).read()
+    ok("a title derived from the page is unescaped into the stamp",
+       p.returncode == 0 and "title:   Alpha · Beta…" in body,
+       "rc=%s out=%r err=%r body=%r" % (p.returncode, p.stdout, p.stderr, body))
+
+    section("artifact on a .md, read and commented like a page")
+
+    def artifact(*args):
+        return subprocess.run([sys.executable, tool] + list(args), capture_output=True, text=True, env=env)
+
+    note = os.path.join(arts, "plan.md")
+    write(note, "# The plan\n\nShip it.\n")
+    write(os.path.join(arts, "alpha.md"), "# A brief for the alpha page\n")
+    p = artifact("list", "--tsv")
+    rows = sorted(r.split("\t")[0] for r in p.stdout.splitlines())
+    ok("a .md is listed, and a .md sharing a page's slug is not",
+       rows == ["alpha", "plan"] and "alpha.md" not in p.stdout,
+       "%r. Two rows under one slug leave resolve and the sidecar opening different files." % p.stdout)
+
+    p = artifact("stamp", "plan")
+    body = open(note).read()
+    ok("stamp puts the block on top and takes the title from the first heading",
+       p.returncode == 0 and body.startswith("<!-- artifact\n") and "title:   The plan" in body
+       and "target:  s" in body, "rc=%s err=%r body=%r" % (p.returncode, p.stderr, body))
+
+    sent = os.path.join(tmp, "plan.comments.json")
+    write(sent, json.dumps({"threads": [{"id": "t1", "n": 1, "by": "user", "at": "a", "updated": "a",
+                                         "body": "before --> after", "status": "open", "replies": []}]}))
+    artifact("comments", "plan", "--ingest", sent)
+    p = artifact("comments", "plan", "--reply", "1", "done")
+    body = open(note).read()
+    ok("a thread lands in one trailing comment block that its own --> cannot close",
+       p.returncode == 0 and body.count("<!-- rv:seed") == 1 and "--> after" not in body
+       and body.endswith("-->\n"), "rc=%s err=%r body=%r" % (p.returncode, p.stderr, body))
+    doc = json.loads(artifact("comments", "plan", "--json", "--no-ingest").stdout or "{}")
+    ok("and reads back whole",
+       [(t.get("body"), len(t.get("replies") or [])) for t in doc.get("threads") or []] == [("before --> after", 1)],
+       repr(doc))
+
+    p = artifact("wait", "plan")
+    ok("wait refuses a .md, since no page will ever post to it",
+       p.returncode == 2 and "artifact comments plan" in p.stderr, "rc=%s err=%r" % (p.returncode, p.stderr))
+
+    section("a .md outside the folder, recorded by its path")
+    doc = os.path.join(tmp, "notes", "analysis", "Gold timeline.md")
+    write(doc, "# Gold order timeline\n\nSaxo said unknown.\n")
+    slug = "Gold-timeline--" + hashlib.sha1(doc.encode()).hexdigest()[:6]
+    mine = dict(env, CLAUDE_CODE_SESSION_ID="d0c5e55a-cli")
+    p = subprocess.run([sys.executable, tool, "touch", doc], capture_output=True, text=True, env=mine)
+    ok("touch on a path records the file and names its document slug",
+       p.returncode == 0 and slug in p.stdout, "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
+    p = subprocess.run([sys.executable, tool, "list", "--session", "--tsv"], capture_output=True, text=True, env=mine)
+    ok("the conversation's listing carries it under that slug",
+       "%s\t%s" % (slug, doc) in p.stdout, "%r. The sidecar shows it, so the CLI has to name it the same way." % p.stdout)
+    p = artifact("path", slug)
+    ok("and the slug resolves back to the file from any conversation",
+       out(p) == doc, "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
 
 report()

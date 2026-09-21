@@ -4,6 +4,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _board import news_line
 from _shared import ask, payload, run, sid
 
 AXES = ("mode", "style")
@@ -189,6 +190,10 @@ try:
 
     # Asked alongside real words rather than alone, so the report rides the turn instead of ending it.
     blocks.extend(shown)
+
+    board = news_line(session)
+    if board:
+        blocks.append(board)
 
     # One call, because bin/mode owns whether this prompt gets the whole contract or the reminder.
     announced = ask("announce", *sid(session))

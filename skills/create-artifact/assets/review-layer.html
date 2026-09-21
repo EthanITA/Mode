@@ -182,7 +182,7 @@
     </form>
 
     <div class="rv-list">
-      <p class="rv-empty">Nothing yet. Hold the space bar or press the bubble, then click any block, or select some words first to quote them.</p>
+      <p class="rv-empty">Nothing yet. Press the bubble, then click any block, or select some words first to quote them.</p>
     </div>
 
     <div class="rv-foot">
@@ -283,7 +283,7 @@
 
   var threads = merge(seed.threads, readLocal().threads);
   var filter = 'open';
-  var armed = false, locked = false, heldAt = 0, hot, pending, focused;
+  var armed = false, hot, pending, focused;
 
   function openCount(){
     return threads.filter(function(t){ return t.status !== 'resolved'; }).length;
@@ -439,7 +439,7 @@
     list.textContent = '';
     if (!show.length) {
       list.appendChild(el('p', 'rv-empty', filter === 'open'
-        ? 'No open comments. Hold the space bar, then click any block to leave one.'
+        ? 'No open comments. Press the bubble, then click any block to leave one.'
         : 'Nothing here yet.'));
     } else {
       show.forEach(function(t){ list.appendChild(card(t)); });
@@ -567,10 +567,6 @@
     say('Saved. Run: artifact comments ' + SLUG);
   }
 
-  function editable(node){
-    return !!node && (node.isContentEditable || /^(input|textarea|select)$/i.test(node.tagName || ''));
-  }
-
   // The draft lives in the panel, the way a document editor does it, so nothing has to be positioned
   // against a click point and the box can never land off-screen.
   function openComposer(node, quote){
@@ -598,8 +594,7 @@
 
   fab.addEventListener('click', function(){
     if (root.dataset.panel === 'closed') setPanel(true);
-    locked = !locked;
-    setArm(locked);
+    setArm(!armed);
   });
 
   panel.addEventListener('click', function(e){
@@ -664,23 +659,13 @@
     openComposer(node, quote);
   }, true);
 
+  // The bubble is the only thing that arms commenting. A key shortcut cannot be: space-to-arm
+  // swallowed the page-down every reader presses, locking the whole page into comment mode.
   document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape') {
-      if (!composer.hidden) return closeComposer();
-      if (locked || armed) { locked = false; return setArm(false); }
-      return setPanel(false);
-    }
-    if (e.code !== 'Space' || e.repeat || editable(e.target)) return;
-    e.preventDefault();
-    heldAt = Date.now();
-    setArm(true);
-  });
-
-  document.addEventListener('keyup', function(e){
-    if (e.code !== 'Space' || editable(e.target)) return;
-    // A tap locks the mode on, a hold only arms it while held.
-    if (Date.now() - heldAt < 220) { locked = !locked; setArm(locked); }
-    else { locked = false; setArm(false); }
+    if (e.key !== 'Escape') return;
+    if (!composer.hidden) return closeComposer();
+    if (armed) return setArm(false);
+    setPanel(false);
   });
 
   addEventListener('resize', paintPins);

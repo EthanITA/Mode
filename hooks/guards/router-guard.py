@@ -9,6 +9,9 @@ TOOLS = ("Write", "Edit", "NotebookEdit")
 
 try:
     data = json.loads(sys.stdin.read())
+    # agent_id is set only inside a subagent call; the router's own calls carry none and stay denied.
+    if data.get("agent_id"):
+        sys.exit(0)
     tool = data.get("tool_name") or ""
     if tool not in TOOLS or held("mode", data.get("session_id") or "") != "swarm":
         sys.exit(0)

@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import hashlib
+import html
 import json
 import os
 import re
@@ -34,6 +36,10 @@ ART_DIR = artifacts_dir()
 SESSION_DIR = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")) / "artifacts"
 BLOCK_RE = re.compile(r"<!--\s*artifact\b(.*?)-->", re.S)
 TITLE_RE = re.compile(r"<title>(.*?)</title>", re.S | re.I)
+COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
+FENCE_RE = re.compile(r"^(```|~~~).*?^\1", re.S | re.M)
+H1_RE = re.compile(r"^#[ \t]+(.+?)[ \t#]*$", re.M)
+FRONTMATTER_RE = re.compile(r"\A---\n.*?\n---\n", re.S)
 FIELDS = ("slug", "title", "url", "target", "ds", "updated")
 
 
@@ -42,8 +48,8 @@ def session_file(sid: str | None = None) -> Path | None:
     return SESSION_DIR / f"session-{sid[:8]}" if sid else None
 
 
-def session_slugs(sid: str | None = None) -> list[str]:
-    """Slugs this conversation created or updated, oldest first."""
+def session_entries(sid: str | None = None) -> list[str]:
+    """What this conversation created or updated, oldest first: a slug, or the path of a .md outside the folder."""
     f = session_file(sid)
     if not f or not f.is_file():
         return []
@@ -56,14 +62,35 @@ def session_slugs(sid: str | None = None) -> list[str]:
     return out
 
 
-def record_slug(slug: str) -> None:
+def record(entry: str) -> None:
     f = session_file()
     if not f:
         return
     f.parent.mkdir(parents=True, exist_ok=True)
-    if slug not in session_slugs():
+    if entry not in session_entries():
         with f.open("a") as fh:
-            fh.write(slug + "\n")
+            fh.write(entry + "\n")
+
+
+def document_slug(path: str) -> str:
+    # The hash keeps two README.md apart. Mirrors Documents.slug in server/utils/sessions/artifact-lists.ts.
+    stem = re.sub(r"[^a-zA-Z0-9._-]+", "-", Path(path).stem)
+    return f"{stem}--{hashlib.sha1(path.encode()).hexdigest()[:6]}"
+
+
+def documents(entries: list[str]) -> dict[str, Path]:
+    return {document_slug(e): Path(e) for e in entries
+            if e.startswith("/") and e.endswith(".md") and os.path.isfile(e)}
+
+
+def recorded_documents() -> dict[str, Path]:
+    """Every .md any conversation recorded, which is the only way one outside the folder resolves."""
+    lists = sorted(SESSION_DIR.glob("session-*")) if SESSION_DIR.is_dir() else []
+    return documents([line.strip() for f in lists for line in f.read_text(errors="replace").splitlines()])
+
+
+def entry_of(path: Path) -> str:
+    return path.stem if path in artifact_files() else str(path)
 
 
 def die(msg: str, code: int = 1):
@@ -74,9 +101,10 @@ def die(msg: str, code: int = 1):
 def artifact_files() -> list[Path]:
     if not ART_DIR.is_dir():
         return []
-    return sorted(
-        p for p in ART_DIR.glob("*.html") if not p.name.endswith(".src.html")
-    )
+    pages = [p for p in ART_DIR.glob("*.html") if not p.name.endswith(".src.html")]
+    taken = {p.stem for p in pages}
+    # A .md beside a same-named page is that page's brief, never a second artifact under one slug.
+    return sorted(pages + [p for p in ART_DIR.glob("*.md") if p.stem not in taken])
 
 
 def read_meta(path: Path) -> dict:
@@ -90,23 +118,32 @@ def read_meta(path: Path) -> dict:
                 k = k.strip().lower()
                 if k in FIELDS:
                     meta[k] = v.strip()
-    if "title" not in meta:
+    markdown = path.suffix == ".md"
+    if "title" not in meta and markdown:
+        t = H1_RE.search(FENCE_RE.sub("", COMMENT_RE.sub("", head)))
+        meta["title"] = t.group(1) if t else path.stem
+    elif "title" not in meta:
         t = TITLE_RE.search(head)
-        meta["title"] = t.group(1).strip() if t else ""
-    # A local showpiece owns its own doctype; a published one never does.
-    meta.setdefault("target", "s" if head[:20].lower().lstrip().startswith("<!doctype") else "b")
+        meta["title"] = " ".join(html.unescape(t.group(1)).split()) if t else ""
+    # A local showpiece owns its own doctype; a published one never does, and a .md is never published.
+    meta.setdefault("target", "s" if markdown or head[:20].lower().lstrip().startswith("<!doctype") else "b")
     return meta
 
 
 def resolve(token: str) -> Path:
-    """This conversation's artifacts first, then the whole folder. Exact slug,
-    then a unique prefix, then a unique substring."""
+    """A .md given by its path, then a recorded document's slug, then this conversation's artifacts,
+    then the whole folder: exact slug, then a unique prefix, then a unique substring."""
+    if "/" in token and token.endswith(".md") and os.path.isfile(os.path.expanduser(token)):
+        return Path(os.path.abspath(os.path.expanduser(token)))
     files = artifact_files()
+    token = re.sub(r"\.(html|md)$", "", token)
+    document = recorded_documents().get(token)
+    if document:
+        return document
     if not files:
         die(f"no artifacts in {ART_DIR}")
-    token = re.sub(r"\.html$", "", token)
 
-    recorded = set(session_slugs())
+    recorded = set(session_entries())
     pools = [[p for p in files if p.stem in recorded]] if recorded else []
     pools.append(files)
 
@@ -160,10 +197,12 @@ def cmd_ds(args):
 
 def cmd_list(args):
     files = artifact_files()
+    docs: dict[str, Path] = {}
     if args.session is not None:
-        keep = set(session_slugs(args.session or None))
-        files = [p for p in files if p.stem in keep]
-    rows = [read_meta(p) for p in files]
+        entries = session_entries(args.session or None)
+        files = [p for p in files if p.stem in set(entries)]
+        docs = documents(entries)
+    rows = [read_meta(p) for p in files] + [{**read_meta(p), "slug": slug} for slug, p in docs.items()]
     rows.sort(key=lambda r: os.path.getmtime(r["path"]), reverse=True)
 
     if args.tsv:
@@ -181,8 +220,8 @@ def cmd_list(args):
 
 def cmd_touch(args):
     path = resolve(args.slug)
-    record_slug(path.stem)
-    print(f"{path.stem} recorded for this conversation")
+    record(entry_of(path))
+    print(f"{path.stem if path in artifact_files() else document_slug(str(path))} recorded for this conversation")
 
 
 def cmd_path(args):
@@ -228,20 +267,24 @@ def cmd_stamp(args):
 
     if BLOCK_RE.search(text[:4000]):
         text = BLOCK_RE.sub(lambda _: block, text, count=1)
+    elif path.suffix == ".md":
+        front = FRONTMATTER_RE.match(text)
+        at = front.end() if front else 0
+        text = text[:at] + block + "\n" + text[at:]
     else:
         t = TITLE_RE.search(text[:4000])
         if not t:
             die(f"{path.name} has no <title>, so there is nothing to anchor the block to. Add one first.")
         text = text[: t.end()] + "\n" + block + text[t.end() :]
     path.write_text(text)
-    record_slug(path.stem)
+    record(entry_of(path))
     print(f"stamped {path.name}")
 
 
 def cmd_review(args):
     path = resolve(args.slug)
     what = _review.install(path, sink=args.sink or "", sidecar=args.sidecar or "")
-    record_slug(path.stem)
+    record(entry_of(path))
     print(f"review layer {what} in {path.name}")
 
 
@@ -277,6 +320,9 @@ def cmd_comments(args):
 
 def cmd_wait(args):
     path = resolve(args.slug)
+    if path.suffix == ".md":
+        die(f"{path.name} has no page to send from: the sidecar writes its comments straight into the file. "
+            f"Read them with: artifact comments {path.stem}", 2)
     until = ("approve",) if args.approve else ("approve", "send")
     action = _review.serve(path, until=until, timeout=args.timeout)
     if not action:
@@ -299,7 +345,7 @@ def main():
     p.add_argument("key", nargs="?", help="print the pack file for one key, or list every key")
     p.set_defaults(fn=cmd_ds)
 
-    p = sub.add_parser("touch", help="record a slug against this conversation")
+    p = sub.add_parser("touch", help="record a slug, or a .md by its path, against this conversation")
     p.add_argument("slug")
     p.set_defaults(fn=cmd_touch)
 

@@ -105,6 +105,14 @@ for tag, i in re.findall(r"<(\w+)[^>]*\bid=\"([^\"]+)\"[^>]*>\s*</\1>", body):
     if [ -n "$cdn" ] && [ -z "$(scan -n 'catch')" ]; then
       report "CDN with no fallback: wrap init in try/catch or guard on the global" "offline would blank the page"
     fi
+
+    report "viewport unit: the page is read in a frame that sizes to its body, so vh feeds back on itself; use rem" \
+      "$(scan -nE '[0-9.]+vh\b')"
+  fi
+
+  if [ "$TARGET" = a ]; then
+    report "viewport unit: the page is read in a frame that sizes to its body, so vh feeds back on itself; use rem" \
+      "$(scan -nE '[0-9.]+vh\b')"
   fi
 
   report "table-wrap nested in a panel: a card inside a card, drop the panel" \

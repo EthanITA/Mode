@@ -49,9 +49,10 @@ try:
                         "additionalContext": (
                             "Your reply carries AI-slop fingerprints banned by rules/prose.md (em dashes, "
                             "math/logic symbols or arrow chains in prose):\n%s%s\n"
-                            "Post a follow-up that rewrites ONLY these lines in the human register: a comma, a "
-                            "colon, parentheses or a second sentence instead of the dash; plain words instead of "
-                            "symbols. Keep it short and do not restate the rest of the reply." % (sample, extra)
+                            "Post a follow-up that rewrites ONLY these lines in the human register: a period or a "
+                            "joining word instead of the dash, never a colon or parentheses standing in for it; plain "
+                            "words instead of symbols. Keep it short and do not restate the rest of the reply."
+                            % (sample, extra)
                         ),
                     },
                     "systemMessage": "⚡ prose-check: slop fingerprints in the reply (em dash / math symbols) — rewriting.",

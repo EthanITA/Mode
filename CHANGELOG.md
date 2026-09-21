@@ -11,11 +11,109 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **The sidecar's home page shows the conversations `claude agents` shows, and deletes them the same
+  way.** The list used to be built from whichever sessions had left an artifact list behind, which on
+  this machine meant 89 rows against the agent view's 9. It now takes its set from
+  `claude agents --json --all`, cached for one poll, so the names and the lane each conversation sits
+  in are the CLI's own rather than something re-derived; reading the job files directly is a fallback
+  for a machine with no CLI, and a lane that came from there is marked as derived. Everything the
+  sidecar kept but no background job owns is still returned and still reachable by link, flagged
+  archived and folded behind a toggle in the header.
+- **The home page is a canvas.** Conversations are cards on the same pannable, zoomable plane the
+  session canvas uses, arranged where you drop them, with the layout held in this browser rather than
+  in the conversation. Each card carries a thumbnail of that conversation's own canvas, drawn from the
+  placement it saved, or nothing when it never saved one. Double-click opens it.
+- **A conversation can be deleted from the sidecar.** The card's context menu asks a second time in
+  place, the way `claude agents` wants ctrl+x twice. It stops the worker before it removes anything,
+  and gives up rather than escalating if the worker will not stop, so a live one is never stranded.
+  It removes the job directory and the six places the sidecar keeps per-session state. It never
+  touches the transcript, the file history, or a document that a conversation's artifact list merely
+  points at, and it refuses outright on a job running in worktree isolation.
+
+- **The sidecar's board writes Claude Code's task store directly.** Ticking a task complete, adding
+  one, or reassigning it in the Board panel now writes the task file itself, stamped
+  `#id [CATEGORY] subject` exactly as a `TaskCreate` would be, and sends nothing to the chat. The
+  agent learns what moved from one line of injected context on its next `PostToolUse`,
+  `UserPromptSubmit` or `SessionStart`, so a board edit costs it no turn and never arrives looking
+  like something the user typed. Ids are claimed the way the harness claims them, highest plus one
+  and written only if absent, so the two writers cannot collide. The drag order is a webapp-only
+  preference kept outside the task store, where the agent never reads it.
+
 - **`namespace-guard`, a fourth style guard on `Write|Edit`.** It reads the whole file after the
   edit and flags what the domain-namespace rule bans: two or more exports sharing a prefix
   (`googleLogin` beside `googleSignout`, which want to be `Google.login()`), and `export *`, which
   turns a curated index into a firehose. Verb prefixes such as `format` and `create`, and the
   `use` of a composable, are exempt because they name an action rather than a domain.
+- **`board-cap` bounds open USER work on the board.** It guards `TaskCreate` and `TaskUpdate`, denying
+  past the cap and naming the alternative: fold the work in, or take the default and proceed.
+- **The chat panel parses an assistant turn's X/Y/Z read into its own panel**, tinted apart from the
+  rest of the answer and open by default, so the read Marco actually wants first is not buried inside
+  the prose. A turn without one renders exactly as before.
+- **The chat panel takes a `compact` mode.** Over the artifact page it now starts as a narrow closed
+  pill instead of a full-width, half-height block; focusing the prompt or new assistant activity opens
+  it, and it never auto-closes once open.
+- **Code is syntax highlighted**, in History's and the artifact page's diff rows (by the file's own
+  extension), in a `.md` artifact's fenced code blocks (by the fence's language), and now in the chat
+  panel's own fenced code blocks too. One shared util, `Syntax` (`shared/utils/highlight.ts`,
+  re-exported from `app/utils/highlight.ts` for the client), wraps `@speed-highlight/core` and maps
+  its token classes onto the app's own light/dark theme colours rather than a bundled theme, so it
+  reads like the rest of the sidecar in either mode.
+
+### Changed
+
+- **The `prose` ground rule is written from how colleagues type to each other at work.** It came out of
+  setting human messages beside an agent's in the same threads. It now asks for the fact that settles a
+  question and nothing after it, a quote of the words it disagrees with, agreement kept to one word,
+  yes or no first on a yes-or-no question, no headers or bold-labelled bullets in a short reply, and
+  no colon or parentheses standing in for a banned dash. The
+  `prose-check` hook's rewrite hint stopped suggesting those two as the substitute.
+
+### Fixed
+
+- **The chat panel no longer replays a flash of "thinking" on reload.** A page load replayed a
+  finished exchange through the same timers a live stream uses, so a reload showed the mascot land on
+  the answer, flip back to "thinking" for a couple of seconds, then show the answer again at a
+  different width. The composable now settles a dangling turn immediately when the session is not
+  busy, so a reload renders the final state once.
+- **The mascot's reserved space no longer collapses when it teleports.** Its perch in the transcript
+  was mounted only while a beat was active, so settling could tear down the whole row — including the
+  answer's layout — for the ~2s hand-over animation. The perch is now a permanent sibling of the
+  swapped text; only the mascot's own opacity toggles.
+- **The transcript panel is shorter by default.** Its cap only ever grew with the conversation; the
+  ambient single-turn preview now caps well below the full-history view, which still gets the old
+  room when expanded.
+- **The panel's open/closed state survives navigating between the conversation, the artifact page and
+  history.** It lived in a local ref that reset to the same state on every page mount, so switching
+  views always landed back on the same view regardless of what was open before. It is now shared
+  state, defaulting to minimized.
+- **History's default view now shows what a turn actually changed.** Selecting the latest turn
+  compared its own result against itself, so "vs head" always read as unchanged even when the turn
+  wrote real content; it now diffs from just before that turn's edit. A past version of a `.md` that
+  already existed renders that diff too, instead of the whole document — a `.md` a turn created still
+  shows the full page, since there is nothing to diff against. The rendered changes, in History and on
+  the artifact page alike, now sit in the same capped, scrollable height as the chat transcript instead
+  of growing without limit. A file whose baseline had to be reconstructed from git no longer shows every
+  turn after its first as a full deletion: the reconstructed content only patched that first turn, so a
+  later edit folded from nothing and the store read it as removing the whole file. Every turn for such a
+  file now replays the full chain from that same baseline.
+- **Picking a block on an open artifact opens the composer again.** The app disarmed comment mode on
+  every window blur, so a held C could not leave the page swallowing clicks, but clicking into the
+  artifact frame moves focus into it and blurs the app window too. The mousedown on a block turned the
+  mode off and the click that followed found nothing armed. Focus entering the frame no longer counts
+  as leaving the app, and a hold of C that began in the app window now ends when C comes up inside the
+  frame.
+- **Comment mode has something to pick in the chat and in a diff.** Arming it and clicking the reply in
+  the dock, the narration of a running turn, or a changed file in History did nothing at all: only the
+  board rows, the mode and style chips, the pipeline strip, canvas cards and blocks inside an artifact
+  carried a target, so most of the screen ignored the click without saying so. The settled answer and
+  the live beat now describe themselves the way an expanded turn already did, and a file in History's
+  Changes pane picks as a whole, with its path and its churn in what Claude gets told.
+- **A home canvas card no longer spills past its own box.** The card slot forced a fixed height that
+  ignored its content, so a card with many badges or artifact chips overflowed onto the row below;
+  the slot now grows with the card the way the canvas primitive already does for every other item.
+  A card with no saved spot on first load could still land close enough to overlap its neighbour once
+  it grew past that guess; the unplaced ones now settle the same way "Tidy up" packs a selection, by
+  their real measured height.
 
 ## 0.15.1
 
