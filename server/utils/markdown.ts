@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { renderMermaidSVGAsync } from "beautiful-mermaid"
 import { createMarkdownParser } from "comark"
 import type { MarkdownDocument } from "comark"
 import { Syntax } from "../../shared/utils/highlight.ts"
@@ -18,6 +19,14 @@ img{max-width:100%}
 li>p{margin:0}
 .contains-task-list{list-style:none;padding-left:0}
 .task-list-item-checkbox{accent-color:var(--accent);margin-right:6px}`
+// A wide diagram scrolls once fitting it would shrink its labels below three quarters of their size.
+const DIAGRAM_CSS = `.diagram{--page-bg:var(--bg);overflow-x:auto}
+.diagram svg{display:block;height:auto;margin-inline:auto;width:clamp(calc(var(--natural)*.75),100%,var(--natural))}
+.diagram text{font-family:var(--sans)}
+.diagram .mono{font-family:var(--mono)}`
+// The svg sets its own --bg, so the page's arrives through a bridge; --muted, --accent, --surface and --border inherit by name.
+const DIAGRAM = { bg: "var(--page-bg)", fg: "var(--ink)", transparent: true }
+const SVG_STYLE = /<style>([\s\S]*?)<\/style>/g
 
 let houseCss: string | undefined
 
@@ -48,28 +57,49 @@ function fenceOf(node: MdNode): { pre: Record<string, unknown>; code: Record<str
   return codeTag === "code" && typeof text === "string" ? { pre, code, lang: pre.language, text } : undefined
 }
 
-async function htmlOf(node: MdNode): Promise<string> {
+async function diagramOf(text: string, css: Set<string>): Promise<string | undefined> {
+  let svg: string
+  try {
+    svg = await renderMermaidSVGAsync(text, DIAGRAM)
+  } catch {
+    return undefined
+  }
+  const width = Math.ceil(Number(/width="([\d.]+)"/.exec(svg)?.[1]))
+  // A comment quotes its block's text, so the CSS leaves the svg, minus the Google Fonts import the offline page never wants.
+  const bare = svg.replace(SVG_STYLE, (_, rules: string) => {
+    css.add(rules.replace(/@import url\([^)]*\);/g, "").trim())
+    return ""
+  })
+  return `<div class="diagram" style="--natural:${width}px">${bare}</div>`
+}
+
+async function htmlOf(node: MdNode, css: Set<string>): Promise<string> {
   if (typeof node === "string") return escapeHtml(node)
   const fence = fenceOf(node)
+  const diagram = fence?.lang === "mermaid" ? await diagramOf(fence.text, css) : undefined
+  if (diagram) return diagram
   if (fence) return `<pre${attrsOf(fence.pre)}><code${attrsOf(fence.code)}>${await Syntax.code(fence.text, fence.lang)}</code></pre>`
   const [tag, props, ...children] = node
   if (!tag) return ""
   const open = `<${tag}${attrsOf(props)}>`
   if (VOID.has(tag)) return open
-  return `${open}${(await Promise.all(children.map(htmlOf))).join("")}</${tag}>`
+  return `${open}${(await Promise.all(children.map((child) => htmlOf(child, css)))).join("")}</${tag}>`
 }
 
 async function sectionsOf(nodes: MdNode[]): Promise<string> {
   const sections: string[][] = []
+  const css = new Set<string>()
   for (const node of nodes) {
-    const html = await htmlOf(node)
+    const html = await htmlOf(node, css)
     if (!html.trim()) continue
     // Each h1 or h2 opens a section, which is the host the read view takes a comment's label from.
     const opens = typeof node !== "string" && (node[0] === "h1" || node[0] === "h2")
     if (opens || !sections.length) sections.push([])
     sections.at(-1)?.push(html)
   }
-  return sections.map((parts) => `<section class="flow">${parts.join("")}</section>`).join("\n")
+  const html = sections.map((parts) => `<section class="flow">${parts.join("")}</section>`).join("\n")
+  // Last rather than first, where `.page > * + *` would push the opening section down.
+  return css.size ? `${html}\n<style>${[...css].join("\n")}</style>` : html
 }
 
 function readStyle(name: string): string {
@@ -95,7 +125,7 @@ export const Markdown = {
       '<meta charset="utf-8">',
       '<meta name="viewport" content="width=device-width, initial-scale=1">',
       `<title>${escapeHtml(title)}</title>`,
-      `<style>${houseCss}\n${MARKDOWN_CSS}</style>`,
+      `<style>${houseCss}\n${MARKDOWN_CSS}\n${DIAGRAM_CSS}</style>`,
       "</head>",
       `<body><main class="page">${await Markdown.body(markdown)}</main></body>`,
       "</html>",
