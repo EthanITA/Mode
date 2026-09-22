@@ -67,6 +67,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   yes or no first on a yes-or-no question, no headers or bold-labelled bullets in a short reply, and
   no colon or parentheses standing in for a banned dash. The
   `prose-check` hook's rewrite hint stopped suggesting those two as the substitute.
+- **Parentheses can hold an aside again, and the `evidence` rule says confidence the way `prose` does.**
+  The prose rule had limited parentheses to an id or a path, which the artifact register's own good
+  example broke. A dash still can't become a colon or parentheses. The evidence rule listed confidence
+  as four categories that read as the labels the prose rule bans, so it now asks for the verb on the
+  claim itself.
 
 ### Fixed
 
