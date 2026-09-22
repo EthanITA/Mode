@@ -75,6 +75,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **`board-check` no longer points at an X/Y/Z read that may not be there.** Its message said the board
+  goes up straight after the read, which only happens while the `xyz` style is held. It now says the
+  board goes up before the first action.
+- **The artifact prose register points at the live `prose` rule.** It named `~/.claude/rules/prose.md`,
+  a path that stopped existing when the rule moved into this plugin.
 - **The chat panel no longer replays a flash of "thinking" on reload.** A page load replayed a
   finished exchange through the same timers a live stream uses, so a reload showed the mascot land on
   the answer, flip back to "thinking" for a couple of seconds, then show the answer again at a

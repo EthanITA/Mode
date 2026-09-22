@@ -89,7 +89,7 @@ try:
     if shape["substantial"] and shape["created"] and shape["acted_first"] and not covered:
         emit(
             "You started working before the board went up: the first action came at call %d, the first board call "
-            "at %d. The board states what you are about to do, so it goes up straight after the X/Y/Z read — "
+            "at %d. The board states what you are about to do, so it goes up before the first action, "
             "otherwise it records what already happened." % (shape["first_action"] + 1, shape["first_board"] + 1),
             "board-check: acted before the board went up.",
         )

@@ -4,7 +4,7 @@ Artifact body copy is read by a person. The failure mode is AI slop: prose that 
 
 ## Rules
 
-The register is canonical in `~/.claude/rules/prose.md` (always loaded); every rule there binds artifact body copy, in entity form too (`&mdash;` is an em dash). Artifact-specific carve-out: an arrow may appear as trailing UI chrome (a "View all" link), never between words.
+The register is canonical in the mode plugin's `prose` ground rule, `skills/mode/rules/prose.md`, injected once per conversation; every rule there binds artifact body copy, in entity form too (`&mdash;` is an em dash). Artifact-specific carve-out: an arrow may appear as trailing UI chrome (a "View all" link), never between words.
 
 ## Few-shot pairs
 
