@@ -16,6 +16,7 @@ SUITES = (
     ("cli", "test_cli.py", "bin/mode against the fixed CLI surface, on fixture contracts"),
     ("contracts", "test_contracts.py", "the ten shipped contracts, and how real phrases route"),
     ("hooks", "test_hooks.py", "each hook against the payload Claude Code sends it"),
+    ("git-guard", "test_git_guard.py", "git-guard against a scratch repo with someone else's uncommitted edits"),
     ("install", "test_install.py", "install.sh against a fake config dir, including a node status line"),
 )
 
