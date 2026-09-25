@@ -68,7 +68,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   setting human messages beside an agent's in the same threads. It now asks for the fact that settles a
   question and nothing after it, a quote of the words it disagrees with, agreement kept to one word,
   yes or no first on a yes-or-no question, your own take unfiltered when you are convincing someone or
-  saying how something feels, thoughts joined with "because" and "so" under light punctuation, no
+  saying how something feels, thoughts joined with "because" and "so" under light punctuation, one
+  word kept for one thing, the user's own voice on anything sent under their name, no
   headers or bold-labelled bullets in a short reply, and
   no colon or parentheses standing in for a banned dash. The
   `prose-check` hook's rewrite hint stopped suggesting those two as the substitute.
