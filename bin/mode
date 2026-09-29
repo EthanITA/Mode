@@ -40,7 +40,9 @@ USER_TOKEN = "{{USER}}"
 UNREADABLE = ("Its contract could not be read, so the file for '%s' is missing or has no standing "
               "reminder. Say so rather than improvising what it asks for.")
 GROUNDED = ("# Ground rules\n\nThese rules hold for this entire conversation. They are injected "
-            "once, here, and never repeated, so keep applying them without being reminded.")
+            "once, here, and never repeated, except a rule that outranks the contracts, whose "
+            "reminder comes back every turn. Keep applying all of them without being reminded.")
+OUTRANKS = "Ground rule %s, which outranks any mode, style or skill that says otherwise."
 
 
 def die(msg: str, code: int = 1):
@@ -567,6 +569,9 @@ def cmd_announce(args):
         blocks.append(f"{head}\n\n{body}{tail}")
         if marker:
             write_state(marker, name)
+    # Last and every turn, because a contract restated each turn beat a rule told once.
+    if session_key(args.session):
+        blocks += [f"{OUTRANKS % stem}\n\n{block}" for stem, block in outranking()]
     if blocks:
         print(substitute("\n\n".join(blocks)))
 
@@ -574,6 +579,26 @@ def cmd_announce(args):
 def rules_dirs() -> list[Path]:
     """Shipped first, the user's own second, mirroring the contract folders."""
     return [plugin_root() / "skills" / "mode" / "rules", config_home() / "rules"]
+
+
+def ground_rules() -> dict[str, Path]:
+    picked: dict[str, Path] = {}
+    for d in rules_dirs():
+        if d.is_dir():
+            for p in d.glob("*.md"):
+                picked[p.stem] = p
+    return picked
+
+
+def outranking() -> list[tuple[str, str]]:
+    """Each rule declaring `outranks`, with its standing reminder, which announce repeats every turn."""
+    out = []
+    for stem, path in sorted(ground_rules().items()):
+        meta, body = split_front_matter(path.read_text(errors="replace"))
+        block = standing_block(body)
+        if truthy(meta, "outranks") and block:
+            out.append((stem, "\n".join(block.splitlines()[:STANDING_LINES])))
+    return out
 
 
 def cmd_rules(args):
@@ -586,11 +611,7 @@ def cmd_rules(args):
     # this command exists to prevent.
     if not base_marker:
         raise SystemExit(1)
-    picked: dict[str, Path] = {}
-    for d in rules_dirs():
-        if d.is_dir():
-            for p in d.glob("*.md"):
-                picked[p.stem] = p
+    picked = ground_rules()
     message = (args.message or "").lower()
     bodies = []
     base_due = not base_marker.is_file()
@@ -849,11 +870,7 @@ def guards_armed() -> bool:
 
 def rule_state(sid: str | None) -> tuple[list[str], list[tuple[str, str]]]:
     """Which ground rules this conversation has already been told, and which are still waiting."""
-    picked: dict[str, Path] = {}
-    for d in rules_dirs():
-        if d.is_dir():
-            for p in d.glob("*.md"):
-                picked[p.stem] = p
+    picked = ground_rules()
     base = state_path(sid, ".rules")
     base_told = bool(base and base.is_file())
     told, waiting = [], []
@@ -948,6 +965,8 @@ def cmd_why(args):
     out += ["", "Ground rules", "  told     " + (", ".join(told) or "none yet")]
     for stem, when in waiting:
         out.append(f"  waiting  {stem}" + (f", until a prompt matches {when}" if when else ""))
+    for stem, _ in outranking():
+        out.append(f"  outranks {stem}, restated every turn over the mode and the style")
     out += ["", "The next prompt carries"] + next_lines(sid_)
     print(substitute("\n".join(out)))
 

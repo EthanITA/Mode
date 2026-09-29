@@ -1162,6 +1162,25 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("then never again in the same conversation",
        p.returncode == 1 and not p.stdout, "rc=%s out=%r" % (p.returncode, p.stdout))
 
+    section("a ground rule that outranks the contracts")
+    VOICE = ("---\nname: voice\nsummary: outranks\noutranks: contracts\n---\n\nTalk like a person.\n\n"
+             "## Standing reminder\n\n- Say it like a person would.\n")
+    overroot = fixture_root(tmp, "overroot", modes=clean, styles={"brisk": BRISK}, skill=SKILL,
+                            rules={"law": LAW, "voice": VOICE})
+    p = run(overroot, config, "announce", "--session", sid("s-over-none"))
+    ok("announce restates an outranking rule even with no contract held",
+       p.returncode == 0 and "Ground rule voice" in p.stdout and "like a person would" in p.stdout,
+       "rc=%s out=%r" % (p.returncode, p.stdout))
+    run(overroot, config, "mode", "set", "maker", "--session", sid("s-over"))
+    run(overroot, config, "announce", "--session", sid("s-over"))
+    p = run(overroot, config, "announce", "--session", sid("s-over"))
+    said = p.stdout
+    ok("and on every later turn it comes after the contract's reminder, as the last word",
+       "Active mode: maker" in said and "Ground rule voice" in said
+       and said.index("Ground rule voice") > said.index("Active mode: maker"),
+       "%r. Told once while a contract repeats every turn, the contract wins by attrition." % said)
+    ok("a rule without the flag is never restated", "receipt" not in said, repr(said))
+
     # ------------------------------------------------------------------ version
 
     section("version, the only way to tell whether an update landed")

@@ -171,7 +171,7 @@ A **style** is how Claude sounds while any of that runs. It has no steps of its 
 
 | Style | Reach for it when |
 |---|---|
-| `edu` | You want to understand, not just be updated. Top down, plain words, carried by pictures |
+| `edu` | You want to understand, not just be updated. Explained the way a friend who knows it would, top down, in human prose, drawn where it has shape |
 | `fast` | You are in a hurry. It gets made to work and nothing gets polished |
 | `ship` | It is going out and other people depend on it: readable, named, and the tests, docs and changelog travel with it |
 | `native` | Somebody else's codebase. Match the local idiom and add none of your own |

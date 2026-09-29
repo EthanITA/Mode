@@ -94,7 +94,7 @@ Its subject is the cause and not the change. A reader who has the diff already k
 
 - Show the real thing first: the actual failing input and the actual wrong output, then the mechanism underneath.
 - Anything with parts or a flow gets drawn. A causal chain in three boxes beats two paragraphs describing the same chain.
-- Gloss each term of art the first time it appears, and close on the one thing worth remembering.
+- Explain a term the reader has not met in passing, where it first comes up, and end on the one thing worth remembering, said once.
 - If this setup carries a skill for planning an ambitious visual, load it before building rather than after. Reach for that when the mechanism is the hard part, and skip it for a bug whose story is two sentences long. Ambition that arrives at hour three as a placeholder is worse than a plain page.
 - Give the artifact a slug, because that slug is what gets typed into `/approve`.
 

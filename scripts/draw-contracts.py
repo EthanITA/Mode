@@ -182,12 +182,12 @@ MODES = {
 }
 
 STYLES = {
-    "edu": ("A correct wall of prose", "A picture, then plain words",
-            ["Top down: big picture, then a simple example, then the detail.",
-             "Every term of art glossed the first time it appears.",
-             "Closes on what was covered and the one thing to remember."],
-            "The edu style turns a correct wall of prose into a picture followed by plain words, "
-            "ordered top down and closing on a recap."),
+    "edu": ("A lecture, glossary and recap", "A friend explaining it",
+            ["Top down: the thing itself, an everyday comparison, then the detail.",
+             "A new term explained in passing, a drawing where it has shape.",
+             "Ends on the one thing to keep, said once, never a recap."],
+            "The edu style turns a lecture with a glossary and a recap into a friend explaining it, "
+            "top down, with a drawing where the thing has shape and one line worth keeping at the end."),
     "fast": ("Preamble, plan, work, recap", "The one thing, and done",
              ["No preamble, no plan, no recap. Two or three sentences is normal.",
               "Defaults taken and named in a handful of words.",

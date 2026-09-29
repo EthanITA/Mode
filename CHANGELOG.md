@@ -23,6 +23,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   never stands in for the user's yes. `ic` is now the same loop without the director and no longer
   calls itself the default. A fresh slot still starts empty, so making `pair` the default is
   `cd ~ && mode mode pin pair`.
+- **Human prose outranks every mode, style and skill.** A contract's reminder is restated every turn
+  while a ground rule is told once, so a contract that asked for another register won by repetition.
+  A rules file can now declare `outranks: contracts`, and its own `## Standing reminder` is restated
+  on every turn, last, after the mode's and the style's, under a line saying it wins wherever they
+  disagree. `prose` carries the flag and a four-line reminder, and `mode why` lists it.
 - **A tenth chip colour, `orange`.** ANSI 256-colour 208, the first code outside the sixteen, because
   the unused brights (91, 92, 93, 96, 97) sit too close to red, green, yellow, cyan and grey to read
   apart, and the sidecar already paints `orange` in a tint no other mode holds. The ten modes hold
@@ -80,6 +85,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **`edu` explains things the way a friend who knows the subject would.** It used to call prose the
+  expensive medium, gloss every term, and close every explanation on a three-to-five-line recap, all
+  of which its reminder repeated every turn against the prose rule. It now talks in the first person
+  and in connected sentences, keeps the top-down order without the labelled skeleton, explains a new
+  term in passing, draws what has shape, and ends on the one thing to keep, said once. `debug`'s
+  explainer and `studio`'s register lost their gloss-every-term lines for the same reason.
 - **The `prose` ground rule is written from how colleagues type to each other at work.** It came out of
   setting human messages beside an agent's in the same threads. It now asks for the fact that settles a
   question and nothing after it, a quote of the words it disagrees with, agreement kept to one word,

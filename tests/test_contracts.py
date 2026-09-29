@@ -175,6 +175,17 @@ if os.path.isdir(RULES):
            "an empty shipped rule is dead weight; empty is the user-layer silencing idiom")
         hits = prose_dashes(rtext)
         ok("%s: no em dash and no spaced clause dash" % filename, not hits, " // ".join(hits[:3]))
+        if rmeta.get("outranks"):
+            rblock = standing_block(rbody)
+            ok("%s: outranks the contracts, so it carries a reminder within %d lines" % (filename, BUDGET),
+               bool(rblock) and len(rblock) <= BUDGET,
+               "%d lines. The reminder is what gets restated every turn, and without one the rule "
+               "is told once while every contract repeats." % len(rblock))
+    with open(os.path.join(RULES, "prose.md")) as f:
+        prose_meta = split_front_matter(f.read())[0]
+    ok("prose outranks every mode, style and skill", bool(prose_meta.get("outranks")),
+       "declared as %r. Without the flag a contract's reminder repeats every turn and the prose "
+       "rule, told once, loses to it." % prose_meta.get("outranks"))
 else:
     ok("skills/mode/rules/ exists", False, "the rules tier shipped in 0.7.0 and the folder is gone")
 

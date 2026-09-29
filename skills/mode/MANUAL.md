@@ -82,6 +82,8 @@ In the writing, no mode file changes what it asks for depending on the style, an
 
 Where the two genuinely meet, one line settles it. A mode owns what must happen; a style owns how much of it gets said and how it reads. When a style would delete something a mode requires, the mode wins. **A style never opens a gate.** Being in a hurry makes copilot's approval question shorter and never makes it optional.
 
+Above both axes sits the prose ground rule. No mode and no style changes how a sentence reads against it, and where one asks for something else, prose wins.
+
 ## Starting and stopping by condition
 
 Typing a name is not the only way in, and typing `off` is not the only way out. Every contract on both axes declares both ends in its own front matter.
@@ -125,6 +127,8 @@ Ground rules have no slot, no chip and no palette entry, because there is nothin
 The point of the tier is migration. Standing text that lives in a CLAUDE.md is paid for on every request of every session; a ground rule costs one injection per conversation. Anything in a personal rule file that is not machine-specific belongs here eventually.
 
 A rules file may also carry a `when:` pattern, alternatives split on a vertical bar exactly as `enter-when` is. Such a scoped rule stays out of the first prompt and injects once, in the same conversation-long voice, on the first prompt that matches it. The shipped `artifact` rule works this way: the HTML theming contract arrives the first time a page is asked for, and never costs a token in a conversation that builds none.
+
+A rules file carrying `outranks: contracts` is told whole like any other, and then its own `## Standing reminder`, capped at four lines, is restated on every turn after the mode's and the style's, under a line saying it wins wherever they disagree. That exists because a contract's reminder repeats every turn while a ground rule is told once, so without it the contract wins by repetition. The shipped `prose` rule carries the flag, which is what keeps human prose in force under every mode, style and skill.
 
 ## The guards
 
@@ -171,7 +175,7 @@ Written by the same command, from `styles/`, under the same rule.
 | Name | File | Summary |
 |---|---|---|
 | `creative` | `styles/creative.md` | Go wide. Several real options, boldness spent in one place, nothing sanded down. |
-| `edu` | `styles/edu.md` | Teach it top down, in plain words, carried by pictures rather than prose. |
+| `edu` | `styles/edu.md` | Explain it like a friend who knows it. Top down, in human prose, drawn where it has shape. |
 | `fast` | `styles/fast.md` | The user is in a hurry. Make it work, say done, polish nothing. |
 | `native` | `styles/native.md` | Somebody else's house. Match the neighbours and add none of your own idiom. |
 | `ship` | `styles/ship.md` | Ship it properly. Readable, named, grouped by domain, and everything a dependent needs travels with it. |

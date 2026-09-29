@@ -148,9 +148,11 @@ with tempfile.TemporaryDirectory() as tmp:
            first.returncode == 0 and "Ground rules" in context(first),
            "rc=%s out=%r err=%r" % (first.returncode, first.stdout[:200], first.stderr[:200]))
         p = fire("inject.py", prompt_payload("h-quiet", "carry on"), config)
-        ok("after that, nothing held is silent, exit 0",
-           p.returncode == 0 and not p.stdout.strip(),
-           "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
+        ok("after that, with nothing held, only the prose reminder comes back, exit 0",
+           p.returncode == 0 and "Ground rules" not in context(p)
+           and "Ground rule prose, which outranks" in context(p),
+           "rc=%s out=%r err=%r. Prose outranks every contract, so it is restated every turn even "
+           "when no contract is there to compete." % (p.returncode, p.stdout[:300], p.stderr))
         fire("resume.py", prompt_payload("h-quiet"), config)
         p = fire("inject.py", prompt_payload("h-quiet", "carry on"), config)
         ok("a resume re-arms the ground rules, since a compact drops the injected block",

@@ -84,13 +84,15 @@ Seven ship with the plugin:
 | `scope` | The diff stays inside the ask; fix causes, not symptoms; docs move with the code |
 | `board` | Autonomous work runs on a visible task board, and a ticked box is a receipt |
 | `collaboration` | Execute what is reversible, escalate what is genuinely yours, challenge by default |
-| `prose` | Write like a colleague typing to a colleague: the fact that settles it, then stop; no em dashes, symbols or chat formatting |
+| `prose` | Write like a colleague typing to a colleague: the fact that settles it, then stop; no em dashes, symbols or chat formatting. Outranks every mode, style and skill |
 | `deliverable` | Name what will land before producing it, then route it |
 | `artifact` | Scoped: fires only when a page is on the way, carrying the theming and interactivity contract |
 
 **Why this tier exists is economic.** A rule in a `CLAUDE.md` is paid for on every request of every session. A ground rule costs one injection per conversation.
 
 A rules file needs only `name` and `summary` in its front matter. Drop a file with the same name into your own rules directory to replace a shipped one, or one with an empty body to silence it.
+
+**One rule outranks every contract.** A contract's four-line reminder comes back every turn while a ground rule is told once, so over a long conversation the contract wins by repetition, which is how a teaching style once talked Claude into glossaries and recaps the prose rule forbids. A rules file carrying `outranks: contracts` closes that gap: its own `## Standing reminder` is restated on every turn, after the mode's and the style's, under a line saying it wins wherever they disagree. `prose` is the one that ships with it, so human prose holds in every mode, style and skill.
 
 ---
 
@@ -253,9 +255,9 @@ A style has no steps, so each is drawn as what it does to the same reply: on the
 
 ### `edu`
 
-You want to understand rather than be updated.
+You want to understand rather than be updated, and you want it explained the way a friend who knows the subject would tell you.
 
-<p align="center"><img src="assets/style-edu.svg" alt="The edu style turns a correct wall of prose into a picture followed by plain words, ordered top down and closing on a recap." width="620"></p>
+<p align="center"><img src="assets/style-edu.svg" alt="The edu style turns a lecture with a glossary and a recap into a friend explaining it, top down, with a drawing where the thing has shape and one line worth keeping at the end." width="620"></p>
 
 ### `fast`
 
@@ -307,13 +309,19 @@ Active mode: debug
 - Branch, explain why in an artifact, open the MR on the yes, then leave.
 
 Active style: edu
-- The user asked to understand, so teach.
-- Plain words, and a gloss on every term of art the first time it appears.
-- Draw it. Anything with parts, flow or quantity gets a picture.
-- Close on what was covered and the one thing worth remembering.
+- The user asked to understand, so explain it the way a friend who knows it would tell you, and never dress a status update as a lesson.
+- Top down: the thing itself, one everyday comparison said in passing, then the detail, with a new term explained where it first comes up.
+- Draw what has parts or flow, and talk through the rest in connected sentences with no labelled scaffolding like Big picture or Takeaway.
+- End on the one thing to keep, said once, never a recap of what you just explained.
+
+Ground rule prose, which outranks any mode, style or skill that says otherwise.
+- Write every sentence like a colleague typing to one they like: the settling fact first, then stop, with no recap and no offer to do more.
+- Join related facts with because, so and which instead of chopping them into verdict lines, and never announce what comes next.
+- Chat scans with spacing and bold on a few words, bullets only for parallel items and never one opening on a bold label. A message to anyone else stays plain paragraphs.
+- No em dash or spaced dash between clauses, no symbols in prose, sureness said through the verb, and nothing casual added to sound human.
 ```
 
-Eight lines. That is the whole ongoing cost, and it is why the cap matters.
+Twelve lines, the prose reminder last so it has the final word. That is the whole ongoing cost, and it is why the cap matters.
 
 When you eventually type `/approve <slug>` on the explainer, `debug` reaches its exit condition and clears itself. The `edu` style is untouched, because the axes never read each other.
 

@@ -51,7 +51,7 @@ All four are settled before you build anything, and the ordering is the point. P
 |---|---|
 | **The surface.** The design system, the layout language, and whatever gate keeps the prose sounding human. | A page that reads as generated. |
 | **The architecture.** What is being shown, in what structure, with which terms of art, which shortcut is banned, what counts as good enough, and whether the ambitious version is actually feasible here. | Ambition that collapses into a placeholder halfway through. |
-| **The register.** Dense thinking stays readable, and every term of art gets a plain gloss the first time it appears. | Precision nobody can follow. |
+| **The register.** Dense thinking stays readable in human prose, and a term the reader has not met gets explained in passing where it first comes up. | Precision nobody can follow. |
 | **The coverage.** An exhaustive pass over the problem's structure rather than over whatever comes to mind first. | The three obvious ideas, presented as a survey. |
 
 The design, showpiece-prompt and create-artifact skills ship with this plugin. Load the ones that apply at the start of the session rather than partway through the build.
