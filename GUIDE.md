@@ -22,9 +22,9 @@ Those are the two dials. A session holds one of each, and each one holds until y
 
 A **mode** answers *how the work runs*: it has steps, gates and a point where you can say it finished. A **style** answers *how it sounds while running*: it has no steps at all, and instead changes the texture of whatever mode is going.
 
-<p align="center"><img src="assets/axes.svg" alt="A grid of nine modes down the side against six styles across the top, making fifty-four combinations, with the cell where debug meets edu highlighted." width="620"></p>
+<p align="center"><img src="assets/axes.svg" alt="A grid of ten modes down the side against six styles across the top, making sixty combinations, with the cell where debug meets edu highlighted." width="620"></p>
 
-Keeping them apart is what keeps the file count down. Nine modes and six styles cover fifty-four combinations, so a new way of talking costs one file rather than nine rewrites.
+Keeping them apart is what keeps the file count down. Ten modes and six styles cover sixty combinations, so a new way of talking costs one file rather than nine rewrites.
 
 **The test for which one a new idea is:** does it have an order of operations? If it says do this, then that, and stop here, it is a mode. If it only changes the texture of what you were already doing, it is a style.
 
@@ -181,13 +181,19 @@ The Gates section is the one worth knowing about before you need it. A guard ref
 
 ---
 
-## The nine modes
+## The ten modes
 
 Each one is a pipeline. A yellow box is a gate, meaning the work genuinely stops there. A dashed line is a loop back.
 
+### `pair`
+
+The default. Claude keeps its hands on the whole loop and hears two views that are built to differ. A teammate named `director`, spawned one tier up (Opus for Haiku and Sonnet, Fable for Opus), owns the outcome as design director, product director or tech lead, and forms its view from the work itself rather than from Claude's account of it. Claude Code's `advisor` tool, when the session has one, reads the whole transcript and checks the method against the evidence. What to build and the final sign-off go to the director, how to build it and whether the receipts are real go to the advisor, and on a split over direction the director's answer stands. Both weigh in before anything is built and again before anything is committed. Neither touches the code or talks to you, and a sign-off is never your yes.
+
+<p align="center"><img src="assets/mode-pair.svg" alt="Pair mode reads and grounds the ask, then stops at a gate where the director weighs in on what to build and the advisor on how. It builds, verifies, and stops at a second gate where the director reads the work and signs off before anything is committed. A failed verification or a change the director asks for returns to building, and delivering returns to the read." width="820"></p>
+
 ### `ic`
 
-The default, and the one to hold when no specialist fits. One senior pair of hands runs the whole loop while you stay in the room, borrowing each specialist's discipline without the ceremony.
+The same loop as `pair` without the director, for when a second reader would cost more than it saves. One senior pair of hands runs the whole loop while you stay in the room, borrowing each specialist's discipline without the ceremony.
 
 <p align="center"><img src="assets/mode-ic.svg" alt="IC mode runs one loop: read the ask, ground it in the repo, build, verify through something that can disagree, deliver. A failed verification returns to building." width="820"></p>
 

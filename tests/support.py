@@ -17,7 +17,7 @@ MODES = os.path.join(SKILL_DIR, "modes")
 STYLES = os.path.join(SKILL_DIR, "styles")
 HOOKS = os.path.join(PLUGIN, "hooks")
 
-COLORS = ("red", "green", "yellow", "blue", "magenta", "cyan", "grey", "sky", "pink")
+COLORS = ("red", "green", "yellow", "blue", "magenta", "cyan", "grey", "sky", "pink", "orange")
 EXITS = ("manual", "approved", "mr-opened")
 
 ABSENT = None

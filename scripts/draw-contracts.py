@@ -118,6 +118,15 @@ MODES = {
            "IC mode runs one loop: read the ask, ground it in the repo, build, verify through "
            "something that can disagree, deliver. A failed verification returns to building, and "
            "delivering returns to the read, because a session carries several asks."),
+    "pair": ([("Read and ground", 0), ("Director and advisor", 1), ("Build", 0), ("Verify", 0),
+              ("Director sign-off", 1), ("Deliver", 0)],
+             [(3, 2, "fails, so back to building"), (4, 2, "changes asked, back to building"),
+              (5, 0, "the next ask, read again")],
+             "Pair mode reads and grounds the ask, then stops at a gate where the director weighs in "
+             "on what to build and the advisor on how. It builds, verifies, and stops at a second "
+             "gate where the director reads the work and signs off before anything is committed. A "
+             "failed verification or a change the director asks for returns to building, and "
+             "delivering returns to the read."),
     "copilot": ([("Intake together", 0), ("Spec artifact", 0), ("Approval", 1), ("Dispatch team", 0),
                  ("Integrate", 0), ("Deliver", 0)],
                 [(4, 3, "fails review, back to the owner"),

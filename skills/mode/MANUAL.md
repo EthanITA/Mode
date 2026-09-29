@@ -1,10 +1,10 @@
 ---
 name: mode
-description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, goal, ic, studio, swarm, tdd, tester. Styles available: creative, edu, fast, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", when they ask what is currently active or type /why, and when they pin a contract to a directory.
+description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, goal, ic, pair, studio, swarm, tdd, tester. Styles available: creative, edu, fast, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", when they ask what is currently active or type /why, and when they pin a contract to a directory.
 user-invocable: true
 disable-model-invocation: false
 args: "[<name>|auto|off]"
-modes: autopilot, copilot, debug, goal, ic, studio, swarm, tdd, tester
+modes: autopilot, copilot, debug, goal, ic, pair, studio, swarm, tdd, tester
 styles: creative, edu, fast, native, ship, xyz
 ---
 
@@ -23,7 +23,7 @@ This manual drives the switching and nothing else. It is deliberately not a regi
 | Applies to | The shape of the turn | Every step of whatever mode is running |
 | Example | `copilot` stops on a question before dispatching a team | `fast` makes that question two lines instead of ten |
 
-The split is what keeps the file count down. Nine modes and six styles cover fifty-four combinations, so a new way of talking costs one file rather than nine rewrites.
+The split is what keeps the file count down. Ten modes and six styles cover sixty combinations, so a new way of talking costs one file rather than nine rewrites.
 
 The test for which folder a new contract belongs in is whether it has an order. If it says do this, then that, and stop here, it is a mode. If it only changes the texture of whatever you were already doing, it is a style.
 
@@ -153,7 +153,8 @@ Both this table and the `Modes available:` list in the front matter are written 
 | `copilot` | `modes/copilot.md` | Refine it together, then a team builds it while the user watches. |
 | `debug` | `modes/debug.md` | Find it, prove it reproduces, fix it, and draw why it happened. |
 | `goal` | `modes/goal.md` | Loop until it is truly done, verified for real and audited clean, twice in a row. |
-| `ic` | `modes/ic.md` | The all-rounder default. One senior contributor runs the whole loop, the user watches. |
+| `ic` | `modes/ic.md` | The all-rounder, alone. One senior contributor runs the whole loop, the user watches. |
+| `pair` | `modes/pair.md` | The default. You build it, a director teammate owns the outcome, the advisor checks your method. |
 | `studio` | `modes/studio.md` | Think together on one artifact, and it grows while you talk. |
 | `swarm` | `modes/swarm.md` | A gateway on a stream of work. Check briefly, route to an owner, hire when none fits, never build. |
 | `tdd` | `modes/tdd.md` | No implementation line exists before a test that fails for the right reason. |
@@ -186,7 +187,7 @@ One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the shipp
 - Front matter with `name`, matching the filename stem, and a one-line `summary`. The summary is what `mode list` prints and what the status line chip shows.
 - `enter-when`, `enter-never` and `exit-when`, per the table above. A contract with no `enter-when` can only be typed, and one with no `exit-when` behaves as `manual`. Write the line anyway, because an implied contract is one nobody can read off the file.
 - Any flag the contract declares, such as `no-implement: true` or `no-dispatch-without-approval: true`. A flag is **on** whenever the key is present and not explicitly switched off, so `true`, `yes`, `1` and even a typo all count as on. It is off only when the key is absent, empty, or set to one of `false`, `no`, `off`, `n` or `0`, in any case and with quotes stripped. These flags are opt-in restrictions and nobody writes one meaning to leave it off, so a misread lands with the gate closed rather than open. Two have hooks behind them: `no-dispatch-without-approval` refuses a teammate until a yes is recorded, and `no-code-without-red` refuses an edit to an implementation file while no watched failure stands. `no-implement` is still a declaration that no hook reads.
-- An optional `color`, one of red, green, yellow, blue, magenta, cyan, grey, sky or pink, which is what the status line chip uses. No two contracts on the same axis may share one, and the nine modes now hold all nine, so a tenth mode means a tenth colour in `bin/mode` and in the test that lists them.
+- An optional `color`, one of red, green, yellow, blue, magenta, cyan, grey, sky, pink or orange, which is what the status line chip uses. No two contracts on the same axis may share one, and the ten modes now hold all ten, so an eleventh mode means an eleventh colour in `bin/mode` and in the test that lists them.
 - An optional `steps`, on a mode only: the pipeline the contract runs, in order, comma separated. Each entry is a lowercase name, and a name ending in `?` is a gate the run stops at rather than a box it walks through. A name may carry `@event` after it, naming the event that records the step with nothing for the model to say, and the recorder publishes seven: `artifact` for a write under the artifacts folder, `approve` for an approval landing, `agent` for a teammate spawned, `question` for a question asked, `commit` for a commit, `test` for a test run that passed, and `test-fail` for one that failed. A step whose gate is a run the author watched fail names `test-fail`, which is how tdd's `red?` stays put on a green suite. A bare name has no event behind it, so reaching it is the model's own claim. Keep the names short. The status line draws them as a row of boxes and the whole drawing has to fit inside 78 columns, which a test measures for every mode that declares the key.
 - An optional `loops` beside it, carrying the backward edges the contract's own flowchart already draws: comma separated, each one `from>to` by step name, so copilot's `integrate>dispatch` is failed work going back to the IC that produced it. Both ends have to name a step in the same `steps` line. A pipeline that only runs forwards leaves the key out, and so does a mode with no `steps` at all.
 - A body carrying the full contract, at whatever length it needs.

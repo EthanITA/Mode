@@ -77,7 +77,7 @@ for axis, folder in axes.items():
            "%s is missing, so every check on this axis below is unrunnable" % folder)
         continue
     names = sorted(n for n in os.listdir(folder) if n.endswith(".md"))
-    expected = 9 if folder.endswith("modes") else 6
+    expected = 10 if folder.endswith("modes") else 6
     ok("%s/ holds %d contracts" % (os.path.relpath(folder, PLUGIN), expected),
        len(names) == expected, "found %d: %r" % (len(names), names))
 
@@ -210,8 +210,8 @@ ok("every shared colour falls on a pair the catalogue already calls related",
    "%r. Two chips in the same colour read as one setting, so the pairs that share one have to be "
    "pairs whose combination is already meaningful."
    % [p for p in collisions if p not in RELATED])
-# Nine modes take all nine colours, so every style still shares with one.
-ok("every style shares a colour, since the modes have taken all nine",
+# Ten modes take all ten colours, so every style still shares with one.
+ok("every style shares a colour, since the modes have taken all ten",
    len(collisions) == len(style_colour),
    "%d collisions against %d styles. Fewer means an axis is wasting a free colour; more means a "
    "colour is repeated inside one axis, which the check above should already have caught."
@@ -304,7 +304,7 @@ ok("no style declares a pipeline",
 section("tdd, and the guard now standing behind it")
 tdd = loaded["mode"].get("tdd")
 if tdd is None:
-    ok("modes/tdd.md exists", False, "the spec fixes nine modes and names tdd as one of them")
+    ok("modes/tdd.md exists", False, "the spec fixes ten modes and names tdd as one of them")
 else:
     ok("tdd declares no-code-without-red", tdd[0].get("no-code-without-red") == "true",
        "declared as %r. The guard reads the flag off the front matter, so without it the mode is "

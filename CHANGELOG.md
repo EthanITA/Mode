@@ -11,6 +11,22 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **`pair`, a tenth mode and the new default.** Claude keeps its hands on the whole loop and hears two
+  views built to differ. A teammate named `director`, spawned once per conversation one tier up (Opus
+  for Haiku and Sonnet, Fable for Opus) with no edit tools, owns the outcome as design director,
+  product director or tech lead, and is briefed with pointers rather than conclusions so it forms its
+  view from the work itself. Claude Code's `advisor` tool, when the session has one, reads the whole
+  transcript and checks the method against the evidence. What to build, scope, taste and the sign-off
+  go to the director; approach, evidence, being stuck and receipts go to the advisor. Both weigh in at
+  `plan?` and at `review?`, after verification and before any commit, with the director's brief never
+  carrying the advisor's view. On a split over direction the director's answer stands, and a sign-off
+  never stands in for the user's yes. `ic` is now the same loop without the director and no longer
+  calls itself the default. A fresh slot still starts empty, so making `pair` the default is
+  `cd ~ && mode mode pin pair`.
+- **A tenth chip colour, `orange`.** ANSI 256-colour 208, the first code outside the sixteen, because
+  the unused brights (91, 92, 93, 96, 97) sit too close to red, green, yellow, cyan and grey to read
+  apart, and the sidecar already paints `orange` in a tint no other mode holds. The ten modes hold
+  all ten colours again, so an eleventh mode means an eleventh colour.
 - **The sidecar's home page shows the conversations `claude agents` shows, and deletes them the same
   way.** The list used to be built from whichever sessions had left an artifact list behind, which on
   this machine meant 89 rows against the agent view's 9. It now takes its set from
