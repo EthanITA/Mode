@@ -5,15 +5,17 @@ repo uses, so a test that passes is a test the tool actually answered.
 """
 
 import hashlib
+import http.server
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import threading
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
-from support import (COLORS, crashed, fixture_root, flag_fixtures, live, ok, out, report,
+from support import (COLORS, MODE_BIN, crashed, fixture_root, flag_fixtures, live, ok, out, report,
                      require_tool, run, section, skip, write)
 
 LEAD = """---
@@ -1299,5 +1301,63 @@ with tempfile.TemporaryDirectory() as tmp:
     p = artifact("path", slug)
     ok("and the slug resolves back to the file from any conversation",
        out(p) == doc, "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
+
+
+READINGS = {
+    "wrap up": {"work": 0.9, "broadcast": 0.84, "session_aaaa1111": 0.4, "session_bbbb2222": 0.2},
+    "invest email": {"work": 0.95, "broadcast": 0.1, "session_aaaa1111": 0.88, "session_bbbb2222": 0.02},
+    "calendar bug": {"work": 0.96, "broadcast": 0.1, "session_aaaa1111": 0.04, "session_bbbb2222": 0.04},
+    "who edits the reel": {"work": 0.06, "broadcast": 0.07, "session_aaaa1111": 0.03, "session_bbbb2222": 0.97},
+    "both fit": {"work": 0.9, "broadcast": 0.1, "session_aaaa1111": 0.8, "session_bbbb2222": 0.9},
+}
+
+
+class FakeJev(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        reading = READINGS[body["state"]["request"]]
+        answers = {name: {"noul": p} for name, p in reading.items() if name in body["questions"]}
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(json.dumps({"answers": answers}).encode())
+
+    def log_message(self, *args):
+        pass
+
+
+section("triage, Jev's reading of where one request goes")
+jev = http.server.HTTPServer(("127.0.0.1", 0), FakeJev)
+threading.Thread(target=jev.serve_forever, daemon=True).start()
+with tempfile.TemporaryDirectory() as home:
+    write(os.path.join(home, "mode", "config.json"), json.dumps({"jev-url": "http://127.0.0.1:%d" % jev.server_port}))
+    for sid, title in (("aaaa1111-x", "[MF] Invest transferred amount"), ("bbbb2222-y", "[Nana] Chamonix reel")):
+        write(os.path.join(home, "sessions", sid + ".json"),
+              json.dumps({"sessionId": sid, "pid": os.getpid(), "name": title, "cwd": "/repo"}))
+    env = dict(os.environ, CLAUDE_CONFIG_DIR=home, OPENROUTER_API_KEY="test")
+    env.pop("CLAUDE_CODE_SESSION_ID", None)
+
+    def triage(request):
+        return subprocess.run([sys.executable, MODE_BIN, "triage", request], capture_output=True, text=True, env=env)
+
+    p = triage("wrap up")
+    ok("an instruction to sessions is relayed to every live one",
+       out(p).startswith("relay to aaaa1111") and "bbbb2222" in out(p), "out=%r err=%r" % (p.stdout, p.stderr))
+    p = triage("invest email")
+    ok("work one session holds is relayed to that session alone",
+       out(p).startswith("relay to aaaa1111") and "bbbb2222 [" not in out(p), "out=%r err=%r" % (p.stdout, p.stderr))
+    p = triage("calendar bug")
+    ok("work nobody holds starts a new conversation", out(p).startswith("new ("), "out=%r err=%r" % (p.stdout, p.stderr))
+    p = triage("who edits the reel")
+    ok("a question a look settles is answered here, naming the session it is about",
+       out(p).startswith("answer about bbbb2222"), "out=%r err=%r" % (p.stdout, p.stderr))
+    p = triage("both fit")
+    ok("two sessions that both fit go back to the user", out(p).startswith("ask between aaaa1111"),
+       "out=%r err=%r" % (p.stdout, p.stderr))
+
+    write(os.path.join(home, "mode", "config.json"), json.dumps({"jev-url": "http://127.0.0.1:9"}))
+    p = triage("wrap up")
+    ok("with no reading it exits 1 and leaves the call to the dispatcher",
+       p.returncode == 1 and "yours to decide" in p.stderr, "rc=%s err=%r" % (p.returncode, p.stderr))
+jev.shutdown()
 
 report()

@@ -837,6 +837,19 @@ def cmd_red(args):
     print(RED)
 
 
+def cmd_triage(args):
+    """Jev's reading of where one request goes, so the dispatcher starts from more than its own read."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from _triage import triage
+    verdict = triage(args.request)
+    if not verdict:
+        die("Jev gave no reading, so the outcome is yours to decide.", 1)
+    targets = "; ".join(f"{s.key} {s.title}".strip() for s in verdict.targets)
+    joint = {"answer": " about ", "ask": " between "}.get(verdict.outcome, " to ")
+    reading = ", ".join(f"{name} {p:.2f}" for name, p in verdict.reading.items())
+    print(verdict.outcome + (joint + targets if targets else "") + f" ({reading})")
+
+
 def cmd_clear(args):
     if args.announced:
         for axis in AXES:
@@ -1139,6 +1152,9 @@ def main():
     add("adopt", cmd_adopt, "fill an untouched slot from the nearest pin, or exit 1 when none applies")
 
     add("red", cmd_red, "print test-fail while a watched failure stands, or exit 1 once a pass closes it")
+
+    p = add("triage", cmd_triage, "Jev's outcome for one request: new, relay, answer or ask, with its target")
+    p.add_argument("request")
 
     add("why", cmd_why, "slots, pipeline, gates, ground rules and what the next prompt will carry")
 
