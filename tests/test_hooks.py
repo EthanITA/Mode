@@ -885,7 +885,7 @@ with tempfile.TemporaryDirectory() as tmp:
        "verdict=%r. Write, Edit and NotebookEdit share one fence." % decision(p)[0])
 
     p = router_fire(dict(base, session_id=dispatcher_sid, agent_id="sub-123"))
-    ok("a prompt-engineer subagent under dispatcher is not caught by the lead's ban", not decision(p)[0],
+    ok("a subagent under dispatcher is not caught by the lead's ban", not decision(p)[0],
        "denied with %r. agent_id marks a subagent call, which the fence leaves alone." % decision(p)[1][:200])
 
     mode(dispatcher_sid, "set", "ic")

@@ -156,7 +156,7 @@ Both this table and the `Modes available:` list in the front matter are written 
 | `autopilot` | `modes/autopilot.md` | The user wants X and is away. Every decision is Claude's, one report waits. |
 | `copilot` | `modes/copilot.md` | Refine it together, then a team builds it while the user watches. |
 | `debug` | `modes/debug.md` | Find it, prove it reproduces, fix it, and draw why it happened. |
-| `dispatcher` | `modes/dispatcher.md` | Handle several requests at once. Read-only: explore, engineer a prompt per request, start or reuse a session. |
+| `dispatcher` | `modes/dispatcher.md` | Triage each request into a new conversation, a relay to a live one, or an answer here. Read-only, delivers nothing. |
 | `goal` | `modes/goal.md` | Loop until it is truly done, verified for real and audited clean, twice in a row. |
 | `ic` | `modes/ic.md` | The all-rounder, alone. One senior contributor runs the whole loop, the user watches. |
 | `pair` | `modes/pair.md` | The default. You build it, a director teammate owns the outcome, the advisor checks your method. |

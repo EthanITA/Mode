@@ -239,7 +239,7 @@ For when "it works" is only half of done. A channel is anything that can disagre
 
 Several requests at once, each of which belongs in a conversation of its own. It never writes: `router-guard` denies `Write`, `Edit` and `NotebookEdit` while it is held. A prompt engineer teammate on Opus at max effort writes one prompt per request, and each goes to a live session that holds the topic or starts a new one on Sonnet at xhigh effort, told to spawn an Opus medium director.
 
-<p align="center"><img src="assets/mode-dispatcher.svg" alt="Dispatcher splits a batch of requests and looks just far enough to know where each one belongs. A prompt engineer on Opus at max effort writes one prompt per request, and each goes to a live session or starts a new one. It never writes a file." width="820"></p>
+<p align="center"><img src="assets/mode-dispatcher.svg" alt="Dispatcher splits a batch of requests and grounds each just far enough to triage it: a new conversation for work nobody holds, a relay to the live session that holds it, or an answer here when a look settles it. It never writes a file and delivers nothing itself." width="820"></p>
 
 ### `tester`
 

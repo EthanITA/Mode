@@ -174,12 +174,11 @@ MODES = {
               "routing it, and dispatches a clear one to the owner of those files or to one hired "
               "for them. Once every owner has handed back it sits in delivered and waits. The next "
               "ask goes round to triage again, and retiring the fleet is the only way out."),
-    "dispatcher": ([("Split the batch", 1), ("Ground each request", 0), ("Engineer the prompts", 0),
-                    ("Start or message a session", 0)],
-                   [(3, 0, "more arrives, so split it again")],
-                   "Dispatcher splits a batch of requests and looks just far enough to know where each "
-                   "one belongs. It writes one prompt per request, and each goes to a live session or "
-                   "starts a new one. It never writes a file."),
+    "dispatcher": ([("Split the batch", 1), ("Ground each request", 0), ("Triage: new, relay or answer", 0)],
+                   [(2, 0, "more arrives, so split it again")],
+                   "Dispatcher splits a batch of requests and grounds each just far enough to triage it: a "
+                   "new conversation for work nobody holds, a relay to the live session that holds it, or an "
+                   "answer here when a look settles it. It never writes a file and delivers nothing itself."),
     "studio": ([("Talk it through", 0), ("Onto the page now", 0), ("React to what is there", 0),
                 ("Widen or narrow", 0)], [(3, 0, "round again, rejected options stay visible")],
                "Studio is a cycle rather than a pipeline: talk, put it on the page immediately, "

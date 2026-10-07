@@ -11,10 +11,14 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
-- **`dispatcher`, an eleventh mode for a batch of requests.** It splits the batch, looks just far enough
-  to decide where each request belongs, and has a `prompt-engineer` teammate on Opus at max effort write
-  one prompt per request. Each goes to the live session that holds the topic, or starts a new one on
-  Sonnet at xhigh effort that is told to spawn an Opus medium `director`. It is read-only, and
+- **`dispatcher`, an eleventh mode for a batch of requests.** It splits the batch, grounds each request
+  just far enough to triage it, and every request ends as one of three outcomes: a new conversation in
+  `~/Notes` on Sonnet at xhigh effort, told to spawn an Opus medium `director`, a relay to the live
+  session that already holds it, or an answer here when a look settles it. `mode triage` gives each
+  request Jev's reading first, two yes-or-no questions and a match against every live session, in one
+  line and one 3 s call, silent without an OpenRouter key. It writes every prompt itself
+  in the user's voice, never waits on a reply, delivers nothing of its own, and titles its conversation as
+  the dispatcher rather than after any request. It is read-only, and
   `router-guard` now denies `Write`, `Edit` and `NotebookEdit` for it as it does for `swarm`, with a
   subagent call left alone. It needed an eleventh chip colour, so `violet` joins the palette. Nothing can
   switch a running session's model or effort, so when the lead is not on Sonnet at high effort the line

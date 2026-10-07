@@ -1,5 +1,5 @@
 ---
-description: "Handle several requests at once. Read-only: explore, engineer a prompt per request, start or reuse a session."
+description: "Triage each request into a new conversation, a relay to a live one, or an answer here. Read-only, delivers nothing."
 argument-hint: ""
 disable-model-invocation: true
 ---
