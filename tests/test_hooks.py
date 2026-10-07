@@ -893,18 +893,6 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("leaving dispatcher lifts the fence", not decision(p)[0],
        "denied with %r. The ban belongs to the held mode, not the session." % decision(p)[1][:200])
 
-    section("board-cap, which keeps open USER work bounded")
-    cap_guard = os.path.join(HOOKS, "guards", "board-cap.py")
-    cap_sid = "h-board-cap"
-    cap_dir = os.path.join(config, "tasks", "session-%s" % cap_sid[:8])
-    os.makedirs(cap_dir, exist_ok=True)
-
-    def seed_cap(*tasks):
-        for stale in _glob.glob(os.path.join(cap_dir, "*.json")):
-            os.remove(stale)
-        for task in tasks:
-            write(os.path.join(cap_dir, "%s.json" % task["id"]), json.dumps(task))
-
     section("director-guard.py, which keeps the director's hands off the work")
     dgd = os.path.join(HOOKS, "guards", "director-guard.py")
     lead = os.path.join(tempfile.mkdtemp(), "lead.jsonl")
@@ -954,6 +942,18 @@ with tempfile.TemporaryDirectory() as tmp:
     p = director_fire("TaskCreate", {"subject": "[AI] build it"}, agent_id=None)
     ok("and so does the lead, which carries no agent_id", not decision(p)[0],
        "denied with %r. The lead's board is its own." % decision(p)[1][:200])
+
+    section("board-cap, which keeps open USER work bounded")
+    cap_guard = os.path.join(HOOKS, "guards", "board-cap.py")
+    cap_sid = "h-board-cap"
+    cap_dir = os.path.join(config, "tasks", "session-%s" % cap_sid[:8])
+    os.makedirs(cap_dir, exist_ok=True)
+
+    def seed_cap(*tasks):
+        for stale in _glob.glob(os.path.join(cap_dir, "*.json")):
+            os.remove(stale)
+        for task in tasks:
+            write(os.path.join(cap_dir, "%s.json" % task["id"]), json.dumps(task))
 
     def cap_task(task_id, subject, status="pending"):
         return {"id": str(task_id), "subject": subject, "status": status}
