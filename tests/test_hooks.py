@@ -874,6 +874,25 @@ with tempfile.TemporaryDirectory() as tmp:
        "denied with %r. agent_id only appears inside a subagent call, so an owner building under swarm "
        "must not be caught by the router's own ban." % decision(p)[1][:200])
 
+    dispatcher_sid = "h-dispatcher"
+    mode(dispatcher_sid, "set", "dispatcher")
+    p = router_fire(dict(base, session_id=dispatcher_sid))
+    ok("the dispatcher's own write is denied", decision(p)[0] == "deny" and "dispatches" in decision(p)[1],
+       "verdict=%r. Dispatcher explores and dispatches, so its own hands stay off every file." % decision(p)[0])
+
+    p = router_fire(dict(base, session_id=dispatcher_sid, tool_name="Edit"))
+    ok("the dispatcher's edit is denied too", decision(p)[0] == "deny",
+       "verdict=%r. Write, Edit and NotebookEdit share one fence." % decision(p)[0])
+
+    p = router_fire(dict(base, session_id=dispatcher_sid, agent_id="sub-123"))
+    ok("a prompt-engineer subagent under dispatcher is not caught by the lead's ban", not decision(p)[0],
+       "denied with %r. agent_id marks a subagent call, which the fence leaves alone." % decision(p)[1][:200])
+
+    mode(dispatcher_sid, "set", "ic")
+    p = router_fire(dict(base, session_id=dispatcher_sid))
+    ok("leaving dispatcher lifts the fence", not decision(p)[0],
+       "denied with %r. The ban belongs to the held mode, not the session." % decision(p)[1][:200])
+
     section("board-cap, which keeps open USER work bounded")
     cap_guard = os.path.join(HOOKS, "guards", "board-cap.py")
     cap_sid = "h-board-cap"

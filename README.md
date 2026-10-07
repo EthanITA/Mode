@@ -158,6 +158,7 @@ A **mode** is how the work runs: steps, gates, and a point where you can say it 
 | `ic` | The same loop without the director. Any ask, one pair of hands, you in the room. Borrows each specialist's discipline without the ceremony. | you say so |
 | `copilot` | The work splits into several independent domains and you want a team to build it while you watch | you say so |
 | `swarm` | The same team without the spec. A standing roster of owners, each holding one domain, and every ask routed to whoever owns it | you say so |
+| `dispatcher` | You have several requests at once and want a session per request without typing each prompt. Read-only: it explores, has a prompt engineer write the prompts, and starts or reuses the sessions | you say so |
 | `autopilot` | You want a result and you are walking away. Every decision is Claude's, one report waits. Typed only, never auto-chosen. | the MR opens |
 | `debug` | Something is broken and nobody knows where. Instrument, reproduce, fix the cause, explain why. | you approve the explainer |
 | `tdd` | You want the test to exist before the code, failing for the right reason | you say so |

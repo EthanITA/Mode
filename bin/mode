@@ -27,10 +27,10 @@ GATES = {"no-dispatch-without-approval": ("spawning a teammate", False),
 MARK = {"chosen": "~", "pinned": "="}
 # A hook repeats this every turn, so each axis is capped and the pair still fits in eight lines.
 STANDING_LINES = 4
-# One colour per mode. Orange is 256-colour because no unused 16-colour code reads apart from these.
+# One colour per mode. Orange and violet are 256-colour because no unused 16-colour code reads apart from these.
 COLORS = {"red": "31", "green": "32", "yellow": "33", "blue": "34",
           "magenta": "35", "cyan": "36", "grey": "90", "sky": "94", "pink": "95",
-          "orange": "38;5;208"}
+          "orange": "38;5;208", "violet": "38;5;141"}
 RESET = "\x1b[0m"
 # Both are East Asian Wide: a narrow emoji here measures one column and renders two, misaligning the row.
 CHIP_ICON = {"mode": "\U0001f9ed", "style": "\U0001f4ac"}

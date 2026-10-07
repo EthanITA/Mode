@@ -235,6 +235,12 @@ For when "it works" is only half of done. A channel is anything that can disagre
 
 <p align="center"><img src="assets/mode-goal.svg" alt="Goal loops: implement, verify through a channel that could disagree, then hand the diff to a fresh subagent to audit against the project's own bar. Any finding restarts the loop, and it ends only after two consecutive clean rounds." width="820"></p>
 
+### `dispatcher`
+
+Several requests at once, each of which belongs in a conversation of its own. It never writes: `router-guard` denies `Write`, `Edit` and `NotebookEdit` while it is held. A prompt engineer teammate on Opus at max effort writes one prompt per request, and each goes to a live session that holds the topic or starts a new one on Sonnet at xhigh effort, told to spawn an Opus medium director.
+
+<p align="center"><img src="assets/mode-dispatcher.svg" alt="Dispatcher splits a batch of requests and looks just far enough to know where each one belongs. A prompt engineer on Opus at max effort writes one prompt per request, and each goes to a live session or starts a new one. It never writes a file." width="820"></p>
+
 ### `tester`
 
 A feature somebody else built needs sweeping. It ends in a verdict and fixes nothing, because a tester who fixes is reporting on their own work.

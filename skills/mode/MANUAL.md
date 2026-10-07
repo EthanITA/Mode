@@ -1,10 +1,10 @@
 ---
 name: mode
-description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, goal, ic, pair, studio, swarm, tdd, tester. Styles available: creative, edu, fast, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", when they ask what is currently active or type /why, and when they pin a contract to a directory.
+description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, dispatcher, goal, ic, pair, studio, swarm, tdd, tester. Styles available: creative, edu, fast, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", when they ask what is currently active or type /why, and when they pin a contract to a directory.
 user-invocable: true
 disable-model-invocation: false
 args: "[<name>|auto|off]"
-modes: autopilot, copilot, debug, goal, ic, pair, studio, swarm, tdd, tester
+modes: autopilot, copilot, debug, dispatcher, goal, ic, pair, studio, swarm, tdd, tester
 styles: creative, edu, fast, native, ship, xyz
 ---
 
@@ -156,6 +156,7 @@ Both this table and the `Modes available:` list in the front matter are written 
 | `autopilot` | `modes/autopilot.md` | The user wants X and is away. Every decision is Claude's, one report waits. |
 | `copilot` | `modes/copilot.md` | Refine it together, then a team builds it while the user watches. |
 | `debug` | `modes/debug.md` | Find it, prove it reproduces, fix it, and draw why it happened. |
+| `dispatcher` | `modes/dispatcher.md` | Handle several requests at once. Read-only: explore, engineer a prompt per request, start or reuse a session. |
 | `goal` | `modes/goal.md` | Loop until it is truly done, verified for real and audited clean, twice in a row. |
 | `ic` | `modes/ic.md` | The all-rounder, alone. One senior contributor runs the whole loop, the user watches. |
 | `pair` | `modes/pair.md` | The default. You build it, a director teammate owns the outcome, the advisor checks your method. |

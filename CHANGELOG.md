@@ -11,6 +11,14 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **`dispatcher`, an eleventh mode for a batch of requests.** It splits the batch, looks just far enough
+  to decide where each request belongs, and has a `prompt-engineer` teammate on Opus at max effort write
+  one prompt per request. Each goes to the live session that holds the topic, or starts a new one on
+  Sonnet at xhigh effort that is told to spawn an Opus medium `director`. It is read-only, and
+  `router-guard` now denies `Write`, `Edit` and `NotebookEdit` for it as it does for `swarm`, with a
+  subagent call left alone. It needed an eleventh chip colour, so `violet` joins the palette. Nothing can
+  switch a running session's model or effort, so when the lead is not on Sonnet at high effort the line
+  confirming the switch asks the user to type `/model sonnet` and `/effort high`.
 - **`pair`, a tenth mode and the new default.** Claude keeps its hands on the whole loop and hears two
   views built to differ. A teammate named `director`, spawned once per conversation one tier up (Opus
   for Haiku and Sonnet, Fable for Opus) with no edit tools, owns the outcome as design director,
