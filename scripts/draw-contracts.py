@@ -178,8 +178,8 @@ MODES = {
                     ("Start or message a session", 0)],
                    [(3, 0, "more arrives, so split it again")],
                    "Dispatcher splits a batch of requests and looks just far enough to know where each "
-                   "one belongs. A prompt engineer on Opus at max effort writes one prompt per request, "
-                   "and each goes to a live session or starts a new one. It never writes a file."),
+                   "one belongs. It writes one prompt per request, and each goes to a live session or "
+                   "starts a new one. It never writes a file."),
     "studio": ([("Talk it through", 0), ("Onto the page now", 0), ("React to what is there", 0),
                 ("Widen or narrow", 0)], [(3, 0, "round again, rejected options stay visible")],
                "Studio is a cycle rather than a pipeline: talk, put it on the page immediately, "

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 662 150" width="662" height="150" role="img" aria-label="Dispatcher splits a batch of requests and looks just far enough to know where each one belongs. A prompt engineer on Opus at max effort writes one prompt per request, and each goes to a live session or starts a new one. It never writes a file.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 662 150" width="662" height="150" role="img" aria-label="Dispatcher splits a batch of requests and looks just far enough to know where each one belongs. It writes one prompt per request, and each goes to a live session or starts a new one. It never writes a file.">
 <style>
   .t{font:600 12px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#1f2328}
   .s{font:10.5px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#656d76}
