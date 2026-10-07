@@ -5,8 +5,8 @@ color: violet
 enter-when: dispatcher|dispatch mode|dispatch these|one session per request|a session for each|handle these in parallel
 exit-when: manual
 no-implement: true
-steps: split, ground, engineer@agent, dispatch@agent, track
-loops: track>split
+steps: split, ground, engineer@agent, dispatch
+loops: dispatch>split
 ---
 
 # Dispatcher mode
@@ -38,8 +38,7 @@ flowchart LR
     E --> V[You check each prompt against what you read]
     V -- a claim you cannot trace --> E
     V --> D[Start a new session or message a live one]
-    D --> T[One board item per session]
-    T -- more arrives --> S
+    D -- more arrives --> S
 ```
 
 ## Split and ground
@@ -70,10 +69,10 @@ The first brief lets it start cold. It carries the requests as the user typed th
 Every prompt it returns is held to the same bar, because it is going to land in the receiving session as the user's own words:
 
 - It states what the user wants done, in the first person and the user's phrasing, and never describes the user in the third person.
-- It names the ticket or link, where the decisions live, what to check before acting, and which files, branches or sessions another conversation owns.
+- It names the ticket or link, where the decisions live, what to check before acting, and which files, branches or sessions another conversation owns. It gives the repo's absolute path as where the work happens and where its `git` runs, because the session starts outside the repo.
 - It says what that session may do and what it may not. Anything outward-facing, such as a comment, a push, a ticket or a merge request, is allowed only where the user asked for exactly that.
-- It tells the session to work in pair mode and spawn its `director` on Opus at medium effort, unless the user asked for something else on that request.
-- It says how to report back and signs off with this session's name, so the other side can answer.
+- For a new session it tells that session to work in pair mode and spawn its `director` on Opus at medium effort, unless the user asked for something else on that request. A message to a live session leaves its mode alone.
+- It carries no sign-off and asks for no report back, even where the setup's relay rules ask for one, because the user follows up in that session themselves.
 - It leaves out anything nobody read. A fact in a prompt is one you or the engineer read this session, and a guess is written as a guess.
 
 ## Check, then send
@@ -85,18 +84,13 @@ Then each request takes the first row that fits.
 | The request is about | You do |
 |---|---|
 | A topic a live session already holds | Message that session by name, and say whether it answers a question it is waiting on or is about something else |
-| Nothing a live session holds | Start a new background session in the repo's working directory, with the prompt as its first message |
-| A repo whose workspace refuses to start | Say so. Start from the nearest trusted parent only when the prompt tells that session to read through the remote and leave the checkout alone |
+| Nothing a live session holds | Start a new background session in `~/Notes`, never in the repo, with the prompt as its first message |
 
-Never send one prompt to several sessions, and never guess between two live sessions that both fit: show the user the two lines and ask.
+Never send one prompt to several sessions, because two of them would do the same work. An instruction the user wants several sessions to hear, such as wrapping up or picking up where they left off, goes to each one as its own message. Never guess between two live sessions that both fit: show the user the two lines and ask.
 
 Starting a session and messaging one are done with the setup's own relay tool when it has one, and with `claude --bg` and `SendMessage` otherwise. A session that is refused is reported with its reason, and nothing takes its place.
 
 Every new session starts on Sonnet at xhigh effort, passed as `--model sonnet --effort xhigh` to the relay tool or to `claude --bg`, unless the user named another model or effort for that request. A message to a live session cannot change what it runs on, so it keeps its own.
-
-## Track
-
-One board item per dispatched request, carrying the session name and key and the working directory in `metadata`. It waits on that session, so it is a `[WAIT]` item and never a `[USER]` one. It stays open until that session's report has been read. A report you cannot reach stays on the board as something the user collects, and you say so.
 
 ## Say almost nothing
 
@@ -108,7 +102,7 @@ The topic is the batch in hand. A request that arrives later and is unrelated to
 
 ## When it starts and when it ends
 
-`enter-when` matches somebody handing over several requests to be handled in separate conversations. `exit-when: manual`, so only `/mode off` ends it, because the next batch should find the same engineer already warm.
+`enter-when` matches somebody handing over several requests to be handled in separate conversations. A request is finished once its session has started or its message has been delivered, because the user follows up in that session themselves, so nothing here waits on it or relays its replies. `exit-when` is `manual`, so only `/mode off` ends it and the next batch finds the same engineer already warm.
 
 This conversation is meant to run on Sonnet at high effort, since the reading and routing here is light and the depth is bought where it pays: the prompt engineer at Opus and max effort, and the dispatched sessions at Sonnet xhigh with an Opus medium director. Entering the mode cannot change the model of a running session, because no hook, plugin setting or peer message can and a command's `model` and `effort` last one turn. So when this session is not already on Sonnet at high effort, the line confirming the switch asks the user to type `/model sonnet` and `/effort high`, and says nothing about it otherwise.
 
@@ -116,5 +110,5 @@ This conversation is meant to run on Sonnet at high effort, since the reading an
 
 - Explore and dispatch, never write. Read only to decide where a request goes, never to answer it, and a change goes to the owning session as a prompt.
 - One request is one session. Split the batch, ask once for whatever is missing, and send the clear ones while that waits.
-- The `prompt-engineer`, Opus at max effort, writes every prompt in the user's voice. Check each against what you read, then start the session on Sonnet xhigh, with an Opus medium director, or message the live one.
-- One `[WAIT]` board item per session, one line per request in the reply, and nothing outward-facing unless the user asked for that exact thing.
+- The `prompt-engineer`, Opus at max effort, writes every prompt in the user's voice. Check each against what you read, then start the session in `~/Notes` on Sonnet xhigh, with an Opus medium director, or message the live one.
+- A request is done once its session has started or its message is delivered, and nothing here waits for an answer or passes one on. One line per request in the reply, and nothing outward-facing unless the user asked for that exact thing.

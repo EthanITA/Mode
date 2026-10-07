@@ -175,8 +175,8 @@ MODES = {
               "for them. Once every owner has handed back it sits in delivered and waits. The next "
               "ask goes round to triage again, and retiring the fleet is the only way out."),
     "dispatcher": ([("Split the batch", 1), ("Ground each request", 0), ("Engineer the prompts", 0),
-                    ("Start or message a session", 0), ("Track", 0)],
-                   [(4, 0, "more arrives, so split it again")],
+                    ("Start or message a session", 0)],
+                   [(3, 0, "more arrives, so split it again")],
                    "Dispatcher splits a batch of requests and looks just far enough to know where each "
                    "one belongs. A prompt engineer on Opus at max effort writes one prompt per request, "
                    "and each goes to a live session or starts a new one. It never writes a file."),
