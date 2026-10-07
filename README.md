@@ -217,6 +217,8 @@ That config file holds the plugin's own settings too: `guards` turns every guard
 `delivery` maps a path fragment to the receipt a delivery in that tree owes, such as
 `[["acme", "mr-merged"]]`. It ships empty, because only you know which of your trees owes what.
 
+`review-lines`, 30 when absent, is how many changed lines a `pair` commit may record before
+`pair-guard` wants the director to have answered after the last edit.
 ---
 
 ## Pinning a pair to a directory

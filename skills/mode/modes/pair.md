@@ -32,7 +32,7 @@ With no advisor tool in the session, the director takes both columns.
 
 ### Spawning the director
 
-Spawn it once per conversation, on the first ask that earns it, with `Agent`, `name` set to `director`, `model` set to its tier from the table, and a type without edit tools, such as `Plan`. The name stays its address after it goes idle, and a send resumes it with its context intact, so every later question is a `SendMessage` to `director`. Never spawn a second one, because the newer agent takes the name and the first one's context is lost.
+Spawn it once per conversation, on the first ask that earns it, with `Agent`, `name` set to `director`, `model` set to its tier from the table, and a read-only type such as `Plan`. A named teammate can keep tools its type would drop, so `director-guard` is what holds it: it denies the director any write, spawn, board item or git write. The name stays its address after it goes idle, and a send resumes it with its context intact, so every later question is a `SendMessage` to `director`. Never spawn a second one, because the newer agent takes the name and the first one's context is lost.
 
 The first brief has to let it start cold:
 
@@ -80,7 +80,7 @@ flowchart TD
 | **Changing course**, before you drop the agreed approach | Yes when the change alters what gets delivered | Yes when only the method changes |
 | **Review**, once the work is written and verified, before any commit | Reads the diff, the page or the file itself, and signs off or asks for changes | Checks that the verification you claim is really in the transcript |
 
-Orientation is not substantive work, so read, search and probe before the plan. Files on disk already survive an interrupted call, so nothing is committed before the review, and the commit and the delivery come after the director signs off.
+Orientation is not substantive work, so read, search and probe before the plan. Files on disk already survive an interrupted call, so nothing is committed before the review, and the commit and the delivery come after the director signs off. `pair-guard` holds that line: a commit over 30 changed lines is denied until the director has answered after your last edit.
 
 Scale it to the ask. A lookup, a one-line answer or a step dictated by output you just read needs neither reader. Anything the user will act on gets both at plan and at review. Each call is billed at that reader's rate, so the stuck and changing-course calls are for when they are true rather than a habit.
 

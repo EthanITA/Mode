@@ -31,6 +31,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   never stands in for the user's yes. `ic` is now the same loop without the director and no longer
   calls itself the default. A fresh slot still starts empty, so making `pair` the default is
   `cd ~ && mode mode pin pair`.
+- **Two guards hold `pair` to its own contract.** `director-guard` denies the director any write, spawn,
+  board item or git write over Bash, keyed on the name it was spawned under, read from its meta file
+  beside the lead's transcript, since a named teammate can keep tools its type would drop.
+  `pair-guard` denies the lead a commit over 30 changed lines, or `review-lines` in the config, until
+  the director has answered after the lead's last edit.
 - **Human prose outranks every mode, style and skill.** A contract's reminder is restated every turn
   while a ground rule is told once, so a contract that asked for another register won by repetition.
   A rules file can now declare `outranks: contracts`, and its own `## Standing reminder` is restated

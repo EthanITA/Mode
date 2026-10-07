@@ -905,6 +905,56 @@ with tempfile.TemporaryDirectory() as tmp:
         for task in tasks:
             write(os.path.join(cap_dir, "%s.json" % task["id"]), json.dumps(task))
 
+    section("director-guard.py, which keeps the director's hands off the work")
+    dgd = os.path.join(HOOKS, "guards", "director-guard.py")
+    lead = os.path.join(tempfile.mkdtemp(), "lead.jsonl")
+    # The shape a live payload carries: a bare id, and the name only in the meta file beside the lead's transcript.
+    director = "a4c36797db827b609"
+    for agent, name in ((director, "director"), ("a9b14b6d84d00b2ba", "tool-probe")):
+        write(os.path.join(lead[:-len(".jsonl")], "subagents", "agent-%s.meta.json" % agent),
+              json.dumps({"agentType": "general-purpose", "name": name}))
+
+    def director_fire(tool, tool_input, agent_id=director):
+        payload = {"session_id": "h-director", "hook_event_name": "PreToolUse", "tool_name": tool,
+                   "cwd": "/repo", "transcript_path": lead, "tool_input": tool_input}
+        if agent_id:
+            payload["agent_id"] = agent_id
+        return subprocess.run([sys.executable, dgd], capture_output=True, text=True,
+                              env=hook_env(PLUGIN, config), input=json.dumps(payload))
+
+    p = director_fire("Write", {"file_path": "/repo/src/thing.ts"})
+    ok("the director's write is denied, its name read from its meta file", decision(p)[0] == "deny"
+       and "never writes" in decision(p)[1],
+       "verdict=%r. The director reviews and decides, so a file it writes is a verdict skipped." % decision(p)[0])
+
+    p = director_fire("TaskCreate", {"subject": "[AI] check the retry path"})
+    ok("so is its board item, which goes in its reply instead", "lead boards it" in decision(p)[1],
+       "verdict=%r. The board is how the user watches the lead, and a director item muddles it." % decision(p)[0])
+
+    p = director_fire("Agent", {"prompt": "go"}, agent_id="adirector-2-8923b06016cfaadf")
+    ok("a teammate with no meta file is known by the name in its id, counter and all", decision(p)[0] == "deny",
+       "verdict=%r. A teammate's id carries its name, so it still holds when the meta file is missing." % decision(p)[0])
+
+    p = director_fire("Bash", {"command": "git status && git -C /repo commit -m wip"})
+    ok("a git write over Bash is denied", decision(p)[0] == "deny" and "commit" in decision(p)[1],
+       "verdict=%r. Committing is the lead's delivery, never the reviewer's." % decision(p)[0])
+
+    p = director_fire("Bash", {"command": "git branch -D old-work"})
+    ok("so is deleting a branch", decision(p)[0] == "deny",
+       "verdict=%r. A branch flag that deletes or moves one changes the repo." % decision(p)[0])
+
+    p = director_fire("Bash", {"command": "git diff --stat && git log -3 && git stash list && git branch -a"})
+    ok("while read-only git and probes pass", not decision(p)[0],
+       "denied with %r. The director checks the work for itself, so reading must stay open." % decision(p)[1][:200])
+
+    p = director_fire("Write", {"file_path": "/repo/src/thing.ts"}, agent_id="a9b14b6d84d00b2ba")
+    ok("another named agent writes untouched", not decision(p)[0],
+       "denied with %r. Only the director is fenced." % decision(p)[1][:200])
+
+    p = director_fire("TaskCreate", {"subject": "[AI] build it"}, agent_id=None)
+    ok("and so does the lead, which carries no agent_id", not decision(p)[0],
+       "denied with %r. The lead's board is its own." % decision(p)[1][:200])
+
     def cap_task(task_id, subject, status="pending"):
         return {"id": str(task_id), "subject": subject, "status": status}
 
