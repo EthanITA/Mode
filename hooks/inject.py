@@ -18,10 +18,20 @@ ENDED = (
 
 SET = "Set. The status line catches up when the conversation continues."
 
+# Claude Code caps a hook string at 10,000 characters and shows only the first 2,000 of a longer one.
+CAP = 9_500
+OVERFLOW = (
+    "Active mode: %s. Active style: %s. This context is over Claude Code's 10,000-character hook "
+    "limit, so only this preview is shown and the whole of it is in the file named above. Read that "
+    "file in full before anything else, because it holds the ground rules and the full mode and style "
+    "contracts, and they bind this conversation. Until then, these hold:"
+)
+
 # Anchored, so a quoted "/approve x" changes nothing. One token, then whatever was typed after it.
 COMMAND = re.compile(r"^/(\S+)((?:[ \t]+\S+)*)")
 # Two commands in one prompt stay two: read as one, the later became a bogus argument and vanished.
-CHUNK = re.compile(r"/\S+(?:[ \t]+(?!/)\S+)*")
+# Only at a word start, or "bin/mode off" in plain text would switch the mode off.
+CHUNK = re.compile(r"(?<!\S)/\S+(?:[ \t]+(?!/)\S+)*")
 VERBS = ("mode", "style", "approve", "why")
 PREFIX = "mode"
 WHY = "why"
@@ -201,13 +211,18 @@ try:
         blocks.append(announced)
 
     if blocks:
+        context = "\n\n".join(blocks)
+        if len(context.encode("utf-16-le")) // 2 > CAP:
+            held = [ask(axis, "get", *sid(session)) or "none" for axis in AXES]
+            lead = OVERFLOW % tuple(held)
+            context = "\n\n".join([lead, ask("standing", *sid(session)) or "", context])
         # additionalContext reaches the model only; the surface a person watches is the status-line chip.
         print(
             json.dumps(
                 {
                     "hookSpecificOutput": {
                         "hookEventName": "UserPromptSubmit",
-                        "additionalContext": "\n\n".join(blocks),
+                        "additionalContext": context,
                     },
                     "suppressOutput": True,
                 }
