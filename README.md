@@ -150,21 +150,23 @@ Both also accept `auto`, which lets a contract be picked from what you write. A 
 
 ### The modes
 
-A **mode** is how the work runs: steps, gates, and a point where you can say it finished.
+A **mode** is how the work runs: steps, gates, what it can deliver, and a point where you can say it finished.
 
-| Mode | Reach for it when | It ends |
-|---|---|---|
-| `pair` | **The default.** Any ask, Claude's hands on all of it, and two views built to differ: a `director` teammate one tier up owns the outcome and signs off before anything is committed, the advisor checks the method | you say so |
-| `ic` | The same loop without the director. Any ask, one pair of hands, you in the room. Borrows each specialist's discipline without the ceremony. | you say so |
-| `copilot` | The work splits into several independent domains and you want a team to build it while you watch | you say so |
-| `swarm` | The same team without the spec. A standing roster of owners, each holding one domain, and every ask routed to whoever owns it | you say so |
-| `dispatcher` | You have several requests at once and want each triaged without typing a prompt per request: a new conversation, a relay to the live one that holds it, or an answer here. Read-only, and it delivers nothing itself | you say so |
-| `autopilot` | You want a result and you are walking away. Every decision is Claude's, one report waits. Typed only, never auto-chosen. | the MR opens |
-| `debug` | Something is broken and nobody knows where. Instrument, reproduce, fix the cause, explain why. | you approve the explainer |
-| `tdd` | You want the test to exist before the code, failing for the right reason | you say so |
-| `goal` | It has to be truly finished: verified for real, then audited clean by fresh eyes, twice in a row | you say so |
-| `tester` | A feature somebody else built needs sweeping, and you want a verdict rather than a fix | you say so |
-| `studio` | You are thinking something through and want the ideas on a page that grows as you talk | you say so |
+| Mode | Reach for it when | Delivers | It ends |
+|---|---|---|---|
+| `pair` | **The default.** Any ask, Claude's hands on all of it, and two views built to differ: a `director` teammate one tier up owns the outcome and signs off before anything is committed, the advisor checks the method | answer, change, artifact, post | you say so |
+| `ic` | The same loop without the director. Any ask, one pair of hands, you in the room. Borrows each specialist's discipline without the ceremony. | answer, change, artifact, post | you say so |
+| `copilot` | The work splits into several independent domains and you want a team to build it while you watch | change, artifact | you say so |
+| `swarm` | The same team without the spec. A standing roster of owners, each holding one domain, and every ask routed to whoever owns it | change | you say so |
+| `dispatcher` | You have several requests at once and want each triaged without typing a prompt per request: a new conversation, a relay to the live one that holds it, or an answer here. Read-only | nothing | you say so |
+| `autopilot` | You want a result and you are walking away. Every decision is Claude's, one report waits. Typed only, never auto-chosen. | change | the MR opens |
+| `debug` | Something is broken and nobody knows where. Instrument, reproduce, fix the cause, explain why. | change, artifact | you approve the explainer |
+| `tdd` | You want the test to exist before the code, failing for the right reason | change | you say so |
+| `goal` | It has to be truly finished: verified for real, then audited clean by fresh eyes, twice in a row | change | you say so |
+| `tester` | A feature somebody else built needs sweeping, and you want a verdict rather than a fix | artifact | you say so |
+| `studio` | You are thinking something through and want the ideas on a page that grows as you talk | artifact | you say so |
+
+Every ask in a mode that delivers something gets a **north star**: one or more of answer, change, artifact and post, plus the one line it ends in, named with `mode deliverable change "the retry fix merged"`. When nothing is named, Jev reads the ask and records its reading for Claude to confirm. The hook restates it every turn, the status line shows it, and `deliverable-guard` refuses an edit, a commit, a push, an MR or a post outside it. How far a change ships is the project's `delivery` row, and `mode deliverables` prints both tables with how a change ships where you stand first.
 
 ### The styles
 
@@ -216,6 +218,8 @@ threads. Three lookups are worth knowing:
 That config file holds the plugin's own settings too: `guards` turns every guard off at once, and
 `delivery` maps a path fragment to the receipt a delivery in that tree owes, such as
 `[["acme", "mr-merged"]]`. It ships empty, because only you know which of your trees owes what.
+The same row is how far a change may ship there, a tree with no row shipping as a commit, so a push,
+an MR or a publish beyond it waits for the row or for `--ship` on the ask's deliverable.
 `review-lines`, 30 when absent, is how many changed lines a `pair` commit may record before
 `pair-guard` wants the director to have answered after the last edit.
 `mode triage` reads its key from `OPENROUTER_API_KEY` or the Keychain item `openrouter`, and

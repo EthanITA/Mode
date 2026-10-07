@@ -943,6 +943,50 @@ with tempfile.TemporaryDirectory() as tmp:
     ok("and so does the lead, which carries no agent_id", not decision(p)[0],
        "denied with %r. The lead's board is its own." % decision(p)[1][:200])
 
+    section("deliverable-guard.py, which holds every delivery act to the named north star")
+    deg = os.path.join(HOOKS, "guards", "deliverable-guard.py")
+    north = "h-north"
+    mode(north, "set", "pair")
+
+    def act_fire(tool, tool_input, **extra):
+        payload = dict({"session_id": north, "hook_event_name": "PreToolUse", "tool_name": tool,
+                        "cwd": "/work/repo", "tool_input": tool_input}, **extra)
+        return subprocess.run([sys.executable, deg], capture_output=True, text=True,
+                              env=hook_env(PLUGIN, config), input=json.dumps(payload))
+
+    def name_it(*words):
+        live(config, "deliverable", *(list(words) + ["--session", north]))
+
+    p = act_fire("Write", {"file_path": "/work/repo/src/thing.ts"})
+    ok("the first edit waits until a deliverable is named", "No deliverable is named" in decision(p)[1],
+       "verdict=%r. Without a north star there is nothing to hold the work to." % decision(p)[0])
+    p = act_fire("Write", {"file_path": os.path.join(tempfile.gettempdir(), "probe.py")})
+    ok("while a scratch file is never a deliverable", not decision(p)[0],
+       "denied with %r. A probe script is how the work gets checked, not part of it." % decision(p)[1][:200])
+
+    name_it("answer")
+    p = act_fire("Edit", {"file_path": "/work/repo/src/thing.ts"})
+    ok("an edit under an answer is a change the ask never named", "is a change" in decision(p)[1],
+       "verdict=%r." % decision(p)[0])
+
+    name_it("change", "the retry fix")
+    p = act_fire("Edit", {"file_path": "/work/repo/src/thing.ts"})
+    ok("once change is named the edit goes", not decision(p)[0], "denied with %r." % decision(p)[1][:200])
+    p = act_fire("Bash", {"command": "git -C /work/repo push"})
+    ok("a push past how the tree ships is refused, naming the fix", "--ship push" in decision(p)[1],
+       "verdict=%r. No delivery row matches, so this tree ships as a commit." % decision(p)[0])
+    p = act_fire("mcp__claude_ai_Gmail__send_message", {"to": "someone"})
+    ok("and so is a message the ask never asked to send", "add post" in decision(p)[1],
+       "verdict=%r." % decision(p)[0])
+    p = act_fire("Bash", {"command": "git -C /work/repo push"}, agent_id="a4c36797db827b609")
+    ok("a teammate works to its own charter, not the lead's north star", not decision(p)[0],
+       "denied with %r." % decision(p)[1][:200])
+
+    mode(north, "set", "dispatcher")
+    p = act_fire("Bash", {"command": "git -C /work/repo push"})
+    ok("a mode that delivers nothing has no north star to hold", not decision(p)[0],
+       "denied with %r." % decision(p)[1][:200])
+
     section("board-cap, which keeps open USER work bounded")
     cap_guard = os.path.join(HOOKS, "guards", "board-cap.py")
     cap_sid = "h-board-cap"

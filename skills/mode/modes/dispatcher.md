@@ -4,6 +4,7 @@ summary: Triage each request into a new conversation, a relay to a live one, or 
 color: violet
 enter-when: dispatcher|dispatch mode|dispatch these|one session per request|a session for each|handle these in parallel
 exit-when: manual
+deliverables: none
 no-implement: true
 steps: split, ground, triage
 loops: triage>split

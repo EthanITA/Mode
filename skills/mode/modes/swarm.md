@@ -4,6 +4,7 @@ summary: A gateway on a stream of work. Check briefly, route to an owner, hire w
 color: sky
 enter-when: swarm|fan out|fan it out|spin up agents|spawn agents|one owner per
 exit-when: manual
+deliverables: change
 no-implement: true
 steps: triage, dispatch@agent, deliver@commit, retire
 loops: deliver>triage, deliver>dispatch

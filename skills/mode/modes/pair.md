@@ -4,6 +4,7 @@ summary: The default. You build it, a director teammate owns the outcome, the ad
 color: orange
 enter-when: pair mode|pair on this|pair on it|with the director|past the director
 exit-when: manual
+deliverables: answer, change, artifact, post
 steps: read, ground, plan?, build, verify@test, review?, deliver@commit
 loops: verify>build, review>build, deliver>read
 ---

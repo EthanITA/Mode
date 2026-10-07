@@ -24,7 +24,7 @@ A **mode** answers *how the work runs*: it has steps, gates and a point where yo
 
 <p align="center"><img src="assets/axes.svg" alt="A grid of ten modes down the side against six styles across the top, making sixty combinations, with the cell where debug meets edu highlighted." width="620"></p>
 
-Keeping them apart is what keeps the file count down. Ten modes and six styles cover sixty combinations, so a new way of talking costs one file rather than nine rewrites.
+Keeping them apart is what keeps the file count down. Eleven modes and six styles cover sixty-six combinations, so a new way of talking costs one file rather than nine rewrites.
 
 **The test for which one a new idea is:** does it have an order of operations? If it says do this, then that, and stop here, it is a mode. If it only changes the texture of what you were already doing, it is a style.
 
@@ -183,9 +183,11 @@ The Gates section is the one worth knowing about before you need it. A guard ref
 
 ---
 
-## The ten modes
+## The eleven modes
 
 Each one is a pipeline. A yellow box is a gate, meaning the work genuinely stops there. A dashed line is a loop back.
+
+Each one also names what it can deliver in its front matter: an answer, a change, an artifact or a post, or nothing at all for `dispatcher`. The ask in hand narrows that to its own north star with `mode deliverable`, or Jev reads it from the ask, and how far a change then ships is the project's `delivery` row: a commit, a push, an MR or a publish. Every turn restates it, and `deliverable-guard` refuses an act outside it, such as a push in a tree that ships as a commit or a reply nobody asked to send. `mode deliverables` prints every mode against how a change ships where you stand.
 
 ### `pair`
 

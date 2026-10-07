@@ -9,6 +9,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _deliverable
+
 AUTO = "auto"
 OFF = "off"
 AXES = ("mode", "style")
@@ -33,7 +36,7 @@ COLORS = {"red": "31", "green": "32", "yellow": "33", "blue": "34",
           "orange": "38;5;208", "violet": "38;5;141"}
 RESET = "\x1b[0m"
 # Both are East Asian Wide: a narrow emoji here measures one column and renders two, misaligning the row.
-CHIP_ICON = {"mode": "\U0001f9ed", "style": "\U0001f4ac"}
+CHIP_ICON = {"mode": "\U0001f9ed", "style": "\U0001f4ac", "deliverable": "\U0001f3af"}
 DEFAULT_USER = "the user"
 USER_TOKEN = "{{USER}}"
 # Silence here would leave the status-line chip naming a contract whose rules nobody can read.
@@ -168,11 +171,49 @@ def drop_slot(axis: str, sid: str | None):
         p = state_path(sid, suffix)
         if p:
             p.unlink(missing_ok=True)
-    # An approval outlives its mode only as a gate nobody meant to leave open.
+    # An approval outlives its mode only as a gate nobody meant to leave open, and so does a north star.
     if axis == "mode":
-        p = state_path(sid, ".approved")
-        if p:
-            p.unlink(missing_ok=True)
+        for suffix in (".approved", ".deliverable"):
+            p = state_path(sid, suffix)
+            if p:
+                p.unlink(missing_ok=True)
+
+
+def deliverable(sid: str | None) -> dict:
+    path = state_path(sid, ".deliverable")
+    try:
+        found = json.loads(path.read_text(errors="replace")) if path and path.is_file() else {}
+    except (OSError, ValueError):
+        return {}
+    return found if isinstance(found, dict) else {}
+
+
+def save_deliverable(sid: str | None, state: dict):
+    path = require(state_path(sid, ".deliverable"))
+    if not state.get("intents"):
+        path.unlink(missing_ok=True)
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(state) + "\n")
+
+
+def delivers(sid: str | None) -> tuple[str, ...]:
+    name = held("mode", sid)
+    return _deliverable.mode_delivers(meta_of("mode", name)) if name and name != AUTO else ()
+
+
+def open_board(sid: str | None) -> list[str]:
+    """The open board items, so a bare "go" reads against what is already in flight."""
+    folder = config_home().parent / "tasks" / f"session-{session_key(sid)}"
+    subjects = []
+    for path in sorted(folder.glob("*.json")):
+        try:
+            task = json.loads(path.read_text(errors="replace"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(task, dict) and task.get("status") != "completed" and task.get("subject"):
+            subjects.append(str(task["subject"]))
+    return subjects
 
 
 def stamp(name: str, value: str) -> str:
@@ -399,6 +440,11 @@ def cmd_set(args):
         print(f"{axis} set to off")
         return
     write_state(state_path(args.session, f".{axis}"), args.name)
+    if axis == "mode":
+        # A new mode keeps only the parts of the north star it can still deliver.
+        state = deliverable(args.session)
+        save_deliverable(args.session, dict(state, intents=[i for i in state.get("intents") or []
+                                                            if i in delivers(args.session)]))
     # Typing the name is the normal case, so an unflagged set is what leaves the slot unmarked.
     for kind in ("chosen", "pinned"):
         state_path(args.session, f".{axis}.{kind}").unlink(missing_ok=True)
@@ -431,6 +477,12 @@ def cmd_chips(args):
             # An empty slot renders as off rather than vanishing, so the line always has both entries.
             label = OFF
         parts.append(f"{CHIP_ICON[axis]} {label}")
+    if delivers(args.session):
+        state = deliverable(args.session)
+        named = "+".join(state.get("intents") or [])
+        # The same mark as a chosen slot: something read it off the ask rather than somebody naming it.
+        parts.append(f"{CHIP_ICON['deliverable']} " + ((MARK["chosen"] if state.get("source") == "jev" else "")
+                                                       + named if named else "none"))
     print("  ".join(parts))
 
 
@@ -546,7 +598,7 @@ def cmd_show(args):
 
 def cmd_announce(args):
     """What a hook injects: the whole contract on the turn it is entered, the reminder after."""
-    blocks = []
+    blocks, folder = [], str(where(args.path))
     for axis in AXES:
         name = held(axis, args.session)
         # auto holds no contract, so announcing it would inject the unreadable sentence forever.
@@ -560,8 +612,11 @@ def cmd_announce(args):
             blocks.append(f"{head}\n\n{UNREADABLE % name}")
             continue
         # Every turn, not only the first: a position restated is what keeps the pipeline from drifting.
-        where = position(axis, args.session)
-        tail = f"\n\n{where}" if where else ""
+        lines = [position(axis, args.session)]
+        if axis == "mode" and delivers(args.session):
+            lines.append(_deliverable.announce(deliverable(args.session), name, delivers(args.session), folder))
+        said = "\n".join(line for line in lines if line)
+        tail = f"\n\n{said}" if said else ""
         marker = state_path(args.session, f".{axis}.announced")
         if marker and read_state(marker) == name:
             blocks.append(f"{head}\n\n" + "\n".join(block.splitlines()[:STANDING_LINES]) + tail)
@@ -837,9 +892,56 @@ def cmd_red(args):
     print(RED)
 
 
+def cmd_deliverable(args):
+    """The north star of the ask in hand, in the words the hook restates every turn."""
+    sid, folder, offered = args.session, str(where(args.path)), delivers(args.session)
+    words, state = list(args.words), deliverable(args.session)
+    if not words:
+        if not state.get("intents"):
+            raise SystemExit(1)
+        print(_deliverable.describe(state, folder))
+        return
+    verb, rest = words[0], words[1:]
+    if verb == "check":
+        # A mode that delivers nothing has no north star to hold an act to.
+        reason = _deliverable.check(rest[0] if rest else "", state, folder) if offered else None
+        if reason:
+            print(reason)
+            raise SystemExit(1)
+        return
+    if verb == "read":
+        if offered and not state.get("intents"):
+            found = _deliverable.read(args.message or "", held("mode", sid), offered, open_board(sid))
+            if found:
+                save_deliverable(sid, {"intents": found, "line": "", "ship": "", "source": "jev"})
+        return
+    if verb == "done":
+        dropped = set(rest) or set(_deliverable.INTENTS)
+        save_deliverable(sid, dict(state, intents=[i for i in state.get("intents") or [] if i not in dropped]))
+        return
+    if not offered:
+        die(f"{held('mode', sid) or 'No mode'} tracks no deliverable, so there is nothing to name.", 2)
+    intents = [i for i in _deliverable.INTENTS if i in words]
+    outside = [i for i in intents if i not in offered]
+    if not intents or outside:
+        die(f"{held('mode', sid)} delivers {', '.join(offered)}, so name one or more of those, then the one "
+            f"line the ask ends in.", 2)
+    ship = _deliverable.ship_name(args.ship or "")
+    if ship and ship not in _deliverable.SHIPS:
+        die(f"--ship takes commit, push, mr or publish, not {args.ship!r}.", 2)
+    line = " ".join(w for w in words if w not in _deliverable.INTENTS)
+    save_deliverable(sid, {"intents": intents, "line": line, "ship": ship, "source": "set"})
+    print(_deliverable.describe(deliverable(sid), folder))
+
+
+def cmd_deliverables(args):
+    """Every mode against how a change ships where you stand, then every project's row."""
+    rows = [(name, _deliverable.mode_delivers(meta_of("mode", name))) for name in names("mode")]
+    print(_deliverable.tables(rows, str(where(args.path))))
+
+
 def cmd_triage(args):
     """Jev's reading of where one request goes, so the dispatcher starts from more than its own read."""
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
     from _triage import triage
     verdict = triage(args.request)
     if not verdict:
@@ -1155,6 +1257,15 @@ def main():
 
     p = add("triage", cmd_triage, "Jev's outcome for one request: new, relay, answer or ask, with its target")
     p.add_argument("request")
+
+    p = add("deliverable", cmd_deliverable,
+            "the ask's north star: show it, name it, mark it done, check an act against it, or let Jev read it")
+    p.add_argument("words", nargs="*", metavar="intent|done|check|read",
+                   help="answer, change, artifact or post, then the one line it ends in")
+    p.add_argument("--ship", metavar="HOW", help="how far a change goes for this ask: commit, push, mr or publish")
+    p.add_argument("--message", metavar="TEXT", help="the prompt `read` gives Jev")
+
+    add("deliverables", cmd_deliverables, "what each mode delivers, and how a change ships here and per project")
 
     add("why", cmd_why, "slots, pipeline, gates, ground rules and what the next prompt will carry")
 

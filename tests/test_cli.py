@@ -1309,13 +1309,14 @@ READINGS = {
     "calendar bug": {"work": 0.96, "broadcast": 0.1, "session_aaaa1111": 0.04, "session_bbbb2222": 0.04},
     "who edits the reel": {"work": 0.06, "broadcast": 0.07, "session_aaaa1111": 0.03, "session_bbbb2222": 0.97},
     "both fit": {"work": 0.9, "broadcast": 0.1, "session_aaaa1111": 0.8, "session_bbbb2222": 0.9},
+    "write it up as a page": {"change": 0.1, "artifact": 0.92, "post": 0.03},
 }
 
 
 class FakeJev(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        reading = READINGS[body["state"]["request"]]
+        reading = READINGS[body["state"].get("request") or body["state"].get("ask")]
         answers = {name: {"noul": p} for name, p in reading.items() if name in body["questions"]}
         self.send_response(200)
         self.end_headers()
@@ -1333,7 +1334,7 @@ with tempfile.TemporaryDirectory() as home:
     for sid, title in (("aaaa1111-x", "[MF] Invest transferred amount"), ("bbbb2222-y", "[Nana] Chamonix reel")):
         write(os.path.join(home, "sessions", sid + ".json"),
               json.dumps({"sessionId": sid, "pid": os.getpid(), "name": title, "cwd": "/repo"}))
-    env = dict(os.environ, CLAUDE_CONFIG_DIR=home, OPENROUTER_API_KEY="test")
+    env = dict(os.environ, CLAUDE_CONFIG_DIR=home, OPENROUTER_API_KEY="test", MODE_JEV="")
     env.pop("CLAUDE_CODE_SESSION_ID", None)
 
     def triage(request):
@@ -1358,6 +1359,55 @@ with tempfile.TemporaryDirectory() as home:
     p = triage("wrap up")
     ok("with no reading it exits 1 and leaves the call to the dispatcher",
        p.returncode == 1 and "yours to decide" in p.stderr, "rc=%s err=%r" % (p.returncode, p.stderr))
+
+
+section("deliverable, the north star of the ask in hand")
+with tempfile.TemporaryDirectory() as home:
+    write(os.path.join(home, "mode", "config.json"),
+          json.dumps({"delivery": [["acme", "mr-merged"]], "jev-url": "http://127.0.0.1:%d" % jev.server_port}))
+    for name, delivers in (("allround", "answer, change, artifact, post"), ("pages", "artifact")):
+        write(os.path.join(home, "mode", "modes", name + ".md"),
+              "---\nname: %s\nsummary: a fixture\ncolor: blue\nexit-when: manual\ndeliverables: %s\n---\n\n"
+              "Body.\n\n## Standing reminder\n\nHold the line.\n" % (name, delivers))
+    env = dict(os.environ, CLAUDE_CONFIG_DIR=home, OPENROUTER_API_KEY="test", MODE_JEV="",
+               CLAUDE_CODE_SESSION_ID="d311ab1e-north")
+
+    def mode(*args, path="/work/acme/repo"):
+        return subprocess.run([sys.executable, MODE_BIN] + list(args) + ["--path", path],
+                              capture_output=True, text=True, env=env)
+
+    mode("mode", "set", "allround")
+    p = mode("announce")
+    ok("with nothing named, every turn says so and how a change ships here",
+       "Deliverable: none named" in out(p) and "an MR, done when merged (the `acme` row)" in out(p), out(p)[-400:])
+    ok("and the chip says none", "\U0001f3af none" in out(mode("chips")), out(mode("chips")))
+
+    p = mode("deliverable", "change", "the retry fix merged")
+    ok("naming it reads back the intent, how it ships and its one line",
+       out(p) == "change, and a change here ships as an MR, done when merged (the `acme` row). "
+                 "the retry fix merged.", out(p))
+    ok("a push in that tree fits", mode("deliverable", "check", "push").returncode == 0, "")
+    p = mode("deliverable", "check", "push", path="/work/other")
+    ok("a push in a tree with no row goes past a commit, and the refusal names both fixes",
+       p.returncode == 1 and "`delivery` row" in out(p) and "--ship push" in out(p), out(p))
+    p = mode("deliverable", "check", "post")
+    ok("a post the ask never asked for is refused", p.returncode == 1 and "add post" in out(p), out(p))
+
+    mode("mode", "set", "pages")
+    ok("a mode that cannot deliver a change drops it", mode("deliverable").returncode == 1, out(mode("deliverable")))
+    p = mode("deliverable", "change", "x")
+    ok("and refuses to name one", p.returncode == 2 and "pages delivers artifact" in p.stderr, p.stderr)
+
+    mode("deliverable", "read", "--message", "write it up as a page")
+    ok("Jev's reading of an ask is recorded as its own, marked on the chip",
+       "\U0001f3af ~artifact" in out(mode("chips")), out(mode("chips")))
+    mode("deliverable", "read", "--message", "write it up as a page")
+    ok("and only while nothing is named", "artifact" in out(mode("deliverable")), out(mode("deliverable")))
+
+    p = mode("deliverables")
+    ok("deliverables leads with how a change ships here, then every mode and every project",
+       out(p).startswith("Here a change ships as an MR") and "pages" in out(p) and "anything else" in out(p),
+       out(p)[:300])
 jev.shutdown()
 
 report()

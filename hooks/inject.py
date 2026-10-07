@@ -205,8 +205,12 @@ try:
     if board:
         blocks.append(board)
 
+    # Before the announce, so a fresh ask already carries Jev's reading of what it should deliver.
+    if spare:
+        run("deliverable", "read", "--message", spare, "--path", cwd, *sid(session))
+
     # One call, because bin/mode owns whether this prompt gets the whole contract or the reminder.
-    announced = ask("announce", *sid(session))
+    announced = ask("announce", "--path", cwd, *sid(session))
     if announced:
         blocks.append(announced)
 
@@ -215,7 +219,9 @@ try:
         if len(context.encode("utf-16-le")) // 2 > CAP:
             held = [ask(axis, "get", *sid(session)) or "none" for axis in AXES]
             lead = OVERFLOW % tuple(held)
-            context = "\n\n".join([lead, ask("standing", *sid(session)) or "", context])
+            # The north star rides in the preview, since the first turn is when it has to be named.
+            north = next((line for line in (announced or "").splitlines() if line.startswith("Deliverable:")), "")
+            context = "\n\n".join(block for block in [lead, north, ask("standing", *sid(session)) or "", context] if block)
         # additionalContext reaches the model only; the surface a person watches is the status-line chip.
         print(
             json.dumps(

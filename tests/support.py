@@ -9,6 +9,9 @@ import shutil
 import subprocess
 import sys
 
+# A suite never calls the network, so Jev stays off unless a test points it at its own fake.
+os.environ["MODE_JEV"] = "off"
+
 HERE = os.path.dirname(os.path.realpath(__file__))
 PLUGIN = os.path.dirname(HERE)
 MODE_BIN = os.path.join(PLUGIN, "bin", "mode")
@@ -104,6 +107,9 @@ def fixture_root(tmp, name, modes=None, styles=None, skill=None, rules=None):
     os.makedirs(os.path.join(root, "bin"), exist_ok=True)
     shutil.copy2(MODE_BIN, os.path.join(root, "bin", "mode"))
     os.chmod(os.path.join(root, "bin", "mode"), 0o755)
+    for helper in os.listdir(os.path.dirname(MODE_BIN)):
+        if helper.startswith("_") and helper.endswith(".py"):
+            shutil.copy2(os.path.join(os.path.dirname(MODE_BIN), helper), os.path.join(root, "bin", helper))
     for axis, contracts in (("modes", modes or {}), ("styles", styles or {})):
         os.makedirs(os.path.join(root, "skills", "mode", axis), exist_ok=True)
         for stem, text in contracts.items():

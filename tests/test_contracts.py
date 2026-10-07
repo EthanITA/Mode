@@ -307,6 +307,22 @@ for stem in sorted(loaded["mode"]):
        "%r against %r. A backward edge onto a step that is not in the pipeline draws an arc "
        "between two columns that are not there." % (unknown, labels))
 
+section("what a mode delivers, which its pipeline already implies")
+INTENTS = ("answer", "change", "artifact", "post")
+for stem in sorted(loaded["mode"]):
+    meta = loaded["mode"][stem][0]
+    declared = listed(meta, "deliverables")
+    ok("%s.md: names what it delivers, from %s or none" % (stem, ", ".join(INTENTS)),
+       bool(declared) and (declared == ["none"] or set(declared) <= set(INTENTS)),
+       "%r. The hook restates it every turn and the guard holds every edit to it, so a mode with no "
+       "list gets no north star and a word outside the four is never matched." % declared)
+    events = {m.group(3) for m in (STEP.match(e) for e in listed(meta, "steps")) if m}
+    for event, intent in (("artifact", "artifact"), ("commit", "change")):
+        if event in events:
+            ok("%s.md: an @%s step means it delivers %s" % (stem, event, intent), intent in declared,
+               "%r. The pipeline waits on that event, so the guard would refuse the very act it waits for."
+               % declared)
+
 ok("no style declares a pipeline",
    not [s for s, (m, _, _) in loaded["style"].items() if m.get("steps") or m.get("loops")],
    "a style is a texture and has no order of operations, so a pipeline on one draws a progress "

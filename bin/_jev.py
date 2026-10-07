@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-import urllib.request
 from pathlib import Path
 
 DEFAULT_MODEL = "typesafe/jev-1.13"
@@ -38,8 +37,11 @@ def api_key() -> str:
 
 def ask(questions: dict[str, dict], state: dict) -> dict[str, float] | None:
     """One call and no retry, because a reading that is late or missing just leaves the call to the model."""
+    # Imported here, because the status line loads this module through bin/mode on every render.
+    import urllib.request
+
     key = api_key()
-    if not key:
+    if not key or os.environ.get("MODE_JEV", "").lower() == "off":
         return None
     settings = config()
     body = json.dumps({"model": settings.get("jev-model") or DEFAULT_MODEL, "questions": questions, "state": state})

@@ -1,22 +1,26 @@
 ---
 name: deliverable
-summary: Name what will land before producing it, then route it to the rules that own that form.
+summary: Every ask has a north star, what it delivers, named before the first edit and held by a hook.
 ---
 
 ## The deliverable
 
-Every piece of work ends in a form, and the form is a separate choice from how the work ran. Name it before producing it, in one clause, so the wrong shape is caught while it is still cheap.
+Every ask ends in something, and naming it first is what keeps the work from drifting. It has two layers: what the ask wants, and how a change ships where it lands.
 
-| The form | What it means | Route it to |
+| What the ask wants | What it means | Route it to |
 |---|---|---|
-| **chat** | The answer lives in the conversation and nothing is built | Stay inline. Do not build a page nobody asked for. |
+| **answer** | The reply here settles it, and nothing is built, changed or sent | Stay inline. Do not build a page nobody asked for. |
+| **change** | Files change: code, config, docs, tests or rules | Working code, run once for real before it is called done. |
 | **artifact** | A page the user opens, keeps and re-reads | The `create-artifact` skill shipped with this plugin, always. Never hand-roll one beside it. |
-| **MR or PR** | A change plus the note a reviewer reads | The outbound-writing rules: human prose, sectioned what and why, visuals where structure exists. Posting it is the delivery. |
-| **MVP** | The smallest slice that actually runs | Working code, run once for real before it is called done. |
+| **post** | Something sent to people under the user's name: a comment, a reply, a message, an email, a ticket | The outbound-writing rules: human prose in the user's voice. Sending it is the delivery. |
+
+How a change ships is the project's fact, not the ask's. The `delivery` row for its tree in the plugin config says a commit, a push, an MR or a publish, and a tree with no row ships as a commit. An ask that says otherwise, such as "just commit" or "open an MR", overrides it for that ask with `--ship`. The mode decides which of the four it can deliver, and `mode deliverables` prints every mode against how a change ships where you stand.
+
+**Name it before the first edit**, with `mode deliverable <answer|change|artifact|post>... "<the one line it ends in>"`. When the ask names a form, that is the form. When two readings are equally live, take the smaller one and say which you picked, because an unwanted page costs more than a missing one. When nothing is named, Jev reads the ask and records its reading as its own, for you to confirm or correct.
+
+The hook restates it every turn and the status line shows it, and `deliverable-guard` refuses an edit, a commit, a push, an MR, a publish or a post that falls outside it, so drift is caught at the act rather than at the review. When the ask changes, name the new one, and when it is delivered, `mode deliverable done`.
 
 Several at once is ordinary. A change can land as an MR whose description links the artifact that explains it, and asking for all of them means producing each rather than picking the easiest.
-
-**Infer it, then say which you picked.** The ask usually settles it: a question wants chat, "write it up" wants an artifact, "ship it" wants an MR. When the ask names a form, that is the form. When two readings are equally live, take the smaller one and name the choice, because an unwanted page costs more than a missing one.
 
 Two failures are worth naming because both are common. Answering in chat when a deliverable was asked for leaves the work undone, and building a document when a sentence was wanted buries the answer.
 

@@ -4,6 +4,7 @@ summary: Find it, prove it reproduces, fix it, and draw why it happened.
 color: yellow
 enter-when: not working|broken|fail|still not|an error|the error|stack trace
 exit-when: approved
+deliverables: change, artifact
 steps: instrument, reproduce?@test-fail, fix@commit, explainer@artifact, approval?@approve, mr
 loops: reproduce>instrument, approval>explainer
 ---

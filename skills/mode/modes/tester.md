@@ -4,6 +4,7 @@ summary: Work out what to test and how to reach it, run it for real, and report 
 color: grey
 enter-when: test the|qa this|qa the|qa pass|smoke test|regression test|regression pass|does it all still work|check the feature
 exit-when: manual
+deliverables: artifact
 steps: env, preconditions, surface, cases, execute@test, verdict@artifact
 ---
 

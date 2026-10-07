@@ -11,6 +11,15 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **Every ask has a north star.** Each mode declares in its front matter what it can deliver, `pair`
+  and `ic` anything, `studio` and `tester` an artifact, `dispatcher` nothing, and the ask in hand
+  narrows it with `mode deliverable change "the retry fix merged"`, or Jev reads it from the prompt when
+  nothing is named. How far a change ships is the project's `delivery` row, a commit when none matches,
+  overridable per ask with `--ship`. The hook restates it every turn, a third status chip shows it, and
+  `deliverable-guard` refuses an edit before one is named and any edit, commit, push, MR, publish or
+  post outside it. Opening an MR and stamping an artifact mark their part delivered. `mode deliverables`
+  prints every mode against how a change ships where you stand, then every project's row. A mode that
+  declares nothing is untouched by all of it.
 - **`dispatcher`, an eleventh mode for a batch of requests.** It splits the batch, grounds each request
   just far enough to triage it, and every request ends as one of three outcomes: a new conversation in
   `~/Notes` on Sonnet at xhigh effort, told to spawn an Opus medium `director`, a relay to the live

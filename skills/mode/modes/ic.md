@@ -4,6 +4,7 @@ summary: The all-rounder, alone. One senior contributor runs the whole loop, the
 color: pink
 enter-when: build it yourself|do it yourself|write it yourself|no team|ic mode
 exit-when: manual
+deliverables: answer, change, artifact, post
 steps: read, fork?@question, ground, shape?, build, verify@test, deliver@commit
 loops: verify>build, deliver>read
 ---

@@ -18,6 +18,10 @@ TESTS = re.compile(
     r"tests?/run\.py|make\s+(test|check))\b"
 )
 COMMIT = re.compile(r"\bgit\s+(commit|cherry-pick)\b")
+# The two delivery acts that finish one part of the north star outright: the MR opened, the page stamped.
+RECEIPTS = ((re.compile(r"\b(?:glab\s+mr\s+create|gh\s+pr\s+create)\b"), "change"),
+            (re.compile(r"\bartifact\s+stamp\b"), "artifact"))
+MR_TOOL = re.compile(r"^mcp__.+__create_(?:merge_request|pull_request)$")
 # Only at the top of the folder: a .md one level down is a page's build brief, not an artifact.
 ARTIFACT_MD = re.compile(r"/artifacts/[^/]+\.md$")
 
@@ -65,6 +69,14 @@ try:
     if token:
         run(AXIS, "done", token, *sid(data.get("session_id") or ""))
     record_document(data)
+
+    if data.get("hook_event_name") == "PostToolUse" and not data.get("agent_id"):
+        command = str((data.get("tool_input") or {}).get("command") or "") if data.get("tool_name") == "Bash" else ""
+        parts = [part for pattern, part in RECEIPTS if pattern.search(command)]
+        if MR_TOOL.match(data.get("tool_name") or ""):
+            parts.append("change")
+        for part in parts:
+            run("deliverable", "done", part, *sid(data.get("session_id") or ""))
 
     # Only on the success event: a failed call already owes the model an error, not a board aside.
     if data.get("hook_event_name") == "PostToolUse":

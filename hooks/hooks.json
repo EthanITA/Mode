@@ -27,7 +27,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Bash|Write|Edit|NotebookEdit|Agent|AskUserQuestion|Artifact",
+        "matcher": "Bash|Write|Edit|NotebookEdit|Agent|AskUserQuestion|Artifact|mcp__.*__create_merge_request|mcp__.*__create_pull_request",
         "hooks": [
           {
             "type": "command",
@@ -125,6 +125,15 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/director-guard.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Agent|Bash|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/deliverable-guard.py\""
           }
         ]
       },

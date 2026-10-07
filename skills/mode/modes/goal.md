@@ -4,6 +4,7 @@ summary: Loop until it is truly done, verified for real and audited clean, twice
 color: cyan
 enter-when: loop until|keep going until|keep iterating|iterate until|until it passes|goal mode
 exit-when: manual
+deliverables: change
 steps: implement, verify@test, audit@agent
 loops: verify>implement, audit>implement, audit>verify
 ---

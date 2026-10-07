@@ -4,6 +4,7 @@ summary: Think together on one artifact, and it grows while you talk.
 color: blue
 enter-when: brainstorm|explore options|explore ideas|explore approaches|what if|ideas for|think through
 exit-when: manual
+deliverables: artifact
 steps: talk, page@artifact, react, widen, handoff
 loops: widen>talk
 ---
