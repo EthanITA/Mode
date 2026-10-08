@@ -15,7 +15,7 @@ import _deliverable
 AUTO = "auto"
 OFF = "off"
 AXES = ("mode", "style")
-BOOLEANS = ("enter-never", "no-dispatch-without-approval", "no-implement", "no-code-without-red")
+BOOLEANS = ("enter-never", "enter-over-pin", "no-dispatch-without-approval", "no-implement", "no-code-without-red")
 FALSEY = {"false", "no", "off", "n", "0"}
 FOLDER = {"mode": "modes", "style": "styles"}
 STANDING = "standing reminder"
@@ -439,18 +439,33 @@ def cmd_set(args):
         drop_slot(axis, args.session)
         print(f"{axis} set to off")
         return
-    write_state(state_path(args.session, f".{axis}"), args.name)
+    hold(axis, args.session, args.name, chosen=args.chosen)
     if axis == "mode":
         # A new mode keeps only the parts of the north star it can still deliver.
         state = deliverable(args.session)
         save_deliverable(args.session, dict(state, intents=[i for i in state.get("intents") or []
                                                             if i in delivers(args.session)]))
+        own_style(args.session, args.name)
+    print(f"{axis} set to {args.name}")
+
+
+def hold(axis: str, sid: str | None, name: str, chosen: bool = False):
+    write_state(require(settled(axis, sid)), name)
+    write_state(state_path(sid, f".{axis}"), name)
     # Typing the name is the normal case, so an unflagged set is what leaves the slot unmarked.
     for kind in ("chosen", "pinned"):
-        state_path(args.session, f".{axis}.{kind}").unlink(missing_ok=True)
-    if args.chosen:
-        write_state(state_path(args.session, f".{axis}.chosen"), args.name)
-    print(f"{axis} set to {args.name}")
+        state_path(sid, f".{axis}.{kind}").unlink(missing_ok=True)
+    if chosen:
+        write_state(state_path(sid, f".{axis}.chosen"), name)
+
+
+def own_style(sid: str | None, mode: str):
+    """A mode's own style, put in place unless this conversation typed a style or typed it off."""
+    style = str(meta_of("mode", mode).get("style") or "").strip()
+    current = held("style", sid)
+    typed = (current not in ("", AUTO) and not source_of("style", sid)) or read_state(settled("style", sid)) == OFF
+    if style in names("style") and not typed:
+        hold("style", sid, style, chosen=True)
 
 
 def cmd_get(args):
@@ -487,16 +502,20 @@ def cmd_chips(args):
 
 
 def cmd_choose(args):
-    """The contract a message asks for, but only while that slot is on auto."""
+    """The contract a message asks for, while that slot is on auto or still holds only a pin."""
     axis = args.axis
+    pinned = source_of(axis, args.session) == "pinned"
     # A value set by hand is a decision the user made, and no message overrides it.
-    if held(axis, args.session) != AUTO:
+    if held(axis, args.session) != AUTO and not pinned:
         return
     text = args.message.lower()
+    # A pin is a default, so only a role named up front takes it, never a mention further in.
+    if pinned:
+        text = re.split(r"[.\n]", text, maxsplit=1)[0]
     found = []
     for name in names(axis):
         meta = meta_of(axis, name)
-        if never_auto(meta):
+        if never_auto(meta) or (pinned and not truthy(meta, "enter-over-pin")):
             continue
         if hits(text, alternatives(meta, "enter-when")):
             found.append(name)
@@ -1023,6 +1042,10 @@ def slot_lines(sid: str | None, folder: Path) -> list[str]:
             _, layer, matched = pin_for(axis, folder)
             origin = pins_file() if layer == "personal" else (matched / SHARED if matched else "?")
             out.append(f"  {'':<6} {'':<11} from {origin}")
+            takers = [n for n in names(axis) if truthy(meta_of(axis, n), "enter-over-pin")
+                      and alternatives(meta_of(axis, n), "enter-when")]
+            if takers:
+                out.append(f"  {'':<6} {'':<11} {', '.join(takers)} can still take it from a prompt's opening sentence")
     return out
 
 

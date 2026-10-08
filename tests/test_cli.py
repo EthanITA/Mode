@@ -1410,4 +1410,50 @@ with tempfile.TemporaryDirectory() as home:
        out(p)[:300])
 jev.shutdown()
 
+
+section("choose over a pin, and the style a mode brings with it")
+with tempfile.TemporaryDirectory() as home:
+    work = os.path.join(home, "work")
+    os.makedirs(work)
+    contracts = (("modes", "router", "enter-when: you are router|route these\nenter-over-pin: true\nstyle: brisk\n"),
+                 ("modes", "plainmode", "enter-when: plain work\n"),
+                 ("styles", "brisk", ""), ("styles", "formal", ""))
+    for folder, name, keys in contracts:
+        write(os.path.join(home, "mode", folder, name + ".md"),
+              "---\nname: %s\nsummary: a fixture\ncolor: blue\nexit-when: manual\n%s---\n\nBody.\n\n"
+              "## Standing reminder\n\nHold the line.\n" % (name, keys))
+    env = dict(os.environ, CLAUDE_CONFIG_DIR=home)
+
+    def cli(*args):
+        return subprocess.run([sys.executable, MODE_BIN] + list(args), capture_output=True, text=True, env=env)
+
+    cli("mode", "pin", "plainmode", "--path", work)
+    cli("style", "pin", "formal", "--path", work)
+
+    def pinned(session):
+        cli("adopt", "--path", work, "--session", session)
+        return session
+
+    def choose(session, message):
+        return out(cli("choose", "--axis", "mode", "--message", message, "--session", session))
+
+    ok("a mode that opts in takes a pinned slot when its role opens the prompt",
+       choose(pinned("p-take"), "you are router. send these out") == "router", "")
+    ok("a mode that does not opt in never takes a pin", not choose(pinned("p-plain"), "plain work please"), "")
+    ok("and a mention after the opening sentence misses",
+       not choose(pinned("p-late"), "fix the login. then you are router"), "")
+    cli("mode", "set", "plainmode", "--session", "p-typed")
+    ok("a mode typed by hand is never taken", not choose("p-typed", "you are router. go"), "")
+
+    cli("mode", "set", "router", "--chosen", "--session", pinned("p-style"))
+    ok("entering it puts its own style in place over the pinned one, marked chosen",
+       out(cli("style", "get", "--chip", "--session", "p-style")).split("\t")[::2] == ["brisk", "chosen"],
+       out(cli("style", "get", "--chip", "--session", "p-style")))
+    cli("style", "set", "formal", "--session", "p-kept")
+    cli("mode", "set", "router", "--session", "p-kept")
+    ok("a style typed in the conversation stays", out(cli("style", "get", "--session", "p-kept")) == "formal", "")
+    cli("style", "set", "off", "--session", "p-off")
+    cli("mode", "set", "router", "--session", "p-off")
+    ok("and so does a style typed off", not out(cli("style", "get", "--session", "p-off")), "")
+
 report()

@@ -11,6 +11,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **"you are dispatcher." takes a pinned default, and the dispatcher runs in `fast`.** A contract that
+  sets `enter-over-pin` may take a slot that only holds a pin, judged on the prompt's opening sentence
+  so a prompt that merely talks about it never switches, and a slot typed by hand stays out of reach.
+  A mode's `style:` puts its own style in place whenever it is entered unless the conversation typed
+  one. `dispatcher` carries both, with role phrases such as `you are dispatcher` in place of the bare
+  word `dispatcher`, which fired on any prompt that mentioned it.
 - **Every ask has a north star.** Each mode declares in its front matter what it can deliver, `pair`
   and `ic` anything, `studio` and `tester` an artifact, `dispatcher` nothing, and the ask in hand
   narrows it with `mode deliverable change "the retry fix merged"`, or Jev reads it from the prompt when

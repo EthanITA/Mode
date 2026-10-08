@@ -295,10 +295,13 @@ def slot_lifecycle():
     parts.append('<text class="s" x="366" y="100">off</text>')
     parts.append(f'<text class="s" x="20" y="212">A contract you typed is never overridden by a '
                  f'pattern. A message matching two picks neither.</text>')
-    return svg(660, 228, "\n".join(parts),
+    parts.append('<text class="s" x="20" y="230">A pinned default is taken only by a contract that opts in, '
+                 'named in the prompt\'s opening sentence.</text>')
+    return svg(660, 246, "\n".join(parts),
                "A slot moves between empty, held when you type a name, and auto. While on auto a "
                "matching pattern moves it to chosen, marked with a tilde in the status line, and "
-               "its exit condition returns it to auto rather than to empty.")
+               "its exit condition returns it to auto rather than to empty. A pinned default is "
+               "taken only by a contract that opts in, named in the prompt's opening sentence.")
 
 
 MECHANISMS = {"hook-sequence": hook_sequence, "rules-tiers": rules_tiers,

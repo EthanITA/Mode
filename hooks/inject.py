@@ -135,9 +135,9 @@ def expire(axis, session):
 
 
 def holding(axis, session):
-    """What the slot holds, read off the chip, the same call the status line makes."""
+    """What the slot holds and how it came to, read off the chip, the same call the status line makes."""
     row = (ask(axis, "get", "--chip", *sid(session)) or "").split("\t")
-    return row[0].strip()
+    return row[0].strip(), (row[2].strip() if len(row) > 2 else "")
 
 
 def settled(bare, session):
@@ -190,7 +190,9 @@ try:
         sys.exit(0)
 
     for axis in AXES:
-        if axis not in handled and holding(axis, session) == AUTO:
+        name, source = holding(axis, session)
+        # A pin is a default, so the chooser may still hand it to a contract that opts in to taking one.
+        if axis not in handled and (name == AUTO or source == "pinned"):
             enter(axis, message, session)
 
     # Once per conversation each: base rules on the first prompt, scoped ones when their trigger shows.

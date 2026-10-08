@@ -2,7 +2,9 @@
 name: dispatcher
 summary: Triage each request into a new conversation, a relay to a live one, or an answer here. Read-only, delivers nothing.
 color: violet
-enter-when: dispatcher|dispatch mode|dispatch these|one session per request|a session for each|handle these in parallel
+enter-when: you are dispatcher|you are the dispatcher|act as dispatcher|act as the dispatcher|be the dispatcher|dispatch mode|dispatch these|one session per request|a session for each|handle these in parallel|in separate conversations|in separate sessions
+enter-over-pin: true
+style: fast
 exit-when: manual
 deliverables: none
 no-implement: true
@@ -110,7 +112,7 @@ The topic is triage. A request that arrives later and is unrelated to the batch 
 
 ## When it starts and when it ends
 
-`enter-when` matches somebody handing over several requests to be handled in separate conversations. A request is finished once its outcome is: the session has started, the message has been delivered or the answer has been given. The user follows up in that session themselves, so nothing here waits on it or relays its replies. `exit-when` is `manual`, so only `/mode off` ends it, because batches keep arriving.
+`enter-when` matches somebody naming you the dispatcher, such as "you are dispatcher", or handing over several requests to be handled in separate conversations. `enter-over-pin` lets that take a slot that only holds a pinned default, judged on the prompt's opening sentence alone, so "you are dispatcher." at the start of a fresh conversation switches it while a prompt that talks about the dispatcher further in never does, and a mode typed by hand is never taken. Entering it, typed or chosen, puts the style on `fast` unless this conversation typed a style. A request is finished once its outcome is: the session has started, the message has been delivered or the answer has been given. The user follows up in that session themselves, so nothing here waits on it or relays its replies. `exit-when` is `manual`, so only `/mode off` ends it, because batches keep arriving.
 
 This conversation is meant to run on Sonnet at high effort, and the depth is bought where the work happens, in the dispatched sessions at Sonnet xhigh with an Opus medium director. Entering the mode cannot change the model of a running session, because no hook, plugin setting or peer message can and a command's `model` and `effort` last one turn. So when this session is not already on Sonnet at high effort, the line confirming the switch asks the user to type `/model sonnet` and `/effort high`, and says nothing about it otherwise.
 

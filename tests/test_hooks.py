@@ -646,6 +646,35 @@ with tempfile.TemporaryDirectory() as tmp:
            "mode is %r. adopt runs every prompt, so an axis already decided has to be walked past."
            % out(mode("h-pin3", "get")))
 
+        section("a dispatcher named up front takes a pinned pair, with fast as its style")
+        default = os.path.join(tmp, "default-repo")
+        write(os.path.join(default, ".mode"), "mode: pair\nstyle: ship\n")
+
+        def first(session, text):
+            body = prompt_payload(session, text)
+            body["cwd"] = default
+            fire("inject.py", body, config)
+            return out(mode(session, "get", "--chip")).split("\t"), out(style(session, "get", "--chip")).split("\t")
+
+        held_mode, held_style = first("h-disp", "you are dispatcher. MF cli, i want lisa and investment tracked as deploys")
+        ok("the first prompt naming the dispatcher ends on dispatcher and fast, both marked chosen",
+           (held_mode[0], held_mode[-1], held_style[0], held_style[-1]) == ("dispatcher", "chosen", "fast", "chosen"),
+           "mode=%r style=%r. The pin is a default, and a role named up front is the clearest ask there is."
+           % (held_mode, held_style))
+
+        held_mode, held_style = first("h-talk", "let's work on refining pair mode and dispatcher mode")
+        ok("while a prompt that only talks about the dispatcher keeps the pinned pair and ship",
+           (held_mode[0], held_style[0]) == ("pair", "ship"),
+           "mode=%r style=%r. Taking the pin here would put router-guard on a pair session's edits."
+           % (held_mode, held_style))
+
+        for session, text in (("h-ord1", "/mode dispatcher /style edu"), ("h-ord2", "/style edu /mode dispatcher")):
+            held_mode, held_style = first(session, text)
+            ok("a style typed beside the switch wins in either order: %s" % text,
+               (held_mode[0], held_style[0]) == ("dispatcher", "edu"),
+               "mode=%r style=%r. A typed style is a decision, and a mode's own style only fills a default."
+               % (held_mode, held_style))
+
     # -------------------------------------------------------------- the exit side
 
     if present["inject.py"]:

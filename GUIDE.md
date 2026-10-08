@@ -117,11 +117,13 @@ Several at once is ordinary. The rule requires the form to be *stated* before it
 
 Typing a name is not the only way in, and `off` is not the only way out.
 
-<p align="center"><img src="assets/slot-lifecycle.svg" alt="A slot moves between empty, held when you type a name, and auto. While on auto a matching pattern moves it to chosen, marked with a tilde in the status line, and its exit condition returns it to auto rather than to empty." width="660"></p>
+<p align="center"><img src="assets/slot-lifecycle.svg" alt="A slot moves between empty, held when you type a name, and auto. While on auto a matching pattern moves it to chosen, marked with a tilde in the status line, and its exit condition returns it to auto rather than to empty. A pinned default is taken only by a contract that opts in, named in the prompt's opening sentence." width="660"></p>
 
 | Key | Means |
 |---|---|
-| `enter-when` | Alternatives split on a vertical bar. One matching your message selects this contract, but **only while that slot is set to `auto`** |
+| `enter-when` | Alternatives split on a vertical bar. One matching your message selects this contract, but **only while that slot is set to `auto`**, or holds a pin and the contract sets `enter-over-pin` |
+| `enter-over-pin: true` | A pinned default is no bar: one of its `enter-when` phrases in the prompt's opening sentence takes the slot. A name you typed still is |
+| `style: <name>` | The style this mode runs in, put in place whenever it is entered unless you typed a style in this conversation. `dispatcher` runs in `fast` |
 | `enter-never: true` | Never chosen for you, must be typed. Only `autopilot` carries it |
 | `exit-when: manual` | Only `/mode off` ends it |
 | `exit-when: approved` | A yes was recorded with `/approve` under this contract |

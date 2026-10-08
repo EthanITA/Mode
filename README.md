@@ -307,7 +307,9 @@ The full contract, at whatever length it needs. Read once, at the switch.
 | `name` | Must equal the filename without its extension |
 | `summary` | One line, under 80 characters. It is what the listing prints and the chip shows |
 | `color` | One of red, green, yellow, blue, magenta, cyan, grey, sky, pink, orange |
-| `enter-when` | Alternatives split on a vertical bar, matched at a word boundary. Only consulted while the slot holds `auto` |
+| `enter-when` | Alternatives split on a vertical bar, matched at a word boundary. Consulted while the slot holds `auto`, or a pin when the contract sets `enter-over-pin` |
+| `enter-over-pin` | Lets a phrase in the prompt's opening sentence take a slot that only holds a pinned default, never one you typed |
+| `style` | The style the mode runs in, put in place when it is entered unless you typed a style in this conversation |
 | `exit-when` | `manual`, `approved`, or `mr-opened` |
 | `no-dispatch-without-approval` | Arms a gate that refuses to spawn a teammate until a yes is recorded |
 | `no-code-without-red` | Arms a guard that refuses an edit to an implementation file while no watched failure stands |
