@@ -215,7 +215,8 @@ threads. Three lookups are worth knowing:
 | Where artifacts live | `NOTES_ARTIFACTS`, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/artifacts` |
 | Who a comment is from | The `user` key in that same config, defaulting to "User" |
 
-That config file holds the plugin's own settings too: `guards` turns every guard off at once, and
+That config file holds the plugin's own settings too: `guards` turns every guard off at once,
+`disarm` turns off only the guards it lists by file stem, such as `["board-check"]`, and
 `delivery` maps a path fragment to the receipt a delivery in that tree owes, such as
 `[["acme", "mr-merged"]]`. It ships empty, because only you know which of your trees owes what.
 The same row is how far a change may ship there, a tree with no row shipping as a commit, so a push,

@@ -16,8 +16,12 @@ def config() -> dict:
 
 def armed() -> bool:
     """Guards are on unless the config explicitly says off, matching the plugin's flag philosophy."""
-    value = str(config().get("guards", "")).strip().strip("\"'").lower()
-    return not value or value not in ("false", "no", "off", "n", "0")
+    settings = config()
+    value = str(settings.get("guards", "")).strip().strip("\"'").lower()
+    if value in ("false", "no", "off", "n", "0"):
+        return False
+    # The running guard's file stem, so `disarm` names guards without each one passing its own name.
+    return os.path.splitext(os.path.basename(sys.argv[0]))[0] not in settings.get("disarm", [])
 
 
 def held(axis: str, session: str) -> str:

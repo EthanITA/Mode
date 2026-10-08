@@ -111,6 +111,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   re-exported from `app/utils/highlight.ts` for the client), wraps `@speed-highlight/core` and maps
   its token classes onto the app's own light/dark theme colours rather than a bundled theme, so it
   reads like the rest of the sidecar in either mode.
+- **One guard can be turned off without the rest.** `"disarm": ["board-check"]` in
+  `~/.claude/mode/config.json` silences only the guards it names, by file stem, where `"guards": "off"`
+  still turns every one of them off.
 - **A git switch, checkout or `reset --hard` stops before it touches someone else's work.**
   `git-guard` denies it while the checkout holds uncommitted changes to files the session never
   edited, and says to park them with a named stash first.

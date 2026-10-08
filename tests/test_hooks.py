@@ -796,6 +796,18 @@ with tempfile.TemporaryDirectory() as tmp:
                        text=True, env=hook_env(PLUGIN, config))
     ok("guards off in config.json disarms it: same payload, silence",
        p.returncode == 0 and not p.stdout.strip(), "rc=%s out=%r" % (p.returncode, p.stdout[:200]))
+
+    write(os.path.join(config, "mode", "config.json"), '{"disarm": ["shell-write-guard"]}\n')
+    p = subprocess.run([sys.executable, swg], input=blockable, capture_output=True,
+                       text=True, env=hook_env(PLUGIN, config))
+    ok("a guard named in disarm goes silent on its own",
+       p.returncode == 0 and not p.stdout.strip(), "rc=%s out=%r" % (p.returncode, p.stdout[:200]))
+
+    write(os.path.join(config, "mode", "config.json"), '{"disarm": ["board-check"]}\n')
+    p = subprocess.run([sys.executable, swg], input=blockable, capture_output=True,
+                       text=True, env=hook_env(PLUGIN, config))
+    ok("and a guard left out of disarm stays armed",
+       '"permissionDecision": "deny"' in p.stdout, "out=%r" % p.stdout[:200])
     os.remove(os.path.join(config, "mode", "config.json"))
 
     ng = os.path.join(HOOKS, "guards", "namespace-guard.py")
