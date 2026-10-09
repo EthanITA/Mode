@@ -1,12 +1,12 @@
 import { execFileSync, spawn, spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, openSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import { homedir, userInfo } from "node:os"
-import { dirname, join } from "node:path"
+import { basename, dirname, join } from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
 import { fileURLToPath } from "node:url"
 import { modeHome } from "../server/utils/mode/paths.ts"
 
-type Command = "status" | "start" | "stop" | "restart" | "open" | "install" | "uninstall" | "help"
+type Command = "open" | "status" | "start" | "stop" | "restart" | "install" | "uninstall" | "help"
 type Proc = { pid: number; ppid: number; args: string }
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
@@ -23,13 +23,15 @@ const NAME = "Claude Code Sidecar"
 // Absolute, because a bin/open earlier on PATH shadows the system one inside a Notes-style tree.
 const OPEN = "/usr/bin/open"
 
-const USAGE = `usage: sidecar [command]
+const USAGE = `usage: sidecar [command]     /sidecar [command] in a Claude Code session runs the same
 
-  status      whether it is up, where, and whether it starts at login (the default)
+  open [key]  the default: start it when down, point it at the conversation, and open the installed
+              app, else a Chrome app window, unless a sidecar page is already open and moved there.
+              The conversation is the key given, else the Claude Code session this runs in
+  status      whether it is up, where, and whether it starts at login
   start       start it in the background and wait until it answers
   stop        stop it, wherever it was started from
   restart     stop it, then start it
-  open [key]  open the installed app, else a Chrome app window on that conversation, starting it when down
   install     start it now and at every login, through launchd
   uninstall   stop it and take it off login
 
@@ -235,28 +237,56 @@ function installedApp(): string | undefined {
     })
 }
 
-async function open(key?: string): Promise<number> {
+async function listenersAfterPointing(key: string): Promise<number> {
+  const reply = await fetch(`${ADDRESS}/api/follow`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ key, source: "claude" }),
+    signal: AbortSignal.timeout(5000),
+  }).catch(() => undefined)
+  if (!reply?.ok) return 0
+  const { listeners } = (await reply.json().catch(() => ({}))) as { listeners?: number }
+  return listeners ?? 0
+}
+
+async function open(key = process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8)): Promise<number> {
   if (!(await isSidecar()) && (await start()) !== 0) return 1
+  if (key && (await listenersAfterPointing(key))) {
+    console.log(`moved the open sidecar to conversation ${key}`)
+    return 0
+  }
+  // The installed app opens on its home, which follows the point just made.
   const app = installedApp()
-  if (app) return spawnSync(OPEN, [app]).status ?? 1
+  if (app && spawnSync(OPEN, [app]).status === 0) {
+    console.log(`opened the ${basename(app, ".app")} app`)
+    return 0
+  }
   const page = key ? `${ADDRESS}/c/${key}` : `${ADDRESS}/`
   // -n hands --app to a Chrome that is already running; without it the flag is dropped.
-  if (spawnSync(OPEN, ["-na", "Google Chrome", "--args", `--app=${page}`]).status === 0) return 0
-  return spawnSync(OPEN, [page]).status ?? 1
+  if (spawnSync(OPEN, ["-na", "Google Chrome", "--args", `--app=${page}`]).status === 0) {
+    console.log(`opened ${page} in a Chrome app window`)
+    return 0
+  }
+  if (spawnSync(OPEN, [page]).status === 0) {
+    console.log(`opened ${page} in the browser`)
+    return 0
+  }
+  console.error(`could not open ${page}`)
+  return 1
 }
 
 const COMMANDS = {
+  open: async () => open(process.argv[3]),
   status,
   start,
   stop,
   restart: async () => ((await stop()) === 0 ? start() : 1),
-  open: async () => open(process.argv[3]),
   install,
   uninstall: async () => uninstall(),
   help: async () => (console.log(USAGE), 0),
 } satisfies Record<Command, () => Promise<number>>
 
-const asked = process.argv[2] ?? "status"
+const asked = process.argv[2] ?? "open"
 const run = Object.hasOwn(COMMANDS, asked) ? COMMANDS[asked as Command] : undefined
 if (!run) {
   console.error(`sidecar: no command '${asked}'\n\n${USAGE}`)

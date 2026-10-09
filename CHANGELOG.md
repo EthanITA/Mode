@@ -75,10 +75,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   as a standalone window with its own Dock icon, and `/sidecar` launches that app when it is installed,
   else a Chrome app window, else the default browser. `node tools/icons/render.ts` redraws the PNG
   icons from their SVGs.
-- **`bin/sidecar` starts, stops, restarts, opens and installs the sidecar.** Bare `sidecar` says
-  whether it is up. `stop` takes down a sidecar wherever it was started, a terminal's `pnpm dev`
-  included, and leaves another app on the port alone. `install` makes it a launchd agent that starts
-  at login. The `sidecar` mod starts and opens it through this CLI.
+- **`bin/sidecar` opens, starts, stops, restarts and installs the sidecar, and `/sidecar` is that
+  CLI.** Bare `sidecar` opens it the way `/sidecar` always did: started when down, pointed at the
+  conversation, and a window only when no page is open. `status` says whether it is up. `stop` takes
+  down a sidecar wherever it was started, a terminal's `pnpm dev` included, and leaves another app on
+  the port alone. `install` makes it a launchd agent that starts at login. `/sidecar <args>` runs
+  `sidecar <args>` in the session and shows what it printed.
 - **"you are dispatcher." takes a pinned default, and the dispatcher runs in `fast`.** A contract that
   sets `enter-over-pin` may take a slot that only holds a pin, judged on the prompt's opening sentence
   so a prompt that merely talks about it never switches, and a slot typed by hand stays out of reach.
