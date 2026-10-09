@@ -273,6 +273,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **The server banner follows every poll.** It used to show only when the first load failed and then
   stay; now it appears when the server stops answering, says it is retrying, and clears with
   everything reloaded once the server answers.
+- **The tray copy says what happens.** Toasts and threads promised a note "sends with your next
+  turn", but only Send notes sends it, and they now say so. The thread's queued resolve reads "Ask
+  Claude to resolve".
 - **A comment already sent to Claude never rides the next send.** It used to stay in the tray after
   sending and go out again with every later note; now it is marked sent, keeps its pin on the page,
   and leaves the count and the handover. Answering a comment's thread queues the answer on its own,

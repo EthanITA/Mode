@@ -229,7 +229,7 @@ export function useChrome(): Chrome {
     close();
     pick.value = undefined;
     hover.value = undefined;
-    toast("In the tray · sends with your next turn");
+    toast("In the tray · Send notes hands it to Claude");
     void persist(at, body, id);
   }
 

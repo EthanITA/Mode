@@ -46,15 +46,15 @@ function reply(): void {
   if (!text || !one) return;
   tray.add({ id: replyId.value, kind: "reply", quote: one.anchor?.quote, source: slug, text });
   draft.value = "";
-  chrome.toast("In the tray · sends with your next turn");
+  chrome.toast("In the tray · Send notes hands it to Claude");
 }
 
-// Nothing here writes the artifact, so resolving is a sentence for the next turn rather than a state flip.
+// Nothing here writes the artifact, so resolving asks Claude in a sentence rather than flipping state.
 function resolve(): void {
   const one = thread.value;
   if (!one) return;
   tray.add({ id: resolveId.value, kind: "reply", quote: one.anchor?.quote, source: slug, text: `Resolve note ${one.n}.` });
-  chrome.toast("Resolve is in the tray · sends with your next turn");
+  chrome.toast("Resolve requested · Send notes hands it to Claude");
 }
 
 function onKey(event: KeyboardEvent): void {
@@ -95,7 +95,7 @@ function onKey(event: KeyboardEvent): void {
         :data-queued="resolveQueued ? '' : undefined"
         @click="resolve"
       >
-        {{ resolveQueued ? "Resolve queued" : "Resolve" }}
+        {{ resolveQueued ? "Resolve requested" : "Ask Claude to resolve" }}
       </button>
     </header>
 
@@ -111,7 +111,7 @@ function onKey(event: KeyboardEvent): void {
     </div>
 
     <p v-if="replyQueued || resolveQueued" class="queued mono-meta">
-      in the tray · sends with your next turn
+      in the tray · waits for Send notes
     </p>
 
     <UiTextarea v-model="draft" auto-fit placeholder="Reply to Claude…" :rows="2" @keydown="onKey" />
@@ -140,7 +140,8 @@ function onKey(event: KeyboardEvent): void {
 header {
   align-items: center;
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
 }
 
 .title {
