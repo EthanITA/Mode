@@ -24,10 +24,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   disk on the right, in Monaco's diff editor with the One Dark theme the Files editor uses, Compact
   hiding unchanged regions and Wrap wrapping both sides. The files sit in a folder tree like JetBrains'
   commit view, coloured by status, with single-folder chains merged. Select lines in either pane to
-  pick them and accept or reject them, take a whole hunk with the arrows on the seam between the sides,
-  or approve and reject files. Each press is relayed into the session, where the mod applies it and
-  tells Claude about a reject, so the mod stays the only writer. Comments go to the tray, and the plus
-  in either gutter notes a line the way it does in Files. `/turn-diff` opens it at `/c/<key>?face=review`.
+  pick them and accept or reject them, take a whole hunk with the check or the x on the seam between
+  the sides, or approve and reject files. Each press is relayed into the session, where the mod applies
+  it and tells Claude about a reject, so the mod stays the only writer, and a reject of lines, a hunk or
+  a file opens the composer on it to say why. Comments go to the tray, and the comment icon in either
+  gutter or ⌘K notes a line the way it does in Files. `/turn-diff` opens it at `/c/<key>?face=review`.
 - **The chat island is hidden; Claude Code is the chat.** The prompt, the transcript and the mode and
   style pickers no longer show in a conversation or on an artifact page. Notes left on a page or a line
   still collect in the tray, which shows bottom right with one button that sends them to Claude.
@@ -37,11 +38,14 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   files Claude created, and Interacted, the ones it read or changed. A dot marks every file the
   conversation touched, solid for what its latest turn read or edited. Any page the artifact catalogue
   holds, every `.html` and `.md` in the artifacts folder included, opens in `<ArtifactReader>`, the
-  reader the artifact route now shares, with comments and the tray working as they do there. Every
-  other file opens in an editable Monaco: ⌘S saves through `PUT /api/sessions/:key/files/content`,
-  which refuses a save over text that changed on disk since it was opened, an unsaved draft survives
-  switching files, and the plus in the gutter or "Note for Claude" in the context menu drops a line
-  note into the tray. The editor is always dark, in One Dark Pro with its `vivid` and `italic` options
+  reader the artifact route now shares, with comments and the tray working as they do there. Its
+  header carries Comment, a light and dark switch for that page alone, and Fullscreen, which opens the
+  page with the same Comment and theme switch as islands and an X that closes it, in place of the back
+  arrow. Every other file opens in an editable Monaco: ⌘S saves through
+  `PUT /api/sessions/:key/files/content`, which refuses a save over text that changed on disk since it
+  was opened, an unsaved draft survives switching files, ⌘K, the comment icon in the gutter or
+  "Note for Claude" in the context menu drops a line note into the tray, and the Note pill notes the
+  whole file. The editor is always dark, in One Dark Pro with its `vivid` and `italic` options
   on, and its header takes the same palette. `.vue`, `.svelte`, `.astro`, `.jsonc`, `.toml`, `.zsh` and
   the usual dotfiles highlight through the nearest language Monaco ships, and type errors from imports
   it cannot resolve are off. The scope pills fill the sidebar's top row and drop to icons when the pane
@@ -71,7 +75,7 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **The sidecar installs as an app, at an address of its own.** `nuxt dev` serves it on port 4747, read
   at `http://sidecar.localhost:4747`, which Chrome resolves to this machine with no hosts file, so it
   shares neither a port nor an origin with whatever else runs on `localhost:3000`. A web app
-  manifest, icons and a title bar colour that follows the theme toggle make it installable from Chrome
+  manifest, icons and a title bar colour that follows the sidecar's theme make it installable from Chrome
   as a standalone window with its own Dock icon, and `/sidecar` launches that app when it is installed,
   else a Chrome app window, else the default browser. `node tools/icons/render.ts` redraws the PNG
   icons from their SVGs.
@@ -190,6 +194,14 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **The sidecar's own theme switch and its Comment island are gone from the faces.** The theme switch
+  now belongs to an artifact and flips only that page, so the sidecar keeps the light or dark it last
+  had, and Comment sits with the artifact it acts on. Comment, the page's theme switch, Fullscreen and
+  X are one `<ChromeAction>`, a pill in a bar or an island in the top row, so each keeps one icon, one
+  tooltip and one motion wherever it shows.
+- **A note sends Claude a short quote.** The lines or block it is about travel cut to one line of 160
+  characters, since Claude reads the file itself, and the composer shows only the first three lines
+  of a long selection.
 - **`edu` explains things the way a friend who knows the subject would.** It used to call prose the
   expensive medium, gloss every term, and close every explanation on a three-to-five-line recap, all
   of which its reminder repeated every turn against the prose rule. It now talks in the first person

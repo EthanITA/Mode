@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
+import type { ReviewPicks } from "~/utils/review";
 
 const SIDE = 300;
 
@@ -26,27 +27,48 @@ const empty = computed(() => {
 });
 
 // The popover sits under whatever asked for it, and the tray chip carries the quote and the lines.
-function comment(event: MouseEvent, scope: "file" | "lines"): void {
+function comment(event: MouseEvent, lines?: ReviewPicks, isRejected = false): void {
   const here = file.value;
   if (!here) return;
   const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  const lines = picked.value.new.length ? picked.value.new : picked.value.old;
-  const source = picked.value.new.length ? here.current : here.original;
-  const isFile = scope === "file";
-  const where = isFile ? homePath(here.path) : `${Review.spanOf(lines)} of ${homePath(here.path)}`;
-  const quote = isFile ? undefined : lines.map((line) => source[line - 1] ?? "").join("\n");
+  const isNew = !!lines?.new.length;
+  const span = lines && (isNew ? lines.new : lines.old);
+  const source = isNew ? here.current : here.original;
+  const where = span ? `${Review.spanOf(span)} of ${homePath(here.path)}` : homePath(here.path);
+  const quote = span?.map((line) => source[line - 1] ?? "").join("\n");
+  const about = span && !isNew ? `the removed original ${where}` : where;
   // The tray hands over a quote with its `path` and `file`, so the lines and the file travel with it.
   chrome.comment.open({
     excerpt: quote,
-    file: isFile ? undefined : homePath(here.path),
-    kind: isFile ? "file" : "line",
-    path: isFile ? undefined : Review.spanOf(lines),
-    label: isFile ? basename(here.path) : `${basename(here.path)}:${lines.join(",")}`,
+    file: span ? homePath(here.path) : undefined,
+    kind: span ? "line" : "file",
+    path: span ? Review.spanOf(span) : undefined,
+    label: span ? `${basename(here.path)}:${span.join(",")}` : basename(here.path),
     quote,
-    tell: picked.value.new.length || isFile ? `About ${where}:` : `About the removed original ${where}:`,
+    tell: isRejected ? `I rejected ${about}, because:` : `About ${about}:`,
     x: Math.max(12, Math.min(box.left, window.innerWidth - 432)),
-    y: Math.max(12, box.top - 312),
+    y: Math.max(12, Math.min(box.top - 312, window.innerHeight - 312)),
   });
+}
+
+function rejectLines(event: MouseEvent): void {
+  const lines = picked.value;
+  void review.decideLines(false);
+  comment(event, lines, true);
+}
+
+function decideHunk(change: number, isAccept: boolean, event: MouseEvent): void {
+  const here = file.value;
+  if (!here) return;
+  void review.decideHunk(change, isAccept);
+  if (!isAccept) comment(event, Review.hunkOf(here, change), true);
+}
+
+// The first press only arms the confirm, so the composer waits for the one that rejects.
+function rejectFile(event: MouseEvent): void {
+  const isConfirmed = review.confirming.value === file.value?.path;
+  void review.decideFile(false);
+  if (isConfirmed) comment(event, undefined, true);
 }
 </script>
 
@@ -112,14 +134,14 @@ function comment(event: MouseEvent, scope: "file" | "lines"): void {
               Wrap
             </UiChip>
           </span>
-          <button v-press class="action focusable" type="button" @click="comment($event, 'file')">Comment</button>
+          <button v-press class="action focusable" type="button" @click="comment($event)">Comment</button>
           <button
             v-press
             class="action focusable"
             type="button"
             data-tone="danger"
             :disabled="!isLive || review.busy.value"
-            @click="review.decideFile(false)"
+            @click="rejectFile"
           >
             {{ review.confirming.value === file.path ? "Reject? Press again" : "Reject file" }}
           </button>
@@ -154,20 +176,20 @@ function comment(event: MouseEvent, scope: "file" | "lines"): void {
             :is-busy="!isLive || review.busy.value"
             :picks="review.picks.value"
             @update:picks="review.picks.value = $event"
-            @hunk="(change, isAccept) => review.decideHunk(change, isAccept)"
+            @hunk="decideHunk"
           />
         </div>
 
         <footer v-if="review.picks.value.length" class="pickbar">
           <span class="picked">{{ plural(review.picks.value.length, "line") }} picked</span>
-          <button v-press class="action focusable" type="button" @click="comment($event, 'lines')">Comment</button>
+          <button v-press class="action focusable" type="button" @click="comment($event, picked)">Comment</button>
           <button
             v-press
             class="action focusable"
             type="button"
             data-tone="danger"
             :disabled="!isLive || review.busy.value"
-            @click="review.decideLines(false)"
+            @click="rejectLines"
           >
             Reject lines
           </button>

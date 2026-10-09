@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ChevronsLeft, ChevronsRight } from "@lucide/vue";
+import { Check, X } from "@lucide/vue";
 import { useIntersectionObserver } from "@vueuse/core";
 import type * as MonacoApi from "monaco-editor";
 import { EditorNotes, type LineSpan, type NoteAt, type Notes } from "~/utils/monaco/notes";
@@ -29,7 +29,10 @@ const {
   picks?: string[];
 }>();
 
-const emit = defineEmits<{ "update:picks": [keys: string[]]; hunk: [change: number, isAccept: boolean] }>();
+const emit = defineEmits<{
+  "update:picks": [keys: string[]];
+  hunk: [change: number, isAccept: boolean, event: MouseEvent];
+}>();
 
 const LINE_HEIGHT = 18;
 const ESTIMATE_MAX = 480;
@@ -267,20 +270,22 @@ onBeforeUnmount(() => {
         <button
           class="arrow focusable"
           type="button"
-          title="Reject the hunk: copy the original over it"
+          data-tip="Accept the hunk"
+          data-tone="accept"
           :disabled="isBusy"
-          @click="emit('hunk', hunk.change, false)"
+          @click="emit('hunk', hunk.change, true, $event)"
         >
-          <UiIcon :icon="ChevronsRight" size="xs" />
+          <UiIcon :icon="Check" size="xs" />
         </button>
         <button
           class="arrow focusable"
           type="button"
-          title="Accept the hunk into the original"
+          data-tip="Reject the hunk, then say why"
+          data-tone="reject"
           :disabled="isBusy"
-          @click="emit('hunk', hunk.change, true)"
+          @click="emit('hunk', hunk.change, false, $event)"
         >
-          <UiIcon :icon="ChevronsLeft" size="xs" />
+          <UiIcon :icon="X" size="xs" />
         </button>
       </div>
     </div>
@@ -343,7 +348,14 @@ onBeforeUnmount(() => {
 @media (hover: hover) and (pointer: fine) {
   .arrow:hover:not(:disabled) {
     background: var(--ed-button);
-    color: var(--ed-ink);
+  }
+
+  .arrow[data-tone="accept"]:hover:not(:disabled) {
+    color: var(--ed-add);
+  }
+
+  .arrow[data-tone="reject"]:hover:not(:disabled) {
+    color: var(--ed-remove);
   }
 }
 
