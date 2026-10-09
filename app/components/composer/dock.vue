@@ -32,7 +32,7 @@ watch(
 );
 
 const load = computed(() => {
-  const comments = tray.items.value.filter((item) => item.kind !== "task").length;
+  const comments = tray.items.value.filter((item) => item.kind !== "task" && !item.isSent).length;
   const tasks = tray.count.value - comments;
   const parts: string[] = [];
   if (comments) parts.push(plural(comments, "comment"));

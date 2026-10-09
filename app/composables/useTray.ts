@@ -19,6 +19,8 @@ export interface TrayItem {
   chat?: TrayChatLine[];
   file?: string;
   id: string;
+  /** Handed to Claude already: a comment stays to keep its pin on the page, and never rides a send again. */
+  isSent?: boolean;
   kind: TrayKind;
   mark?: string;
   path?: string;
@@ -88,7 +90,8 @@ export function useTray(): Tray {
     return (key && held.value[key]) || [];
   });
 
-  const count = computed(() => items.value.length);
+  const waiting = computed(() => items.value.filter((item) => !item.isSent));
+  const count = computed(() => waiting.value.length);
 
   function write(key: string, bucket: TrayItem[]): void {
     held.value = { ...held.value, [key]: bucket };
@@ -125,7 +128,7 @@ export function useTray(): Tray {
 
   function handOver(prompt: string, id?: string): TrayHandover {
     const key = sc.sessionKey.value;
-    const going = id ? items.value.filter((row) => row.id === id) : items.value;
+    const going = id ? waiting.value.filter((row) => row.id === id) : waiting.value;
     const sent = new Set(going.map((row) => row.id));
     const text = [prompt.trim(), ...going.map(line)].filter(Boolean).join("\n");
 
@@ -134,7 +137,10 @@ export function useTray(): Tray {
       if (!key) return;
       write(
         key,
-        (held.value[key] ?? []).filter((row) => !sent.has(row.id) || row.kind === "comment"),
+        (held.value[key] ?? []).flatMap((row) => {
+          if (!sent.has(row.id)) return [row];
+          return row.kind === "comment" ? [{ ...row, isSent: true }] : [];
+        }),
       );
     }
 

@@ -3,14 +3,11 @@ import { X } from "@lucide/vue";
 
 const tray = useTray();
 
-const comments = computed(() => tray.items.value.filter((item) => item.kind === "comment"));
-const others = computed(() => tray.items.value.filter((item) => item.kind !== "comment"));
+const others = computed(() => tray.items.value.filter((item) => item.kind !== "comment" && !item.isSent));
 </script>
 
 <template>
-  <div v-if="tray.count.value" class="tray" data-region="composer-tray">
-    <span v-if="comments.length" class="tally mono-meta">{{ comments.length }}</span>
-
+  <div v-if="others.length" class="tray" data-region="composer-tray">
     <span
       v-for="item in others"
       :key="item.id"
@@ -44,16 +41,6 @@ const others = computed(() => tray.items.value.filter((item) => item.kind !== "c
   flex-wrap: wrap;
   gap: 6px;
   padding: 0 6px;
-}
-
-.tally {
-  align-items: center;
-  background: var(--primary);
-  border-radius: 999px;
-  color: var(--primary-content);
-  display: inline-flex;
-  height: 22px;
-  padding: 0 8px;
 }
 
 .chip {
