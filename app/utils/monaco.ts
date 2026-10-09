@@ -1,4 +1,5 @@
 import type * as MonacoApi from "monaco-editor";
+import { OneDarkVivid } from "./monaco/one-dark-vivid";
 
 let loading: Promise<typeof MonacoApi> | undefined;
 
@@ -63,6 +64,7 @@ function load(): Promise<typeof MonacoApi> {
       defaults.setDiagnosticsOptions({ noSemanticValidation: true, noSyntaxValidation: false });
     }
     monaco.json.jsonDefaults.setDiagnosticsOptions({ allowComments: true, trailingCommas: "ignore", validate: true });
+    monaco.editor.defineTheme(OneDarkVivid.name, OneDarkVivid.theme);
     return monaco;
   })();
   return loading;
@@ -75,8 +77,4 @@ function languageOf(path: string): string | undefined {
   return BY_NAME[name] ?? (name.startsWith(".env") ? "shell" : undefined) ?? (extension ? BY_EXTENSION[extension] : undefined);
 }
 
-function themeOf(): "vs" | "vs-dark" {
-  return document.documentElement.getAttribute("data-theme") === "dark" ? "vs-dark" : "vs";
-}
-
-export const Monaco = { languageOf, load, themeOf };
+export const Monaco = { languageOf, load };

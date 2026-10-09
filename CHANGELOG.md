@@ -39,10 +39,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   other file opens in an editable Monaco: ⌘S saves through `PUT /api/sessions/:key/files/content`,
   which refuses a save over text that changed on disk since it was opened, an unsaved draft survives
   switching files, and the plus in the gutter or "Note for Claude" in the context menu drops a line
-  note into the tray. `.vue`, `.svelte`, `.astro`, `.jsonc`, `.toml`, `.zsh` and the usual dotfiles
-  highlight through the nearest language Monaco ships, and type errors from imports it cannot resolve
-  are off. The canvas face and its zoom control are gone from conversations; the desk still uses the
-  canvas.
+  note into the tray. The editor is always dark, in One Dark Pro with its `vivid` and `italic` options
+  on, and its header takes the same palette. `.vue`, `.svelte`, `.astro`, `.jsonc`, `.toml`, `.zsh` and
+  the usual dotfiles highlight through the nearest language Monaco ships, and type errors from imports
+  it cannot resolve are off. The scope pills fill the sidebar's top row and drop to icons when the pane
+  is too narrow for their labels, and Ignored sits on the folder's own row. The canvas face and its
+  zoom control are gone from conversations; the desk still uses the canvas.
 - **The left pane of Files, Review and History resizes.** Drag its edge, or focus the edge and use the
   arrow keys, and double-click to reset. Each face remembers its own width, capped at half the face so
   a width kept from a wider window never squeezes the other pane.

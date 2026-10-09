@@ -9,7 +9,20 @@ const unsaved = new Set<string>();
 <script lang="ts" setup>
 import { MessageSquarePlus } from "@lucide/vue";
 import type * as MonacoApi from "monaco-editor";
+import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { FileContent, FileSave, FileUnshown } from "~~/shared/types/files";
+
+// Code reads as code on One Dark whatever the sidecar's theme, so the chrome around it takes the same palette.
+const PALETTE = {
+  "--ed-accent": OneDarkVivid.VIVID.malibu,
+  "--ed-bar": OneDarkVivid.CHROME.bar,
+  "--ed-bg": OneDarkVivid.CHROME.background,
+  "--ed-border": OneDarkVivid.CHROME.border,
+  "--ed-button": OneDarkVivid.CHROME.button,
+  "--ed-ink": OneDarkVivid.VIVID.lightWhite,
+  "--ed-muted": OneDarkVivid.VIVID.lightDark,
+  "--ed-warn": OneDarkVivid.VIVID.whiskey,
+};
 
 const { conversation, path, turn } = defineProps<{ conversation: string; path: string; turn?: number }>();
 
@@ -200,7 +213,7 @@ onMounted(async () => {
     lineNumbersMinChars: 3,
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
-    theme: Monaco.themeOf(),
+    theme: OneDarkVivid.name,
     wordWrap: "on",
   });
   hovered = editor.createDecorationsCollection();
@@ -228,12 +241,7 @@ onMounted(async () => {
   await pull();
 });
 
-// The sidecar's toggle flips `data-theme`, and Monaco keeps its own theme, so it follows by hand.
-const themes = new MutationObserver(() => api?.editor.setTheme(Monaco.themeOf()));
-onMounted(() => {
-  themes.observe(document.documentElement, { attributeFilter: ["data-theme"], attributes: true });
-  window.addEventListener("beforeunload", onUnload);
-});
+onMounted(() => window.addEventListener("beforeunload", onUnload));
 
 watch(
   () => [conversation, path] as const,
@@ -252,7 +260,6 @@ watch(
 watch(notes, paintNotes);
 
 onBeforeUnmount(() => {
-  themes.disconnect();
   window.removeEventListener("beforeunload", onUnload);
   const model = editor?.getModel();
   if (model && !unsaved.has(model.uri.fsPath)) model.dispose();
@@ -261,14 +268,23 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="editor" data-region="files-editor">
+  <div class="editor" data-region="files-editor" :style="PALETTE">
     <header class="bar">
       <span class="path">{{ file }}</span>
       <span v-if="isStale" class="state warn mono-meta" title="A turn changed this file while you were editing">
         changed on disk
       </span>
       <span v-else-if="isDirty" class="state mono-meta">unsaved</span>
-      <UiIconButton :icon="MessageSquarePlus" label="Note the selected lines for Claude" size="xs" @click="note()" />
+      <button
+        v-press
+        class="ghost focusable"
+        type="button"
+        title="Note the selected lines for Claude, or click the plus beside any line"
+        @click="note()"
+      >
+        <UiIcon :icon="MessageSquarePlus" size="xs" />
+        Note
+      </button>
       <button v-if="isDirty || isStale" v-press class="ghost focusable" type="button" @click="discard">Discard</button>
       <button
         v-press
@@ -291,6 +307,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .editor {
+  background: var(--ed-bg);
+  color: var(--ed-ink);
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -299,7 +317,8 @@ onBeforeUnmount(() => {
 
 .bar {
   align-items: center;
-  border-bottom: 1px solid var(--border);
+  background: var(--ed-bar);
+  border-bottom: 1px solid var(--ed-border);
   display: flex;
   flex: none;
   gap: 8px;
@@ -316,47 +335,57 @@ onBeforeUnmount(() => {
 }
 
 .state {
-  color: var(--muted);
+  color: var(--ed-muted);
   flex: none;
   text-transform: none;
 }
 
 .state.warn {
-  color: var(--warning);
+  color: var(--ed-warn);
 }
 
 .ghost,
 .save {
+  align-items: center;
   border-radius: 999px;
   cursor: pointer;
+  display: inline-flex;
   flex: none;
   font-family: var(--sans);
   font-size: 11.5px;
   font-weight: 600;
+  gap: 5px;
   height: 26px;
   padding: 0 11px;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
 }
 
 .ghost {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--ed-button);
+  color: var(--ed-muted);
 }
 
-.ghost:hover {
-  border-color: var(--ink);
-  color: var(--ink);
+@media (hover: hover) and (pointer: fine) {
+  .ghost:hover {
+    background: var(--ed-button);
+    color: var(--ed-ink);
+  }
 }
 
 .save {
-  background: var(--ink);
+  background: var(--ed-accent);
   border: 0;
-  color: var(--canvas);
+  color: var(--ed-bg);
 }
 
 .save:disabled {
+  background: var(--ed-button);
+  color: var(--ed-muted);
   cursor: default;
-  opacity: 0.4;
 }
 
 .body {
@@ -373,7 +402,7 @@ onBeforeUnmount(() => {
 }
 
 .empty {
-  color: var(--muted);
+  color: var(--ed-muted);
   display: grid;
   flex: 1;
   font-size: 13px;
@@ -392,9 +421,9 @@ onBeforeUnmount(() => {
 }
 
 .files-note-add::before {
-  background: var(--primary);
+  background: var(--ed-accent);
   border-radius: 4px;
-  color: var(--canvas);
+  color: var(--ed-bg);
   content: "+";
   display: grid;
   font: 700 12px/1 var(--sans);
@@ -405,11 +434,11 @@ onBeforeUnmount(() => {
 }
 
 .files-noted {
-  background: color-mix(in oklch, var(--primary) 9%, transparent);
+  background: color-mix(in oklch, var(--ed-accent) 12%, transparent);
 }
 
 .files-noted-glyph::before {
-  background: var(--primary);
+  background: var(--ed-accent);
   border-radius: 999px;
   content: "";
   display: block;
