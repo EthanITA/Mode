@@ -1,98 +1,139 @@
 <script lang="ts" setup>
-import type { FileAction, FileGroup, SessionFile } from "~~/shared/types/files";
+import { ExternalLink } from "@lucide/vue";
+import type { FileContent, FileGroup, SessionFile } from "~~/shared/types/files";
+import type { TreeEntry } from "~~/shared/types/tree";
+
+type Scope = "all" | FileGroup;
 
 const sc = useSidecar();
 const files = useFiles(() => sc.sessionKey.value);
+const selected = useState<string | undefined>("fl:selected");
+const scope = useState<Scope>("fl:scope", () => "all");
+const showIgnored = useState("fl:ignored", () => false);
+const content = ref<FileContent>();
 
-const GROUPS: { group: FileGroup; title: string; blurb: string }[] = [
-  { group: "produced", title: "Produced", blurb: "created in this conversation" },
-  { group: "interacted", title: "Interacted", blurb: "read or changed in this conversation" },
+const SCOPES: { label: string; value: Scope }[] = [
+  { label: "All", value: "all" },
+  { label: "Produced", value: "produced" },
+  { label: "Interacted", value: "interacted" },
 ];
 
-const VERB: Record<FileAction, string> = { read: "read", edit: "edited", delete: "deleted" };
+const UNSHOWN: Record<Exclude<FileContent, { text: string }>["reason"], string> = {
+  "not-touched": "That file is outside this conversation's folder.",
+  missing: "The file is no longer on disk.",
+  "too-large": "The file is over 4 MB, too large to show here.",
+  binary: "The file is binary, so there is nothing to read.",
+};
 
-const rows = computed(() => files.value?.files ?? []);
-// The dot marks whatever the most recent turn that touched a file read or edited.
-const latest = computed(() => rows.value.reduce((at, one) => Math.max(at, one.lastTurn), 0));
+const session = computed(() => sc.sessions.value.find((s) => s.key === sc.sessionKey.value));
+const touched = computed(() => new Map((files.value?.files ?? []).map((file) => [file.path, file])));
+// The dot is solid for whatever the most recent turn that touched a file read or edited.
+const latest = computed(() => (files.value?.files ?? []).reduce((at, one) => Math.max(at, one.lastTurn), 0));
+
+const folder = useFolderTree({
+  key: () => sc.sessionKey.value ?? "",
+  root: () => session.value?.cwd ?? "",
+  showIgnored,
+});
+const scoped = usePathsTree(() => (files.value?.files ?? []).filter((file) => file.group === scope.value).map((file) => file.path));
+const source = computed(() => (scope.value === "all" ? folder : scoped));
+
+// A new turn can create or delete files, so the folders already open are listed again.
+watch(latest, () => folder.refresh());
 
 const pages = computed(() => new Map(sc.catalogue.value.map((meta) => [meta.path, meta.slug])));
-const owned = computed(() => new Set(sc.sessions.value.find((s) => s.key === sc.sessionKey.value)?.artifacts ?? []));
+const pageOf = computed(() => {
+  const slug = selected.value ? pages.value.get(selected.value) : undefined;
+  return slug && session.value?.artifacts.includes(slug) ? slug : undefined;
+});
 
-function slugOf(file: SessionFile): string | undefined {
-  const slug = pages.value.get(file.path);
-  return slug && owned.value.has(slug) ? slug : undefined;
+function markOf(entry: TreeEntry): SessionFile | undefined {
+  return entry.kind === "file" ? touched.value.get(entry.path) : undefined;
 }
 
-function folderOf(path: string): string {
-  return homePath(path.slice(0, path.lastIndexOf("/")));
-}
-
-const groups = computed(() =>
-  GROUPS.map((one) => ({ ...one, files: rows.value.filter((file) => file.group === one.group) })).filter(
-    (one) => one.files.length,
-  ),
+let ticket = 0;
+watch(
+  () => [sc.sessionKey.value, selected.value, touched.value.get(selected.value ?? "")?.lastTurn] as const,
+  async ([key, path]) => {
+    const mine = ++ticket;
+    content.value = undefined;
+    if (!key || !path) return;
+    try {
+      const got = await $fetch<FileContent>(`/api/sessions/${encodeURIComponent(key)}/files/content`, { query: { path } });
+      if (mine === ticket) content.value = got;
+    } catch {
+      if (mine === ticket) content.value = { path, reason: "missing" };
+    }
+  },
+  { immediate: true },
 );
 </script>
 
 <template>
   <section class="files" data-region="files">
     <UiSurface class="pane" data-region="files-table" pad="none" variant="raised">
+      <header class="bar">
+        <UiSegmented v-model="scope" :options="SCOPES" />
+        <span class="spacer" />
+        <UiChip v-if="scope === 'all'" :selected="showIgnored" size="xs" @click="showIgnored = !showIgnored">
+          Ignored
+        </UiChip>
+      </header>
+      <p v-if="session && scope === 'all'" class="root mono-meta">{{ homePath(session.cwd) }}</p>
       <div class="scroll">
         <p v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</p>
-        <p v-else-if="!files" class="empty">Reading what this conversation touched…</p>
-        <p v-else-if="!rows.length" class="empty">This conversation hasn't read or written any file yet.</p>
-
-        <table v-for="one in groups" :key="one.group" class="table" :data-group="one.group">
-          <caption>
-            <span class="title">{{ one.title }}</span>
-            <span class="blurb mono-meta">{{ plural(one.files.length, "file") }}, {{ one.blurb }}</span>
-          </caption>
-          <thead>
-            <tr>
-              <th class="dot-col"><span class="sr">Last touched</span></th>
-              <th>File</th>
-              <th>Folder</th>
-              <th class="num">Reads</th>
-              <th class="num">Edits</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="file in one.files"
-              :key="file.path"
-              data-cmt="file"
-              :data-cmt-label="basename(file.path)"
-              :data-cmt-tell="`About ${homePath(file.path)}:`"
-              :data-cmt-excerpt="homePath(file.path)"
-            >
-              <td class="dot-col">
-                <span
-                  v-if="file.lastTurn === latest"
-                  class="dot"
-                  :data-action="file.lastAction"
-                  :title="`Last ${VERB[file.lastAction]}, turn ${file.lastTurn}`"
-                />
-              </td>
-              <td class="name">
-                <NuxtLink v-if="slugOf(file)" class="link focusable" :to="`/c/${sc.sessionKey.value}/${slugOf(file)}`">
-                  {{ basename(file.path) }}
-                </NuxtLink>
-                <span v-else>{{ basename(file.path) }}</span>
-                <span v-if="file.lastAction === 'delete'" class="gone mono-meta">deleted</span>
-              </td>
-              <td class="folder mono-meta">{{ folderOf(file.path) }}</td>
-              <td class="num mono-meta">{{ file.reads || "" }}</td>
-              <td class="num mono-meta">{{ file.edits || "" }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <p v-else-if="scope !== 'all' && !scoped.root.value" class="empty">
+          {{ scope === "produced" ? "This conversation hasn't created a file yet." : "This conversation hasn't read or changed a file yet." }}
+        </p>
+        <FileTree
+          v-else
+          :key="`${scope}:${sc.sessionKey.value}`"
+          :is-open-by-default="scope !== 'all'"
+          :selected="selected"
+          :source="source"
+          @select="selected = $event"
+        >
+          <template #trailing="{ entry }">
+            <span
+              v-if="markOf(entry)"
+              class="dot"
+              :data-group="markOf(entry)?.group"
+              :data-latest="markOf(entry)?.lastTurn === latest"
+              :title="`${markOf(entry)?.group === 'produced' ? 'Created' : 'Read or changed'} in this conversation, last ${markOf(entry)?.lastAction} in turn ${markOf(entry)?.lastTurn}`"
+            />
+          </template>
+        </FileTree>
       </div>
+    </UiSurface>
+
+    <UiSurface class="pane" data-region="files-preview" pad="none" variant="raised">
+      <template v-if="selected">
+        <header class="bar">
+          <span class="path">{{ homePath(selected) }}</span>
+          <NuxtLink
+            v-if="pageOf"
+            class="open focusable"
+            :to="`/c/${sc.sessionKey.value}/${pageOf}`"
+            title="Open the page in the reader"
+          >
+            <UiIcon :icon="ExternalLink" size="sm" />
+            Open page
+          </NuxtLink>
+        </header>
+        <FilesViewer v-if="content && 'text' in content" class="code" :path="selected" :text="content.text" />
+        <p v-else-if="content" class="empty centered">{{ UNSHOWN[content.reason] }}</p>
+        <p v-else class="empty centered">Reading the file…</p>
+      </template>
+      <p v-else class="empty centered">Pick a file to read it here.</p>
     </UiSurface>
   </section>
 </template>
 
 <style scoped>
 .files {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(280px, 400px) minmax(0, 1fr);
   height: 100%;
   min-height: 0;
 }
@@ -100,136 +141,91 @@ const groups = computed(() =>
 .pane {
   display: flex;
   flex-direction: column;
-  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
 
-.scroll {
+.bar {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
   display: flex;
+  flex: none;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.spacer {
   flex: 1;
-  flex-direction: column;
-  gap: 18px;
+}
+
+.root {
+  border-bottom: 1px solid var(--border);
+  color: var(--subtle);
+  flex: none;
+  margin: 0;
+  overflow: hidden;
+  padding: 6px 14px;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.scroll {
+  flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 14px 16px 20px;
-}
-
-.scroll > * {
-  flex-shrink: 0;
-}
-
-.table {
-  border-collapse: collapse;
-  font-size: 12.5px;
-  width: 100%;
-}
-
-caption {
-  align-items: baseline;
-  display: flex;
-  gap: 10px;
-  padding: 0 0 8px;
-  text-align: left;
-}
-
-.title {
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.blurb {
-  color: var(--muted);
-  text-transform: none;
-}
-
-th {
-  border-bottom: 1px solid var(--border-strong);
-  color: var(--subtle);
-  font-family: var(--mono);
-  font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  padding: 6px 10px 6px 0;
-  text-align: left;
-  text-transform: uppercase;
-}
-
-td {
-  border-bottom: 1px solid var(--border);
-  padding: 7px 10px 7px 0;
-  vertical-align: baseline;
-}
-
-tbody tr:hover td {
-  background: var(--sunken);
-}
-
-.dot-col {
-  padding-left: 4px;
-  width: 18px;
+  padding: 6px 6px 16px;
 }
 
 .dot {
+  border: 1.5px solid currentColor;
   border-radius: 999px;
-  display: inline-block;
+  flex: none;
   height: 7px;
   width: 7px;
 }
 
-.dot[data-action="read"] {
-  background: var(--info);
+.dot[data-group="produced"] {
+  color: var(--success);
 }
 
-.dot[data-action="edit"] {
-  background: var(--primary);
+.dot[data-group="interacted"] {
+  color: var(--info);
 }
 
-.dot[data-action="delete"] {
-  background: var(--error);
+.dot[data-latest="true"] {
+  background: currentColor;
 }
 
-.name {
+.path {
+  flex: 1;
   font-family: var(--mono);
+  font-size: 12.5px;
   font-weight: 600;
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.link {
-  color: var(--primary-deep);
+.open {
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--ink);
+  display: inline-flex;
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  gap: 6px;
+  padding: 4px 11px;
   text-decoration: none;
 }
 
-.link:hover {
-  text-decoration: underline;
+.open:hover {
+  border-color: var(--ink);
 }
 
-.gone {
-  background: var(--error-soft);
-  border-radius: 999px;
-  color: var(--error);
-  margin-left: 6px;
-  padding: 0 6px;
-  text-transform: none;
-}
-
-.folder {
-  color: var(--muted);
-  overflow-wrap: anywhere;
-  text-transform: none;
-}
-
-.num {
-  text-align: right;
-  width: 56px;
-}
-
-.sr {
-  clip: rect(0 0 0 0);
-  height: 1px;
-  overflow: hidden;
-  position: absolute;
-  width: 1px;
+.code {
+  flex: 1;
 }
 
 .empty {
@@ -237,5 +233,13 @@ tbody tr:hover td {
   font-size: 13px;
   line-height: 1.55;
   margin: 0;
+  padding: 8px;
+}
+
+.centered {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  padding: 16px;
 }
 </style>

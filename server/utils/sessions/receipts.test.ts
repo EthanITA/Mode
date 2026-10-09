@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
 import { DELTA_KEY, RECEIPTS_DIR, useReceiptFixtures } from "./__fixtures__/env.ts"
 import { resolvePluginRoot } from "../mode/paths.ts"
-import { filesOf } from "./files.ts"
+import { contentOf, filesOf } from "./files.ts"
 import { applyEdit, receiptsOf, removedPaths, turnsOf } from "./receipts.ts"
 import { invertEdit, planOf } from "./store.ts"
 
@@ -54,6 +54,11 @@ test("a file Claude created is produced however often it changes after, one it o
   assert.equal(byPath.get("/tmp/delta/old.ts")?.group, "interacted")
   assert.equal(byPath.get("/tmp/delta/old.ts")?.lastAction, "edit")
   assert.equal(byPath.get("/tmp/delta/gone.ts")?.lastAction, "delete")
+})
+
+test("file content is served only for a file the conversation touched", () => {
+  assert.deepEqual(contentOf({ key: DELTA_KEY, path: "/etc/hosts" }), { path: "/etc/hosts", reason: "not-touched" })
+  assert.deepEqual(contentOf({ key: DELTA_KEY, path: "/tmp/delta/gone.ts" }), { path: "/tmp/delta/gone.ts", reason: "missing" })
 })
 
 test("a subagent's write belongs to the turn it happened in, under the subagent's name", () => {

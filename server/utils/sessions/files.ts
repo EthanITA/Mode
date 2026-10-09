@@ -1,5 +1,10 @@
-import type { FileAction, SessionFile, SessionFiles } from "../../../shared/types/files.ts"
+import { statSync } from "node:fs"
+import type { FileAction, FileContent, SessionFile, SessionFiles } from "../../../shared/types/files.ts"
+import { readTextSafe } from "../mode/fsutil.ts"
+import { cwdOf, isInside } from "../tree/index.ts"
 import { turnsOf } from "./receipts.ts"
+
+const MAX_BYTES = 4 * 1024 * 1024
 
 // A change outranks a read in the same turn, so the dot says what mattered last.
 const WEIGHT: Record<FileAction, number> = { read: 0, edit: 1, delete: 2 }
@@ -35,4 +40,20 @@ export function filesOf({ key }: { key: string }): SessionFiles {
   }
   const files = [...rows.values()].sort((a, b) => b.lastTurn - a.lastTurn || a.path.localeCompare(b.path))
   return { key, files }
+}
+
+// What the conversation touched or what sits under its working directory, never an arbitrary file.
+export function contentOf({ key, path }: { key: string; path: string }): FileContent {
+  const root = cwdOf(key)
+  const isReachable = (!!root && isInside(root, path)) || filesOf({ key }).files.some((file) => file.path === path)
+  if (!isReachable) return { path, reason: "not-touched" }
+  let size: number
+  try {
+    size = statSync(path).size
+  } catch {
+    return { path, reason: "missing" }
+  }
+  if (size > MAX_BYTES) return { path, reason: "too-large" }
+  const text = readTextSafe(path) ?? ""
+  return text.includes("\u0000") ? { path, reason: "binary" } : { path, text }
 }

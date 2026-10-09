@@ -21,10 +21,15 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **The chat island is hidden; Claude Code is the chat.** The prompt, the transcript and the mode and
   style pickers no longer show in a conversation or on an artifact page. Notes left on a page or a line
   still collect in the tray, which shows bottom right with one button that sends them to Claude.
-- **A Files face replaces the Canvas.** One table for what the conversation produced, the files Claude
-  created, and one for what it interacted with, the files it read or changed. A dot marks what the most
-  recent turn read or edited, and an artifact page opens in the reader. The canvas face and its zoom
-  control are gone from conversations; the desk still uses the canvas.
+- **A Files face replaces the Canvas.** The conversation's whole folder as a tree that follows
+  `.gitignore`, with a toggle that brings the ignored files back dimmed, and two narrower scopes:
+  Produced, the files Claude created, and Interacted, the ones it read or changed. A dot marks every
+  file the conversation touched, solid for what its latest turn read or edited. A picked file opens
+  read-only in Monaco, and an artifact page opens in the reader. The canvas face and its zoom control
+  are gone from conversations; the desk still uses the canvas.
+- **One file tree for every face.** `<FileTree>` draws any `TreeSource`: `useFolderTree` lists a folder
+  a directory at a time as it opens, with git deciding what is ignored, and `usePathsTree` lays out a
+  fixed set of files with single-folder chains merged. Files uses the first, Review the second.
 - **The sidecar listens for the conversation open in Terminal.** Home no longer shows the desk: it says
   it is listening to a Claude Code session and jumps to the one in Terminal's front tab, read from the
   tab titles, or to the one you last typed in when no tab matches. Every conversation page then

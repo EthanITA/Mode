@@ -16,3 +16,7 @@ export interface SessionFiles {
   key: string
   files: SessionFile[]
 }
+
+export type FileContent =
+  | { path: string; text: string }
+  | { path: string; reason: "not-touched" | "missing" | "too-large" | "binary" }
