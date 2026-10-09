@@ -251,6 +251,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **Every face says empty, loading and failed the same way,** through `@cela/design`'s
   `StateMessage`: one sentence-case line where uppercase mono and sentence case used to mix, and a
   failure is announced.
+- **Lines that are still working sweep, and the desk's running bar and the listening dot breathe.**
+  Both come from `@cela/design` and go still under reduced motion.
 
 ### Removed
 

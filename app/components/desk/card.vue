@@ -191,6 +191,7 @@ const laneLabel = computed(() => (card.lane ? LANE_LABEL[card.lane.name] : undef
 }
 
 .write {
+  @apply breathe;
   background: var(--primary);
   border-radius: 2px;
   height: 3px;

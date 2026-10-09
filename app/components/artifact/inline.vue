@@ -159,7 +159,7 @@ onMounted(() => {
       @keydown="onFieldKey"
     />
     <footer>
-      <span class="hint mono-meta">{{ pending ? "working…" : "↵ edit · esc close" }}</span>
+      <span class="hint mono-meta" :data-pending="pending">{{ pending ? "working…" : "↵ edit · esc close" }}</span>
     </footer>
   </UiSurface>
   </div>
@@ -193,6 +193,10 @@ footer {
 .hint {
   color: var(--subtle);
   margin-left: auto;
+}
+
+.hint[data-pending="true"] {
+  @apply shimmer;
 }
 
 @media (prefers-reduced-motion: reduce) {

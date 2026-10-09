@@ -41,6 +41,7 @@ const waiting = computed(() =>
 }
 
 .dot {
+  @apply breathe;
   background: var(--success);
   border-radius: 999px;
   height: 10px;

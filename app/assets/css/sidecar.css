@@ -125,29 +125,6 @@ body {
   cursor: not-allowed;
 }
 
-/* A sweep reads as progress where a pulse reads as a fault; ported from mf-ui's ShimmerText. */
-.shimmer {
-  animation: shimmer-sweep 2s linear infinite;
-  background-clip: text;
-  background-image: linear-gradient(93deg, var(--subtle) 0%, var(--ink) 50%, var(--subtle) 100%);
-  background-size: 200% 100%;
-  color: transparent;
-  -webkit-background-clip: text;
-}
-
-@keyframes shimmer-sweep {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .shimmer {
-    animation: none;
-    background-image: none;
-    color: var(--muted);
-  }
-}
-
 /* Global, not scoped: speed-highlight's spans arrive via v-html, which scoped CSS never reaches. */
 .shj-syn-kwd, .shj-syn-section {
   color: var(--tint-violet);

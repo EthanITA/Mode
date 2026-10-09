@@ -76,7 +76,9 @@ watchEffect(() => {
       role="treeitem"
       :aria-expanded="row.kind === 'entry' && row.entry.kind === 'dir' ? row.isOpen : undefined"
     >
-      <span v-if="row.kind === 'loading'" class="row loading mono-meta" :style="{ '--depth': row.depth }">Reading…</span>
+      <span v-if="row.kind === 'loading'" class="row loading mono-meta" :style="{ '--depth': row.depth }">
+        <span class="reading">Reading…</span>
+      </span>
       <button
         v-else-if="row.entry.kind === 'dir'"
         class="row focusable"
@@ -145,6 +147,11 @@ watchEffect(() => {
 
 .row[data-ignored="true"] {
   opacity: 0.55;
+}
+
+/* The sweep sits on the text, so the row's hover background can't erase it and the band spans only the words. */
+.reading {
+  @apply shimmer;
 }
 
 .loading {

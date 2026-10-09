@@ -88,7 +88,7 @@ function tellOf(version: FileVersion, index: number): string {
 
     <span class="spacer" />
 
-    <span v-if="reading" class="note mono-meta">reading…</span>
+    <span v-if="reading" class="note reading mono-meta">reading…</span>
     <span v-if="list.length" class="version mono-meta" data-region="version-badge" :data-head="onHead ? '' : undefined">
       {{ tag }}
     </span>
@@ -136,6 +136,10 @@ function tellOf(version: FileVersion, index: number): string {
 /* Loud is a warning, never an error: an honest gap is not a failure. */
 .note[data-tone="loud"] {
   color: var(--warning);
+}
+
+.reading {
+  @apply shimmer;
 }
 
 .version {
