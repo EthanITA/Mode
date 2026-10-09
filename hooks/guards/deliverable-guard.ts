@@ -11,6 +11,8 @@ const EDITS = new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 // Scratch space is where probes and helper scripts live, and none of it is a deliverable.
 const SCRATCH = [...new Set([tmpdir(), "/tmp"].map((dir) => resolveDir(dir) + "/"))];
 const JOB_TMP = /\/\.claude\/jobs\/[^/]+\/tmp\//;
+// A page sits directly in an artifacts folder, so code under a folder of that name is an ordinary edit.
+const ARTIFACT_PAGE = /\/artifacts\/[^/]+\.(?:html|md)$/;
 const MR_SHELL = /\b(?:glab\s+mr\s+create|gh\s+pr\s+create)\b/;
 const PUBLISH_SHELL = /\b(?:(?:npm|pnpm|yarn|bun)\s+publish|publish:artifact)\b/;
 const POST_SHELL = /\b(?:glab\s+mr\s+note|gh\s+(?:pr\s+(?:comment|review)|issue\s+(?:comment|create)))\b/;
@@ -33,7 +35,7 @@ function acts(data: Payload): Act[] {
   const cwd = str(data.cwd) || process.cwd();
   if (EDITS.has(tool)) {
     const path = str(args.file_path) || str(args.notebook_path);
-    return path && !scratch(path) ? [[path.includes("/artifacts/") ? "artifact" : "edit", path]] : [];
+    return path && !scratch(path) ? [[ARTIFACT_PAGE.test(path) ? "artifact" : "edit", path]] : [];
   }
   if (tool === "Agent") return args.name === "director" ? [["director", cwd]] : [];
   if (tool === "Bash") {

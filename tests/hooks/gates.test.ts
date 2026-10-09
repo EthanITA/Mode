@@ -367,6 +367,11 @@ describe("deliverable-guard, which holds every delivery act to the named north s
     assert.ok(silent(act("Edit", { file_path: "/work/repo/src/thing.ts" })));
   });
 
+  test("a page in an artifacts folder is an artifact, while code under a folder of that name is a change", () => {
+    assert.match(denial(act("Write", { file_path: "/work/notes/artifacts/plan.html" })) ?? "", /is an artifact/);
+    assert.ok(silent(act("Edit", { file_path: "/work/repo/server/api/artifacts/[slug]/review.post.ts" })));
+  });
+
   test("a push past how the tree ships and a message nobody asked to send are refused, naming the fix", () => {
     assert.match(denial(act("Bash", { command: "git -C /work/repo push" })) ?? "", /--ship push/);
     assert.match(denial(act("mcp__claude_ai_Gmail__send_message", { to: "someone" })) ?? "", /add post/);
