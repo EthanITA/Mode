@@ -71,9 +71,20 @@ export function words(text: string): string[] {
   return text.split(RUN).filter(Boolean)
 }
 
-// Counted in code points, so an emoji is never cut in half.
+// Counted in code points, so an emoji is never cut in half, and stopping there, since a page can be megabytes.
 export function head(text: string, count: number): string {
-  return Array.from(text).slice(0, count).join("")
+  let seen = 0
+  let at = 0
+  for (const char of text) {
+    if (seen++ === count) return text.slice(0, at)
+    at += char.length
+  }
+  return text
+}
+
+// Python's ljust, which counts code points where padEnd counts UTF-16 units.
+export function pad(text: string, width: number): string {
+  return text + " ".repeat(Math.max(0, width - Array.from(text).length))
 }
 
 function escaped(char: string): string {

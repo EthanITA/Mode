@@ -26,6 +26,8 @@ const GLOBAL = ["session", "path"]
 class UsageError extends Error {}
 class HelpRequest extends Error {}
 
+const NEGATIVE = /^-\d+$|^-\d*\.\d+$/
+
 const orNothing = (text: string | undefined): Outcome => text ?? NOTHING
 
 function axisArg(value: string, label: string): Axis {
@@ -184,10 +186,12 @@ function parse(argv: string[], spec: Pick<Spec, "values" | "flags" | "min" | "ma
       break
     }
     if (arg === "-h" || arg === "--help") throw new HelpRequest()
-    if (!arg.startsWith("--")) {
+    // Like argparse, a dash-led token is an option unless it reads as a negative number.
+    if (!arg.startsWith("-") || arg === "-" || NEGATIVE.test(arg)) {
       parsed.positionals.push(arg)
       continue
     }
+    if (!arg.startsWith("--")) throw new UsageError(`unrecognized arguments: ${arg}`)
     const eq = arg.indexOf("=")
     const name = arg.slice(2, eq < 0 ? undefined : eq)
     if (isFlag.has(name) && eq < 0) {

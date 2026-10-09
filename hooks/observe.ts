@@ -1,12 +1,8 @@
-import { execFileSync } from "node:child_process"
-import { dirname, join, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
+import * as Artifacts from "../lib/artifact/store.ts"
 import { newsLine } from "../lib/hook/board.ts"
 import { context, payload, record, str, type Payload } from "../lib/hook/io.ts"
 import { deliverableCommand } from "../lib/mode/deliverable.ts"
 import { done } from "../lib/mode/slots.ts"
-
-const ROOT = process.env.CLAUDE_PLUGIN_ROOT || resolve(dirname(fileURLToPath(import.meta.url)), "..")
 
 const TESTS =
   /\b(pytest|jest|vitest|rspec|phpunit|tox|nose2|(go|cargo|mvn|gradle|swift|dotnet)\s+test|(npm|yarn|pnpm|bun|deno)\s+(run\s+)?test|tests?\/run\.py|make\s+(test|check))\b/
@@ -48,18 +44,15 @@ function observed(data: Payload): string {
   return ""
 }
 
-// bin/artifact is the one writer of a conversation's list, as bin/mode is of its slots.
+// lib/artifact is the one writer of a conversation's list, as lib/mode is of its slots.
 function recordDocument(data: Payload): void {
   const path = str(record(data.tool_input).file_path)
   const session = str(data.session_id)
   if (data.hook_event_name !== "PostToolUse" || !["Write", "Edit"].includes(str(data.tool_name))) return
   if (!path.endsWith(".md") || !session) return
   try {
-    execFileSync(join(ROOT, "bin", "artifact"), ["touch", path], { env: { ...process.env, CLAUDE_CODE_SESSION_ID: session }, stdio: "ignore", timeout: 5000 })
-  } catch (error) {
-    // A non-zero exit is the tool's own answer; a timeout or a missing tool skips the rest, as it always has.
-    if (typeof (error as { status?: unknown }).status !== "number") throw error
-  }
+    Artifacts.record(Artifacts.entryOf(Artifacts.resolve(path, session)), session)
+  } catch {}
 }
 
 try {
