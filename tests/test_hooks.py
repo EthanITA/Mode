@@ -15,8 +15,8 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
-from support import (HOOKS, MODES, PLUGIN, copy_plugin, crashed, flag_fixtures, live, ok, out, report,
-                     write, require_tool, section, skip)
+from support import (HOOKS, MODES, PLUGIN, copy_plugin, crashed, flag_fixtures, hook, hook_file, live, ok,
+                     out, report, write, require_tool, section, skip)
 
 EVENTS = ("UserPromptSubmit", "SessionStart", "PostToolUse", "PostToolUseFailure", "PreToolUse",
           "SessionEnd", "Stop", "SubagentStop", "PreCompact", "Notification", "TaskCreated")
@@ -32,8 +32,7 @@ def hook_env(root, config):
 
 
 def fire(script, payload, config, root=PLUGIN):
-    path = os.path.join(root, "hooks", script)
-    runner = ["bash", path] if script.endswith(".sh") else [sys.executable, path]
+    runner = hook(os.path.splitext(script)[0], root)
     body = payload if isinstance(payload, str) else json.dumps(payload)
     return subprocess.run(runner, input=body, capture_output=True, text=True, env=hook_env(root, config))
 
@@ -110,6 +109,9 @@ else:
             rel = token.replace("${CLAUDE_PLUGIN_ROOT}/", "")
             if not os.path.exists(os.path.join(PLUGIN, rel)):
                 missing.append(rel)
+        for name in re.findall(r'/hooks/run\\"\s+([A-Za-z0-9_/-]+)', command):
+            if not os.path.exists(os.path.join(HOOKS, name + ".ts")):
+                missing.append("hooks/%s.ts" % name)
     ok("every command points at a file that ships", not missing,
        "%r. The hook fails silently on every turn." % sorted(set(missing)))
 
@@ -134,7 +136,7 @@ with tempfile.TemporaryDirectory() as tmp:
     def style(session, *args):
         return live(config, "style", *(list(args) + ["--session", session]))
 
-    present = {name: os.path.exists(os.path.join(HOOKS, name))
+    present = {name: bool(hook_file(os.path.splitext(name)[0]))
                for name in ("inject.py", "resume.py", "gate.py", "sync.sh", "_shared.py")}
     for name, there in sorted(present.items()):
         ok("hooks/%s ships" % name, there, "the spec lists it as part of this plugin")
@@ -474,7 +476,7 @@ with tempfile.TemporaryDirectory() as tmp:
                % (p.returncode, decision(p)[1][:200]))
 
         source = ""
-        with open(os.path.join(HOOKS, "gate.py")) as f:
+        with open(hook_file("gate")) as f:
             source = f.read()
         wired = [n for n in ("copilot", "autopilot", "debug", "studio", "tdd") if n in source]
         ok("no contract name is wired into the gate", not wired,
@@ -503,9 +505,9 @@ with tempfile.TemporaryDirectory() as tmp:
             """bin/mode's reader, seen through the chooser: armed means the contract is withheld."""
             session = "gf-%s" % stem
             for args in (["mode", "set", "auto"], ):
-                subprocess.run([sys.executable, tool] + args + ["--session", session],
+                subprocess.run([tool] + args + ["--session", session],
                                capture_output=True, text=True, env=gate_env)
-            p = subprocess.run([sys.executable, tool, "choose", "--axis", "mode", "--message",
+            p = subprocess.run([tool, "choose", "--axis", "mode", "--message",
                                 "%s please" % trigger, "--session", session],
                                capture_output=True, text=True, env=gate_env)
             return p.stdout.strip() == ""
@@ -513,7 +515,7 @@ with tempfile.TemporaryDirectory() as tmp:
         def gate_says(stem):
             """the hooks' reader, seen through the gate: armed means the dispatch is denied."""
             session = "gg-%s" % stem
-            subprocess.run([sys.executable, tool, "mode", "set", stem, "--session", session],
+            subprocess.run([tool, "mode", "set", stem, "--session", session],
                            capture_output=True, text=True, env=gate_env)
             p = fire("gate.py", agent_payload(session), config, root=gateroot)
             return decision(p)[0] == "deny"
@@ -536,18 +538,18 @@ with tempfile.TemporaryDirectory() as tmp:
 
     # -------------------------------------------------------------- red-guard
 
-    RED_GUARD = os.path.join(HOOKS, "guards", "red-guard.py")
+    RED_GUARD = hook("guards/red-guard")
 
     def write_payload(session, path, tool="Edit"):
         return {"session_id": session, "hook_event_name": "PreToolUse", "tool_name": tool,
                 "cwd": PLUGIN, "tool_input": {"file_path": path}}
 
     def red_fire(session, path, tool="Edit"):
-        return subprocess.run([sys.executable, RED_GUARD],
+        return subprocess.run(RED_GUARD,
                               input=json.dumps(write_payload(session, path, tool)),
                               capture_output=True, text=True, env=hook_env(PLUGIN, config))
 
-    if os.path.exists(RED_GUARD):
+    if hook_file("guards/red-guard"):
         section("red-guard.py, PreToolUse on a write")
         mode("h-red", "set", "tdd")
         p = red_fire("h-red", "/repo/src/parser.ts")
@@ -601,7 +603,7 @@ with tempfile.TemporaryDirectory() as tmp:
            % (p.returncode, p.stdout[:200]))
         os.remove(os.path.join(config, "mode", "config.json"))
 
-        source = open(RED_GUARD).read()
+        source = open(hook_file("guards/red-guard")).read()
         wired = [n for n in ("copilot", "autopilot", "debug", "studio", "tdd") if n in source]
         ok("no contract name is wired into the guard", not wired,
            "%r. The flag decides, so a name here means somebody else's mode cannot use the gate."
@@ -773,50 +775,50 @@ with tempfile.TemporaryDirectory() as tmp:
 
     section("the guards, and the switch that disarms them")
     import glob as _glob
-    for path in sorted(_glob.glob(os.path.join(HOOKS, "guards", "*.py"))):
-        stem = os.path.basename(path)
+    shipped = _glob.glob(os.path.join(HOOKS, "guards", "*.py")) + _glob.glob(os.path.join(HOOKS, "guards", "*.ts"))
+    for stem in sorted({os.path.splitext(os.path.basename(path))[0] for path in shipped}):
         if stem.startswith("_"):
             continue
-        p = subprocess.run([sys.executable, path], input="not json", capture_output=True,
+        p = subprocess.run(hook("guards/" + stem), input="not json", capture_output=True,
                            text=True, env=hook_env(PLUGIN, config))
         ok("guards/%s survives junk stdin, exit 0" % stem,
-           p.returncode == 0 and "Traceback" not in p.stderr,
+           p.returncode == 0 and not crashed(p),
            "rc=%s err=%r" % (p.returncode, p.stderr[:200]))
 
-    swg = os.path.join(HOOKS, "guards", "shell-write-guard.py")
+    swg = hook("guards/shell-write-guard")
     blockable = json.dumps({"session_id": "h-guard", "hook_event_name": "PreToolUse",
                             "tool_name": "Bash", "tool_input": {"command": "cat notes.txt"}})
-    p = subprocess.run([sys.executable, swg], input=blockable, capture_output=True,
+    p = subprocess.run(swg, input=blockable, capture_output=True,
                        text=True, env=hook_env(PLUGIN, config))
     ok("an armed guard denies the read-through-shell it exists to catch",
-       '"permissionDecision": "deny"' in p.stdout, "out=%r" % p.stdout[:200])
+       decision(p)[0] == "deny", "out=%r" % p.stdout[:200])
 
     write(os.path.join(config, "mode", "config.json"), '{"guards": "off"}\n')
-    p = subprocess.run([sys.executable, swg], input=blockable, capture_output=True,
+    p = subprocess.run(swg, input=blockable, capture_output=True,
                        text=True, env=hook_env(PLUGIN, config))
     ok("guards off in config.json disarms it: same payload, silence",
        p.returncode == 0 and not p.stdout.strip(), "rc=%s out=%r" % (p.returncode, p.stdout[:200]))
 
     write(os.path.join(config, "mode", "config.json"), '{"disarm": ["shell-write-guard"]}\n')
-    p = subprocess.run([sys.executable, swg], input=blockable, capture_output=True,
+    p = subprocess.run(swg, input=blockable, capture_output=True,
                        text=True, env=hook_env(PLUGIN, config))
     ok("a guard named in disarm goes silent on its own",
        p.returncode == 0 and not p.stdout.strip(), "rc=%s out=%r" % (p.returncode, p.stdout[:200]))
 
     write(os.path.join(config, "mode", "config.json"), '{"disarm": ["board-check"]}\n')
-    p = subprocess.run([sys.executable, swg], input=blockable, capture_output=True,
+    p = subprocess.run(swg, input=blockable, capture_output=True,
                        text=True, env=hook_env(PLUGIN, config))
     ok("and a guard left out of disarm stays armed",
-       '"permissionDecision": "deny"' in p.stdout, "out=%r" % p.stdout[:200])
+       decision(p)[0] == "deny", "out=%r" % p.stdout[:200])
     os.remove(os.path.join(config, "mode", "config.json"))
 
-    ng = os.path.join(HOOKS, "guards", "namespace-guard.py")
+    ng = hook("guards/namespace-guard")
     scratch = tempfile.mkdtemp()
 
     def written(name, text):
         path = os.path.join(scratch, name)
         write(path, text)
-        return subprocess.run([sys.executable, ng], capture_output=True, text=True, env=hook_env(PLUGIN, config),
+        return subprocess.run(ng, capture_output=True, text=True, env=hook_env(PLUGIN, config),
                               input=json.dumps({"session_id": "h-guard", "hook_event_name": "PostToolUse",
                                                 "tool_name": "Write",
                                                 "tool_input": {"file_path": path, "content": text}})).stdout
@@ -835,9 +837,9 @@ with tempfile.TemporaryDirectory() as tmp:
     # ------------------------------------------------------- the swarm roster
 
     section("roster-guard, which is what makes the file test a check")
-    rg = os.path.join(HOOKS, "guards", "roster-guard.py")
+    rg = hook("guards/roster-guard")
     sid = "h-roster"
-    subprocess.run([sys.executable, os.path.join(PLUGIN, "bin", "mode"), "mode", "set", "swarm",
+    subprocess.run([os.path.join(PLUGIN, "bin", "mode"), "mode", "set", "swarm",
                     "--session", sid], capture_output=True, env=hook_env(PLUGIN, config))
 
     board_dir = os.path.join(config, "tasks", "session-%s" % sid[:8])
@@ -851,7 +853,7 @@ with tempfile.TemporaryDirectory() as tmp:
                   json.dumps(dict({"id": str(i), "status": "in_progress"}, **item)))
 
     def spawn(name, prompt):
-        p = subprocess.run([sys.executable, rg], capture_output=True, text=True,
+        p = subprocess.run(rg, capture_output=True, text=True,
                            env=hook_env(PLUGIN, config),
                            input=json.dumps({"session_id": sid, "hook_event_name": "PreToolUse",
                                              "tool_name": "Agent",
@@ -889,19 +891,19 @@ with tempfile.TemporaryDirectory() as tmp:
        '"deny"' in spawn("Api", "You own server/api/orders.ts. the retry path posts to the ledger twice."),
        "The handback is the only route knowledge takes to the roster, since the router never reads code.")
 
-    subprocess.run([sys.executable, os.path.join(PLUGIN, "bin", "mode"), "mode", "set", "ic",
+    subprocess.run([os.path.join(PLUGIN, "bin", "mode"), "mode", "set", "ic",
                     "--session", sid], capture_output=True, env=hook_env(PLUGIN, config))
     roster(api)
     ok("under another contract it says nothing at all", not spawn("nobody", "anything").strip(),
        "Only swarm holds a roster, so every other mode must spawn untouched.")
 
     section("router-guard.py, PreToolUse on a write while swarm is held")
-    rgd = os.path.join(HOOKS, "guards", "router-guard.py")
+    rgd = hook("guards/router-guard")
     router_sid = "h-router"
     mode(router_sid, "set", "swarm")
 
     def router_fire(payload):
-        return subprocess.run([sys.executable, rgd], capture_output=True, text=True,
+        return subprocess.run(rgd, capture_output=True, text=True,
                               env=hook_env(PLUGIN, config), input=json.dumps(payload))
 
     base = {"session_id": router_sid, "hook_event_name": "PreToolUse", "tool_name": "Write",
@@ -935,7 +937,7 @@ with tempfile.TemporaryDirectory() as tmp:
        "denied with %r. The ban belongs to the held mode, not the session." % decision(p)[1][:200])
 
     section("director-guard.py, which keeps the director's hands off the work")
-    dgd = os.path.join(HOOKS, "guards", "director-guard.py")
+    dgd = hook("guards/director-guard")
     lead = os.path.join(tempfile.mkdtemp(), "lead.jsonl")
     # The shape a live payload carries: a bare id, and the name only in the meta file beside the lead's transcript.
     director = "a4c36797db827b609"
@@ -948,7 +950,7 @@ with tempfile.TemporaryDirectory() as tmp:
                    "cwd": "/repo", "transcript_path": lead, "tool_input": tool_input}
         if agent_id:
             payload["agent_id"] = agent_id
-        return subprocess.run([sys.executable, dgd], capture_output=True, text=True,
+        return subprocess.run(dgd, capture_output=True, text=True,
                               env=hook_env(PLUGIN, config), input=json.dumps(payload))
 
     p = director_fire("Write", {"file_path": "/repo/src/thing.ts"})
@@ -985,14 +987,14 @@ with tempfile.TemporaryDirectory() as tmp:
        "denied with %r. The lead's board is its own." % decision(p)[1][:200])
 
     section("deliverable-guard.py, which holds every delivery act to the named north star")
-    deg = os.path.join(HOOKS, "guards", "deliverable-guard.py")
+    deg = hook("guards/deliverable-guard")
     north = "h-north"
     mode(north, "set", "pair")
 
     def act_fire(tool, tool_input, **extra):
         payload = dict({"session_id": north, "hook_event_name": "PreToolUse", "tool_name": tool,
                         "cwd": "/work/repo", "tool_input": tool_input}, **extra)
-        return subprocess.run([sys.executable, deg], capture_output=True, text=True,
+        return subprocess.run(deg, capture_output=True, text=True,
                               env=hook_env(PLUGIN, config), input=json.dumps(payload))
 
     def name_it(*words):
@@ -1029,7 +1031,7 @@ with tempfile.TemporaryDirectory() as tmp:
        "denied with %r." % decision(p)[1][:200])
 
     section("board-cap, which keeps open USER work bounded")
-    cap_guard = os.path.join(HOOKS, "guards", "board-cap.py")
+    cap_guard = hook("guards/board-cap")
     cap_sid = "h-board-cap"
     cap_dir = os.path.join(config, "tasks", "session-%s" % cap_sid[:8])
     os.makedirs(cap_dir, exist_ok=True)
@@ -1045,7 +1047,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
     def cap_call(tool_name, tool_input):
         return subprocess.run(
-            [sys.executable, cap_guard], capture_output=True, text=True, env=hook_env(PLUGIN, config),
+            cap_guard, capture_output=True, text=True, env=hook_env(PLUGIN, config),
             input=json.dumps({"session_id": cap_sid, "hook_event_name": "PreToolUse",
                               "tool_name": tool_name, "tool_input": tool_input}),
         )

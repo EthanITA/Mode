@@ -1243,7 +1243,7 @@ with tempfile.TemporaryDirectory() as tmp:
     env.pop("CLAUDE_CODE_SESSION_ID", None)
     tool = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                          os.pardir, "bin", "artifact"))
-    p = subprocess.run([sys.executable, tool, "stamp", "alpha"],
+    p = subprocess.run([tool, "stamp", "alpha"],
                        capture_output=True, text=True, env=env)
     body = open(page).read()
     ok("a title derived from the page is unescaped into the stamp",
@@ -1253,7 +1253,7 @@ with tempfile.TemporaryDirectory() as tmp:
     section("artifact on a .md, read and commented like a page")
 
     def artifact(*args):
-        return subprocess.run([sys.executable, tool] + list(args), capture_output=True, text=True, env=env)
+        return subprocess.run([tool] + list(args), capture_output=True, text=True, env=env)
 
     note = os.path.join(arts, "plan.md")
     write(note, "# The plan\n\nShip it.\n")
@@ -1337,10 +1337,10 @@ with tempfile.TemporaryDirectory() as tmp:
     write(doc, "# Gold order timeline\n\nSaxo said unknown.\n")
     slug = "Gold-timeline--" + hashlib.sha1(doc.encode()).hexdigest()[:6]
     mine = dict(env, CLAUDE_CODE_SESSION_ID="d0c5e55a-cli")
-    p = subprocess.run([sys.executable, tool, "touch", doc], capture_output=True, text=True, env=mine)
+    p = subprocess.run([tool, "touch", doc], capture_output=True, text=True, env=mine)
     ok("touch on a path records the file and names its document slug",
        p.returncode == 0 and slug in p.stdout, "rc=%s out=%r err=%r" % (p.returncode, p.stdout, p.stderr))
-    p = subprocess.run([sys.executable, tool, "list", "--session", "--tsv"], capture_output=True, text=True, env=mine)
+    p = subprocess.run([tool, "list", "--session", "--tsv"], capture_output=True, text=True, env=mine)
     ok("the conversation's listing carries it under that slug",
        "%s\t%s" % (slug, doc) in p.stdout, "%r. The sidecar shows it, so the CLI has to name it the same way." % p.stdout)
     p = artifact("path", slug)
@@ -1383,7 +1383,7 @@ with tempfile.TemporaryDirectory() as home:
     env.pop("CLAUDE_CODE_SESSION_ID", None)
 
     def triage(request):
-        return subprocess.run([sys.executable, MODE_BIN, "triage", request], capture_output=True, text=True, env=env)
+        return subprocess.run([MODE_BIN, "triage", request], capture_output=True, text=True, env=env)
 
     p = triage("wrap up")
     ok("an instruction to sessions is relayed to every live one",
@@ -1418,7 +1418,7 @@ with tempfile.TemporaryDirectory() as home:
                CLAUDE_CODE_SESSION_ID="d311ab1e-north")
 
     def mode(*args, path="/work/acme/repo"):
-        return subprocess.run([sys.executable, MODE_BIN] + list(args) + ["--path", path],
+        return subprocess.run([MODE_BIN] + list(args) + ["--path", path],
                               capture_output=True, text=True, env=env)
 
     mode("mode", "set", "allround")
@@ -1470,7 +1470,7 @@ with tempfile.TemporaryDirectory() as home:
     env = dict(os.environ, CLAUDE_CONFIG_DIR=home)
 
     def cli(*args):
-        return subprocess.run([sys.executable, MODE_BIN] + list(args), capture_output=True, text=True, env=env)
+        return subprocess.run([MODE_BIN] + list(args), capture_output=True, text=True, env=env)
 
     cli("mode", "pin", "plainmode", "--path", work)
     cli("style", "pin", "formal", "--path", work)

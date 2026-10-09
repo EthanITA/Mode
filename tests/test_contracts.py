@@ -12,7 +12,8 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
-from support import COLORS, EXITS, MODES, PLUGIN, STYLES, live, ok, out, report, require_tool, section, skip
+from support import (COLORS, EXITS, MODES, PLUGIN, STYLES, hook_file, live, ok, out, report, require_tool,
+                     section, skip)
 
 BUDGET = 4
 SUMMARY_MAX = 120
@@ -336,8 +337,8 @@ else:
     ok("tdd declares no-code-without-red", tdd[0].get("no-code-without-red") == "true",
        "declared as %r. The guard reads the flag off the front matter, so without it the mode is "
        "back to resting on being followed." % tdd[0].get("no-code-without-red"))
-    guard = os.path.join(PLUGIN, "hooks", "guards", "red-guard.py")
-    ok("and the guard the flag arms actually ships", os.path.isfile(guard),
+    guard = hook_file("guards/red-guard")
+    ok("and the guard the flag arms actually ships", bool(guard),
        "%s is missing, so the flag is a declaration again and the contract below lies about it."
        % guard)
     text = tdd[2].lower()

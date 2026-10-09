@@ -8,9 +8,9 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
-from support import HOOKS, PLUGIN, ok, report, section
+from support import HOOKS, PLUGIN, hook, ok, report, section
 
-GUARD = os.path.join(HOOKS, "guards", "git-guard.py")
+GUARD = hook("guards/git-guard")
 
 
 def sh(repo, *args):
@@ -48,9 +48,16 @@ def fire(command, cwd, transcript):
     env = dict(os.environ, CLAUDE_PLUGIN_ROOT=PLUGIN, CLAUDE_CONFIG_DIR=config)
     payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "cwd": cwd,
                "transcript_path": transcript, "tool_input": {"command": command}}
-    done = subprocess.run([sys.executable, GUARD], input=json.dumps(payload), capture_output=True,
+    done = subprocess.run(GUARD, input=json.dumps(payload), capture_output=True,
                           text=True, env=env)
     return done.stdout
+
+
+def denied(out):
+    try:
+        return json.loads(out)["hookSpecificOutput"]["permissionDecision"] == "deny"
+    except (ValueError, KeyError, TypeError):
+        return False
 
 
 section("git-guard: someone else's uncommitted edits")
@@ -61,10 +68,10 @@ mine = transcript_editing(os.path.join(repo, "mine.txt"))
 
 out = fire("git switch -c other", repo, mine)
 ok("a switch that would carry someone else's edit is denied, naming the file",
-   '"permissionDecision": "deny"' in out and "theirs.txt" in out and "mine.txt" not in out, out[:300])
+   denied(out) and "theirs.txt" in out and "mine.txt" not in out, out[:300])
 
 out = fire("cd %s && git reset --hard HEAD" % repo, "/", mine)
-ok("reset --hard is denied too, with the repo found through `cd`", '"permissionDecision": "deny"' in out, out[:300])
+ok("reset --hard is denied too, with the repo found through `cd`", denied(out), out[:300])
 
 out = fire("git -C %s stash push -u -m parked" % repo, "/", mine)
 ok("stashing, the safe way to park the edit, is allowed", not out.strip(), out[:300])
@@ -77,7 +84,7 @@ out = fire("git -C %s reset --hard HEAD" % repo, "/", mine)
 ok("with only the session's own edits left, reset --hard is allowed", not out.strip(), out[:300])
 
 
-PAIR = os.path.join(HOOKS, "guards", "pair-guard.py")
+PAIR = hook("guards/pair-guard")
 EDIT = {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Edit", "input": {"file_path": "/x"}}]}}
 SPAWN = {"type": "assistant", "message": {"content": [
     {"type": "tool_use", "name": "Agent", "input": {"name": "director", "prompt": "review"}}]}}
@@ -95,11 +102,11 @@ def transcript_of(*entries):
 def commit_fire(repo, transcript, held="pair", command="git commit -m wip"):
     config = tempfile.mkdtemp()
     env = dict(os.environ, CLAUDE_PLUGIN_ROOT=PLUGIN, CLAUDE_CONFIG_DIR=config)
-    subprocess.run([sys.executable, os.path.join(PLUGIN, "bin", "mode"), "mode", "set", held, "--session", "pg"],
+    subprocess.run([os.path.join(PLUGIN, "bin", "mode"), "mode", "set", held, "--session", "pg"],
                    capture_output=True, env=env)
     payload = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "session_id": "pg", "cwd": repo,
                "transcript_path": transcript, "tool_input": {"command": command}}
-    return subprocess.run([sys.executable, PAIR], input=json.dumps(payload), capture_output=True,
+    return subprocess.run(PAIR, input=json.dumps(payload), capture_output=True,
                           text=True, env=env).stdout
 
 

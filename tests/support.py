@@ -5,6 +5,7 @@ directory, so a test run never reads or writes the state a live conversation is 
 """
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -108,8 +109,10 @@ def fixture_root(tmp, name, modes=None, styles=None, skill=None, rules=None):
     shutil.copy2(MODE_BIN, os.path.join(root, "bin", "mode"))
     os.chmod(os.path.join(root, "bin", "mode"), 0o755)
     for helper in os.listdir(os.path.dirname(MODE_BIN)):
-        if helper.startswith("_") and helper.endswith(".py"):
+        if helper.startswith("_") and helper.endswith((".py", ".ts")):
             shutil.copy2(os.path.join(os.path.dirname(MODE_BIN), helper), os.path.join(root, "bin", helper))
+    if os.path.isdir(os.path.join(PLUGIN, "lib")):
+        shutil.copytree(os.path.join(PLUGIN, "lib"), os.path.join(root, "lib"))
     for axis, contracts in (("modes", modes or {}), ("styles", styles or {})):
         os.makedirs(os.path.join(root, "skills", "mode", axis), exist_ok=True)
         for stem, text in contracts.items():
@@ -143,19 +146,38 @@ def run(root, config, *args):
     share one slot. Real ids are UUIDs, but test ids are hand-written and collide easily.
     """
     tool = os.path.join(root, "bin", "mode")
-    return subprocess.run([sys.executable, tool] + [str(a) for a in args],
+    return subprocess.run([tool] + [str(a) for a in args],
                           capture_output=True, text=True, env=env_for(root, config))
 
 
 def live(config, *args):
     """The shipped tool against the shipped contracts, for the checks that must see the real tree."""
-    return subprocess.run([sys.executable, MODE_BIN] + [str(a) for a in args],
+    return subprocess.run([MODE_BIN] + [str(a) for a in args],
                           capture_output=True, text=True, env=env_for(PLUGIN, config))
+
+
+def hook_file(name, root=PLUGIN):
+    for ext in (".ts", ".sh", ".py"):
+        path = os.path.join(root, "hooks", name + ext)
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def hook(name, root=PLUGIN):
+    # The command hooks.json runs: the node launcher once a hook's .ts exists, its old runner until then.
+    path = hook_file(name, root) or os.path.join(root, "hooks", name + ".py")
+    if path.endswith(".ts"):
+        return ["sh", os.path.join(root, "hooks", "run"), name]
+    return ["bash", path] if path.endswith(".sh") else [sys.executable, path]
 
 
 def out(p):
     return p.stdout.strip()
 
 
+NODE_FRAME = re.compile(r"^\s+at .+:\d+:\d+\)?$", re.M)
+
+
 def crashed(p):
-    return "Traceback (most recent call last)" in p.stderr
+    return "Traceback (most recent call last)" in p.stderr or bool(NODE_FRAME.search(p.stderr))
