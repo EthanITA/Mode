@@ -264,6 +264,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   sidecar relay, and with no sidecar running it downloads `<slug>.comments.json` for
   `artifact comments` to pick up. `artifact review --sink` goes with it, and a page built by an
   older layer still pings port 7391, which now just fails and falls through to the download.
+- **The python hooks.** `hooks/*.py`, `hooks/guards/*.py` and `hooks/sync.sh` are gone, since every
+  hook runs from its `.ts` beside them. A session opened before 0.17.0 still calls the python files
+  and has every guarded tool call blocked once they are missing, so restart it after updating.
 
 ### Fixed
 

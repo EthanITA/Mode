@@ -8,13 +8,13 @@ import { Documents } from "./sessions/artifact-lists.ts"
 const META_BLOCK = /<!--\s*artifact\b([\s\S]*?)-->/
 const TITLE_TAG = /<title>([\s\S]*?)<\/title>/i
 const RV_SEED = /<script type="application\/json" id="rv-seed">([\s\S]*?)<\/script>/
-// A .md has no <script> to hold its threads, so they ride in one trailing comment. Mirrors MD_SEED_RE in bin/_review.py.
+// A .md has no <script> to hold its threads, so they ride in one trailing comment. Mirrors MD_SEED in lib/artifact/review.ts.
 const MD_SEED = /<!-- rv:seed\n([\s\S]*?)\n-->\n?/
 const MD_SEED_START = "<!-- rv:seed\n"
 const COMMENT = /<!--[\s\S]*?-->/g
 const FENCE = /^(```|~~~)[\s\S]*?^\1/gm
 const H1 = /^#[ \t]+(.+?)[ \t#]*$/m
-// Mirrors BLOCK_RE in skills/mode/bin/_review.py, the one writer of this layer.
+// Mirrors BLOCK in lib/artifact/review.ts, the one writer of this layer.
 const RV_LAYER = /<!-- rv:start -->[\s\S]*?<!-- rv:end -->\n?/
 const RV_LAYER_START = /<!-- rv:start -->/
 type MetaField = "slug" | "title" | "url" | "target" | "ds" | "updated"

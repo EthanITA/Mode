@@ -354,7 +354,7 @@ It also cannot tell a red from a broken test, since an import error exits non-ze
 
 Everything else rests on Claude being reminded every single turn, which is genuinely useful and is not a guarantee. The clearest remaining gap is `no-implement`: `copilot` declares it and no hook reads it, because no hook can tell a two-line seam between two finished domains from a domain somebody decided to build themselves.
 
-Separately, **guards** ship in `hooks/guards/`, fencing the ground rules: the board fences, the prose fence, comment, null, red and shell-write guards. One switch disarms them all, `"guards": "off"` in `~/.claude/mode/config.json`, with absent meaning armed, and `"disarm": ["board-check"]` in the same file turns off only the guards it names, by file stem. The approval gate sits outside that switch, in `hooks/gate.py`, and `/why` says which of the two you are looking at.
+Separately, **guards** ship in `hooks/guards/`, fencing the ground rules: the board fences, the prose fence, comment, null, red and shell-write guards. One switch disarms them all, `"guards": "off"` in `~/.claude/mode/config.json`, with absent meaning armed, and `"disarm": ["board-check"]` in the same file turns off only the guards it names, by file stem. The approval gate sits outside that switch, in `hooks/gate.ts`, and `/why` says which of the two you are looking at.
 
 ---
 

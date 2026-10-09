@@ -134,7 +134,7 @@ A rules file carrying `outranks: contracts` is told whole like any other, and th
 
 The rules are fenced as well as stated. `hooks/guards/` holds the enforcement hooks: the board fences, the prose fence, the comment, null and shell-write guards, the memory guard, an X/Y/Z read fence that stands only while the `xyz` style is held, and the red guard that refuses an implementation edit for any mode declaring `no-code-without-red`. Each one interrupts the specific violation it names, which is what makes a rule a mechanism rather than a request.
 
-One switch disarms them all: `"guards": "off"` in `~/.claude/mode/config.json`. Absent means armed, matching the flag philosophy above, and the ground rules keep injecting either way, so switching the guards off changes what gets enforced and never what gets said. The dispatch gate in `hooks/gate.py` sits outside that switch, since it guards a mode's own contract rather than a ground rule.
+One switch disarms them all: `"guards": "off"` in `~/.claude/mode/config.json`. Absent means armed, matching the flag philosophy above, and the ground rules keep injecting either way, so switching the guards off changes what gets enforced and never what gets said. The dispatch gate in `hooks/gate.ts` sits outside that switch, since it guards a mode's own contract rather than a ground rule.
 
 `mode why` prints every one of these at once: what each slot holds and how it got there, where the pipeline stands, which gates are open and what would open the shut ones, which ground rules have been injected, and whether the next prompt costs the whole contract or the reminder. Reach for it when the user asks what is running, and when a guard refuses something and the reason is not obvious.
 
