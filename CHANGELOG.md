@@ -46,8 +46,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   switch a running session's model or effort, so when the lead is not on Sonnet at high effort the line
   confirming the switch asks the user to type `/model sonnet` and `/effort high`.
 - **`pair`, a tenth mode and the new default.** Claude keeps its hands on the whole loop and hears two
-  views built to differ. A teammate named `director`, spawned once per conversation one tier up (Opus
-  for Haiku and Sonnet, Fable for Opus) with no edit tools, owns the outcome as design director,
+  views built to differ. A teammate named `director`, spawned once per conversation on Opus,
+  whatever model Claude runs on, with no edit tools, owns the outcome as design director,
   product director or tech lead, and is briefed with pointers rather than conclusions so it forms its
   view from the work itself. Claude Code's `advisor` tool, when the session has one, reads the whole
   transcript and checks the method against the evidence. What to build, scope, taste and the sign-off

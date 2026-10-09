@@ -154,7 +154,7 @@ A **mode** is how the work runs: steps, gates, what it can deliver, and a point 
 
 | Mode | Reach for it when | Delivers | It ends |
 |---|---|---|---|
-| `pair` | **The default.** Any ask, Claude's hands on all of it, and two views built to differ: a `director` teammate one tier up owns the outcome and signs off before anything is committed, the advisor checks the method | answer, change, artifact, post | you say so |
+| `pair` | **The default.** Any ask, Claude's hands on all of it, and two views built to differ: a `director` teammate on Opus owns the outcome and signs off before anything is committed, the advisor checks the method | answer, change, artifact, post | you say so |
 | `ic` | The same loop without the director. Any ask, one pair of hands, you in the room. Borrows each specialist's discipline without the ceremony. | answer, change, artifact, post | you say so |
 | `copilot` | The work splits into several independent domains and you want a team to build it while you watch | change, artifact | you say so |
 | `swarm` | The same team without the spec. A standing roster of owners, each holding one domain, and every ask routed to whoever owns it | change | you say so |
