@@ -55,6 +55,18 @@ export function pyStr(value: unknown): string {
   return String(value)
 }
 
+// Python's %r of a JSON value: a string quoted the way repr quotes it, anything else as str() writes it.
+export function pyRepr(value: unknown): string {
+  return typeof value === "string" ? quote(value) : pyStr(value)
+}
+
+// Python truthiness, where an empty list or object is false; a receipt declared as `{}` has always meant none.
+export function pyTruthy(value: unknown): boolean {
+  if (Array.isArray(value)) return value.length > 0
+  if (typeof value === "object" && value) return Object.keys(value).length > 0
+  return !!value
+}
+
 export function words(text: string): string[] {
   return text.split(RUN).filter(Boolean)
 }

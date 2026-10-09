@@ -88,7 +88,7 @@
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-deliver.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-deliver",
             "timeout": 90
           }
         ]
@@ -111,11 +111,11 @@
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/git-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/git-guard"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/pair-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/pair-guard"
           }
         ]
       },
@@ -192,7 +192,7 @@
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-done.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-done",
             "timeout": 60
           }
         ]
