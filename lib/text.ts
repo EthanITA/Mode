@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs"
 
-// Python's whitespace, which JS's \s misses at \x1c-\x1f and \x85 and widens with ﻿.
+// Python's whitespace, which JS's \s misses at \x1c-\x1f and \x85 and widens with the byte order mark.
 const SPACE = "\\t\\n\\v\\f\\r\\x1c-\\x1f \\x85\\xa0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000"
 const EDGES = new RegExp(`^[${SPACE}]+|[${SPACE}]+$`, "g")
 const RUN = new RegExp(`[${SPACE}]+`)
+const BREAKS = new RegExp("\\r\\n|[\\n\\r\\v\\f\\x1c-\\x1e\\x85\\u2028\\u2029]")
+const NON_ASCII = new RegExp("[\\x80-\\uffff]", "g")
 const UNPRINTABLE = /[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{Zl}\p{Zp}\p{Zs}]/u
 
 // Python's \w, for a word edge that counts `é` as a letter where JS's ASCII \b would not; needs the u flag.
@@ -11,6 +13,23 @@ export const WORD = String.raw`[\p{L}\p{N}_]`
 
 export function strip(text: string): string {
   return text.replace(EDGES, "")
+}
+
+// Python's splitlines: every line break it knows, and no empty line after a trailing newline.
+export function lines(text: string): string[] {
+  const out = text.split(BREAKS)
+  if (out.at(-1) === "") out.pop()
+  return out
+}
+
+// Python's json.dumps layout, `", "` and `": "`, so a file python wrote and node rewrites does not churn.
+export function pyJson(value: unknown, ascii = true): string {
+  if (Array.isArray(value)) return `[${value.map((item) => pyJson(item, ascii)).join(", ")}]`
+  if (typeof value === "object" && value) {
+    return `{${Object.entries(value).map(([key, item]) => `${pyJson(key, ascii)}: ${pyJson(item, ascii)}`).join(", ")}}`
+  }
+  const text = JSON.stringify(value) ?? "null"
+  return ascii ? text.replace(NON_ASCII, (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`) : text
 }
 
 export function words(text: string): string[] {

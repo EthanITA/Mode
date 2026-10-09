@@ -18,5 +18,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["bin/_install.ts", "hooks/**/*.ts", "lib/**/*.ts"]
+  "include": ["bin/_install.ts", "bin/_mode.ts", "hooks/**/*.ts", "lib/**/*.ts"]
 }
