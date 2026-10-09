@@ -176,6 +176,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **Line notes from Review reach Claude with their file and lines.** The tray's handover only carried
+  the quoted text before.
 - **An artifact fetch that resolves late no longer replaces the one picked after it.**
 - **The version store keeps what a turn writes after the store last looked.** A build in the middle
   of a turn counted that turn as done, so its later writes never reached History; each build now

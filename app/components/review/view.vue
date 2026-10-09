@@ -29,9 +29,12 @@ function comment(event: MouseEvent, scope: "file" | "lines"): void {
   const isFile = scope === "file";
   const where = isFile ? homePath(here.path) : `${Review.spanOf(lines)} of ${homePath(here.path)}`;
   const quote = isFile ? undefined : lines.map((line) => source[line - 1] ?? "").join("\n");
+  // The tray hands over a quote with its `path` and `file`, so the lines and the file travel with it.
   chrome.comment.open({
     excerpt: quote,
+    file: isFile ? undefined : homePath(here.path),
     kind: isFile ? "file" : "line",
+    path: isFile ? undefined : Review.spanOf(lines),
     label: isFile ? basename(here.path) : `${basename(here.path)}:${lines.join(",")}`,
     quote,
     tell: picked.value.new.length || isFile ? `About ${where}:` : `About the removed original ${where}:`,
