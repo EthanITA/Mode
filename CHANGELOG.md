@@ -246,6 +246,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   claim itself.
 - **Files fullscreen shrinks back faster than it grows,** and every transition timing on a mounted
   surface reads a `@cela/design` token instead of a number.
+- **Tooltips come from `@cela/design`.** Once one has shown, the next along a row opens at once, and
+  each opens away from the nearest window edge.
 
 ### Removed
 
