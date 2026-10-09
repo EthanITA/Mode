@@ -37,23 +37,23 @@ A cycle rather than a pipeline, and only the dotted edge ever leaves it.
 
 ## What changes, turn to turn
 
-| Ordinarily | In this mode |
-|---|---|
-| An artifact is produced once, at the end | One artifact stays open and is updated every pass, so the reaction lands on a page rather than on a description |
-| You bring a recommendation | You bring options, argue hard for one, and keep the rejected ones visible on the page |
-| Visual ambition is proportionate to the task | Maximum. A safe layout is a failure here. |
-| Coverage is whatever the task obviously needs | An exhaustive pass over the space, because a brainstorm that stops at three is a list |
+| Ordinarily                                    | In this mode                                                                                                    |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| An artifact is produced once, at the end      | One artifact stays open and is updated every pass, so the reaction lands on a page rather than on a description |
+| You bring a recommendation                    | You bring options, argue hard for one, and keep the rejected ones visible on the page                           |
+| Visual ambition is proportionate to the task  | Maximum. A safe layout is a failure here.                                                                       |
+| Coverage is whatever the task obviously needs | An exhaustive pass over the space, because a brainstorm that stops at three is a list                           |
 
 ## Four things settled before the first line
 
 All four are settled before you build anything, and the ordering is the point. Planning the page after it exists is reading the brief once the thing has shipped.
 
-| Settle | Without it |
-|---|---|
-| **The surface.** The design system, the layout language, and whatever gate keeps the prose sounding human. | A page that reads as generated. |
+| Settle                                                                                                                                                                                                    | Without it                                                  |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| **The surface.** The design system, the layout language, and whatever gate keeps the prose sounding human.                                                                                                | A page that reads as generated.                             |
 | **The architecture.** What is being shown, in what structure, with which terms of art, which shortcut is banned, what counts as good enough, and whether the ambitious version is actually feasible here. | Ambition that collapses into a placeholder halfway through. |
-| **The register.** Dense thinking stays readable in human prose, and a term the reader has not met gets explained in passing where it first comes up. | Precision nobody can follow. |
-| **The coverage.** An exhaustive pass over the problem's structure rather than over whatever comes to mind first. | The three obvious ideas, presented as a survey. |
+| **The register.** Dense thinking stays readable in human prose, and a term the reader has not met gets explained in passing where it first comes up.                                                      | Precision nobody can follow.                                |
+| **The coverage.** An exhaustive pass over the problem's structure rather than over whatever comes to mind first.                                                                                          | The three obvious ideas, presented as a survey.             |
 
 The design, showpiece-prompt and create-artifact skills ship with this plugin. Load the ones that apply at the start of the session rather than partway through the build.
 

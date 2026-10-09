@@ -8,7 +8,6 @@ const { cwd, title } = defineProps<{ cwd?: string; title: string }>();
       <span class="title">{{ title }}</span>
       <span v-if="cwd" class="cwd mono-meta">{{ homePath(cwd) }}</span>
     </UiSurface>
-
   </div>
 </template>
 
@@ -55,5 +54,4 @@ const { cwd, title } = defineProps<{ cwd?: string; title: string }>();
   text-transform: none;
   white-space: nowrap;
 }
-
 </style>

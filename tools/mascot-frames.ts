@@ -9,7 +9,8 @@ const OUT = join(HERE, "..", "app", "components", "claude", "mascot.vue");
 type Frame = { fill: string; visible: boolean; d: string };
 type Layer = { index: number; fill: string; frames: Frame[] };
 
-const LAYER = /<g transform="matrix\([^"]*\)" opacity="[^"]*" style="display: block;">([\s\S]*?)(?=<g transform="matrix\([^"]*\)" opacity="[^"]*" style="display: block;">|$)/g;
+const LAYER =
+  /<g transform="matrix\([^"]*\)" opacity="[^"]*" style="display: block;">([\s\S]*?)(?=<g transform="matrix\([^"]*\)" opacity="[^"]*" style="display: block;">|$)/g;
 const PATH = /<path fill="(rgb\([^)]*\))" fill-opacity="([\d.]+)" d="([^"]*)"/g;
 
 function layersOf(svg: string): Layer[] {
@@ -47,7 +48,9 @@ console.log(`layers: ${layers.length}`);
 let box: Box = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
 for (const layer of layers) {
   const shown = layer.frames.filter((f) => f.visible).length;
-  console.log(`  layer ${layer.index}  fill ${layer.fill.padEnd(18)}  frames ${String(layer.frames.length).padStart(3)}  visible ${shown}`);
+  console.log(
+    `  layer ${layer.index}  fill ${layer.fill.padEnd(18)}  frames ${String(layer.frames.length).padStart(3)}  visible ${shown}`,
+  );
   for (const frame of layer.frames) box = boxOf(frame.d, box);
 }
 
@@ -62,7 +65,14 @@ console.log(`cropped viewBox: "${vx} ${vy} ${vw} ${vh}"  (source canvas was 2750
 // Only layers that actually draw become frame tracks; a wholly transparent layer is another state.
 const drawn = layers.filter((layer) => layer.frames.some((f) => f.visible));
 console.log(`\ndrawing layers: ${drawn.map((l) => l.index).join(", ") || "none"}`);
-console.log(`hidden layers:  ${layers.filter((l) => !drawn.includes(l)).map((l) => l.index).join(", ") || "none"}`);
+console.log(
+  `hidden layers:  ${
+    layers
+      .filter((l) => !drawn.includes(l))
+      .map((l) => l.index)
+      .join(", ") || "none"
+  }`,
+);
 
 const tracks = layers.map((layer) => ({
   fill: layer.fill,
@@ -71,5 +81,7 @@ const tracks = layers.map((layer) => ({
 
 const report = { viewBox: `${vx} ${vy} ${vw} ${vh}`, tracks };
 writeFileSync(join(HERE, "mascot-frames.json"), JSON.stringify(report, null, 2));
-console.log(`\nwrote tools/mascot-frames.json (${tracks.length} tracks, ${tracks.reduce((n, t) => n + t.frames.length, 0)} frames)`);
+console.log(
+  `\nwrote tools/mascot-frames.json (${tracks.length} tracks, ${tracks.reduce((n, t) => n + t.frames.length, 0)} frames)`,
+);
 console.log(`component target: ${OUT}`);

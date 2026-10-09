@@ -18,14 +18,14 @@ The pipeline is a lead's: understand the ask, decompose it into domains where on
 
 What makes it this mode rather than any supervised one is that nobody is in the room:
 
-| With someone in the room | Here |
-|---|---|
-| The ask gets talked through | You read the goal and start. There is nobody to talk to. |
-| A spec that can be re-read, then a question | A plan you write for your own use, and no question |
-| Dispatch waits for a yes | Dispatch happens immediately |
-| Ambiguity goes back as a fork | You resolve it, and the choice goes in the report |
-| The work is watched as it happens | One report is read when it is over |
-| The contract holds until it is cleared | It clears itself once the merge request is open and waiting |
+| With someone in the room                    | Here                                                        |
+| ------------------------------------------- | ----------------------------------------------------------- |
+| The ask gets talked through                 | You read the goal and start. There is nobody to talk to.    |
+| A spec that can be re-read, then a question | A plan you write for your own use, and no question          |
+| Dispatch waits for a yes                    | Dispatch happens immediately                                |
+| Ambiguity goes back as a fork               | You resolve it, and the choice goes in the report           |
+| The work is watched as it happens           | One report is read when it is over                          |
+| The contract holds until it is cleared      | It clears itself once the merge request is open and waiting |
 
 ## The shape of it
 
@@ -71,13 +71,13 @@ Write it for someone who was not watching. Lead with the outcome in one plain se
 
 Removing the approval gate removes exactly one gate. Everything else in the ordinary rules holds.
 
-| Situation | What happens |
-|---|---|
-| A destructive or outward-facing act, beyond the merge request the mode exists to open | Stop and wait, mode or no mode. Nobody being present is a reason for more caution rather than less. |
-| Something genuinely undecidable, where guessing wrong wastes the whole run | Stop, say why, and leave the state readable. A stopped run that can be restarted beats an hour spent on the wrong build. |
-| Something merely ambiguous | Decide it, act, and put the choice in the report. This is the mode working as intended. |
-| A failed attempt | Diagnose and try the next approach, the same as always. Ending on a failure with nothing tried is not a report. |
-| You are tempted to implement it yourself | `no-implement` is set here too. The team still builds, and only the pause in front of the team is gone. |
+| Situation                                                                             | What happens                                                                                                             |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| A destructive or outward-facing act, beyond the merge request the mode exists to open | Stop and wait, mode or no mode. Nobody being present is a reason for more caution rather than less.                      |
+| Something genuinely undecidable, where guessing wrong wastes the whole run            | Stop, say why, and leave the state readable. A stopped run that can be restarted beats an hour spent on the wrong build. |
+| Something merely ambiguous                                                            | Decide it, act, and put the choice in the report. This is the mode working as intended.                                  |
+| A failed attempt                                                                      | Diagnose and try the next approach, the same as always. Ending on a failure with nothing tried is not a report.          |
+| You are tempted to implement it yourself                                              | `no-implement` is set here too. The team still builds, and only the pause in front of the team is gone.                  |
 
 ## The honest risk
 

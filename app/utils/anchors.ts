@@ -47,7 +47,15 @@ function byQuote(quote: string, marks: FrameMark[]): Placed | undefined {
   return { key: first.key, label: first.label, state: "quote", top: first.top, weak: hits.length > 1 };
 }
 
-function byLabel({ anchors, label, marks }: { anchors: FrameAnchor[]; label: string; marks: FrameMark[] }): Placed | undefined {
+function byLabel({
+  anchors,
+  label,
+  marks,
+}: {
+  anchors: FrameAnchor[];
+  label: string;
+  marks: FrameMark[];
+}): Placed | undefined {
   const needle = flatten(label).slice(0, LABEL_PREFIX);
   if (!needle) return undefined;
   const mark = marks.find((one) => flatten(one.label).startsWith(needle));

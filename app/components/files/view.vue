@@ -93,7 +93,14 @@ function boxOf(el: Element, frame: Element): Box {
 
 function frameOf({ height, left, top, width }: Box, radius: string, depth: "lg" | "sm"): Keyframe {
   const shadow = getComputedStyle(document.documentElement).getPropertyValue(`--shadow-${depth}`).trim();
-  return { borderRadius: radius, boxShadow: shadow, height: `${height}px`, left: `${left}px`, top: `${top}px`, width: `${width}px` };
+  return {
+    borderRadius: radius,
+    boxShadow: shadow,
+    height: `${height}px`,
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${width}px`,
+  };
 }
 
 async function expand(): Promise<void> {
@@ -101,14 +108,17 @@ async function expand(): Promise<void> {
   if (!(pane instanceof HTMLElement) || !slot.value) return;
   const stage = pane.offsetParent ?? document.body;
   const from = boxOf(slot.value, stage);
-  const pad = read.value ? Number.parseFloat(getComputedStyle(read.value).paddingTop) + (bar.value?.offsetHeight ?? 0) : 0;
+  const pad = read.value
+    ? Number.parseFloat(getComputedStyle(read.value).paddingTop) + (bar.value?.offsetHeight ?? 0)
+    : 0;
   rest = { pad, radius: getComputedStyle(pane).borderRadius };
   isExpanded.value = true;
   await nextTick();
   if (prefersReducedMotion()) return;
   growth?.cancel();
   growth = pane.animate([frameOf(from, rest.radius, "sm"), frameOf(boxOf(pane, stage), "0px", "lg")], GROW);
-  if (read.value) read.value.animate([{ paddingTop: `${pad}px` }, { paddingTop: getComputedStyle(read.value).paddingTop }], GROW);
+  if (read.value)
+    read.value.animate([{ paddingTop: `${pad}px` }, { paddingTop: getComputedStyle(read.value).paddingTop }], GROW);
 }
 
 async function collapse(): Promise<void> {
@@ -120,14 +130,20 @@ async function collapse(): Promise<void> {
   const stage = pane.offsetParent ?? document.body;
   growth?.cancel();
   // Held on its last frame until the class comes off, or the sheet would flash full size for a frame.
-  const shrink = pane.animate([frameOf(boxOf(pane, stage), "0px", "lg"), frameOf(boxOf(slot.value, stage), rest.radius, "sm")], {
-    ...SHRINK,
-    fill: "forwards",
-  });
-  const settle = read.value?.animate([{ paddingTop: getComputedStyle(read.value).paddingTop }, { paddingTop: `${rest.pad}px` }], {
-    ...SHRINK,
-    fill: "forwards",
-  });
+  const shrink = pane.animate(
+    [frameOf(boxOf(pane, stage), "0px", "lg"), frameOf(boxOf(slot.value, stage), rest.radius, "sm")],
+    {
+      ...SHRINK,
+      fill: "forwards",
+    },
+  );
+  const settle = read.value?.animate(
+    [{ paddingTop: getComputedStyle(read.value).paddingTop }, { paddingTop: `${rest.pad}px` }],
+    {
+      ...SHRINK,
+      fill: "forwards",
+    },
+  );
   growth = shrink;
   await shrink.finished.catch(() => undefined);
   if (growth !== shrink) return;
@@ -161,7 +177,9 @@ onBeforeUnmount(() => {
       </div>
       <div class="scroll">
         <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
-        <UiStateMessage v-else-if="scope !== 'all' && !scoped.root.value" class="empty">{{ EMPTY[scope] }}</UiStateMessage>
+        <UiStateMessage v-else-if="scope !== 'all' && !scoped.root.value" class="empty">{{
+          EMPTY[scope]
+        }}</UiStateMessage>
         <FileTree
           v-else
           :key="`${scope}:${sc.sessionKey.value}`"

@@ -25,17 +25,11 @@ function publish(dock: number, board: number): void {
 onScopeDispose(() => cancelAnimationFrame(queued));
 
 useResizeObserver(dockEl, ([entry]) => {
-  publish(
-    Math.round(entry?.contentRect.height ?? 0),
-    Math.round(boardEl.value?.getBoundingClientRect().width ?? 0),
-  );
+  publish(Math.round(entry?.contentRect.height ?? 0), Math.round(boardEl.value?.getBoundingClientRect().width ?? 0));
 });
 
 useResizeObserver(boardEl, ([entry]) => {
-  publish(
-    Math.round(dockEl.value?.getBoundingClientRect().height ?? 0),
-    Math.round(entry?.contentRect.width ?? 0),
-  );
+  publish(Math.round(dockEl.value?.getBoundingClientRect().height ?? 0), Math.round(entry?.contentRect.width ?? 0));
 });
 </script>
 

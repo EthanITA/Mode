@@ -177,5 +177,18 @@ export function useScreen(): Screen {
     return { gates, notes: openNotes.value, questions, total: gates + openNotes.value + questions };
   });
 
-  return { artifactRows, ground, liveState, noteGroups, openNotes, position, session, slots, steps, tabs, waiting, why };
+  return {
+    artifactRows,
+    ground,
+    liveState,
+    noteGroups,
+    openNotes,
+    position,
+    session,
+    slots,
+    steps,
+    tabs,
+    waiting,
+    why,
+  };
 }

@@ -50,14 +50,14 @@ No path skips Approval. The edge out of Deliver returns to Intake and never to D
 
 ## The gate machine
 
-| Gate | What happens | You leave it when |
-|---|---|---|
-| **Intake** | A conversation. Say back what you think is being asked for, name the parts you are inventing because they were not specified, and put the genuine forks up rather than settling them silently. Name the topic. Then decompose it into domain-scoped tasks, where one task is one domain is one future agent. | You both hold the same picture, and each piece can be built without waiting on another. |
-| **Spec** | Write up what you agreed as an artifact. It fixes the scope, the domains, the files each IC owns, and every contract between them. Where the user chose something at Intake, record who chose it. | The artifact is written and opened. |
-| **Approval** | Open the artifact and read its open comments, then **ask with `AskUserQuestion` and stop there**. The turn ends on the question. | The user picks approve, or approves from inside the spec itself. Nothing weaker counts, and silence never counts. |
-| **Dispatch** | Spawn one named teammate per domain, in parallel, each carrying enough context to start completely cold. Put the names on the board and say who is who. | Every domain has an owner and a board item. |
-| **Integrate** | Read what comes back. Verify it against the spec yourself. Wire the seams between domains. | Every IC's checklist is green and the pieces work together. |
-| **Deliver** | Close on the project's definition of done, which the project's own `CLAUDE.md` states. Read it rather than assuming a bar. | Delivered against that bar. |
+| Gate          | What happens                                                                                                                                                                                                                                                                                                 | You leave it when                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| **Intake**    | A conversation. Say back what you think is being asked for, name the parts you are inventing because they were not specified, and put the genuine forks up rather than settling them silently. Name the topic. Then decompose it into domain-scoped tasks, where one task is one domain is one future agent. | You both hold the same picture, and each piece can be built without waiting on another.                           |
+| **Spec**      | Write up what you agreed as an artifact. It fixes the scope, the domains, the files each IC owns, and every contract between them. Where the user chose something at Intake, record who chose it.                                                                                                            | The artifact is written and opened.                                                                               |
+| **Approval**  | Open the artifact and read its open comments, then **ask with `AskUserQuestion` and stop there**. The turn ends on the question.                                                                                                                                                                             | The user picks approve, or approves from inside the spec itself. Nothing weaker counts, and silence never counts. |
+| **Dispatch**  | Spawn one named teammate per domain, in parallel, each carrying enough context to start completely cold. Put the names on the board and say who is who.                                                                                                                                                      | Every domain has an owner and a board item.                                                                       |
+| **Integrate** | Read what comes back. Verify it against the spec yourself. Wire the seams between domains.                                                                                                                                                                                                                   | Every IC's checklist is green and the pieces work together.                                                       |
+| **Deliver**   | Close on the project's definition of done, which the project's own `CLAUDE.md` states. Read it rather than assuming a bar.                                                                                                                                                                                   | Delivered against that bar.                                                                                       |
 
 ### Intake is a conversation
 
@@ -79,12 +79,12 @@ The spec is a page, and the page carries a comment layer, so the yes can come fr
 
 The page's Send and Approve reach this conversation through the sidecar relay, as a message from the user that quotes each open thread or says `Approved <slug>`. With no sidecar running the page saves a file instead, and `artifact comments <slug>` picks it up from the downloads folder.
 
-| What arrives | What it means |
-|---|---|
-| Approve, no open threads | The yes. Record it with `bin/mode approve <slug>` and dispatch. |
+| What arrives                    | What it means                                                                                                  |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Approve, no open threads        | The yes. Record it with `bin/mode approve <slug>` and dispatch.                                                |
 | Approve with threads still open | Approved with named changes. Those threads are the change list, so work them, resolve each one, then dispatch. |
-| Comments, no approval | Back to Spec. Update the artifact, resolve what you fixed, and ask again. |
-| Nothing | Not an approval. Waiting longer does not turn silence into a yes. |
+| Comments, no approval           | Back to Spec. Update the artifact, resolve what you fixed, and ask again.                                      |
+| Nothing                         | Not an approval. Waiting longer does not turn silence into a yes.                                              |
 
 Read the threads before writing anything, and answer every one: `artifact comments <slug> --reply <n>` to say something back, `--resolve <n> "what changed"` once the spec says the new thing. A thread you decided against stays open with a reply giving the reason, because a silent rejection is the one outcome the user cannot see.
 
@@ -99,17 +99,17 @@ No path skips Approval.
 
 ## The rules, and what each one prevents
 
-| Rule | What breaks without it |
-|---|---|
-| The user speaks only to you. | Four agents have to be chased to find out where one thing stands. |
-| An IC never writes to the user. It reports to you, and you relay what matters. | Four registers and four summaries land at once, and the human is the one reconciling them. |
-| You do not implement. | You absorb the work, the team becomes decoration, and the parallelism was theatre. |
-| The spec is always an artifact. | An approval given against a paragraph in the chat is one nobody can re-read next week. |
-| The spec records what you agreed, including who decided each open point. | A month later nobody can tell one person's choices from the other's, so revisiting one means relitigating all of them. |
-| No dispatch before an explicit yes. | Four agents build the wrong thing at once, which wastes four times what building it alone would have. |
-| The spec fixes every contract between ICs before any of them start. | They block on each other by the second turn, so the work runs serial in a parallel costume. |
-| One IC owns one domain end to end, and two ICs never edit the same file. | Two agents write the same file and neither one knows the other touched it. |
-| A parent board item closes only when the child's whole checklist is green. | A ticked box that is really a promise, and receipts stop meaning anything. |
+| Rule                                                                           | What breaks without it                                                                                                 |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| The user speaks only to you.                                                   | Four agents have to be chased to find out where one thing stands.                                                      |
+| An IC never writes to the user. It reports to you, and you relay what matters. | Four registers and four summaries land at once, and the human is the one reconciling them.                             |
+| You do not implement.                                                          | You absorb the work, the team becomes decoration, and the parallelism was theatre.                                     |
+| The spec is always an artifact.                                                | An approval given against a paragraph in the chat is one nobody can re-read next week.                                 |
+| The spec records what you agreed, including who decided each open point.       | A month later nobody can tell one person's choices from the other's, so revisiting one means relitigating all of them. |
+| No dispatch before an explicit yes.                                            | Four agents build the wrong thing at once, which wastes four times what building it alone would have.                  |
+| The spec fixes every contract between ICs before any of them start.            | They block on each other by the second turn, so the work runs serial in a parallel costume.                            |
+| One IC owns one domain end to end, and two ICs never edit the same file.       | Two agents write the same file and neither one knows the other touched it.                                             |
+| A parent board item closes only when the child's whole checklist is green.     | A ticked box that is really a promise, and receipts stop meaning anything.                                             |
 
 ## What you may still write
 

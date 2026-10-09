@@ -146,7 +146,10 @@ export function loadDeskBoards(): void {
 
   onMounted(() => {
     void pull();
-    watch(() => sc.sessions.value, () => void pull());
+    watch(
+      () => sc.sessions.value,
+      () => void pull(),
+    );
   });
 }
 

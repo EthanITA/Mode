@@ -122,12 +122,7 @@ watchEffect(() => emit("notes", pageCards.value.length + placedNotes.value.lengt
       class="perch perch-note"
       :style="{ top: `${row.top}px` }"
     >
-      <ArtifactNote
-        :item="row.item"
-        :live="live"
-        :slug="sc.slug.value ?? ''"
-        @reload="emit('reload')"
-      />
+      <ArtifactNote :item="row.item" :live="live" :slug="sc.slug.value ?? ''" @reload="emit('reload')" />
     </div>
   </TransitionGroup>
 </template>
@@ -190,5 +185,4 @@ watchEffect(() => emit("notes", pageCards.value.length + placedNotes.value.lengt
   border-color: var(--primary);
   color: var(--primary);
 }
-
 </style>

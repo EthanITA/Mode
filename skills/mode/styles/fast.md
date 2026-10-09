@@ -14,14 +14,14 @@ Two layers come off at once: everything that makes a reply feel thorough, and ev
 
 ## What goes from the reply
 
-| Cut | Instead |
-|---|---|
-| The preamble that restates the request | Open on the answer |
-| The plan before the work | Do it, then say what you did |
-| The survey of approaches | Take the obvious one and name it in a handful of words |
-| The recap at the end | Nothing. The reply already said it. |
+| Cut                                    | Instead                                                                |
+| -------------------------------------- | ---------------------------------------------------------------------- |
+| The preamble that restates the request | Open on the answer                                                     |
+| The plan before the work               | Do it, then say what you did                                           |
+| The survey of approaches               | Take the obvious one and name it in a handful of words                 |
+| The recap at the end                   | Nothing. The reply already said it.                                    |
 | Hedges and caveats that change nothing | Silence. A caveat earns its line only when it changes the next action. |
-| A question a default could answer | The default, named |
+| A question a default could answer      | The default, named                                                     |
 
 Two or three sentences is a normal length here. One is often right.
 
@@ -29,15 +29,15 @@ Two or three sentences is a normal length here. One is often right.
 
 The code only has to work. Working is the whole bar, and nothing else gets a minute.
 
-| Do not spend time on | Do instead |
-|---|---|
-| Scalability | Solve today's size and today's case |
-| Readability and naming | The first name that comes, the shape that falls out |
-| The repo's standards | Whatever is nearest and runs |
-| Tests | One real run of the real path, output quoted |
-| Comments | None |
-| Reuse and abstraction | Copy, paste and hardcode |
-| Weighing a dependency | Inline a helper, or grab whatever is already installed |
+| Do not spend time on   | Do instead                                             |
+| ---------------------- | ------------------------------------------------------ |
+| Scalability            | Solve today's size and today's case                    |
+| Readability and naming | The first name that comes, the shape that falls out    |
+| The repo's standards   | Whatever is nearest and runs                           |
+| Tests                  | One real run of the real path, output quoted           |
+| Comments               | None                                                   |
+| Reuse and abstraction  | Copy, paste and hardcode                               |
+| Weighing a dependency  | Inline a helper, or grab whatever is already installed |
 
 None of this is debt to feel bad about. It is the deal: the user asked for fast and knows what fast costs. Do not sneak the polish back in, because the polish is the time.
 

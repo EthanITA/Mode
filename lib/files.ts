@@ -1,43 +1,43 @@
-import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs"
-import { dirname } from "node:path"
+import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 export function isFile(path?: string): boolean {
-  if (!path) return false
+  if (!path) return false;
   try {
-    return statSync(path).isFile()
+    return statSync(path).isFile();
   } catch {
-    return false
+    return false;
   }
 }
 
 export function isDir(path?: string): boolean {
-  if (!path) return false
+  if (!path) return false;
   try {
-    return statSync(path).isDirectory()
+    return statSync(path).isDirectory();
   } catch {
-    return false
+    return false;
   }
 }
 
 export function listMd(dir: string): string[] {
   try {
-    return readdirSync(dir).filter((name) => name.endsWith(".md"))
+    return readdirSync(dir).filter((name) => name.endsWith(".md"));
   } catch {
-    return []
+    return [];
   }
 }
 
 // Lenient UTF-8, so one bad byte reads as a replacement character rather than an unreadable file.
 export function readTextSafe(path?: string): string | undefined {
-  if (!path) return undefined
+  if (!path) return undefined;
   try {
-    return readFileSync(path, "utf8")
+    return readFileSync(path, "utf8");
   } catch {
-    return undefined
+    return undefined;
   }
 }
 
 export function writeText(path: string, text: string): void {
-  mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, text)
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, text);
 }

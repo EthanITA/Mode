@@ -2,8 +2,7 @@
 import { plural, shorten } from "./label.ts";
 
 export type TurnSegment =
-  | { kind: "prose"; text: string }
-  | { body: string; kind: "block"; summary: string; tag: string };
+  { kind: "prose"; text: string } | { body: string; kind: "block"; summary: string; tag: string };
 
 export interface Sequenced {
   kind?: string;

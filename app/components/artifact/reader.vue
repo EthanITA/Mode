@@ -9,7 +9,7 @@ const { conversation, slug } = defineProps<{ conversation: string; slug: string 
 
 const GAP: Record<DiffGap, string> = {
   "missing-content": "no version of this file was stored for this turn",
-  "skipped": "this file is not versioned — it was over the size budget",
+  skipped: "this file is not versioned — it was over the size budget",
   "store-failed": "the version store could not be read",
   "unknown-baseline": "what stood before this file was first touched could not be reconstructed",
   "unresolved-target": "there is no version of this file at the point being asked for",
@@ -188,10 +188,14 @@ watch(inlineAsk, (ask) => {
 });
 
 // Re-asserted after every pull, like the conversation key: the poll re-picks a slug whenever the held one is unknown.
-watch([() => conversation, () => slug, () => sc.sessions.value], () => {
-  sc.sessionKey.value = conversation;
-  sc.slug.value = slug;
-}, { immediate: true });
+watch(
+  [() => conversation, () => slug, () => sc.sessions.value],
+  () => {
+    sc.sessionKey.value = conversation;
+    sc.slug.value = slug;
+  },
+  { immediate: true },
+);
 
 watch([() => sc.slug.value, () => versions.at.value], () => {
   marks.value = [];

@@ -55,11 +55,15 @@ const tell = computed(() => {
     <span class="receipts">
       <span v-if="turn.receipt.read.length" class="chip mono-meta">{{ plural(turn.receipt.read.length, "read") }}</span>
       <span v-if="touched" class="chip mono-meta" data-kind="wrote">{{ plural(touched, "file") }}</span>
-      <span v-if="turn.receipt.ran.length" class="chip mono-meta">{{ plural(turn.receipt.ran.length, "command") }}</span>
+      <span v-if="turn.receipt.ran.length" class="chip mono-meta">{{
+        plural(turn.receipt.ran.length, "command")
+      }}</span>
       <span v-if="failures" class="chip mono-meta" data-kind="failed">{{ failures }} failed</span>
       <span v-if="!touched" class="chip mono-meta" data-kind="none">no files</span>
       <!-- Spawns are shown so an agent never appears in the attribution from nowhere. -->
-      <span v-for="name in turn.spawned" :key="name" class="chip mono-meta" data-kind="spawned">spawned {{ name }}</span>
+      <span v-for="name in turn.spawned" :key="name" class="chip mono-meta" data-kind="spawned"
+        >spawned {{ name }}</span
+      >
     </span>
   </button>
 </template>

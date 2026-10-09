@@ -104,7 +104,10 @@ export function useReview(): ReviewFace {
       confirming.value = "*";
       return;
     }
-    await act({ do: isAccept ? "approve" : "reject", paths }, isAccept ? "Approved everything" : "Rejected everything, Claude is told");
+    await act(
+      { do: isAccept ? "approve" : "reject", paths },
+      isAccept ? "Approved everything" : "Rejected everything, Claude is told",
+    );
   }
 
   async function travel(way: "redo" | "undo"): Promise<void> {

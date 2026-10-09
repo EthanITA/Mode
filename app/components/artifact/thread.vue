@@ -53,7 +53,13 @@ function reply(): void {
 function resolve(): void {
   const one = thread.value;
   if (!one) return;
-  tray.add({ id: resolveId.value, kind: "reply", quote: one.anchor?.quote, source: slug, text: `Resolve note ${one.n}.` });
+  tray.add({
+    id: resolveId.value,
+    kind: "reply",
+    quote: one.anchor?.quote,
+    source: slug,
+    text: `Resolve note ${one.n}.`,
+  });
   chrome.toast("Resolve requested · Send notes hands it to Claude");
 }
 
@@ -110,9 +116,7 @@ function onKey(event: KeyboardEvent): void {
       </div>
     </div>
 
-    <p v-if="replyQueued || resolveQueued" class="queued mono-meta">
-      in the tray · waits for Send notes
-    </p>
+    <p v-if="replyQueued || resolveQueued" class="queued mono-meta">in the tray · waits for Send notes</p>
 
     <UiTextarea v-model="draft" auto-fit placeholder="Reply to Claude…" :rows="2" @keydown="onKey" />
 

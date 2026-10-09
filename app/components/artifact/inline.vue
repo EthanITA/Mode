@@ -145,23 +145,18 @@ onMounted(() => {
 
 <template>
   <div ref="panel" class="wrap" data-region="inline-panel" :style="{ left: `${left}px`, top: `${top}px` }">
-  <UiSurface
-    class="panel"
-    pad="none"
-    variant="glass"
-    :data-pending="pending"
-  >
-    <UiTextInput
-      ref="field"
-      v-model="instruction"
-      :disabled="pending"
-      placeholder="Change this to…"
-      @keydown="onFieldKey"
-    />
-    <footer>
-      <span class="hint mono-meta" :data-pending="pending">{{ pending ? "working…" : "↵ edit · esc close" }}</span>
-    </footer>
-  </UiSurface>
+    <UiSurface class="panel" pad="none" variant="glass" :data-pending="pending">
+      <UiTextInput
+        ref="field"
+        v-model="instruction"
+        :disabled="pending"
+        placeholder="Change this to…"
+        @keydown="onFieldKey"
+      />
+      <footer>
+        <span class="hint mono-meta" :data-pending="pending">{{ pending ? "working…" : "↵ edit · esc close" }}</span>
+      </footer>
+    </UiSurface>
   </div>
 </template>
 

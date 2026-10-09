@@ -42,7 +42,9 @@ const tray = useTray();
 const host = useTemplateRef<HTMLElement>("host");
 // A turn can touch dozens of files, so a card builds its editor only once it scrolls near the view.
 const isNear = ref(isFill);
-const contentHeight = ref(Math.min(Math.max(file.original.length, file.current.length) * LINE_HEIGHT + 8, ESTIMATE_MAX));
+const contentHeight = ref(
+  Math.min(Math.max(file.original.length, file.current.length) * LINE_HEIGHT + 8, ESTIMATE_MAX),
+);
 const hunks = ref<HunkAt[]>([]);
 const seam = ref(0);
 
@@ -56,7 +58,9 @@ let modelSeq = 0;
 
 const shown = computed(() => homePath(file.path));
 // Every changed row once, with the key a pick names it by, whichever side it is read from.
-const changeRows = computed(() => Review.rows({ file, isCompact: false, unfolded: [] }).filter((row) => row.kind === "change"));
+const changeRows = computed(() =>
+  Review.rows({ file, isCompact: false, unfolded: [] }).filter((row) => row.kind === "change"),
+);
 const keyOf = computed(() => ({
   new: new Map(changeRows.value.filter((row) => row.new >= 0).map((row) => [row.new + 1, row.key])),
   old: new Map(changeRows.value.filter((row) => row.old >= 0).map((row) => [row.old + 1, row.key])),
@@ -78,7 +82,10 @@ function pickFrom(side: Side): void {
   const keys = new Set<string>();
   for (const selection of editor.getSelections() ?? []) {
     if (selection.isEmpty()) continue;
-    const end = selection.endColumn === 1 && selection.endLineNumber > selection.startLineNumber ? selection.endLineNumber - 1 : selection.endLineNumber;
+    const end =
+      selection.endColumn === 1 && selection.endLineNumber > selection.startLineNumber
+        ? selection.endLineNumber - 1
+        : selection.endLineNumber;
     for (let line = selection.startLineNumber; line <= end; line++) {
       const key = keyOf.value[side].get(line);
       if (key) keys.add(key);
@@ -95,7 +102,10 @@ function paintPicks(): void {
   if (!api) return;
   const Range = api.Range;
   const chosen = changeRows.value.filter((row) => picks.includes(row.key));
-  const lines = { new: chosen.filter((row) => row.new >= 0).map((row) => row.new + 1), old: chosen.filter((row) => row.old >= 0).map((row) => row.old + 1) };
+  const lines = {
+    new: chosen.filter((row) => row.new >= 0).map((row) => row.new + 1),
+    old: chosen.filter((row) => row.old >= 0).map((row) => row.old + 1),
+  };
   (["old", "new"] as const).forEach((side, index) => {
     picked[index]?.set(
       lines[side].map((line) => ({

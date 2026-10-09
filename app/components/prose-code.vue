@@ -9,7 +9,13 @@ const text = computed(() => {
 });
 const html = ref<string>();
 
-watch(text, async (value) => { html.value = await Syntax.code(value, language); }, { immediate: true });
+watch(
+  text,
+  async (value) => {
+    html.value = await Syntax.code(value, language);
+  },
+  { immediate: true },
+);
 </script>
 
 <template>

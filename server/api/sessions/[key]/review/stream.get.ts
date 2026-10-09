@@ -1,41 +1,41 @@
-import { watch, type FSWatcher } from "node:fs"
-import { basename } from "node:path"
-import { ledgerDirOf, reviewHome, snapshotOf } from "~~/server/utils/review/ledger"
-import { keyOf } from "~~/server/utils/sessions/paths"
-import { liveEntries } from "~~/server/utils/sessions/registry"
+import { watch, type FSWatcher } from "node:fs";
+import { basename } from "node:path";
+import { ledgerDirOf, reviewHome, snapshotOf } from "~~/server/utils/review/ledger";
+import { keyOf } from "~~/server/utils/sessions/paths";
+import { liveEntries } from "~~/server/utils/sessions/registry";
 
 // The mod writes a blob and then review.json for one change, so a burst settles into one push.
-const SETTLE_MS = 120
+const SETTLE_MS = 120;
 
 export default defineEventHandler((event): Promise<void> => {
-  const key = getRouterParam(event, "key") || ""
-  const stream = createEventStream(event)
-  let watcher: FSWatcher | undefined
-  let timer: ReturnType<typeof setTimeout> | undefined
+  const key = getRouterParam(event, "key") || "";
+  const stream = createEventStream(event);
+  let watcher: FSWatcher | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
 
   const push = (): void => {
-    const live = liveEntries().some((entry) => keyOf(entry.id) === key)
-    void stream.push({ event: "review", data: JSON.stringify(snapshotOf({ key, live })) })
-  }
+    const live = liveEntries().some((entry) => keyOf(entry.id) === key);
+    void stream.push({ event: "review", data: JSON.stringify(snapshotOf({ key, live })) });
+  };
 
   // Watching the parent folder catches the session's own folder being created by its first edit.
   try {
     watcher = watch(reviewHome(), { recursive: true }, (_kind, name) => {
-      const dir = ledgerDirOf(key)
-      if (!name || !dir || !String(name).startsWith(basename(dir))) return
-      clearTimeout(timer)
-      timer = setTimeout(push, SETTLE_MS)
-    })
-    watcher.on("error", () => watcher?.close())
+      const dir = ledgerDirOf(key);
+      if (!name || !dir || !String(name).startsWith(basename(dir))) return;
+      clearTimeout(timer);
+      timer = setTimeout(push, SETTLE_MS);
+    });
+    watcher.on("error", () => watcher?.close());
   } catch {
-    watcher = undefined
+    watcher = undefined;
   }
 
   stream.onClosed(() => {
-    clearTimeout(timer)
-    watcher?.close()
-  })
+    clearTimeout(timer);
+    watcher?.close();
+  });
 
-  push()
-  return stream.send()
-})
+  push();
+  return stream.send();
+});

@@ -1,8 +1,5 @@
 <script lang="ts" setup>
-const {
-  disabled = false,
-  placeholder = "Reply…",
-} = defineProps<{
+const { disabled = false, placeholder = "Reply…" } = defineProps<{
   disabled?: boolean;
   placeholder?: string;
 }>();

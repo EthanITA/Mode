@@ -20,14 +20,14 @@ One reader who sees only the work and one who sees everything you did catch diff
 
 ## Role and routing
 
-| | The director | The advisor |
-|---|---|---|
-| Role | Owns the outcome, as design director, product director or tech lead, whichever the ask needs | Checks your method against your own evidence |
-| Sees | Only your brief and what it reads for itself, so your framing does not leak into its view | Your whole transcript, every call and every result |
-| Model | Opus, whatever model you run on | Whatever the `advisorModel` setting names, which is the setup's choice rather than this contract's |
-| Reached by | `Agent` once, then `SendMessage` to `director` | The `advisor` tool, which takes no arguments |
-| Routed to it | What to build, scope, a design or product call, a taste call, and the sign-off on the finished work | The approach, whether the evidence holds, being stuck, and whether "done" is backed by receipts |
-| Its word | Final on direction, below the user | Advice, weighed against the evidence |
+|              | The director                                                                                        | The advisor                                                                                        |
+| ------------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Role         | Owns the outcome, as design director, product director or tech lead, whichever the ask needs        | Checks your method against your own evidence                                                       |
+| Sees         | Only your brief and what it reads for itself, so your framing does not leak into its view           | Your whole transcript, every call and every result                                                 |
+| Model        | Opus, whatever model you run on                                                                     | Whatever the `advisorModel` setting names, which is the setup's choice rather than this contract's |
+| Reached by   | `Agent` once, then `SendMessage` to `director`                                                      | The `advisor` tool, which takes no arguments                                                       |
+| Routed to it | What to build, scope, a design or product call, a taste call, and the sign-off on the finished work | The approach, whether the evidence holds, being stuck, and whether "done" is backed by receipts    |
+| Its word     | Final on direction, below the user                                                                  | Advice, weighed against the evidence                                                               |
 
 With no advisor tool in the session, the director takes both columns.
 
@@ -48,12 +48,12 @@ Every later message carries only what changed and the question at hand.
 
 ### The director's hats
 
-| The ask looks like | The director is | Bring it |
-|---|---|---|
-| A screen, a flow, a page, anything seen | Design director | The options you weighed and the one you would ship |
-| A feature, a scope call, a trade-off the user will feel | Product director | The outcome for the user and what it costs |
-| Code, architecture, a bug | Tech lead | The approach, where it could break, and the files to read |
-| Writing that goes out under the user's name | Editor | The draft and the user's own messages it should sound like |
+| The ask looks like                                      | The director is  | Bring it                                                   |
+| ------------------------------------------------------- | ---------------- | ---------------------------------------------------------- |
+| A screen, a flow, a page, anything seen                 | Design director  | The options you weighed and the one you would ship         |
+| A feature, a scope call, a trade-off the user will feel | Product director | The outcome for the user and what it costs                 |
+| Code, architecture, a bug                               | Tech lead        | The approach, where it could break, and the files to read  |
+| Writing that goes out under the user's name             | Editor           | The draft and the user's own messages it should sound like |
 
 ## When each one is called
 
@@ -74,12 +74,12 @@ flowchart TD
     G -- the next ask --> A
 ```
 
-| Moment | The director | The advisor |
-|---|---|---|
-| **Plan**, after grounding and before the first substantive edit or answer | Is this the right thing to build, at this scope | Is this approach sound, given what you found |
-| **Stuck**, when an error recurs or an approach is not converging | Only if being stuck changes what gets delivered | Yes, first, because it has already seen every failed attempt |
-| **Changing course**, before you drop the agreed approach | Yes when the change alters what gets delivered | Yes when only the method changes |
-| **Review**, once the work is written and verified, before any commit | Reads the diff, the page or the file itself, and signs off or asks for changes | Checks that the verification you claim is really in the transcript |
+| Moment                                                                    | The director                                                                   | The advisor                                                        |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| **Plan**, after grounding and before the first substantive edit or answer | Is this the right thing to build, at this scope                                | Is this approach sound, given what you found                       |
+| **Stuck**, when an error recurs or an approach is not converging          | Only if being stuck changes what gets delivered                                | Yes, first, because it has already seen every failed attempt       |
+| **Changing course**, before you drop the agreed approach                  | Yes when the change alters what gets delivered                                 | Yes when only the method changes                                   |
+| **Review**, once the work is written and verified, before any commit      | Reads the diff, the page or the file itself, and signs off or asks for changes | Checks that the verification you claim is really in the transcript |
 
 Orientation is not substantive work, so read, search and probe before the plan. Files on disk already survive an interrupted call, so nothing is committed before the review, and the commit and the delivery come after the director signs off. `pair-guard` holds that line: a commit over 30 changed lines is denied until the director has answered after your last edit.
 
@@ -89,12 +89,12 @@ Scale it to the ask. A lookup, a one-line answer or a step dictated by output yo
 
 The value is in two views formed apart, so the director's brief never carries the advisor's opinion, and the advisor is called right after that brief goes out, so it speaks before the director's answer lands. The advisor sees your brief to the director, which is only your own framing and already in its view anyway.
 
-| When the two | Do this |
-|---|---|
-| Agree | Go. |
-| Split on what to build, scope or taste | Take the advisor's point to the director once, quoted. The director owns the outcome, so its answer stands. |
-| Split on a fact or on method | Run the check that settles it rather than picking a side. The evidence decides. |
-| Split on something that is the user's to decide | Put both views to the user in two lines and ask. |
+| When the two                                    | Do this                                                                                                     |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Agree                                           | Go.                                                                                                         |
+| Split on what to build, scope or taste          | Take the advisor's point to the director once, quoted. The director owns the outcome, so its answer stands. |
+| Split on a fact or on method                    | Run the check that settles it rather than picking a side. The evidence decides.                             |
+| Split on something that is the user's to decide | Put both views to the user in two lines and ask.                                                            |
 
 When you follow either one and it fails in practice, or you hold primary-source evidence against a specific claim it made, adapt, and tell that reader in one more call: "I found X, you suggest Y, which constraint breaks the tie?" Never switch silently. A passing test of your own is not evidence either reader is wrong, only that your test does not check what they were checking.
 

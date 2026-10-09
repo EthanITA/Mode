@@ -1,19 +1,19 @@
-import assert from "node:assert/strict"
-import { afterEach, test } from "node:test"
-import { useFixtures } from "./__fixtures__/env.ts"
-import { Flow, alternatives, names, truthy } from "../../../lib/mode/contracts.ts"
+import assert from "node:assert/strict";
+import { afterEach, test } from "node:test";
+import { useFixtures } from "./__fixtures__/env.ts";
+import { Flow, alternatives, names, truthy } from "../../../lib/mode/contracts.ts";
 
-let restore: () => void
-afterEach(() => restore?.())
+let restore: () => void;
+afterEach(() => restore?.());
 
 test("names lists the fixture contracts, sorted", () => {
-  restore = useFixtures()
-  assert.deepEqual(names("mode"), ["demo", "gated"])
-  assert.deepEqual(names("style"), ["plain"])
-})
+  restore = useFixtures();
+  assert.deepEqual(names("mode"), ["demo", "gated"]);
+  assert.deepEqual(names("style"), ["plain"]);
+});
 
 test("Flow.steps parses the gate marker and the @event off each step", () => {
-  restore = useFixtures()
+  restore = useFixtures();
   assert.deepEqual(Flow.steps("mode", "gated"), [
     { label: "intake", gate: false, event: "" },
     { label: "spec", gate: false, event: "artifact" },
@@ -21,24 +21,24 @@ test("Flow.steps parses the gate marker and the @event off each step", () => {
     { label: "dispatch", gate: false, event: "agent" },
     { label: "integrate", gate: false, event: "" },
     { label: "deliver", gate: false, event: "commit" },
-  ])
-  assert.deepEqual(Flow.steps("mode", "demo"), [])
-})
+  ]);
+  assert.deepEqual(Flow.steps("mode", "demo"), []);
+});
 
 test("Flow.loops drops an arc naming a step that no longer exists", () => {
-  restore = useFixtures()
-  const steps = Flow.steps("mode", "gated")
+  restore = useFixtures();
+  const steps = Flow.steps("mode", "gated");
   assert.deepEqual(Flow.loops("mode", "gated", steps), [
     { from: "approval", to: "spec" },
     { from: "integrate", to: "dispatch" },
     { from: "deliver", to: "intake" },
-  ])
-})
+  ]);
+});
 
 test("truthy and alternatives read front matter the way bin/mode does", () => {
-  restore = useFixtures()
-  assert.equal(truthy({ flag: "true" }, "flag"), true)
-  assert.equal(truthy({ flag: "off" }, "flag"), false)
-  assert.equal(truthy({}, "flag"), false)
-  assert.deepEqual(alternatives({ when: "alpha|Beta| gamma " }, "when"), ["alpha", "beta", "gamma"])
-})
+  restore = useFixtures();
+  assert.equal(truthy({ flag: "true" }, "flag"), true);
+  assert.equal(truthy({ flag: "off" }, "flag"), false);
+  assert.equal(truthy({}, "flag"), false);
+  assert.deepEqual(alternatives({ when: "alpha|Beta| gamma " }, "when"), ["alpha", "beta", "gamma"]);
+});

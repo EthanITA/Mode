@@ -12,12 +12,7 @@ const tell = computed(() =>
 </script>
 
 <template>
-  <div
-    :data-cmt-label="note.text.trim() || 'Empty note'"
-    :data-cmt-tell="tell"
-    class="sticky"
-    data-cmt="note"
-  >
+  <div :data-cmt-label="note.text.trim() || 'Empty note'" :data-cmt-tell="tell" class="sticky" data-cmt="note">
     <UiTextarea
       :model-value="note.text"
       class="sticky-text"

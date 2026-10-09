@@ -179,9 +179,7 @@ function onEnter(event: KeyboardEvent): void {
         Board
         <span class="bar"><i class="fill" :style="{ width: `${pct}%` }" /></span>
         <span class="count mono-meta">{{ count }}</span>
-        <span v-if="waiting" class="waiting mono-meta">
-          <i class="dot" />{{ waiting }} on Marco
-        </span>
+        <span v-if="waiting" class="waiting mono-meta"> <i class="dot" />{{ waiting }} on Marco </span>
         <span class="chevron"><UiIcon :icon="ChevronUp" size="xs" /></span>
       </button>
     </template>

@@ -1,1 +1,1 @@
-export { Syntax } from "~~/shared/utils/highlight"
+export { Syntax } from "~~/shared/utils/highlight";

@@ -20,7 +20,7 @@ Those are the two dials. A session holds one of each, and each one holds until y
 
 ## The two axes
 
-A **mode** answers *how the work runs*: it has steps, gates and a point where you can say it finished. A **style** answers *how it sounds while running*: it has no steps at all, and instead changes the texture of whatever mode is going.
+A **mode** answers _how the work runs_: it has steps, gates and a point where you can say it finished. A **style** answers _how it sounds while running_: it has no steps at all, and instead changes the texture of whatever mode is going.
 
 <p align="center"><img src="assets/axes.svg" alt="A grid of ten modes down the side against six styles across the top, making sixty combinations, with the cell where debug meets edu highlighted." width="620"></p>
 
@@ -34,7 +34,7 @@ That test is why the diagrams below come in two shapes. Every mode is drawn as a
 
 ## How it actually holds
 
-A `UserPromptSubmit` hook runs *before* Claude reads your message. It performs any switch you asked for, so the slot is already set by the time Claude sees anything, then injects the contract text into the prompt itself.
+A `UserPromptSubmit` hook runs _before_ Claude reads your message. It performs any switch you asked for, so the slot is already set by the time Claude sees anything, then injects the contract text into the prompt itself.
 
 <p align="center"><img src="assets/hook-sequence.svg" alt="The hook intercepts your message before Claude sees it, asks bin/mode to expire, switch and choose, receives what each slot now holds, and passes Claude the message together with the contract text." width="660"></p>
 
@@ -78,15 +78,15 @@ Beside the two slots sits a set of files that are not switched at all. They live
 
 Seven ship with the plugin:
 
-| Rule | What it holds |
-|---|---|
-| `evidence` | Claims rest on something read this session; receipts over narration; honest confidence |
-| `scope` | The diff stays inside the ask; fix causes, not symptoms; docs move with the code |
-| `board` | Autonomous work runs on a visible task board, and a ticked box is a receipt |
-| `collaboration` | Execute what is reversible, escalate what is genuinely yours, challenge by default |
-| `prose` | Write like a colleague typing to a colleague: the fact that settles it, then stop; no em dashes, symbols or chat formatting. Outranks every mode, style and skill |
-| `deliverable` | Name what will land before producing it, then route it |
-| `artifact` | Scoped: fires only when a page is on the way, carrying the theming and interactivity contract |
+| Rule            | What it holds                                                                                                                                                     |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `evidence`      | Claims rest on something read this session; receipts over narration; honest confidence                                                                            |
+| `scope`         | The diff stays inside the ask; fix causes, not symptoms; docs move with the code                                                                                  |
+| `board`         | Autonomous work runs on a visible task board, and a ticked box is a receipt                                                                                       |
+| `collaboration` | Execute what is reversible, escalate what is genuinely yours, challenge by default                                                                                |
+| `prose`         | Write like a colleague typing to a colleague: the fact that settles it, then stop; no em dashes, symbols or chat formatting. Outranks every mode, style and skill |
+| `deliverable`   | Name what will land before producing it, then route it                                                                                                            |
+| `artifact`      | Scoped: fires only when a page is on the way, carrying the theming and interactivity contract                                                                     |
 
 **Why this tier exists is economic.** A rule in a `CLAUDE.md` is paid for on every request of every session. A ground rule costs one injection per conversation.
 
@@ -98,18 +98,18 @@ A rules file needs only `name` and `summary` in its front matter. Drop a file wi
 
 ## The deliverable
 
-What *lands* at the end varies independently of how the work ran, but it used to be welded into each mode: `debug` always ended in an explainer plus a merge request, `tester` always in a report. So there was no way to ask for one mode's rigour with a different ending.
+What _lands_ at the end varies independently of how the work ran, but it used to be welded into each mode: `debug` always ended in an explainer plus a merge request, `tester` always in a report. So there was no way to ask for one mode's rigour with a different ending.
 
 The `deliverable` ground rule names the forms and routes each:
 
-| Form | What it means | Where it goes |
-|---|---|---|
-| **chat** | The answer lives in the conversation, nothing is built | Stay inline; do not build a page nobody asked for |
-| **artifact** | A page you open, keep and re-read | The `create-artifact` skill, always |
-| **MR or PR** | A change plus the note a reviewer reads | Human prose, sectioned what and why, visuals where structure exists |
-| **MVP** | The smallest slice that actually runs | Code, run once for real before it is called done |
+| Form         | What it means                                          | Where it goes                                                       |
+| ------------ | ------------------------------------------------------ | ------------------------------------------------------------------- |
+| **chat**     | The answer lives in the conversation, nothing is built | Stay inline; do not build a page nobody asked for                   |
+| **artifact** | A page you open, keep and re-read                      | The `create-artifact` skill, always                                 |
+| **MR or PR** | A change plus the note a reviewer reads                | Human prose, sectioned what and why, visuals where structure exists |
+| **MVP**      | The smallest slice that actually runs                  | Code, run once for real before it is called done                    |
 
-Several at once is ordinary. The rule requires the form to be *stated* before it is produced, which is the actual fix: the wrong shape gets caught while it is still cheap.
+Several at once is ordinary. The rule requires the form to be _stated_ before it is produced, which is the actual fix: the wrong shape gets caught while it is still cheap.
 
 ---
 
@@ -119,15 +119,15 @@ Typing a name is not the only way in, and `off` is not the only way out.
 
 <p align="center"><img src="assets/slot-lifecycle.svg" alt="A slot moves between empty, held when you type a name, and auto. While on auto a matching pattern moves it to chosen, marked with a tilde in the status line, and its exit condition returns it to auto rather than to empty. A pinned default is taken only by a contract that opts in, named in the prompt's opening sentence." width="660"></p>
 
-| Key | Means |
-|---|---|
-| `enter-when` | Alternatives split on a vertical bar. One matching your message selects this contract, but **only while that slot is set to `auto`**, or holds a pin and the contract sets `enter-over-pin` |
-| `enter-over-pin: true` | A pinned default is no bar: one of its `enter-when` phrases in the prompt's opening sentence takes the slot. A name you typed still is |
-| `style: <name>` | The style this mode runs in, put in place whenever it is entered unless you typed a style in this conversation. `dispatcher` runs in `fast` |
-| `enter-never: true` | Never chosen for you, must be typed. Only `autopilot` carries it |
-| `exit-when: manual` | Only `/mode off` ends it |
-| `exit-when: approved` | A yes was recorded with `/approve` under this contract |
-| `exit-when: mr-opened` | A merge request exists for the branch it worked on |
+| Key                    | Means                                                                                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enter-when`           | Alternatives split on a vertical bar. One matching your message selects this contract, but **only while that slot is set to `auto`**, or holds a pin and the contract sets `enter-over-pin` |
+| `enter-over-pin: true` | A pinned default is no bar: one of its `enter-when` phrases in the prompt's opening sentence takes the slot. A name you typed still is                                                      |
+| `style: <name>`        | The style this mode runs in, put in place whenever it is entered unless you typed a style in this conversation. `dispatcher` runs in `fast`                                                 |
+| `enter-never: true`    | Never chosen for you, must be typed. Only `autopilot` carries it                                                                                                                            |
+| `exit-when: manual`    | Only `/mode off` ends it                                                                                                                                                                    |
+| `exit-when: approved`  | A yes was recorded with `/approve` under this contract                                                                                                                                      |
+| `exit-when: mr-opened` | A merge request exists for the branch it worked on                                                                                                                                          |
 
 Matching anchors at the **start** of a word and runs free at the end. So `fail` covers fails, failed, failing and failure, while `build the` never matches "rebuild the". That missing trailing boundary is deliberate, and it is why every alternative has to be verb-shaped: a bare `build` would fire on "the build fails on startup" and hand a broken pipeline to the mode that spawns a team.
 
@@ -146,10 +146,10 @@ mode pins                      # what a fresh conversation would start in, and w
 
 Two layers answer, and which one you reach for is a question about who the answer is for.
 
-| Layer | Written by | Reaches |
-|---|---|---|
-| **Personal** | `mode <axis> pin <name>`, stored in `~/.claude/mode/pins.tsv` | You, on this machine |
-| **Shared** | a `.mode` file committed in the repo, two lines of `axis: name` | Everybody who clones it |
+| Layer        | Written by                                                      | Reaches                 |
+| ------------ | --------------------------------------------------------------- | ----------------------- |
+| **Personal** | `mode <axis> pin <name>`, stored in `~/.claude/mode/pins.tsv`   | You, on this machine    |
+| **Shared**   | a `.mode` file committed in the repo, two lines of `axis: name` | Everybody who clones it |
 
 Lookup walks up from the working directory and takes the first answer it finds, so a package deep in a monorepo can pin something the repo root does not. In one directory the personal layer beats the shared one, because your machine outranks somebody else's default. `mode <axis> pin off` is a personal no that masks a shared file without editing the repo, and `--forget` removes it again.
 
@@ -173,13 +173,13 @@ Every mechanism above is invisible by design. The contract is injected where you
 
 Like a switch, it is answered inside the hook and never reaches the model, so it costs nothing and returns immediately. It prints five things:
 
-| Section | Answers |
-|---|---|
-| **Slots** | What each holds, and whether you typed it, the chooser picked it, or a directory pinned it |
-| **Pipeline** | Which step the held mode is on, what is behind it and what is next |
-| **Gates** | Every flag the mode declares, whether it is open right now, and what would open it |
-| **Ground rules** | Which have been injected already, and which are still waiting on a trigger phrase |
-| **The next prompt carries** | Whether your next message costs the whole contract or the four standing lines |
+| Section                     | Answers                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------ |
+| **Slots**                   | What each holds, and whether you typed it, the chooser picked it, or a directory pinned it |
+| **Pipeline**                | Which step the held mode is on, what is behind it and what is next                         |
+| **Gates**                   | Every flag the mode declares, whether it is open right now, and what would open it         |
+| **Ground rules**            | Which have been injected already, and which are still waiting on a trigger phrase          |
+| **The next prompt carries** | Whether your next message costs the whole contract or the four standing lines              |
 
 The Gates section is the one worth knowing about before you need it. A guard refusing an edit reads like the tool being broken until you have seen the line that says which gate it was and what opens it.
 
@@ -343,10 +343,10 @@ Worth being blunt, because a contract that asks politely and a gate that refuses
 
 Two flags have a mechanism behind them, and any contract can declare either.
 
-| Flag | What it refuses | What opens it |
-|---|---|---|
-| `no-dispatch-without-approval` | Spawning a teammate | A yes recorded with `/approve`, scoped to the mode that asked |
-| `no-code-without-red` | Editing an implementation file | A suite the recorder watched exit non-zero, until a passing run closes the lap |
+| Flag                           | What it refuses                | What opens it                                                                  |
+| ------------------------------ | ------------------------------ | ------------------------------------------------------------------------------ |
+| `no-dispatch-without-approval` | Spawning a teammate            | A yes recorded with `/approve`, scoped to the mode that asked                  |
+| `no-code-without-red`          | Editing an implementation file | A suite the recorder watched exit non-zero, until a passing run closes the lap |
 
 `copilot` carries the first, `tdd` the second. The second is narrow on purpose: it judges only files whose extension carries behaviour, outside a test directory, whose name is not test shaped. The test itself, prose, config and fixtures are never refused, because a rule that blocked those would block the only route to a red.
 

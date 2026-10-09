@@ -1,6 +1,6 @@
-import { listArtifacts } from "../../utils/artifacts"
-import type { ArtifactMeta } from "../../../shared/types/artifact"
+import { listArtifacts } from "../../utils/artifacts";
+import type { ArtifactMeta } from "../../../shared/types/artifact";
 
 export default defineEventHandler(async (): Promise<ArtifactMeta[]> => {
-  return listArtifacts()
-})
+  return listArtifacts();
+});

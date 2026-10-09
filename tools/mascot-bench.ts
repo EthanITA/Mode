@@ -21,8 +21,10 @@ let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity];
 for (const track of drawn) {
   for (const frame of track.frames) {
     const [a, b, c, e] = box(frame);
-    minX = Math.min(minX, a); minY = Math.min(minY, b);
-    maxX = Math.max(maxX, c); maxY = Math.max(maxY, e);
+    minX = Math.min(minX, a);
+    minY = Math.min(minY, b);
+    maxX = Math.max(maxX, c);
+    maxY = Math.max(maxY, e);
   }
 }
 const VB = `${minX} ${minY} ${maxX - minX} ${maxY - minY}`;
@@ -33,7 +35,10 @@ const svg = (fill: string, d: string, size: number) =>
 const sheets = report.tracks
   .map((track, ti) => {
     const cells = track.frames
-      .map((d, fi) => `<div class="cell">${svg(track.fill, d, 150)}<span>t${ti} f${String(fi).padStart(2, "0")}</span></div>`)
+      .map(
+        (d, fi) =>
+          `<div class="cell">${svg(track.fill, d, 150)}<span>t${ti} f${String(fi).padStart(2, "0")}</span></div>`,
+      )
       .join("");
     return `<h2>track ${ti} &mdash; ${track.fill} &mdash; ${track.frames.length} frames</h2><div class="sheet">${cells}</div>`;
   })

@@ -40,7 +40,7 @@ Then register it with Claude Code, pointing the marketplace at that same clone s
 Restart Claude Code, or open a new conversation.
 
 > [!NOTE]
-> Claude Code copies the plugin into its own cache, into a directory named after the version. Your clone is the marketplace *source*; the copy that actually runs lives elsewhere. That distinction is invisible until you try to update.
+> Claude Code copies the plugin into its own cache, into a directory named after the version. Your clone is the marketplace _source_; the copy that actually runs lives elsewhere. That distinction is invisible until you try to update.
 
 ### Route two: a skills directory
 
@@ -61,21 +61,21 @@ Either way, `claude plugin list` tells you which one you ended up with.
 
 Three things, none of which a plugin can do for itself. It never asks your name: contracts say "the user", and Claude already knows who it is talking to.
 
-| It does | Because |
-|---|---|
+| It does                                                                                                  | Because                                                                                                     |
+| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Writes `/mode`, `/style`, `/approve` and `/why` into your commands directory, plus one per shipped skill | A plugin cannot register an un-namespaced command, so without these files those names do not resolve at all |
-| Creates `~/.claude/mode/{modes,styles,rules,design-systems}/` | Somewhere for contracts and design-system packs you write yourself that a plugin update never overwrites |
-| Wires the status line | `statusLine` is a key in your `settings.json`, and no plugin can set it |
+| Creates `~/.claude/mode/{modes,styles,rules,design-systems}/`                                            | Somewhere for contracts and design-system packs you write yourself that a plugin update never overwrites    |
+| Wires the status line                                                                                    | `statusLine` is a key in your `settings.json`, and no plugin can set it                                     |
 
 It then runs `mode sync`, which adds one palette entry per contract.
 
 On the status line it emits and does not own. `bin/mode chips` prints one entry per axis and your existing line embeds that output, so nothing you already render gets wiped:
 
-| What you have | What it does |
-|---|---|
-| No status line | Writes a small one whose only job is to print the chips |
-| A status line already | Never overwrites it. Shows the block to add, offers to append, shows the diff first. Appends only to a shell script; a `node …` or `python …` line is left alone |
-| A settings file that is a symlink | Resolves it and writes through it, so it stays a symlink |
+| What you have                     | What it does                                                                                                                                                     |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No status line                    | Writes a small one whose only job is to print the chips                                                                                                          |
+| A status line already             | Never overwrites it. Shows the block to add, offers to append, shows the diff first. Appends only to a shell script; a `node …` or `python …` line is left alone |
+| A settings file that is a symlink | Resolves it and writes through it, so it stays a symlink                                                                                                         |
 
 > [!WARNING]
 > That last row is not hypothetical. Claude Code replaces `settings.json` with a regular file whenever it writes a setting, and if yours is a symlink into a dotfiles repo, the repo copy quietly stops being the live one with nothing to tell you. The installer takes a timestamped backup first and prints every path it touched.
@@ -108,7 +108,7 @@ claude plugin update mode@mode
 > [!IMPORTANT]
 > Either way, restart. Hooks and commands are read once when a session starts, so a running session keeps the old copy until it ends.
 
-An update never touches contracts you wrote yourself, because they live in `~/.claude/mode/` outside the plugin. Anything you edited *inside* the plugin directory is a different story: the cache copy stops being used, or `git pull` conflicts with it.
+An update never touches contracts you wrote yourself, because they live in `~/.claude/mode/` outside the plugin. Anything you edited _inside_ the plugin directory is a different story: the cache copy stops being used, or `git pull` conflicts with it.
 
 ---
 
@@ -128,7 +128,7 @@ An update never touches contracts you wrote yourself, because they live in `~/.c
 
 Every contract also has its own palette entry, so you can type `/mode:` or `/style:` and pick from the list rather than recalling names. Both spellings do the identical thing.
 
-**A bare name goes to whichever axis owns it**, so you do not have to remember which is which: `/mode native` fills the *style* slot, because `native` is a style. You can set both at once, in either order, and two commands in one message both land:
+**A bare name goes to whichever axis owns it**, so you do not have to remember which is which: `/mode native` fills the _style_ slot, because `native` is a style. You can set both at once, in either order, and two commands in one message both land:
 
 ```text
 /mode tdd native         # a mode and a style in one go
@@ -152,19 +152,19 @@ Both also accept `auto`, which lets a contract be picked from what you write. A 
 
 A **mode** is how the work runs: steps, gates, what it can deliver, and a point where you can say it finished.
 
-| Mode | Reach for it when | Delivers | It ends |
-|---|---|---|---|
-| `pair` | **The default.** Any ask, Claude's hands on all of it, and two views built to differ: a `director` teammate on Opus owns the outcome and signs off before anything is committed, the advisor checks the method | answer, change, artifact, post | you say so |
-| `ic` | The same loop without the director. Any ask, one pair of hands, you in the room. Borrows each specialist's discipline without the ceremony. | answer, change, artifact, post | you say so |
-| `copilot` | The work splits into several independent domains and you want a team to build it while you watch | change, artifact | you say so |
-| `swarm` | The same team without the spec. A standing roster of owners, each holding one domain, and every ask routed to whoever owns it | change | you say so |
-| `dispatcher` | You have several requests at once and want each triaged without typing a prompt per request: a new conversation, a relay to the live one that holds it, or an answer here. Read-only | nothing | you say so |
-| `autopilot` | You want a result and you are walking away. Every decision is Claude's, one report waits. Typed only, never auto-chosen. | change | the MR opens |
-| `debug` | Something is broken and nobody knows where. Instrument, reproduce, fix the cause, explain why. | change, artifact | you approve the explainer |
-| `tdd` | You want the test to exist before the code, failing for the right reason | change | you say so |
-| `goal` | It has to be truly finished: verified for real, then audited clean by fresh eyes, twice in a row | change | you say so |
-| `tester` | A feature somebody else built needs sweeping, and you want a verdict rather than a fix | artifact | you say so |
-| `studio` | You are thinking something through and want the ideas on a page that grows as you talk | artifact | you say so |
+| Mode         | Reach for it when                                                                                                                                                                                              | Delivers                       | It ends                   |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------- |
+| `pair`       | **The default.** Any ask, Claude's hands on all of it, and two views built to differ: a `director` teammate on Opus owns the outcome and signs off before anything is committed, the advisor checks the method | answer, change, artifact, post | you say so                |
+| `ic`         | The same loop without the director. Any ask, one pair of hands, you in the room. Borrows each specialist's discipline without the ceremony.                                                                    | answer, change, artifact, post | you say so                |
+| `copilot`    | The work splits into several independent domains and you want a team to build it while you watch                                                                                                               | change, artifact               | you say so                |
+| `swarm`      | The same team without the spec. A standing roster of owners, each holding one domain, and every ask routed to whoever owns it                                                                                  | change                         | you say so                |
+| `dispatcher` | You have several requests at once and want each triaged without typing a prompt per request: a new conversation, a relay to the live one that holds it, or an answer here. Read-only                           | nothing                        | you say so                |
+| `autopilot`  | You want a result and you are walking away. Every decision is Claude's, one report waits. Typed only, never auto-chosen.                                                                                       | change                         | the MR opens              |
+| `debug`      | Something is broken and nobody knows where. Instrument, reproduce, fix the cause, explain why.                                                                                                                 | change, artifact               | you approve the explainer |
+| `tdd`        | You want the test to exist before the code, failing for the right reason                                                                                                                                       | change                         | you say so                |
+| `goal`       | It has to be truly finished: verified for real, then audited clean by fresh eyes, twice in a row                                                                                                               | change                         | you say so                |
+| `tester`     | A feature somebody else built needs sweeping, and you want a verdict rather than a fix                                                                                                                         | artifact                       | you say so                |
+| `studio`     | You are thinking something through and want the ideas on a page that grows as you talk                                                                                                                         | artifact                       | you say so                |
 
 Every ask in a mode that delivers something gets a **north star**: one or more of answer, change, artifact and post, plus the one line it ends in, named with `mode deliverable change "the retry fix merged"`. When nothing is named, Jev reads the ask and records its reading for Claude to confirm. The hook restates it every turn, the status line shows it, and `deliverable-guard` refuses an edit, a commit, a push, an MR or a post outside it. How far a change ships is the project's `delivery` row, and `mode deliverables` prints both tables with how a change ships where you stand first.
 
@@ -172,14 +172,14 @@ Every ask in a mode that delivers something gets a **north star**: one or more o
 
 A **style** is how Claude sounds while any of that runs. It has no steps of its own.
 
-| Style | Reach for it when |
-|---|---|
-| `edu` | You want to understand, not just be updated. Explained the way a friend who knows it would, top down, in human prose, drawn where it has shape |
-| `fast` | You are in a hurry. It gets made to work and nothing gets polished |
-| `ship` | It is going out and other people depend on it: readable, named, and the tests, docs and changelog travel with it |
-| `native` | Somebody else's codebase. Match the local idiom and add none of your own |
-| `creative` | The safe first answer is not good enough. Go wide, several real options, boldness spent in one place |
-| `xyz` | You write short and expect the rest inferred. Every reply opens with the read |
+| Style      | Reach for it when                                                                                                                              |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `edu`      | You want to understand, not just be updated. Explained the way a friend who knows it would, top down, in human prose, drawn where it has shape |
+| `fast`     | You are in a hurry. It gets made to work and nothing gets polished                                                                             |
+| `ship`     | It is going out and other people depend on it: readable, named, and the tests, docs and changelog travel with it                               |
+| `native`   | Somebody else's codebase. Match the local idiom and add none of your own                                                                       |
+| `creative` | The safe first answer is not good enough. Go wide, several real options, boldness spent in one place                                           |
+| `xyz`      | You write short and expect the rest inferred. Every reply opens with the read                                                                  |
 
 ### Picking a pair
 
@@ -196,12 +196,12 @@ Most combinations just work. Three are worth knowing:
 Beyond the two slots, the plugin carries the skills the contracts reach for, so a mode that says
 "build an artifact" is naming something that is actually installed.
 
-| Skill | What it does |
-|---|---|
-| `create-artifact` | Builds one self-contained HTML page in a named design system, opened locally |
-| `edge-induction` | Turns a problem's structure into an edge-case checklist rather than a list from memory |
-| `design` | Interface craft: polish, component design, animation decisions |
-| `showpiece-prompt` | Writes a one-shot generative prompt using the six-slot anatomy |
+| Skill              | What it does                                                                           |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| `create-artifact`  | Builds one self-contained HTML page in a named design system, opened locally           |
+| `edge-induction`   | Turns a problem's structure into an edge-case checklist rather than a list from memory |
+| `design`           | Interface craft: polish, component design, animation decisions                         |
+| `showpiece-prompt` | Writes a one-shot generative prompt using the six-slot anatomy                         |
 
 They are namespaced `mode:<name>`, and the installer writes a bare `/<name>` command for each.
 
@@ -211,11 +211,11 @@ the threads. `artifact new <slug> --ds <key>` writes a page with the pack's styl
 kit already in it, so Claude writes markup rather than CSS and JavaScript, and `artifact kit <slug>`
 refreshes the kit in an older page. Three lookups are worth knowing:
 
-| It resolves | In this order |
-|---|---|
-| A design system | The packs shipped here, then `~/.claude/mode/design-systems/`, where yours wins on a name clash |
-| Where artifacts live | `NOTES_ARTIFACTS`, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/artifacts` |
-| Who a comment is from | The `user` key in that same config, defaulting to "User" |
+| It resolves           | In this order                                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------------- |
+| A design system       | The packs shipped here, then `~/.claude/mode/design-systems/`, where yours wins on a name clash |
+| Where artifacts live  | `NOTES_ARTIFACTS`, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/artifacts` |
+| Who a comment is from | The `user` key in that same config, defaulting to "User"                                        |
 
 That config file holds the plugin's own settings too: `guards` turns every guard off at once,
 `disarm` turns off only the guards it lists by file stem, such as `["board-check"]`, and
@@ -264,10 +264,10 @@ mode pins                      # what a fresh conversation here would begin in, 
 
 There are two layers, and they resolve the way the contract folders do.
 
-| Layer | Lives in | Reach |
-|---|---|---|
-| **Personal** | `~/.claude/mode/pins.tsv`, written by `mode <axis> pin` | This machine only |
-| **Shared** | a `.mode` file committed at any directory | Everybody who clones the repo |
+| Layer        | Lives in                                                | Reach                         |
+| ------------ | ------------------------------------------------------- | ----------------------------- |
+| **Personal** | `~/.claude/mode/pins.tsv`, written by `mode <axis> pin` | This machine only             |
+| **Shared**   | a `.mode` file committed at any directory               | Everybody who clones the repo |
 
 A shared `.mode` is two lines, and hand-writing it is the point:
 
@@ -326,17 +326,17 @@ The full contract, at whatever length it needs. Read once, at the switch.
 - No edits in the first pass.
 ```
 
-| Key | Meaning |
-|---|---|
-| `name` | Must equal the filename without its extension |
-| `summary` | One line, under 80 characters. It is what the listing prints and the chip shows |
-| `color` | One of red, green, yellow, blue, magenta, cyan, grey, sky, pink, orange |
-| `enter-when` | Alternatives split on a vertical bar, matched at a word boundary. Consulted while the slot holds `auto`, or a pin when the contract sets `enter-over-pin` |
-| `enter-over-pin` | Lets a phrase in the prompt's opening sentence take a slot that only holds a pinned default, never one you typed |
-| `style` | The style the mode runs in, put in place when it is entered unless you typed a style in this conversation |
-| `exit-when` | `manual`, `approved`, or `mr-opened` |
-| `no-dispatch-without-approval` | Arms a gate that refuses to spawn a teammate until a yes is recorded |
-| `no-code-without-red` | Arms a guard that refuses an edit to an implementation file while no watched failure stands |
+| Key                            | Meaning                                                                                                                                                   |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                         | Must equal the filename without its extension                                                                                                             |
+| `summary`                      | One line, under 80 characters. It is what the listing prints and the chip shows                                                                           |
+| `color`                        | One of red, green, yellow, blue, magenta, cyan, grey, sky, pink, orange                                                                                   |
+| `enter-when`                   | Alternatives split on a vertical bar, matched at a word boundary. Consulted while the slot holds `auto`, or a pin when the contract sets `enter-over-pin` |
+| `enter-over-pin`               | Lets a phrase in the prompt's opening sentence take a slot that only holds a pinned default, never one you typed                                          |
+| `style`                        | The style the mode runs in, put in place when it is entered unless you typed a style in this conversation                                                 |
+| `exit-when`                    | `manual`, `approved`, or `mr-opened`                                                                                                                      |
+| `no-dispatch-without-approval` | Arms a gate that refuses to spawn a teammate until a yes is recorded                                                                                      |
+| `no-code-without-red`          | Arms a guard that refuses an edit to an implementation file while no watched failure stands                                                               |
 
 The last two are the flags with mechanisms behind them, and any contract may declare either. A flag is **on** whenever the key is present and does not explicitly say no.
 
@@ -350,7 +350,7 @@ There is a third kind of file too, `~/.claude/mode/rules/`, holding **ground rul
 
 Every item here is a real thing this release does not do.
 
-**A slot still dies with the conversation. Only the pin outlives it.** A pin says where a conversation *starts*; nothing carries a mid-conversation switch into the next session, and nothing should. If you switch to `debug` today, tomorrow's session in the same directory opens on the pin again.
+**A slot still dies with the conversation. Only the pin outlives it.** A pin says where a conversation _starts_; nothing carries a mid-conversation switch into the next session, and nothing should. If you switch to `debug` today, tomorrow's session in the same directory opens on the pin again.
 
 **Two flags have mechanisms. Every other rule is held by agreement.** `no-dispatch-without-approval` refuses a teammate until a yes is on record, and `no-code-without-red` refuses an implementation edit while no watched failure stands. Take everything else as a written agreement Claude is reminded of every single turn, which is genuinely useful and is not a guarantee. `no-implement` is the clearest remaining gap: `copilot` declares it and no hook reads it, because no hook can tell a two-line seam between two finished domains from a domain somebody decided to build themselves.
 

@@ -2,7 +2,12 @@
 import type { BoardTask } from "~~/shared/types/board";
 import type { SessionAgent } from "~~/shared/types/session";
 
-const { task, agents, dropHighlight = false, blocked = false } = defineProps<{
+const {
+  task,
+  agents,
+  dropHighlight = false,
+  blocked = false,
+} = defineProps<{
   task: BoardTask;
   agents: SessionAgent[];
   dropHighlight?: boolean;

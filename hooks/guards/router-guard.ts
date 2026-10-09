@@ -1,9 +1,9 @@
-import { basename } from "node:path"
-import { armed } from "../../lib/hook/guard.ts"
-import { deny, payload, record, str } from "../../lib/hook/io.ts"
-import { held } from "../../lib/mode/state.ts"
+import { basename } from "node:path";
+import { armed } from "../../lib/hook/guard.ts";
+import { deny, payload, record, str } from "../../lib/hook/io.ts";
+import { held } from "../../lib/mode/state.ts";
 
-const TOOLS = new Set(["Write", "Edit", "NotebookEdit"])
+const TOOLS = new Set(["Write", "Edit", "NotebookEdit"]);
 
 // Both modes route work to somebody else, so each gets its own reason for the same denial.
 const REASONS: Record<string, (name: string, path: string) => string> = {
@@ -20,18 +20,18 @@ const REASONS: Record<string, (name: string, path: string) => string> = {
     "Put the change in the prompt for the session that owns that repo, and let that session " +
     "write it. The board is yours through TaskCreate and TaskUpdate, which this never blocks. " +
     `Target: ${path}`,
-}
+};
 
 if (armed()) {
   try {
-    const data = payload()
+    const data = payload();
     // agent_id is set only inside a subagent call; the router's own calls carry none and stay denied.
     if (data && !data.agent_id) {
-      const mode = TOOLS.has(str(data.tool_name)) ? held("mode", str(data.session_id) || undefined) : ""
-      const reason = Object.hasOwn(REASONS, mode) ? REASONS[mode] : undefined
+      const mode = TOOLS.has(str(data.tool_name)) ? held("mode", str(data.session_id) || undefined) : "";
+      const reason = Object.hasOwn(REASONS, mode) ? REASONS[mode] : undefined;
       if (reason) {
-        const path = str(record(data.tool_input).file_path) || "the file"
-        deny(reason(basename(path), path))
+        const path = str(record(data.tool_input).file_path) || "the file";
+        deny(reason(basename(path), path));
       }
     }
   } catch {}

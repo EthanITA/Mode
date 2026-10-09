@@ -11,11 +11,11 @@ A session holds one **mode**, a way of working, and one **style**, how Claude ta
 
 Three things a plugin cannot do for itself, which is the whole reason this walkthrough exists:
 
-| What | Why it needs a person |
-|---|---|
-| The status line | `statusLine` is a key in the user's `settings.json`. No plugin can set it. |
-| The user contracts directory | Somewhere under the Claude config dir that a plugin update never overwrites, so a contract someone wrote themselves survives. |
-| The bare command names | Plugin commands are namespaced, so a plugin cannot register `/mode`, `/style` or `/approve` at all. Three small files in the user's own commands directory carry them, and `mode sync` puts the per-style shortcuts (`style:<name>.md`) beside them for the same reason. |
+| What                         | Why it needs a person                                                                                                                                                                                                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The status line              | `statusLine` is a key in the user's `settings.json`. No plugin can set it.                                                                                                                                                                                               |
+| The user contracts directory | Somewhere under the Claude config dir that a plugin update never overwrites, so a contract someone wrote themselves survives.                                                                                                                                            |
+| The bare command names       | Plugin commands are namespaced, so a plugin cannot register `/mode`, `/style` or `/approve` at all. Three small files in the user's own commands directory carry them, and `mode sync` puts the per-style shortcuts (`style:<name>.md`) beside them for the same reason. |
 
 ## The one rule that outranks the rest
 
@@ -61,11 +61,11 @@ That restraint is the point. A real status line already carries other things: a 
 
 `install.sh` reports which case it found. React to it:
 
-| What it found | What it did | What you do |
-|---|---|---|
-| No `statusLine` key | Wrote a small script that calls `mode chips`, and pointed `statusLine` at it | Say where the script is, and that they can add their own segments to it |
-| A `statusLine` already set | Nothing. Printed the block to add and where it goes | Show them the block, then ask |
-| Settings file is a symlink | Resolved it and wrote through it, so it is still a symlink | Mention it once, then move on |
+| What it found              | What it did                                                                  | What you do                                                             |
+| -------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| No `statusLine` key        | Wrote a small script that calls `mode chips`, and pointed `statusLine` at it | Say where the script is, and that they can add their own segments to it |
+| A `statusLine` already set | Nothing. Printed the block to add and where it goes                          | Show them the block, then ask                                           |
+| Settings file is a symlink | Resolved it and wrote through it, so it is still a symlink                   | Mention it once, then move on                                           |
 
 In both cases it writes `chips.sh` into the user's own config directory, and that file is what finds the plugin. It re-resolves the install path on every render rather than baking in today's one, trying three sources in order: the pointer file a `SessionStart` hook writes, then `plugins/installed_plugins.json`, then the clone the installer itself ran from. That order matters because the three install routes populate different sources. A marketplace install lands in a cache directory named after the version, so the path genuinely changes on every update. A skills-directory install never appears in `installed_plugins.json` at all, and is found by the pointer or the fallback. A status line pointing straight at one of those paths would work at install and then go quiet later, with no error anywhere to explain it. Worth one sentence to them, since it otherwise looks like a bug much later.
 

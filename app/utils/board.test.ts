@@ -50,9 +50,18 @@ test("isTaskBlocked stays blocked when prerequisite task is unfinished", () => {
 test("orderedTasks puts the dragged order first and ranks the rest by priority", () => {
   const tasks = [makeTask({ id: "1" }), makeTask({ id: "2" }), makeTask({ id: "3" })];
 
-  assert.deepEqual(orderedTasks({ tasks, order: ["3", "1"] }).map((t) => t.id), ["3", "1", "2"]);
-  assert.deepEqual(orderedTasks({ tasks, order: [] }).map((t) => t.id), ["1", "2", "3"]);
-  assert.deepEqual(orderedTasks({ tasks, order: ["9"] }).map((t) => t.id), ["1", "2", "3"]);
+  assert.deepEqual(
+    orderedTasks({ tasks, order: ["3", "1"] }).map((t) => t.id),
+    ["3", "1", "2"],
+  );
+  assert.deepEqual(
+    orderedTasks({ tasks, order: [] }).map((t) => t.id),
+    ["1", "2", "3"],
+  );
+  assert.deepEqual(
+    orderedTasks({ tasks, order: ["9"] }).map((t) => t.id),
+    ["1", "2", "3"],
+  );
 });
 
 test("compareBoardTasks sorts according to prio and breaks ties by id", () => {

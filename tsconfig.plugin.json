@@ -18,5 +18,15 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["bin/_install.ts", "bin/_mode.ts", "bin/_artifact.ts", "hooks/**/*.ts", "lib/**/*.ts", "scripts/*.ts", "skills/create-artifact/scripts/checks.ts", "skills/create-artifact/scripts/highlight-ts.ts", "tests/**/*.ts"]
+  "include": [
+    "bin/_install.ts",
+    "bin/_mode.ts",
+    "bin/_artifact.ts",
+    "hooks/**/*.ts",
+    "lib/**/*.ts",
+    "scripts/*.ts",
+    "skills/create-artifact/scripts/checks.ts",
+    "skills/create-artifact/scripts/highlight-ts.ts",
+    "tests/**/*.ts"
+  ]
 }

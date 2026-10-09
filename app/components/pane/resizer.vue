@@ -1,6 +1,11 @@
 <script lang="ts" setup>
 const width = defineModel<number>({ required: true });
-const { initial, label, max = 640, min = 200 } = defineProps<{ initial: number; label: string; max?: number; min?: number }>();
+const {
+  initial,
+  label,
+  max = 640,
+  min = 200,
+} = defineProps<{ initial: number; label: string; max?: number; min?: number }>();
 
 const STEP = 16;
 // What the pane beside it keeps however far the handle is dragged.

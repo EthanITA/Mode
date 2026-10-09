@@ -135,7 +135,8 @@ onMounted(() => {
       <span
         class="chip"
         :style="{ left: `${chrome.comment.hover.value.x}px`, top: `${chrome.comment.hover.value.y}px` }"
-      >{{ chrome.comment.hover.value.label }}</span>
+        >{{ chrome.comment.hover.value.label }}</span
+      >
     </template>
   </div>
 

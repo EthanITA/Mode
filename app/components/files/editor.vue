@@ -239,7 +239,9 @@ onBeforeUnmount(() => {
       <UiStateMessage v-if="content && 'reason' in content" align="center" class="empty">
         {{ UNSHOWN[content.reason] }}
       </UiStateMessage>
-      <UiStateMessage v-else-if="!content" align="center" class="empty" kind="loading">Reading the file…</UiStateMessage>
+      <UiStateMessage v-else-if="!content" align="center" class="empty" kind="loading"
+        >Reading the file…</UiStateMessage
+      >
     </div>
   </div>
 </template>

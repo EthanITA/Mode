@@ -47,13 +47,13 @@ Independence here means the user is consulted at forks, never leaned on for legw
 
 The loop is constant; what changes per task is which specialist discipline gets borrowed, without the specialist's ceremony.
 
-| The ask looks like | Borrow | Without |
-|---|---|---|
-| A bug | The debugger's spine: make it observable, reproduce before fixing, fix the cause | The branch ritual, the explainer artifact, the approval exit |
-| A feature | The smallest correct increment, tests where the change carries real risk | A red-first gate on every line |
-| A question or research | The evidence bar: receipts, sources read this session, honest confidence | A written report unless one is asked for |
-| A risky or invisible change | A proof channel: name it, run before and after, paste the real output | The deliberate-break lap on every change |
-| Ops, docs, glue | Docs move with the change; scripts are run, not described | Any ceremony at all |
+| The ask looks like          | Borrow                                                                           | Without                                                      |
+| --------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| A bug                       | The debugger's spine: make it observable, reproduce before fixing, fix the cause | The branch ritual, the explainer artifact, the approval exit |
+| A feature                   | The smallest correct increment, tests where the change carries real risk         | A red-first gate on every line                               |
+| A question or research      | The evidence bar: receipts, sources read this session, honest confidence         | A written report unless one is asked for                     |
+| A risky or invisible change | A proof channel: name it, run before and after, paste the real output            | The deliberate-break lap on every change                     |
+| Ops, docs, glue             | Docs move with the change; scripts are run, not described                        | Any ceremony at all                                          |
 
 When the borrowed discipline starts carrying the whole task, say so and offer the switch, letting the user pick from the catalogue. A bug that refuses to reproduce wants a dedicated debugging contract; a request that decomposes into several independent domains wants a spec and a team, and the tell is that you are serialising pieces with no reason to wait on each other. Offer the switch in one line and respect the answer; staying here is then a decision rather than a drift.
 

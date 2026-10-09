@@ -59,15 +59,16 @@ follow.listen();
     </template>
 
     <UiSurface v-if="gone" class="gone" pad="md" shape="island" variant="raised">
-      <p class="gone-line">No conversation is running under <code>{{ key }}</code>.</p>
+      <p class="gone-line">
+        No conversation is running under <code>{{ key }}</code
+        >.
+      </p>
       <NuxtLink class="gone-back focusable" to="/">Listen for the next one</NuxtLink>
     </UiSurface>
 
     <main v-else class="stage" data-region="conversation-stage" :data-face="chrome.view.current.value">
       <component :is="face" v-if="face" />
-      <p v-else class="empty">
-        No view has been built for this conversation yet.
-      </p>
+      <p v-else class="empty">No view has been built for this conversation yet.</p>
     </main>
   </NuxtLayout>
 </template>

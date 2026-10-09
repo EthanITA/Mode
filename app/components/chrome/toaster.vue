@@ -17,7 +17,10 @@ function drop(id: number): void {
 
 function arm(id: number): void {
   clearTimeout(timers.get(id));
-  timers.set(id, setTimeout(() => drop(id), DWELL_MS));
+  timers.set(
+    id,
+    setTimeout(() => drop(id), DWELL_MS),
+  );
 }
 
 // Held, not paused: a reader who leaves gets the full dwell again rather than its remainder.

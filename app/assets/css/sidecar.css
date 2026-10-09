@@ -58,14 +58,30 @@
   --tint-slate: var(--subtle);
 }
 
-[data-tint="violet"] { --tint: var(--tint-violet); }
-[data-tint="amber"] { --tint: var(--tint-amber); }
-[data-tint="blue"] { --tint: var(--tint-blue); }
-[data-tint="green"] { --tint: var(--tint-green); }
-[data-tint="rose"] { --tint: var(--tint-rose); }
-[data-tint="cyan"] { --tint: var(--tint-cyan); }
-[data-tint="orange"] { --tint: var(--tint-orange); }
-[data-tint="slate"] { --tint: var(--tint-slate); }
+[data-tint="violet"] {
+  --tint: var(--tint-violet);
+}
+[data-tint="amber"] {
+  --tint: var(--tint-amber);
+}
+[data-tint="blue"] {
+  --tint: var(--tint-blue);
+}
+[data-tint="green"] {
+  --tint: var(--tint-green);
+}
+[data-tint="rose"] {
+  --tint: var(--tint-rose);
+}
+[data-tint="cyan"] {
+  --tint: var(--tint-cyan);
+}
+[data-tint="orange"] {
+  --tint: var(--tint-orange);
+}
+[data-tint="slate"] {
+  --tint: var(--tint-slate);
+}
 
 html,
 body,
@@ -126,15 +142,18 @@ body {
 }
 
 /* Global, not scoped: speed-highlight's spans arrive via v-html, which scoped CSS never reaches. */
-.shj-syn-kwd, .shj-syn-section {
+.shj-syn-kwd,
+.shj-syn-section {
   color: var(--tint-violet);
 }
 
-.shj-syn-str, .shj-syn-insert {
+.shj-syn-str,
+.shj-syn-insert {
   color: var(--tint-green);
 }
 
-.shj-syn-num, .shj-syn-esc {
+.shj-syn-num,
+.shj-syn-esc {
   color: var(--tint-orange);
 }
 
@@ -142,7 +161,9 @@ body {
   color: var(--tint-blue);
 }
 
-.shj-syn-class, .shj-syn-type, .shj-syn-bool {
+.shj-syn-class,
+.shj-syn-type,
+.shj-syn-bool {
   color: var(--tint-cyan);
 }
 
@@ -151,11 +172,13 @@ body {
   font-style: italic;
 }
 
-.shj-syn-oper, .shj-syn-var {
+.shj-syn-oper,
+.shj-syn-var {
   color: var(--subtle);
 }
 
-.shj-syn-err, .shj-syn-deleted {
+.shj-syn-err,
+.shj-syn-deleted {
   color: var(--tint-rose);
 }
 

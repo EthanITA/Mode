@@ -1,7 +1,11 @@
 <script lang="ts" setup>
 import type { Compare, HistoryFile } from "~/composables/useHistory";
 
-const { file, compare, restoring = false } = defineProps<{ file: HistoryFile; compare: Compare; restoring?: boolean }>();
+const {
+  file,
+  compare,
+  restoring = false,
+} = defineProps<{ file: HistoryFile; compare: Compare; restoring?: boolean }>();
 defineEmits<{ restore: [] }>();
 
 const baseline = computed(() => Diff.baselineNote(file.baseline));
@@ -14,7 +18,9 @@ const lang = computed(() => Syntax.languageOf(file.path));
 const highlighted = useHighlightedRows(rows, lang);
 
 const tell = computed(() => {
-  const what = churn.value ? `+${churn.value.added} −${churn.value.removed} this turn` : note.value?.text ?? "unchanged";
+  const what = churn.value
+    ? `+${churn.value.added} −${churn.value.removed} this turn`
+    : (note.value?.text ?? "unchanged");
   return `About ${homePath(file.path)}, ${what}:`;
 });
 </script>

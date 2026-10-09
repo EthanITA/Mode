@@ -1,6 +1,12 @@
 import type { ComputedRef, Ref } from "vue";
 import type { Maybe, MaybeComputed } from "~/composables/useSidecar";
-import type { BaselineOrigin, ConversationVersions, FileDiff, FileVersion, VersionContent } from "~~/shared/types/versions";
+import type {
+  BaselineOrigin,
+  ConversationVersions,
+  FileDiff,
+  FileVersion,
+  VersionContent,
+} from "~~/shared/types/versions";
 
 export interface ReadVersions {
   at: Maybe<number>;
@@ -37,7 +43,16 @@ export function useReadVersions({ path, sessionKey, diffable }: VersionsInput): 
   const skipped = computed(() => file.value?.skipped);
   const diffState = computed<DiffState | undefined>(() =>
     diff.value
-      ? Diff.read({ file: { path: path.value || "", baseline: baseline.value ?? "unknown", versions: list.value, skipped: skipped.value }, to: diff.value.to, diff: diff.value })
+      ? Diff.read({
+          file: {
+            path: path.value || "",
+            baseline: baseline.value ?? "unknown",
+            versions: list.value,
+            skipped: skipped.value,
+          },
+          to: diff.value.to,
+          diff: diff.value,
+        })
       : undefined,
   );
 
@@ -73,7 +88,9 @@ export function useReadVersions({ path, sessionKey, diffable }: VersionsInput): 
     reading.value = true;
     try {
       if (wantsDiff) {
-        const got = await $fetch<FileDiff>(`/api/sessions/${key}/versions/diff`, { query: { path: one, from: turn - 1, to: turn } });
+        const got = await $fetch<FileDiff>(`/api/sessions/${key}/versions/diff`, {
+          query: { path: one, from: turn - 1, to: turn },
+        });
         if (mine === reader) diff.value = got;
       } else {
         const got = await $fetch<VersionContent>(`/api/sessions/${key}/versions/content`, {

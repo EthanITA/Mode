@@ -13,9 +13,7 @@ export default defineNuxtConfig({
   // silently reskins every call site using that tag.
   components: [
     {
-      path: fileURLToPath(
-        new URL("node_modules/@cela/design/components", import.meta.url),
-      ),
+      path: fileURLToPath(new URL("node_modules/@cela/design/components", import.meta.url)),
       prefix: "Ui",
       priority: 0,
     },
@@ -33,10 +31,7 @@ export default defineNuxtConfig({
   // A scoped <style> block is its own Tailwind entry point, so every SFC needs an
   // @reference to the theme before it can @apply anything from the package.
   vite: {
-    plugins: [
-      tailwindAutoReference(["./assets/css/main.css"]),
-      tailwindcss(),
-    ],
+    plugins: [tailwindAutoReference(["./assets/css/main.css"]), tailwindcss()],
   },
   app: {
     head: {

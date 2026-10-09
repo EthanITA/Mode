@@ -134,12 +134,7 @@ watch(
         </g>
       </svg>
 
-      <CanvasFrame
-        v-for="frame in frames"
-        :key="frame.id"
-        :frame="frame"
-        @toggle="toggleFrame(frame.id)"
-      />
+      <CanvasFrame v-for="frame in frames" :key="frame.id" :frame="frame" @toggle="toggleFrame(frame.id)" />
 
       <UiCanvasItem
         v-for="card in shown"
@@ -166,11 +161,7 @@ watch(
         @update:position="setNote(note.id, $event)"
         @update:width="setNote(note.id, { width: $event })"
       >
-        <CanvasSticky
-          :note="note"
-          @remove="removeNote(note.id)"
-          @text="setNote(note.id, { text: $event })"
-        />
+        <CanvasSticky :note="note" @remove="removeNote(note.id)" @text="setNote(note.id, { text: $event })" />
       </UiCanvasItem>
     </UiCanvas>
 
@@ -182,13 +173,40 @@ watch(
     <UiContextMenu ref="menuEl" data-region="canvas-menu" label="Canvas" width="w-64">
       <template #default="{ close }">
         <p class="mono-meta canvas-menu-head">{{ target?.title ?? "this spot on the plane" }}</p>
-        <UiMenuItem v-if="target" :icon="Maximize2" @click="open(target.slug); close()">
+        <UiMenuItem
+          v-if="target"
+          :icon="Maximize2"
+          @click="
+            open(target.slug);
+            close();
+          "
+        >
           Open
         </UiMenuItem>
         <UiMenuItem :icon="StickyNote" @click="noteHere(close)">Leave a note</UiMenuItem>
-        <UiMenuItem :icon="LayoutGrid" @click="canvasEl?.organize(); close()">Tidy up</UiMenuItem>
-        <UiMenuItem :icon="Scan" @click="fit(); close()">Fit to view</UiMenuItem>
-        <UiMenuItem :icon="MousePointerSquareDashed" @click="canvasEl?.selectAll(); close()">
+        <UiMenuItem
+          :icon="LayoutGrid"
+          @click="
+            canvasEl?.organize();
+            close();
+          "
+          >Tidy up</UiMenuItem
+        >
+        <UiMenuItem
+          :icon="Scan"
+          @click="
+            fit();
+            close();
+          "
+          >Fit to view</UiMenuItem
+        >
+        <UiMenuItem
+          :icon="MousePointerSquareDashed"
+          @click="
+            canvasEl?.selectAll();
+            close();
+          "
+        >
           Select all
         </UiMenuItem>
       </template>

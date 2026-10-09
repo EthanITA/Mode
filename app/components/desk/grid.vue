@@ -59,7 +59,10 @@ async function settle(): Promise<void> {
 }
 
 onMounted(() => void settle());
-watch(() => cards.value.map((card) => card.key).join(","), () => void settle());
+watch(
+  () => cards.value.map((card) => card.key).join(","),
+  () => void settle(),
+);
 
 chrome.canvas.register({
   fit,
@@ -100,13 +103,34 @@ chrome.canvas.register({
       <template #default="{ close }">
         <p class="mono-meta menu-head">{{ target?.title ?? "the desk" }}</p>
         <template v-if="target">
-          <UiMenuItem :icon="Maximize2" @click="open(target); close()">Open</UiMenuItem>
+          <UiMenuItem
+            :icon="Maximize2"
+            @click="
+              open(target);
+              close();
+            "
+            >Open</UiMenuItem
+          >
           <UiMenuItem :icon="Trash2" tone="destructive" @click="askRemove(target, close)">
             {{ arming === target.key ? "Press again to delete" : "Delete" }}
           </UiMenuItem>
         </template>
-        <UiMenuItem :icon="LayoutGrid" @click="canvasEl?.organize(); close()">Tidy up</UiMenuItem>
-        <UiMenuItem :icon="Scan" @click="fit(); close()">Fit to view</UiMenuItem>
+        <UiMenuItem
+          :icon="LayoutGrid"
+          @click="
+            canvasEl?.organize();
+            close();
+          "
+          >Tidy up</UiMenuItem
+        >
+        <UiMenuItem
+          :icon="Scan"
+          @click="
+            fit();
+            close();
+          "
+          >Fit to view</UiMenuItem
+        >
       </template>
     </UiContextMenu>
   </div>

@@ -26,7 +26,11 @@ export function useActionBridge(): ActionBridge {
       if (result.delivered) return { delivered: true };
       return { delivered: false, reason: result.reason ?? "refused-by-inbox" };
     } catch (caught) {
-      return { delivered: false, reason: "request-failed", detail: caught instanceof Error ? caught.message : String(caught) };
+      return {
+        delivered: false,
+        reason: "request-failed",
+        detail: caught instanceof Error ? caught.message : String(caught),
+      };
     }
   }
 

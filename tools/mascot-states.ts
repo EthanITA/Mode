@@ -38,16 +38,29 @@ const BOX = (() => {
 
 // Every fact below is read from source, so the page cannot describe a mascot that is not shipped.
 const SETS = Object.fromEntries(
-  ["WRITE", "LOOK", "OFFLOAD"].map((name) => [name, quoted(new RegExp(`const ${name} = new Set\\(\\[([^\\]]+)\\]`), doing)]),
+  ["WRITE", "LOOK", "OFFLOAD"].map((name) => [
+    name,
+    quoted(new RegExp(`const ${name} = new Set\\(\\[([^\\]]+)\\]`), doing),
+  ]),
 ) as Record<string, string[]>;
 
-const timings = [...style.matchAll(/\.mascot\[data-state="(\w+)"\] \.([\w.-]+) \{?\s*animation: ([\w-]+) ([\d.]+m?s)/g)]
-  .map((m) => ({ state: m[1] as string, part: (m[2] as string).replace(/^\./, ""), name: m[3] as string, dur: m[4] as string }));
+const timings = [
+  ...style.matchAll(/\.mascot\[data-state="(\w+)"\] \.([\w.-]+) \{?\s*animation: ([\w-]+) ([\d.]+m?s)/g),
+].map((m) => ({
+  state: m[1] as string,
+  part: (m[2] as string).replace(/^\./, ""),
+  name: m[3] as string,
+  dur: m[4] as string,
+}));
 
 const beam = {
   leave: style.match(/\.beam-leave-active \{\s*transition: ([^;]+);/)?.[1]?.trim() ?? "",
   enter: style.match(/\.beam-enter-active \{[\s\S]*?transition: ([^;]+);/)?.[1]?.trim() ?? "",
-  from: style.match(/\.beam-enter-from,\s*\.beam-leave-to \{([^}]+)\}/)?.[1]?.replace(/\s+/g, " ").trim() ?? "",
+  from:
+    style
+      .match(/\.beam-enter-from,\s*\.beam-leave-to \{([^}]+)\}/)?.[1]
+      ?.replace(/\s+/g, " ")
+      .trim() ?? "",
 };
 
 const sizes = [
@@ -68,8 +81,14 @@ function markup(state: string, move: string, size: number): string {
       `style="animation-delay:${(Math.random() * 2.5).toFixed(2)}s;animation-duration:${(4.4 + Math.random() * 3.2).toFixed(2)}s"`,
     )
     .replace(/:style="\{ height: `\$\{size\}px`, width: `\$\{width\}px` \}"/, `style="height:${size}px;width:${w}px"`)
-    .replace(/:x="BOX\.x" :y="BOX\.y" :width="BOX\.w" :height="BOX\.h"/, `x="${BOX.x}" y="${BOX.y}" width="${BOX.w}" height="${BOX.h}"`)
-    .replace(/:viewBox="`\$\{BOX\.x\} \$\{BOX\.y\} \$\{BOX\.w\} \$\{BOX\.h\}`"/g, `viewBox="${BOX.x} ${BOX.y} ${BOX.w} ${BOX.h}"`)
+    .replace(
+      /:x="BOX\.x" :y="BOX\.y" :width="BOX\.w" :height="BOX\.h"/,
+      `x="${BOX.x}" y="${BOX.y}" width="${BOX.w}" height="${BOX.h}"`,
+    )
+    .replace(
+      /:viewBox="`\$\{BOX\.x\} \$\{BOX\.y\} \$\{BOX\.w\} \$\{BOX\.h\}`"/g,
+      `viewBox="${BOX.x} ${BOX.y} ${BOX.w} ${BOX.h}"`,
+    )
     .replace(/<Transition[^>]*name="beam">\s*/, "")
     .replace(/\s*<\/Transition>/, "")
     .replace(/\s*v-if="show"/, "")
@@ -104,7 +123,10 @@ const rules = `
   <li><b>idle</b> when there is no open turn at all.</li>`;
 
 const timingRows = timings
-  .map((t) => `<tr><td>${t.state}</td><td><code>.${t.part}</code></td><td><code>${t.name}</code></td><td>${t.dur}</td></tr>`)
+  .map(
+    (t) =>
+      `<tr><td>${t.state}</td><td><code>.${t.part}</code></td><td><code>${t.name}</code></td><td>${t.dur}</td></tr>`,
+  )
   .join("");
 
 const tokenRows = tokenLines
@@ -288,6 +310,10 @@ setTimeout(() => {
 
 writeFileSync(join(HERE, "mascot-states.html"), html);
 console.log(`states ${STATES.length} · moves ${MOVES.length} · timings ${timings.length} · sizes ${sizes.length}`);
-console.log(`tool sets: ${Object.entries(SETS).map(([k, v]) => `${k} ${v.length}`).join(", ")}`);
+console.log(
+  `tool sets: ${Object.entries(SETS)
+    .map(([k, v]) => `${k} ${v.length}`)
+    .join(", ")}`,
+);
 console.log(`stall ${stallMs}ms · idle hold ${holdMs}ms · tokens ${tokenLines.length}`);
 console.log("wrote tools/mascot-states.html");

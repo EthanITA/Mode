@@ -1,5 +1,12 @@
 import type { ReviewFile } from "~~/shared/types/review";
-import type { BaselineOrigin, DiffGap, DiffTarget, FileDiff, FileVersions, VersionPair } from "~~/shared/types/versions";
+import type {
+  BaselineOrigin,
+  DiffGap,
+  DiffTarget,
+  FileDiff,
+  FileVersions,
+  VersionPair,
+} from "~~/shared/types/versions";
 
 export type DiffState =
   | { kind: "changed"; rows: DiffRow[]; added: number; removed: number }
@@ -43,7 +50,9 @@ function parse(patch: string): DiffRow[] {
       continue;
     }
     // `--- a/x` and `+++ b/x` open with the same characters as a real removal.
-    if (/^(diff |index |--- |\+\+\+ |new file|deleted file|similarity|rename |old mode|new mode|Binary files)/.test(line)) {
+    if (
+      /^(diff |index |--- |\+\+\+ |new file|deleted file|similarity|rename |old mode|new mode|Binary files)/.test(line)
+    ) {
       if (line.startsWith("Binary files")) rows.push({ kind: "hunk", text: "binary file — no line-by-line diff" });
       continue;
     }
@@ -67,7 +76,8 @@ function gapOf({ reason, file, to }: { reason: DiffGap; file: FileVersions; to: 
     case "unknown-baseline":
       return {
         kind: "unknown",
-        reason: "what stood before this file was first touched could not be reconstructed, so there is nothing to measure against",
+        reason:
+          "what stood before this file was first touched could not be reconstructed, so there is nothing to measure against",
       };
     case "unresolved-target":
       return {

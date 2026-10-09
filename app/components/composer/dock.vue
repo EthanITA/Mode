@@ -45,7 +45,9 @@ const placeholder = computed(() => {
   return tray.count.value ? "Add a line, or just send what is waiting…" : "Prompt this session…";
 });
 
-const ready = computed(() => convo.live.value && !convo.sending.value && !!(convo.draft.value.trim() || tray.count.value));
+const ready = computed(
+  () => convo.live.value && !convo.sending.value && !!(convo.draft.value.trim() || tray.count.value),
+);
 
 const walk = computed(() => steps.value.map((step) => step.label).join(" → "));
 
@@ -168,7 +170,6 @@ onMounted(() => {
             {{ liveState.label }}
           </span>
         </div>
-
       </div>
     </UiSurface>
 
@@ -219,7 +220,6 @@ onMounted(() => {
   width: 45px;
 }
 
-
 .row {
   align-items: flex-end;
   display: flex;
@@ -240,7 +240,6 @@ onMounted(() => {
   flex: 1;
   min-width: 0;
 }
-
 
 .send {
   align-items: center;

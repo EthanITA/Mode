@@ -159,7 +159,12 @@ function indexedOf(el: Element): Indexed | undefined {
 
 // The frame is as tall as its page and its pane scrolls, so only what every clipping ancestor leaves is on screen.
 function visibleBox(el: HTMLElement): ViewBox {
-  let seen: ViewBox = { bottom: window.innerHeight, left: 0, right: window.innerWidth, top: chrome.frame.insets.value.top };
+  let seen: ViewBox = {
+    bottom: window.innerHeight,
+    left: 0,
+    right: window.innerWidth,
+    top: chrome.frame.insets.value.top,
+  };
   for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
     const { overflowX, overflowY } = getComputedStyle(node);
     if (overflowX === "visible" && overflowY === "visible") continue;

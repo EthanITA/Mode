@@ -4,8 +4,7 @@ import type { TreeSource } from "~/composables/useFileTree";
 import type { TreeEntry } from "~~/shared/types/tree";
 
 type Row =
-  | { kind: "entry"; entry: TreeEntry; depth: number; isOpen: boolean }
-  | { kind: "loading"; key: string; depth: number };
+  { kind: "entry"; entry: TreeEntry; depth: number; isOpen: boolean } | { kind: "loading"; key: string; depth: number };
 
 const {
   source,

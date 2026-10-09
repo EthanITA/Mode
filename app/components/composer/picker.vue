@@ -13,7 +13,9 @@ const view = computed(() => slots.value.find((slot) => slot.axis === axis));
 const list = computed<Contract[]>(() => (axis === "mode" ? sc.contracts.value.modes : sc.contracts.value.styles));
 
 const hovered = ref<string>();
-const shown = computed(() => list.value.find((row) => row.name === (hovered.value || held.value?.name)) ?? list.value[0]);
+const shown = computed(
+  () => list.value.find((row) => row.name === (hovered.value || held.value?.name)) ?? list.value[0],
+);
 
 // Only the held contract has a position in the pipeline; every other one is drawn cold.
 const at = computed(() =>

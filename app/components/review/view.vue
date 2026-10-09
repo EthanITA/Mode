@@ -98,7 +98,9 @@ function rejectFile(event: MouseEvent): void {
       </header>
 
       <div class="scroll" data-scroll="files">
-        <UiStateMessage v-if="!files.length" class="empty" :kind="isReading ? 'loading' : 'empty'">{{ empty }}</UiStateMessage>
+        <UiStateMessage v-if="!files.length" class="empty" :kind="isReading ? 'loading' : 'empty'">{{
+          empty
+        }}</UiStateMessage>
         <ReviewFiles v-else />
       </div>
 
@@ -163,10 +165,18 @@ function rejectFile(event: MouseEvent): void {
           </span>
           <span class="spacer" />
           <span class="toggle">
-            <UiChip :selected="review.isCompact.value" size="xs" @click="review.isCompact.value = !review.isCompact.value">
+            <UiChip
+              :selected="review.isCompact.value"
+              size="xs"
+              @click="review.isCompact.value = !review.isCompact.value"
+            >
               Compact
             </UiChip>
-            <UiChip :selected="review.isWrapped.value" size="xs" @click="review.isWrapped.value = !review.isWrapped.value">
+            <UiChip
+              :selected="review.isWrapped.value"
+              size="xs"
+              @click="review.isWrapped.value = !review.isWrapped.value"
+            >
               Wrap
             </UiChip>
           </span>

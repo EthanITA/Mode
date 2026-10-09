@@ -12,13 +12,13 @@ An artifact is one self-contained `.html` file written to disk and opened locall
 
 The deliverable is a working model of the subject, not an illustrated report about it. The reader must be able to do the thing:
 
-| The subject | What the page must let the reader do |
-|---|---|
-| A bug or incident | Reproduce it. Step the failing flow, feed the real input, watch the wrong output appear, then flip the fix and watch it not. |
-| A frontend change | See the mockup rendered as working markup, and switch between the variants under discussion. |
-| A backend flow, contract or state machine | Run scenarios. Choose an input or a state, watch the path light up, read what each hop returned. |
-| Data, volume or blast radius | Explore the real exported records, not a summary of them. Filter, hover, select, and reach a count nobody pre-wrote. |
-| A comparison or a decision | Change the assumption and watch the recommendation move. |
+| The subject                               | What the page must let the reader do                                                                                         |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| A bug or incident                         | Reproduce it. Step the failing flow, feed the real input, watch the wrong output appear, then flip the fix and watch it not. |
+| A frontend change                         | See the mockup rendered as working markup, and switch between the variants under discussion.                                 |
+| A backend flow, contract or state machine | Run scenarios. Choose an input or a state, watch the path light up, read what each hop returned.                             |
+| Data, volume or blast radius              | Explore the real exported records, not a summary of them. Filter, hover, select, and reach a count nobody pre-wrote.         |
+| A comparison or a decision                | Change the assumption and watch the recommendation move.                                                                     |
 
 Two tests before shipping. Remove every interactive element: if the page still says the same thing, the interactivity was decoration and the work is not done. Then ask whether a reader can reach a conclusion nobody wrote into the page; when they cannot, it is still a document.
 

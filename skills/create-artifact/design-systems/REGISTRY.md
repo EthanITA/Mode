@@ -4,25 +4,25 @@ Read **this file only** to resolve the design system. Then read **one** pack, th
 
 ## The house default
 
-| Key | Whose | Look in one line | Stylesheet |
-|---|---|---|---|
+| Key       | Whose              | Look in one line                                     | Stylesheet                      |
+| --------- | ------------------ | ---------------------------------------------------- | ------------------------------- |
 | `neutral` | nobody, brand-free | Warm off-white, one indigo, considered but unbranded | `doc-system.css` + `themes.css` |
 
 ## Public brand systems
 
 Every public pack inlines `assets/doc-system.css` then `assets/themes.css`.
 
-| Key | Brand | Look in one line | Grounding |
-|---|---|---|---|
-| `primer` | GitHub | Functional and dense; 6px corners, borders not shadows, `#0969da` blue | vendor CSS, verbatim |
-| `material-3` | Google | Baseline M3: violet-cast neutrals, tonal elevation, 12px corners | vendor palette + role map |
-| `carbon` | IBM | Swiss and square: zero radius, no shadows, IBM Blue 60 | vendor colour package |
-| `linear` | Linear | Near-achromatic, very tight tracking, one lavender accent, `#010102` dark | site extraction + derived |
-| `geist` | Vercel | Absolute monochrome plus one blue; pure black dark mode | partial vendor + derived |
-| `stripe` | Stripe | Cool-white canvas, deep navy ink, one indigo, lots of air | brand values + derived |
-| `notion` | Notion | Document-first: warm brown-black ink, 4px corners, serif headings | brand values + reconstruction |
-| `apple-hig` | Apple | White cards on a grey floor, 12px corners, SF Pro, system blue | community-measured |
-| `spacex` | SpaceX | Void black, star-white `#f0f0fa`, D-DIN stencil, zero radius, no colour accent | site extraction + derived |
+| Key          | Brand  | Look in one line                                                               | Grounding                     |
+| ------------ | ------ | ------------------------------------------------------------------------------ | ----------------------------- |
+| `primer`     | GitHub | Functional and dense; 6px corners, borders not shadows, `#0969da` blue         | vendor CSS, verbatim          |
+| `material-3` | Google | Baseline M3: violet-cast neutrals, tonal elevation, 12px corners               | vendor palette + role map     |
+| `carbon`     | IBM    | Swiss and square: zero radius, no shadows, IBM Blue 60                         | vendor colour package         |
+| `linear`     | Linear | Near-achromatic, very tight tracking, one lavender accent, `#010102` dark      | site extraction + derived     |
+| `geist`      | Vercel | Absolute monochrome plus one blue; pure black dark mode                        | partial vendor + derived      |
+| `stripe`     | Stripe | Cool-white canvas, deep navy ink, one indigo, lots of air                      | brand values + derived        |
+| `notion`     | Notion | Document-first: warm brown-black ink, 4px corners, serif headings              | brand values + reconstruction |
+| `apple-hig`  | Apple  | White cards on a grey floor, 12px corners, SF Pro, system blue                 | community-measured            |
+| `spacex`     | SpaceX | Void black, star-white `#f0f0fa`, D-DIN stencil, zero radius, no colour accent | site extraction + derived     |
 
 **Unsure which one the user wants?** `references/gallery.html` renders all ten shared-stylesheet systems in one switchable page. Open it rather than describing them from memory.
 

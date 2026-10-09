@@ -74,7 +74,11 @@ function load(): Promise<typeof MonacoApi> {
 function languageOf(path: string): string | undefined {
   const name = path.split("/").pop() ?? "";
   const extension = name.includes(".") ? name.split(".").pop()?.toLowerCase() : undefined;
-  return BY_NAME[name] ?? (name.startsWith(".env") ? "shell" : undefined) ?? (extension ? BY_EXTENSION[extension] : undefined);
+  return (
+    BY_NAME[name] ??
+    (name.startsWith(".env") ? "shell" : undefined) ??
+    (extension ? BY_EXTENSION[extension] : undefined)
+  );
 }
 
 export const Monaco = { languageOf, load };

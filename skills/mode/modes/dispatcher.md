@@ -20,11 +20,11 @@ This is the mode for a batch, where `swarm` is the one for a stream. Swarm hires
 
 ## The three outcomes
 
-| Outcome | When | You do |
-|---|---|---|
-| **New conversation** | The request needs work and no live session holds it | Write the prompt and start a background session in `~/Notes` with it as the first message |
-| **Relay** | A live session already holds the work, or the user wants something said to sessions, such as wrapping up, pausing or carrying on | Write the message and send it to that session, one message per session |
-| **Answer** | One look settles it, such as which session holds a ticket or whether a branch is merged, or the request cannot go anywhere until the user says one more thing | Answer the user here in a line or two, or ask that one thing |
+| Outcome              | When                                                                                                                                                          | You do                                                                                    |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **New conversation** | The request needs work and no live session holds it                                                                                                           | Write the prompt and start a background session in `~/Notes` with it as the first message |
+| **Relay**            | A live session already holds the work, or the user wants something said to sessions, such as wrapping up, pausing or carrying on                              | Write the message and send it to that session, one message per session                    |
+| **Answer**           | One look settles it, such as which session holds a ticket or whether a branch is merged, or the request cannot go anywhere until the user says one more thing | Answer the user here in a line or two, or ask that one thing                              |
 
 An answer is only ever what a look shows. The moment answering needs the work itself, such as reading the code to understand a change, forming a verdict on a diff or writing anything down, the request is a new conversation.
 
@@ -34,10 +34,10 @@ Each split request starts from `mode triage "<request>"`, which asks Jev whether
 
 Read, search, list sessions and read remote systems, such as a merge request through `glab` or a ticket through its connector. Nothing else.
 
-| Allowed | Never |
-|---|---|
-| `Read`, `Glob`, `Grep`, read-only `Bash` | `Write`, `Edit`, `NotebookEdit`, any redirect or in-place edit |
-| Listing live sessions, starting one, messaging one | `git` that changes anything, a commit, a push, a branch |
+| Allowed                                                                                                   | Never                                                           |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `Read`, `Glob`, `Grep`, read-only `Bash`                                                                  | `Write`, `Edit`, `NotebookEdit`, any redirect or in-place edit  |
+| Listing live sessions, starting one, messaging one                                                        | `git` that changes anything, a commit, a push, a branch         |
 | `TaskCreate` and `TaskUpdate` for the board, `mode mode done` for the pipeline, `mode triage` per request | Posting, commenting, approving or creating anything on a remote |
 
 `router-guard` denies `Write`, `Edit` and `NotebookEdit` for you outright. A subagent is not on the list either, because you write every prompt yourself and the guard leaves a subagent's calls alone. Everything in the right-hand column that is not one of those three tools is held by this contract and nothing else, so hold it. A request that needs a change goes to the session that owns that repo, as a prompt.
@@ -63,12 +63,12 @@ One request is one outcome that one session can finish without editing what anot
 
 Grounding decides **where it goes**, never **what the answer is**, which is the same brief check that bounds `swarm`.
 
-| Still grounding | Already the work |
-|---|---|
-| Which repo and which working directory | Reading the code to understand the change |
-| Whether a live session already holds the topic, matched by ticket, repo and branch as well as title | Reading the diff to form a verdict |
-| Whether the working tree is clean or on someone's branch | Tracing a call chain |
-| Resolving a link to a project, a ticket or a number | Reading the five tickets it links to |
+| Still grounding                                                                                     | Already the work                          |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Which repo and which working directory                                                              | Reading the code to understand the change |
+| Whether a live session already holds the topic, matched by ticket, repo and branch as well as title | Reading the diff to form a verdict        |
+| Whether the working tree is clean or on someone's branch                                            | Tracing a call chain                      |
+| Resolving a link to a project, a ticket or a number                                                 | Reading the five tickets it links to      |
 
 Three files deep means the request has an owner and you should have dispatched two files ago.
 

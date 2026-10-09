@@ -10,7 +10,7 @@ That page sets `--radius: 0`, `--shadow: none`. What follows is not a style, it 
 
 The transferable move is not "use zero radius". It is: **pick the one or two properties that define surface identity in your pack, fix them globally, and let every component express itself through the same small vocabulary.** A pack that leans on soft radii and warm shadows gets its coherence the same way, from the other end.
 
-Corollary: the moment a component needs a second mechanism to look right (a shadow *and* a border *and* a tint), the axes have reopened and the page starts to drift.
+Corollary: the moment a component needs a second mechanism to look right (a shadow _and_ a border _and_ a tint), the axes have reopened and the page starts to drift.
 
 ## Colour reserved for meaning
 
@@ -24,14 +24,14 @@ Even in a pack with a strong brand colour, the discipline holds: **spend brand c
 
 The single largest coherence win in that file, and the least obvious. Look at what these have in common:
 
-| Element | Size | Tracking |
-|---|---|---|
-| `.eyebrow` | 11px | 0.22em |
-| `.panel-title` | 10px | 0.20em |
-| `.callout-label` | 9.5px | 0.20em |
-| `.stat .label` | 9.5px | 0.18em |
-| `th` | 9.5px | 0.16em |
-| `.chip` | 9.5px | 0.14em |
+| Element          | Size  | Tracking |
+| ---------------- | ----- | -------- |
+| `.eyebrow`       | 11px  | 0.22em   |
+| `.panel-title`   | 10px  | 0.20em   |
+| `.callout-label` | 9.5px | 0.20em   |
+| `.stat .label`   | 9.5px | 0.18em   |
+| `th`             | 9.5px | 0.16em   |
+| `.chip`          | 9.5px | 0.14em   |
 
 Every small label on the page is the **same object**: around 9.5 to 11px, weight 700, uppercase, wide tracking, muted. It is not six component styles that happen to look similar. It is one type role reused, and it is why the page reads as one system even where the components are unrelated.
 

@@ -9,12 +9,7 @@ const emit = defineEmits<{ act: []; open: [] }>();
 </script>
 
 <template>
-  <article
-    :data-cmt-label="card.title"
-    :data-cmt-tell="card.tell"
-    class="card"
-    data-cmt="artifact"
-  >
+  <article :data-cmt-label="card.title" :data-cmt-tell="card.tell" class="card" data-cmt="artifact">
     <header class="card-head">
       <span class="mono-meta card-kind">{{ card.kind }}</span>
       <span class="card-file">{{ card.file }}</span>
@@ -41,9 +36,7 @@ const emit = defineEmits<{ act: []; open: [] }>();
         <UiIcon :icon="MessageSquare" size="xs" />{{ card.comments }}
       </span>
       <span class="card-gap" />
-      <span v-if="action?.done" class="card-done">
-        <UiIcon :icon="Check" size="xs" />{{ action.done }}
-      </span>
+      <span v-if="action?.done" class="card-done"> <UiIcon :icon="Check" size="xs" />{{ action.done }} </span>
       <button
         v-else-if="action"
         v-press

@@ -51,14 +51,14 @@ The first move is always visibility. Logs, a trace, a print in the path you susp
 
 A hypothesis is named out loud and it comes with the result that would kill it. "I think the cache is stale, and if that is right, clearing it before the call makes the failure go away." Then you run that experiment. An experiment whose outcome you cannot state in advance is not an experiment.
 
-| Ordinarily | In this mode |
-|---|---|
-| A plausible cause gets a fix attempt | A named hypothesis gets an experiment, with the killing result stated first |
-| Several things change at once | One change at a time, because a fix bundled with a tidy-up proves nothing about either |
-| A failed attempt is quietly followed by an adjacent one | A failed attempt is reported with what it eliminated, and never retried |
-| "Should be fixed now" | Nothing is fixed until the failing case has been run and watched to pass |
-| The fix is the deliverable | The explanation is also a deliverable, drawn, so the second occurrence is cheaper |
-| Work happens wherever you are | A branch, always |
+| Ordinarily                                              | In this mode                                                                           |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| A plausible cause gets a fix attempt                    | A named hypothesis gets an experiment, with the killing result stated first            |
+| Several things change at once                           | One change at a time, because a fix bundled with a tidy-up proves nothing about either |
+| A failed attempt is quietly followed by an adjacent one | A failed attempt is reported with what it eliminated, and never retried                |
+| "Should be fixed now"                                   | Nothing is fixed until the failing case has been run and watched to pass               |
+| The fix is the deliverable                              | The explanation is also a deliverable, drawn, so the second occurrence is cheaper      |
+| Work happens wherever you are                           | A branch, always                                                                       |
 
 Suspect a stale cache before chasing a phantom. A type check, a build cache or a bundler cache can report an error that is not real, tellingly on code nobody touched. Re-run clean before you spend a turn diagnosing it.
 
@@ -105,13 +105,13 @@ Show the explainer and stop. The `/approve <slug>` is the trigger, and it does t
 
 The trigger is approval of the explanation, and deliberately not the fix passing its tests. A passing fix that nobody has seen explained is still unreviewed.
 
-| Not this | Because |
-|---|---|
-| Merge anything | The mode opens the merge request and stops. Merging is a judgement about risk and timing, and it belongs to the user. |
-| Commit to the default branch | A debugging session is exploratory, so it lives on a branch that can be abandoned. |
-| Open the merge request before the explainer has been read | The trigger is the yes on the explainer. Opening it early turns the review into a formality. |
-| Stay on after the merge request | The job is over. Holding a debugging contract over unrelated work is how a mode becomes noise. |
-| Expect the last step to work with no remote | A repo with nowhere to push makes the branch real and the merge request step inert. Deliver the fix and the explainer, then say the merge request is not available here. |
+| Not this                                                  | Because                                                                                                                                                                  |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Merge anything                                            | The mode opens the merge request and stops. Merging is a judgement about risk and timing, and it belongs to the user.                                                    |
+| Commit to the default branch                              | A debugging session is exploratory, so it lives on a branch that can be abandoned.                                                                                       |
+| Open the merge request before the explainer has been read | The trigger is the yes on the explainer. Opening it early turns the review into a formality.                                                                             |
+| Stay on after the merge request                           | The job is over. Holding a debugging contract over unrelated work is how a mode becomes noise.                                                                           |
+| Expect the last step to work with no remote               | A repo with nowhere to push makes the branch real and the merge request step inert. Deliver the fix and the explainer, then say the merge request is not available here. |
 
 ## Standing reminder
 

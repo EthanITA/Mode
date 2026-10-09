@@ -1,36 +1,44 @@
-import assert from "node:assert/strict"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
-import { after, before, test } from "node:test"
-import { conversationOf } from "./conversation.ts"
+import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { after, before, test } from "node:test";
+import { conversationOf } from "./conversation.ts";
 
-let root: string
-let restore: () => void
+let root: string;
+let restore: () => void;
 
 before(() => {
-  root = mkdtempSync(join(tmpdir(), "sidecar-conversation-"))
-  const had = "CLAUDE_CONFIG_DIR" in process.env
-  const was = process.env.CLAUDE_CONFIG_DIR
-  process.env.CLAUDE_CONFIG_DIR = root
-  restore = () => (had ? (process.env.CLAUDE_CONFIG_DIR = was ?? "") : delete process.env.CLAUDE_CONFIG_DIR)
-})
+  root = mkdtempSync(join(tmpdir(), "sidecar-conversation-"));
+  const had = "CLAUDE_CONFIG_DIR" in process.env;
+  const was = process.env.CLAUDE_CONFIG_DIR;
+  process.env.CLAUDE_CONFIG_DIR = root;
+  restore = () => (had ? (process.env.CLAUDE_CONFIG_DIR = was ?? "") : delete process.env.CLAUDE_CONFIG_DIR);
+});
 
 after(() => {
-  restore()
-  rmSync(root, { recursive: true, force: true })
-})
+  restore();
+  rmSync(root, { recursive: true, force: true });
+});
 
 function writeTranscript(key: string, slug: string, lines: Record<string, unknown>[]): void {
-  const dir = join(root, "projects", slug)
-  mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, `${key}-1111-2222-3333-444444444444.jsonl`), `${lines.map((line) => JSON.stringify(line)).join("\n")}\n`)
+  const dir = join(root, "projects", slug);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    join(dir, `${key}-1111-2222-3333-444444444444.jsonl`),
+    `${lines.map((line) => JSON.stringify(line)).join("\n")}\n`,
+  );
 }
 
 test("a compact summary is a bare note, never the huge body it carries", () => {
-  const key = "cccccccc"
+  const key = "cccccccc";
   writeTranscript(key, "-tmp-gamma", [
-    { type: "user", cwd: "/tmp/gamma", timestamp: "2026-01-01T09:00:00.000Z", message: { role: "user", content: "before" } },
+    {
+      type: "user",
+      cwd: "/tmp/gamma",
+      timestamp: "2026-01-01T09:00:00.000Z",
+      message: { role: "user", content: "before" },
+    },
     {
       type: "user",
       cwd: "/tmp/gamma",
@@ -39,10 +47,15 @@ test("a compact summary is a bare note, never the huge body it carries", () => {
       timestamp: "2026-01-01T09:00:01.000Z",
       message: { role: "user", content: "x".repeat(28000) },
     },
-    { type: "user", cwd: "/tmp/gamma", timestamp: "2026-01-01T09:00:02.000Z", message: { role: "user", content: "after" } },
-  ])
+    {
+      type: "user",
+      cwd: "/tmp/gamma",
+      timestamp: "2026-01-01T09:00:02.000Z",
+      message: { role: "user", content: "after" },
+    },
+  ]);
 
-  const { turns } = conversationOf({ key })
+  const { turns } = conversationOf({ key });
   assert.deepEqual(
     turns.map((turn) => ({ role: turn.role, text: turn.text, kind: turn.kind })),
     [
@@ -50,11 +63,11 @@ test("a compact summary is a bare note, never the huge body it carries", () => {
       { role: "system", text: "Compacted", kind: "note" },
       { role: "user", text: "after", kind: undefined },
     ],
-  )
-})
+  );
+});
 
 test("a tool result pairs back to its call by id, carrying the tool name a bare result lacks", () => {
-  const key = "eeeeeeee"
+  const key = "eeeeeeee";
   writeTranscript(key, "-tmp-delta2", [
     {
       type: "assistant",
@@ -62,7 +75,9 @@ test("a tool result pairs back to its call by id, carrying the tool name a bare 
       timestamp: "2026-01-01T09:00:00.000Z",
       message: {
         role: "assistant",
-        content: [{ type: "tool_use", id: "toolu_bg1", name: "Bash", input: { command: "sleep 30", run_in_background: true } }],
+        content: [
+          { type: "tool_use", id: "toolu_bg1", name: "Bash", input: { command: "sleep 30", run_in_background: true } },
+        ],
       },
     },
     {
@@ -71,35 +86,38 @@ test("a tool result pairs back to its call by id, carrying the tool name a bare 
       timestamp: "2026-01-01T09:00:31.000Z",
       message: { role: "user", content: [{ type: "tool_result", tool_use_id: "toolu_bg1", content: "done" }] },
     },
-  ])
+  ]);
 
-  const { turns } = conversationOf({ key })
+  const { turns } = conversationOf({ key });
   assert.deepEqual(
     turns.map((turn) => ({ role: turn.role, kind: turn.kind, tool: turn.tool, ref: turn.ref, bg: turn.bg })),
     [
       { role: "assistant", kind: "acting", tool: "Bash", ref: "toolu_bg1", bg: true },
       { role: "system", kind: "done", tool: "Bash", ref: "toolu_bg1", bg: undefined },
     ],
-  )
-})
+  );
+});
 
 test("a foreground call carries no bg flag", () => {
-  const key = "ffffffff"
+  const key = "ffffffff";
   writeTranscript(key, "-tmp-delta3", [
     {
       type: "assistant",
       cwd: "/tmp/delta3",
       timestamp: "2026-01-01T09:00:00.000Z",
-      message: { role: "assistant", content: [{ type: "tool_use", id: "toolu_fg1", name: "Read", input: { file_path: "/tmp/x" } }] },
+      message: {
+        role: "assistant",
+        content: [{ type: "tool_use", id: "toolu_fg1", name: "Read", input: { file_path: "/tmp/x" } }],
+      },
     },
-  ])
+  ]);
 
-  const { turns } = conversationOf({ key })
-  assert.equal(turns[0]?.bg, undefined)
-})
+  const { turns } = conversationOf({ key });
+  assert.equal(turns[0]?.bg, undefined);
+});
 
 test("a question carries its options, so the chat can offer them instead of an opaque tool row", () => {
-  const key = "eeeeeeee"
+  const key = "eeeeeeee";
   writeTranscript(key, "-tmp-delta4", [
     {
       type: "assistant",
@@ -107,43 +125,55 @@ test("a question carries its options, so the chat can offer them instead of an o
       timestamp: "2026-01-01T09:00:00.000Z",
       message: {
         role: "assistant",
-        content: [{
-          type: "tool_use",
-          id: "toolu_ask1",
-          name: "AskUserQuestion",
-          input: {
-            questions: [{
-              question: "Which binding?",
-              header: "Binding",
-              multiSelect: true,
-              options: [{ label: "Hold C", description: "the original" }, { label: "Hold Option" }],
-            }],
+        content: [
+          {
+            type: "tool_use",
+            id: "toolu_ask1",
+            name: "AskUserQuestion",
+            input: {
+              questions: [
+                {
+                  question: "Which binding?",
+                  header: "Binding",
+                  multiSelect: true,
+                  options: [{ label: "Hold C", description: "the original" }, { label: "Hold Option" }],
+                },
+              ],
+            },
           },
-        }],
+        ],
       },
     },
-  ])
+  ]);
 
-  const [turn] = conversationOf({ key }).turns
-  assert.equal(turn?.arg, "Which binding?")
-  assert.deepEqual(turn?.ask, [{
-    question: "Which binding?",
-    header: "Binding",
-    multi: true,
-    options: [{ label: "Hold C", description: "the original" }, { label: "Hold Option", description: undefined }],
-  }])
-})
+  const [turn] = conversationOf({ key }).turns;
+  assert.equal(turn?.arg, "Which binding?");
+  assert.deepEqual(turn?.ask, [
+    {
+      question: "Which binding?",
+      header: "Binding",
+      multi: true,
+      options: [
+        { label: "Hold C", description: "the original" },
+        { label: "Hold Option", description: undefined },
+      ],
+    },
+  ]);
+});
 
 test("a tool that is not a question carries no ask", () => {
-  const key = "dddddddd"
+  const key = "dddddddd";
   writeTranscript(key, "-tmp-delta5", [
     {
       type: "assistant",
       cwd: "/tmp/delta5",
       timestamp: "2026-01-01T09:00:00.000Z",
-      message: { role: "assistant", content: [{ type: "tool_use", id: "toolu_r1", name: "Read", input: { file_path: "/tmp/x" } }] },
+      message: {
+        role: "assistant",
+        content: [{ type: "tool_use", id: "toolu_r1", name: "Read", input: { file_path: "/tmp/x" } }],
+      },
     },
-  ])
+  ]);
 
-  assert.equal(conversationOf({ key }).turns[0]?.ask, undefined)
-})
+  assert.equal(conversationOf({ key }).turns[0]?.ask, undefined);
+});

@@ -30,10 +30,10 @@ The first example is the smallest one that still shows the idea. Give the intere
 
 Anything with parts, flow, shape or quantity gets drawn, because a sentence describing a structure is a diagram that did not get made. The words around the drawing are still you talking, never captions.
 
-| Where you are | What to draw with |
-|---|---|
-| In the chat | ASCII and Unicode diagrams, aligned tables, inline notation. A box-and-arrow sketch in a code fence beats three paragraphs. |
-| In an artifact | Mermaid, inline SVG, a real chart. Whatever the page supports. |
+| Where you are  | What to draw with                                                                                                           |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| In the chat    | ASCII and Unicode diagrams, aligned tables, inline notation. A box-and-arrow sketch in a code fence beats three paragraphs. |
+| In an artifact | Mermaid, inline SVG, a real chart. Whatever the page supports.                                                              |
 
 Depth fits the concept. Fifty words or five hundred, whatever the idea actually needs, with no padding and no artificial brevity either.
 
@@ -49,11 +49,11 @@ This is the shape of a single explanation, not a pipeline for the session.
 
 ## Two ways to deliver it
 
-| | Inline, the default | Artifact |
-|---|---|---|
-| When | One concept, a mid-task explanation, a single question | Study material, a multi-lesson guide, a formula-heavy subject, anything that gets re-read, or when a document is asked for by name |
-| Visuals | ASCII and Unicode, tables, inline notation | Mermaid, SVG, charts, interactive navigation |
-| Shape | One explanation, compact | One explanation per lesson |
+|         | Inline, the default                                    | Artifact                                                                                                                           |
+| ------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| When    | One concept, a mid-task explanation, a single question | Study material, a multi-lesson guide, a formula-heavy subject, anything that gets re-read, or when a document is asked for by name |
+| Visuals | ASCII and Unicode, tables, inline notation             | Mermaid, SVG, charts, interactive navigation                                                                                       |
+| Shape   | One explanation, compact                               | One explanation per lesson                                                                                                         |
 
 A study guide has a structure that works, so start from it rather than inventing one.
 
@@ -73,13 +73,13 @@ The style changes how you explain. It does not turn every reply into an explanat
 
 ## Register, by deliverable
 
-| Deliverable | Shape |
-|---|---|
+| Deliverable                 | Shape                                                                                                                                                                                  |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A merge request description | Sectioned What and Why, opening on the plain-language summary, each section in the plain paragraphs a colleague would write. Then post it, because the posted note is the deliverable. |
-| A handover document | A self-contained entry point: the decision, the contract, the file paths. A fresh session must be able to run from it with no other context. |
-| Explaining a flow | Trace it end to end, from the caller through to the store. Never stop at one layer. |
-| A trade-off | Name the fork, give each option its cost, say which one you would pick and why. |
-| Study guide or exam prep | An artifact, with the structure above. |
+| A handover document         | A self-contained entry point: the decision, the contract, the file paths. A fresh session must be able to run from it with no other context.                                           |
+| Explaining a flow           | Trace it end to end, from the caller through to the store. Never stop at one layer.                                                                                                    |
+| A trade-off                 | Name the fork, give each option its cost, say which one you would pick and why.                                                                                                        |
+| Study guide or exam prep    | An artifact, with the structure above.                                                                                                                                                 |
 
 The thing the reader could not have worked out alone (why this approach won, why this value, a gotcha you caught) gets said as your own take, "I went with X because...". In an artifact it may sit in a callout, and only for those, never as decoration.
 

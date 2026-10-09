@@ -4,7 +4,12 @@ import type { FastModelReply, FastModelRequest } from "~~/shared/types/models";
 import type { ArtifactReviewReply, ReviewThread } from "~~/shared/types/artifact";
 import type { TrayItem, TrayReply } from "~/composables/useTray";
 
-const { item, live = true, slug, thread } = defineProps<{
+const {
+  item,
+  live = true,
+  slug,
+  thread,
+} = defineProps<{
   item?: TrayItem;
   live?: boolean;
   slug: string;
@@ -117,10 +122,7 @@ async function ask(): Promise<void> {
     const by = reply.by;
     if (item) {
       tray.patch(item.id, {
-        replies: [
-          ...(item.replies ?? []),
-          { at: new Date().toISOString(), by, id: crypto.randomUUID(), text: said },
-        ],
+        replies: [...(item.replies ?? []), { at: new Date().toISOString(), by, id: crypto.randomUUID(), text: said }],
       });
     }
     const id = item?.thread || thread?.id;
@@ -161,14 +163,7 @@ async function resolve(): Promise<void> {
 </script>
 
 <template>
-  <UiSurface
-    class="card"
-    data-region="comment-card"
-    pad="none"
-    variant="raised"
-    :data-busy="busy"
-    :data-live="live"
-  >
+  <UiSurface class="card" data-region="comment-card" pad="none" variant="raised" :data-busy="busy" :data-live="live">
     <p v-if="label" class="where mono-meta">{{ label }}</p>
     <blockquote v-if="quote" class="quote">{{ quote }}</blockquote>
     <Prose class="body" :value="body" />

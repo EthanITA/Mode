@@ -56,7 +56,9 @@ const restoreMessage = computed(() => {
       </header>
       <div class="scroll" data-scroll="turns">
         <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
-        <UiStateMessage v-else-if="history.loading.value" class="empty" kind="loading">Reading the receipts…</UiStateMessage>
+        <UiStateMessage v-else-if="history.loading.value" class="empty" kind="loading"
+          >Reading the receipts…</UiStateMessage
+        >
         <UiStateMessage v-else-if="history.error.value" class="failure" kind="error" :title="history.error.value">
           Couldn't read this conversation's turns.
         </UiStateMessage>
@@ -123,7 +125,9 @@ const restoreMessage = computed(() => {
         </div>
 
         <UiStateMessage v-if="!selectedTurn" class="empty">Pick a turn to see what it changed.</UiStateMessage>
-        <UiStateMessage v-else-if="history.diffing.value" class="empty" kind="loading">Reading the diffs…</UiStateMessage>
+        <UiStateMessage v-else-if="history.diffing.value" class="empty" kind="loading"
+          >Reading the diffs…</UiStateMessage
+        >
         <UiStateMessage v-else-if="!history.files.value.length" class="empty">
           {{ selectedTurn.inFlight ? "This work" : `Turn ${selectedTurn.receipt.turn}` }} touched no files. It read and
           reasoned, but nothing on disk moved.

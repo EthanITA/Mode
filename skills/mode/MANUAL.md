@@ -16,12 +16,12 @@ This manual drives the switching and nothing else. It is deliberately not a regi
 
 ## Two axes, and what belongs on each
 
-| | A **mode** | A **style** |
-|---|---|---|
-| Answers | How the work runs | How you sound while it runs |
-| Has | Steps, gates and a definition of done | No steps at all |
-| Applies to | The shape of the turn | Every step of whatever mode is running |
-| Example | `copilot` stops on a question before dispatching a team | `fast` makes that question two lines instead of ten |
+|            | A **mode**                                              | A **style**                                         |
+| ---------- | ------------------------------------------------------- | --------------------------------------------------- |
+| Answers    | How the work runs                                       | How you sound while it runs                         |
+| Has        | Steps, gates and a definition of done                   | No steps at all                                     |
+| Applies to | The shape of the turn                                   | Every step of whatever mode is running              |
+| Example    | `copilot` stops on a question before dispatching a team | `fast` makes that question two lines instead of ten |
 
 The split is what keeps the file count down. Ten modes and six styles cover sixty combinations, so a new way of talking costs one file rather than nine rewrites.
 
@@ -31,18 +31,18 @@ The test for which folder a new contract belongs in is whether it has an order. 
 
 The switch is not yours to perform. A `UserPromptSubmit` hook reads the message and does it before you see anything, so by the time you are reading this the slot is already set and the contract is already in your context.
 
-| The user types | The hook already did | You do |
-|---|---|---|
-| `/mode <name>` | Looked up which axis owns that name and set it there, then injected the whole contract into this very prompt | Follow it from here on, and say in one line what is active and what changes. Do not run the set yourself. |
-| `/mode:<name>` or `/style:<name>` | The same, from the per-contract shortcut rather than an argument | The same. The two spellings are one code path, so nothing here depends on which was typed. |
-| `/mode <name> <name>` | The same for both, in either order, so `/mode tdd native` fills the mode and the style at once | Confirm both, and write the line in the style if one was set |
-| `/style <name>` | The same on the style slot, named outright | The same, except write that line in the style you just picked, so the change shows rather than being announced |
-| `/mode` or `/style`, with no name | Nothing, because there is no name to act on | Run `mode list` for both, or `mode list style` for one, and show what exists and what is held |
-| `/mode auto` or `/style auto` | Set that slot to `auto`, so a contract gets chosen from what gets written | Say the slot is on auto, and name what it holds right now if it holds anything |
-| `/mode off` or `/style off` | Emptied that slot, and the mode one also dropped the recorded approval | Confirm which slot is empty. The other slot is untouched. |
-| `/approve <slug>` | Recorded the yes against that slug, stamped with whichever mode is active | Say what it unblocks. The record already exists, so do not run `mode approve` over it. |
-| `/why` | Printed the whole state back and ended the turn, so nothing reached you at all | Nothing. If the report is in your context rather than answered outright, words were typed after it and those are the ask. |
-| a name that does not exist | Nothing switched, because `mode <axis> set` refuses a name with no file behind it | Run `mode list` and show the real names rather than guessing which one was meant |
+| The user types                    | The hook already did                                                                                         | You do                                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `/mode <name>`                    | Looked up which axis owns that name and set it there, then injected the whole contract into this very prompt | Follow it from here on, and say in one line what is active and what changes. Do not run the set yourself.                 |
+| `/mode:<name>` or `/style:<name>` | The same, from the per-contract shortcut rather than an argument                                             | The same. The two spellings are one code path, so nothing here depends on which was typed.                                |
+| `/mode <name> <name>`             | The same for both, in either order, so `/mode tdd native` fills the mode and the style at once               | Confirm both, and write the line in the style if one was set                                                              |
+| `/style <name>`                   | The same on the style slot, named outright                                                                   | The same, except write that line in the style you just picked, so the change shows rather than being announced            |
+| `/mode` or `/style`, with no name | Nothing, because there is no name to act on                                                                  | Run `mode list` for both, or `mode list style` for one, and show what exists and what is held                             |
+| `/mode auto` or `/style auto`     | Set that slot to `auto`, so a contract gets chosen from what gets written                                    | Say the slot is on auto, and name what it holds right now if it holds anything                                            |
+| `/mode off` or `/style off`       | Emptied that slot, and the mode one also dropped the recorded approval                                       | Confirm which slot is empty. The other slot is untouched.                                                                 |
+| `/approve <slug>`                 | Recorded the yes against that slug, stamped with whichever mode is active                                    | Say what it unblocks. The record already exists, so do not run `mode approve` over it.                                    |
+| `/why`                            | Printed the whole state back and ended the turn, so nothing reached you at all                               | Nothing. If the report is in your context rather than answered outright, words were typed after it and those are the ask. |
+| a name that does not exist        | Nothing switched, because `mode <axis> set` refuses a name with no file behind it                            | Run `mode list` and show the real names rather than guessing which one was meant                                          |
 
 Every typed form is a registered command, because Claude Code rejects an unknown slash command before any hook runs. The palette holds exactly three shapes and nothing else: `mode`, `mode:<mode name>` and `style:<style name>`. The bare `/mode`, `/style` and `/approve` are files the installer writes into the user commands directory, since a plugin cannot register an un-namespaced name. Each one carries `disable-model-invocation: true`, which is what keeps them the user's alone.
 
@@ -88,13 +88,13 @@ Above both axes sits the prose ground rule. No mode and no style changes how a s
 
 Typing a name is not the only way in, and typing `off` is not the only way out. Every contract on both axes declares both ends in its own front matter.
 
-| Key | Means | Read by |
-|---|---|---|
-| `enter-when` | Alternatives separated by a vertical bar. One of them matching the message selects this contract, but only while that slot is set to `auto`. | The prompt hook, matching before anything else runs |
-| `enter-never: true` | This contract is never chosen and has to be typed | The same hook. Only `autopilot` carries it. |
-| `exit-when: approved` | A yes was recorded with `/approve` under this contract, so its job is done | The approval record, which the tool observes on its own |
-| `exit-when: mr-opened` | A merge request exists for the branch this contract worked on | Nothing observes this, so the mode that opened the merge request records it with `mode mode done mr-opened` |
-| `exit-when: manual` | Only `/mode off` or `/style off` ends it | Nothing. This is the plain behaviour, now stated rather than assumed. |
+| Key                    | Means                                                                                                                                        | Read by                                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `enter-when`           | Alternatives separated by a vertical bar. One of them matching the message selects this contract, but only while that slot is set to `auto`. | The prompt hook, matching before anything else runs                                                         |
+| `enter-never: true`    | This contract is never chosen and has to be typed                                                                                            | The same hook. Only `autopilot` carries it.                                                                 |
+| `exit-when: approved`  | A yes was recorded with `/approve` under this contract, so its job is done                                                                   | The approval record, which the tool observes on its own                                                     |
+| `exit-when: mr-opened` | A merge request exists for the branch this contract worked on                                                                                | Nothing observes this, so the mode that opened the merge request records it with `mode mode done mr-opened` |
+| `exit-when: manual`    | Only `/mode off` or `/style off` ends it                                                                                                     | Nothing. This is the plain behaviour, now stated rather than assumed.                                       |
 
 Matching anchors at the **start** of a word and runs free at the end. So `fail` covers fails, failed, failing and failure, while `build the` never matches "rebuild the". The missing trailing boundary is deliberate, and it is why every alternative has to be verb-shaped or phrase-shaped. A bare noun like `build` would match "the build fails on startup" and hand a broken pipeline to the mode that spawns a team.
 
@@ -187,7 +187,7 @@ Written by the same command, from `styles/`, under the same rule.
 
 ## Adding another contract
 
-One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the shipped ones use. The heading carries no count on purpose, since a number here goes stale on the next contract and nobody notices. Which folder it goes in is decided by the question in *Two axes* above: an order of operations makes it a mode, and a texture makes it a style.
+One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the shipped ones use. The heading carries no count on purpose, since a number here goes stale on the next contract and nobody notices. Which folder it goes in is decided by the question in _Two axes_ above: an order of operations makes it a mode, and a texture makes it a style.
 
 - Front matter with `name`, matching the filename stem, and a one-line `summary`. The summary is what `mode list` prints and what the status line chip shows.
 - `enter-when`, `enter-never` and `exit-when`, per the table above. A contract with no `enter-when` can only be typed, and one with no `exit-when` behaves as `manual`. Write the line anyway, because an implied contract is one nobody can read off the file.

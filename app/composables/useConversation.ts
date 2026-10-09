@@ -72,9 +72,7 @@ const REFUSAL = {
 
 type DeliveryReason = keyof typeof REFUSAL;
 
-type MessageDelivery =
-  | { delivered: true; session: string }
-  | { delivered: false; reason: DeliveryReason };
+type MessageDelivery = { delivered: true; session: string } | { delivered: false; reason: DeliveryReason };
 
 interface ConversationSnapshot {
   offset: number;
@@ -92,7 +90,9 @@ function asTurn(value: unknown): ConversationTurn | undefined {
   const arg = "arg" in value ? value.arg : undefined;
   const ref = "ref" in value ? value.ref : undefined;
   return {
-    at, role, text,
+    at,
+    role,
+    text,
     kind: isKind(kind) ? kind : undefined,
     tool: typeof tool === "string" && tool ? tool : undefined,
     arg: typeof arg === "string" && arg ? arg : undefined,
@@ -115,12 +115,14 @@ function asAsks(value: unknown): Ask[] | undefined {
           return [{ label: o.label, description: typeof o.description === "string" ? o.description : undefined }];
         })
       : [];
-    return [{
-      question: rec.question,
-      header: typeof rec.header === "string" ? rec.header : undefined,
-      multi: rec.multi === true ? (true as const) : undefined,
-      options,
-    }];
+    return [
+      {
+        question: rec.question,
+        header: typeof rec.header === "string" ? rec.header : undefined,
+        multi: rec.multi === true ? (true as const) : undefined,
+        options,
+      },
+    ];
   });
   return out.length ? out : undefined;
 }
@@ -157,12 +159,14 @@ export function useConversation(): Conversation {
   const wrote = ref(false);
   const long = ref(false);
   const porting = ref(false);
-  const mascot = computed(() => doingOf({
-    turn: doing.value,
-    awaiting: awaiting.value,
-    wrote: wrote.value,
-    long: long.value,
-  }));
+  const mascot = computed(() =>
+    doingOf({
+      turn: doing.value,
+      awaiting: awaiting.value,
+      wrote: wrote.value,
+      long: long.value,
+    }),
+  );
   let ageing: ReturnType<typeof setTimeout> | undefined;
   let quiet: ReturnType<typeof setTimeout> | undefined;
   let port: ReturnType<typeof setTimeout> | undefined;
@@ -176,7 +180,12 @@ export function useConversation(): Conversation {
     long.value = !!turn.bg;
     const since = turn.ref ? open.get(turn.ref) : undefined;
     if (!long.value && since) {
-      ageing = setTimeout(() => { long.value = true; }, Math.max(0, since + LONG_MS - Date.now()));
+      ageing = setTimeout(
+        () => {
+          long.value = true;
+        },
+        Math.max(0, since + LONG_MS - Date.now()),
+      );
     }
     if (turn.kind !== "acting") quiet = setTimeout(settle, QUIET_MS);
   }
@@ -194,11 +203,16 @@ export function useConversation(): Conversation {
   let ticket = 0;
   let candidate: ConversationTurn | undefined;
 
-  watch(() => mascot.value === "idle", () => {
-    porting.value = true;
-    clearTimeout(port);
-    port = setTimeout(() => { porting.value = false; }, PORT_MS);
-  });
+  watch(
+    () => mascot.value === "idle",
+    () => {
+      porting.value = true;
+      clearTimeout(port);
+      port = setTimeout(() => {
+        porting.value = false;
+      }, PORT_MS);
+    },
+  );
 
   function disconnect(): void {
     source?.close();
@@ -208,8 +222,10 @@ export function useConversation(): Conversation {
   function held(turn: ConversationTurn): boolean {
     if (turns.value.some((row) => row.at === turn.at && row.role === turn.role && row.text === turn.text)) return true;
     // A re-queued message repeats on a later slice, with replies already between the two copies.
-    return turn.role === "user" && turns.value.some((row) => row.role === "user"
-      && row.text === turn.text && Math.abs(turn.at - row.at) < ECHO_MS);
+    return (
+      turn.role === "user" &&
+      turns.value.some((row) => row.role === "user" && row.text === turn.text && Math.abs(turn.at - row.at) < ECHO_MS)
+    );
   }
 
   // Nothing marks a text block final as it is written, so the newest one stands in until the turn ends.
@@ -365,11 +381,18 @@ export function useConversation(): Conversation {
   }
 
   onMounted(() => {
-    watch(() => sc.sessionKey.value, (key) => void follow(key), { immediate: true });
+    watch(
+      () => sc.sessionKey.value,
+      (key) => void follow(key),
+      { immediate: true },
+    );
     // The registry is the only thing that knows the turn is over; a text block never says so itself.
-    watch(() => session.value?.status, (now, before) => {
-      if (before === "busy" && now !== "busy") settle();
-    });
+    watch(
+      () => session.value?.status,
+      (now, before) => {
+        if (before === "busy" && now !== "busy") settle();
+      },
+    );
     onScopeDispose(() => {
       ticket += 1;
       clearTimeout(ageing);

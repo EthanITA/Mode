@@ -8,19 +8,19 @@ args: "<the one task/domain to analyse>"
 
 # Edge Induction
 
-Find the edge cases of **one** feature by *generating* them from the problem's structure, not recalling them from memory. Recalling is the lazy path; this skill replaces "let me list some edge cases" with a decomposition that *forces* the non-obvious ones into view.
+Find the edge cases of **one** feature by _generating_ them from the problem's structure, not recalling them from memory. Recalling is the lazy path; this skill replaces "let me list some edge cases" with a decomposition that _forces_ the non-obvious ones into view.
 
 **Scope: exactly one domain.** If you were handed several things to build, this runs on ONE of them. Splitting a multi-item request into single domains is the caller's job; this skill is what each single-domain agent invokes.
 
 ## What it is (and is not)
 
-Induction proves a claim about infinitely many cases with two checks, a **base case** and an **inductive step**, plus **termination**. Applied to edge-case discovery it is a *generator and a coverage discipline*, **not a completeness proof**. It converts the unanswerable "did I think of everything?" into three checkable questions:
+Induction proves a claim about infinitely many cases with two checks, a **base case** and an **inductive step**, plus **termination**. Applied to edge-case discovery it is a _generator and a coverage discipline_, **not a completeness proof**. It converts the unanswerable "did I think of everything?" into three checkable questions:
 
 1. Did I cover every **base case** (degenerate/smallest instance)?
 2. Did I interrogate every **inductive step**'s preconditions (each state transition)?
 3. Did I check **termination** (does every path reach a terminal state)?
 
-Honest limit: it cannot find an edge case in a dimension you never modelled. If the network's unreliability isn't in your model, no amount of inducting surfaces the duplicate-delivery bug. It guarantees structured coverage of the model you *have*, so widen the model first (read the code, the schema, the sibling features) before you induct.
+Honest limit: it cannot find an edge case in a dimension you never modelled. If the network's unreliability isn't in your model, no amount of inducting surfaces the duplicate-delivery bug. It guarantees structured coverage of the model you _have_, so widen the model first (read the code, the schema, the sibling features) before you induct.
 
 ## Step 0: the X/Y/Z read of the assigned task (always first)
 
@@ -34,22 +34,22 @@ Skipping Step 0 means inducting over the wrong domain: you get a tidy, exhaustiv
 
 ## The worth-it gate: run or skip?
 
-| Run edge-induction | Skip it (just do the task) |
-|---|---|
-| New schema / table / migration | Copy / text / i18n string change |
-| State machine, status transitions | Styling, spacing, colour, class rename |
-| Expiration, scheduling, timers, TTL | A single symbol rename |
-| Order / money / trade / balance flows | A config value bump with no logic |
-| Retries, queues, at-least-once delivery | Adding a log line |
-| Auth / session / token lifecycle | Pure formatting / lint fix |
-| New endpoint or contract | Deleting dead code |
-| Anything concurrent or time-dependent | |
+| Run edge-induction                      | Skip it (just do the task)             |
+| --------------------------------------- | -------------------------------------- |
+| New schema / table / migration          | Copy / text / i18n string change       |
+| State machine, status transitions       | Styling, spacing, colour, class rename |
+| Expiration, scheduling, timers, TTL     | A single symbol rename                 |
+| Order / money / trade / balance flows   | A config value bump with no logic      |
+| Retries, queues, at-least-once delivery | Adding a log line                      |
+| Auth / session / token lifecycle        | Pure formatting / lint fix             |
+| New endpoint or contract                | Deleting dead code                     |
+| Anything concurrent or time-dependent   |                                        |
 
 Rule of thumb: **if the thing has state, time, money, or a lifecycle, run it. If it's cosmetic or stateless, skip it** and say you skipped it (one line) so the skip is visible, not silent.
 
 ## The five buckets: each one emits checklist items
 
-Work them in order. Each bucket is a prompt you answer *against the real code*, and every answer becomes a task via `TaskCreate`.
+Work them in order. Each bucket is a prompt you answer _against the real code_, and every answer becomes a task via `TaskCreate`.
 
 ```
  1. INDUCTION VARIABLE(S) — what grows or advances?
@@ -87,11 +87,11 @@ Emit the findings as a `TaskCreate` sub-checklist for this one domain, grouped b
 - Step: "partial fill at expiry: decide remaining-qty vs whole-order expiry; guard the race."
 - Termination: "timer lost on restart: prove every live order reaches a terminal state."
 
-Then implement against that checklist. Tick a box only when the item is decided *and* covered (code and test), so a tick is a receipt rather than an intention. Report the count: N base, N step, N termination, N out-of-domain, and the ones you consciously ruled out-of-scope, so the coverage is auditable.
+Then implement against that checklist. Tick a box only when the item is decided _and_ covered (code and test), so a tick is a receipt rather than an intention. Report the count: N base, N step, N termination, N out-of-domain, and the ones you consciously ruled out-of-scope, so the coverage is auditable.
 
 ## One worked pass (reference): "expiration for a trading order"
 
-- **Variables**: wall-clock time *and* the event stream (both apply).
+- **Variables**: wall-clock time _and_ the event stream (both apply).
 - **Base**: expiry in the past at creation, expiry `== now` (inclusive?), zero or negative duration, no expiry set (GTC null), already filled before expiry runs.
 - **Step**: partial fill at the boundary, cancel racing expiry (double terminal-state), amendment changes expiry with a timer already armed, duplicate expiry event (idempotency), DST and session-close vs midnight.
 - **Termination**: tick never arrives (GC or restart), clock runs backward (NTP), clock skew between matching engine and expiry service.

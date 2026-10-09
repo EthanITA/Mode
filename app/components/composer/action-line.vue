@@ -25,7 +25,9 @@ const typing = computed(() => chars.value < line.value.length);
 function tick(): void {
   clearTimeout(timer);
   if (typing.value) {
-    timer = setTimeout(() => { chars.value += 1; }, TYPE_MS);
+    timer = setTimeout(() => {
+      chars.value += 1;
+    }, TYPE_MS);
     return;
   }
   // Nothing left to advance to means this is what it is doing now, so it stays put.
@@ -83,7 +85,9 @@ onScopeDispose(() => clearTimeout(timer));
 }
 
 @keyframes blink-cursor {
-  50% { opacity: 0; }
+  50% {
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

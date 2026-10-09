@@ -405,7 +405,7 @@ it, and the catalogue is smaller and sharper than it was.
   the blast radius, and the restraint on bumping a dependency.
 - **`enter-when` phrases that misfired on ordinary asks are dropped**: `why is` and `why does` from
   `debug`, `end to end` and bare `regression` and `qa` from `tester`, bare `explore` and `think
-  about` from `studio`, and `make it work` from `fast`.
+about` from `studio`, and `make it work` from `fast`.
 - **The delivery bar is read from config rather than compiled in.** It used to name one person's
   repositories.
 - **`artifact open` uses `xdg-open` off macOS.**
@@ -599,7 +599,7 @@ The artifact rule becomes a contract about interactivity.
 
 - **An artifact is operated, not read.** The `artifact` ground rule grew from a theming note into
   the full contract, folding in the method from a vendor artifact skill and two of our own best
-  pages. It now fixes what the reader must be able to *do* per subject: reproduce the bug, switch
+  pages. It now fixes what the reader must be able to _do_ per subject: reproduce the bug, switch
   the mockup variants, run the backend scenario, explore the real rows. Two tests decide whether it
   shipped: strip every control and see whether the page still says the same thing, then ask whether
   a reader can reach a conclusion nobody wrote into it.

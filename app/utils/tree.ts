@@ -16,7 +16,7 @@ function byName(a: TreeEntry, b: TreeEntry): number {
 
 // JetBrains' commit tree: the shared folder on top, and a folder that only holds one folder merged into it as `a/b`.
 function fromPaths(paths: readonly string[]): PathTree | undefined {
-  if (!paths.length) return undefined
+  if (!paths.length) return undefined;
   const shared = paths
     .map((path) => path.split("/").slice(0, -1))
     .reduce((common, parts) => {

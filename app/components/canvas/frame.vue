@@ -16,12 +16,7 @@ const style = computed(() => ({
 
 <template>
   <div :data-status="frame.status" :style="style" class="frame">
-    <header
-      :data-cmt-label="frame.title"
-      :data-cmt-tell="frame.tell"
-      class="frame-head"
-      data-cmt="task"
-    >
+    <header :data-cmt-label="frame.title" :data-cmt-tell="frame.tell" class="frame-head" data-cmt="task">
       <span class="frame-pip">
         <UiIcon v-if="frame.status === 'done'" :icon="Check" size="xs" />
       </span>

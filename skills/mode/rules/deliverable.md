@@ -7,12 +7,12 @@ summary: Every ask has a north star, what it delivers, named before the first ed
 
 Every ask ends in something, and naming it first is what keeps the work from drifting. It has two layers: what the ask wants, and how a change ships where it lands.
 
-| What the ask wants | What it means | Route it to |
-|---|---|---|
-| **answer** | The reply here settles it, and nothing is built, changed or sent | Stay inline. Do not build a page nobody asked for. |
-| **change** | Files change: code, config, docs, tests or rules | Working code, run once for real before it is called done. |
-| **artifact** | A page the user opens, keeps and re-reads | The `create-artifact` skill shipped with this plugin, always. Never hand-roll one beside it. |
-| **post** | Something sent to people under the user's name: a comment, a reply, a message, an email, a ticket | The outbound-writing rules: human prose in the user's voice. Sending it is the delivery. |
+| What the ask wants | What it means                                                                                     | Route it to                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **answer**         | The reply here settles it, and nothing is built, changed or sent                                  | Stay inline. Do not build a page nobody asked for.                                           |
+| **change**         | Files change: code, config, docs, tests or rules                                                  | Working code, run once for real before it is called done.                                    |
+| **artifact**       | A page the user opens, keeps and re-reads                                                         | The `create-artifact` skill shipped with this plugin, always. Never hand-roll one beside it. |
+| **post**           | Something sent to people under the user's name: a comment, a reply, a message, an email, a ticket | The outbound-writing rules: human prose in the user's voice. Sending it is the delivery.     |
 
 How a change ships is the project's fact, not the ask's. The `delivery` row for its tree in the plugin config says a commit, a push, an MR or a publish, and a tree with no row ships as a commit. An ask that says otherwise, such as "just commit" or "open an MR", overrides it for that ask with `--ship`. The mode decides which of the four it can deliver, and `mode deliverables` prints every mode against how a change ships where you stand.
 

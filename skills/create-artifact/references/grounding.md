@@ -4,19 +4,19 @@ An artifact that invents a fact is worse than no artifact. It looks authoritativ
 
 So the order is: **find out, then render.** Never render, then hope.
 
-This is the *content* half of grounding. The *design* half — reading a pack's source of truth so the look is real — is SKILL §3. They are separate steps and both are required.
+This is the _content_ half of grounding. The _design_ half — reading a pack's source of truth so the look is real — is SKILL §3. They are separate steps and both are required.
 
 ## The worth-it gate
 
-| Ground the content | Skip it (say the skip out loud, one line) |
-|---|---|
-| The page asserts how a real system behaves | A pure UI mockup that asserts nothing |
-| It names endpoints, tables, flags, owners | A visual study of a look or layout |
+| Ground the content                         | Skip it (say the skip out loud, one line)             |
+| ------------------------------------------ | ----------------------------------------------------- |
+| The page asserts how a real system behaves | A pure UI mockup that asserts nothing                 |
+| It names endpoints, tables, flags, owners  | A visual study of a look or layout                    |
 | It reports numbers, dates, statuses, money | A study guide over material the user supplied in-chat |
-| It says a decision was made, or why | A restatement of a document already in hand |
-| It says what a person or team did | A template with placeholder content |
+| It says a decision was made, or why        | A restatement of a document already in hand           |
+| It says what a person or team did          | A template with placeholder content                   |
 
-Skipping is a legitimate outcome. Skipping *silently* is not: an ungrounded artifact that never says so reads exactly like a grounded one.
+Skipping is a legitimate outcome. Skipping _silently_ is not: an ungrounded artifact that never says so reads exactly like a grounded one.
 
 ## The inventory
 
@@ -34,14 +34,14 @@ Answer these before authoring. The scale changes, the questions do not.
 
 Sweep every relevant source, not the first plausible one, and fire the independent lookups in parallel. The connected MCP servers are as cheap as a grep, so use them rather than answering from memory.
 
-| Looking for | Go to |
-|---|---|
-| How the code actually behaves | `rg` and Read across the repo under `projects/`, including `node_modules` when the claim is about a dependency |
-| Why a change was made | the repo history, then the merge request or pull request that carried it |
-| Ticket state, acceptance criteria, who asked | the tracker MCP connected in this session |
-| A decision taken in writing outside the tracker | the mail and calendar MCPs |
-| Prior work on the same topic | `~/Notes/tasks/`, `~/Notes/standup/`, and the project's own `CLAUDE.md` |
-| Runtime truth: volumes, latency, error rates | whatever observability the project's `CLAUDE.md` names |
+| Looking for                                     | Go to                                                                                                          |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| How the code actually behaves                   | `rg` and Read across the repo under `projects/`, including `node_modules` when the claim is about a dependency |
+| Why a change was made                           | the repo history, then the merge request or pull request that carried it                                       |
+| Ticket state, acceptance criteria, who asked    | the tracker MCP connected in this session                                                                      |
+| A decision taken in writing outside the tracker | the mail and calendar MCPs                                                                                     |
+| Prior work on the same topic                    | `~/Notes/tasks/`, `~/Notes/standup/`, and the project's own `CLAUDE.md`                                        |
+| Runtime truth: volumes, latency, error rates    | whatever observability the project's `CLAUDE.md` names                                                         |
 
 That table names categories on purpose. Which servers are actually connected changes over time, so read the session's own tool list rather than trusting a hardcoded roster here. If a lookup fails because a source moved, find its new home and fix the project file that pointed at the old one.
 

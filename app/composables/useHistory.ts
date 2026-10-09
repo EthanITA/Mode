@@ -77,7 +77,10 @@ function markSeen(key: string, turn: number): void {
 /** The assistant text that landed between this turn and the next, which is that turn's reply. */
 function replyBetween(snapshot: Snapshot["turns"], from: number, to: number): string | undefined {
   const said = snapshot.filter((row) => row.role === "assistant" && row.at >= from && row.at < to);
-  const text = said.map((row) => row.text.trim()).filter(Boolean).join("\n\n");
+  const text = said
+    .map((row) => row.text.trim())
+    .filter(Boolean)
+    .join("\n\n");
   return text || undefined;
 }
 
@@ -202,10 +205,18 @@ export function useHistory(): History {
     const built = await Promise.all(
       touched.map(async (path): Promise<HistoryFile> => {
         // A file the store holds no record of is genuinely unknown, not silently unchanged.
-        const file = store.files.find((one) => one.path === path) ?? { path, baseline: "unknown" as const, versions: [] };
+        const file = store.files.find((one) => one.path === path) ?? {
+          path,
+          baseline: "unknown" as const,
+          versions: [],
+        };
         const query = `path=${encodeURIComponent(path)}&from=${from}&to=${to}`;
         const pair = await $fetch<VersionPair>(`/api/sessions/${at}/versions/pair?${query}`).catch(() => undefined);
-        const by = [...new Set(file.versions.filter((one) => one.turn >= span.first && one.turn <= span.last).map((one) => one.by))];
+        const by = [
+          ...new Set(
+            file.versions.filter((one) => one.turn >= span.first && one.turn <= span.last).map((one) => one.by),
+          ),
+        ];
         return {
           path,
           name: basename(path),
@@ -238,7 +249,11 @@ export function useHistory(): History {
   }
 
   onMounted(() => {
-    watch(() => sc.sessionKey.value, (key) => void load(key), { immediate: true });
+    watch(
+      () => sc.sessionKey.value,
+      (key) => void load(key),
+      { immediate: true },
+    );
     watch([range, compare, versions], () => void pullDiffs(), { immediate: true });
     // A restore receipt names the turn it acted on, so it must not follow the reader to another turn.
     watch(range, () => {
@@ -250,5 +265,19 @@ export function useHistory(): History {
     });
   });
 
-  return { capped, compare, diffing, error, files, forceable, loading, pick, range, restore, restored, selected, turns };
+  return {
+    capped,
+    compare,
+    diffing,
+    error,
+    files,
+    forceable,
+    loading,
+    pick,
+    range,
+    restore,
+    restored,
+    selected,
+    turns,
+  };
 }

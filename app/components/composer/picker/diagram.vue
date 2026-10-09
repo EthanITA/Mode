@@ -77,7 +77,11 @@ const gates = computed(() => contract.steps.filter((step) => step.gate).map((ste
     <p v-else class="none mono-meta">no pipeline · this contract shapes the voice, not the steps</p>
 
     <div v-if="contract.steps.length" class="legend mono-meta">
-      <span class="key"><i class="dash" />{{ back.length ? `${contract.loops[0]?.from} → ${contract.loops[0]?.to}` : "one way through" }}</span>
+      <span class="key"
+        ><i class="dash" />{{
+          back.length ? `${contract.loops[0]?.from} → ${contract.loops[0]?.to}` : "one way through"
+        }}</span
+      >
       <span class="gates">{{ gates.length ? `gate · ${gates.join(" · ")}` : "no gate" }}</span>
     </div>
   </div>

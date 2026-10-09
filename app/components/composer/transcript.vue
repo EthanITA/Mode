@@ -161,7 +161,9 @@ watch(
                 :value="answer.text"
               />
 
-              <p v-else-if="state === 'preview'" key="empty" class="empty mono-meta">Nothing in this conversation yet.</p>
+              <p v-else-if="state === 'preview'" key="empty" class="empty mono-meta">
+                Nothing in this conversation yet.
+              </p>
             </Transition>
           </div>
         </div>
@@ -379,10 +381,18 @@ watch(
 }
 
 @keyframes dots {
-  0% { content: ""; }
-  25% { content: "."; }
-  50% { content: ".."; }
-  75% { content: "..."; }
+  0% {
+    content: "";
+  }
+  25% {
+    content: ".";
+  }
+  50% {
+    content: "..";
+  }
+  75% {
+    content: "...";
+  }
 }
 
 /* Wraps in full: neither the narration nor an action line may be clipped. */
