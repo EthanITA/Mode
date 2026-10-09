@@ -69,8 +69,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   never walks through every conversation the sidecar followed. The head carries the listening pill and
   its pin where the link back to the desk was, and the desk itself moved to `/desk`.
 - **The sidecar installs as an app, at an address of its own.** `nuxt dev` serves it on port 4747, read
-  at `http://claude-code-sidecar.localhost:4747`, which Chrome resolves to this machine with no hosts
-  file, so it shares neither a port nor an origin with whatever else runs on `localhost:3000`. A web app
+  at `http://sidecar.localhost:4747`, which Chrome resolves to this machine with no hosts file, so it
+  shares neither a port nor an origin with whatever else runs on `localhost:3000`. A web app
   manifest, icons and a title bar colour that follows the theme toggle make it installable from Chrome
   as a standalone window with its own Dock icon, and `/sidecar` launches that app when it is installed,
   else a Chrome app window, else the default browser. `node tools/icons/render.ts` redraws the PNG
