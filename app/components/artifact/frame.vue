@@ -469,7 +469,7 @@ defineExpose({ clearPick });
       loading="eager"
       @load="onLoad"
     />
-    <p v-if="!loaded" class="pending mono-meta">Rendering {{ slug }}…</p>
+    <UiStateMessage v-if="!loaded" class="pending" kind="loading">Rendering the page…</UiStateMessage>
   </div>
 </template>
 
@@ -502,7 +502,6 @@ iframe {
 }
 
 .pending {
-  color: var(--subtle);
   left: 24px;
   position: absolute;
   top: 24px;

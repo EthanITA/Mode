@@ -236,8 +236,10 @@ onBeforeUnmount(() => {
     </header>
     <div class="body">
       <div v-show="content && 'text' in content" ref="host" class="host" data-region="files-viewer" />
-      <p v-if="content && 'reason' in content" class="empty">{{ UNSHOWN[content.reason] }}</p>
-      <p v-else-if="!content" class="empty">Reading the file…</p>
+      <UiStateMessage v-if="content && 'reason' in content" align="center" class="empty">
+        {{ UNSHOWN[content.reason] }}
+      </UiStateMessage>
+      <UiStateMessage v-else-if="!content" align="center" class="empty" kind="loading">Reading the file…</UiStateMessage>
     </div>
   </div>
 </template>
@@ -343,14 +345,12 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
+/* The body is always One Dark, so the state line reads the editor's palette instead of the theme's. */
 .empty {
-  color: var(--ed-muted);
-  display: grid;
+  --ink: var(--ed-ink);
+  --muted: var(--ed-muted);
+  --subtle: var(--ed-muted);
   flex: 1;
-  font-size: 13px;
-  line-height: 1.55;
-  margin: 0;
   padding: 16px;
-  place-items: center;
 }
 </style>

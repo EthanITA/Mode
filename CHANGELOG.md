@@ -248,6 +248,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   surface reads a `@cela/design` token instead of a number.
 - **Tooltips come from `@cela/design`.** Once one has shown, the next along a row opens at once, and
   each opens away from the nearest window edge.
+- **Every face says empty, loading and failed the same way,** through `@cela/design`'s
+  `StateMessage`: one sentence-case line where uppercase mono and sentence case used to mix, and a
+  failure is announced.
 
 ### Removed
 

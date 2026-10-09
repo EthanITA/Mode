@@ -121,8 +121,10 @@ function onEnter(event: KeyboardEvent): void {
             @drop="onDrop(task.id)"
           />
 
-          <p v-if="!tasks.length" class="empty">Nothing on the board yet.</p>
-          <p v-else-if="!activeTasks.length && doneTasks.length" class="empty">All open tasks completed.</p>
+          <UiStateMessage v-if="!tasks.length" class="empty">Nothing on the board yet.</UiStateMessage>
+          <UiStateMessage v-else-if="!activeTasks.length && doneTasks.length" class="empty">
+            All open tasks completed.
+          </UiStateMessage>
 
           <div
             class="add"
@@ -228,8 +230,6 @@ function onEnter(event: KeyboardEvent): void {
 }
 
 .empty {
-  color: var(--subtle);
-  font-size: 12.5px;
   margin: 10px 4px;
 }
 

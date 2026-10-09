@@ -26,6 +26,7 @@ const empty = computed(() => {
     ? "Every change is approved. The review is clean."
     : "Nothing captured yet. The sidecar mod records each file as Claude first changes it.";
 });
+const isReading = computed(() => !!sc.sessionKey.value && !review.snapshot.value);
 
 // The popover sits under whatever asked for it, and the tray chip carries the quote and the lines.
 function comment(event: MouseEvent, lines?: ReviewPicks, isRejected = false): void {
@@ -97,7 +98,7 @@ function rejectFile(event: MouseEvent): void {
       </header>
 
       <div class="scroll" data-scroll="files">
-        <p v-if="!files.length" class="empty">{{ empty }}</p>
+        <UiStateMessage v-if="!files.length" class="empty" :kind="isReading ? 'loading' : 'empty'">{{ empty }}</UiStateMessage>
         <ReviewFiles v-else />
       </div>
 
@@ -242,7 +243,7 @@ function rejectFile(event: MouseEvent): void {
         </footer>
       </template>
 
-      <p v-else class="empty centered">{{ empty }}</p>
+      <UiStateMessage v-else align="center" :kind="isReading ? 'loading' : 'empty'">{{ empty }}</UiStateMessage>
     </UiSurface>
   </section>
 </template>
@@ -403,16 +404,6 @@ function rejectFile(event: MouseEvent): void {
 }
 
 .empty {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.55;
-  margin: 0;
   padding: 8px;
-}
-
-.centered {
-  display: grid;
-  height: 100%;
-  place-items: center;
 }
 </style>

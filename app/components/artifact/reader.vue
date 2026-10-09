@@ -273,7 +273,9 @@ onScopeDispose(() => {
       />
 
       <div v-if="showDiff ? stage !== 'version' : !measured" class="gap" data-region="version-gap">
-        <p v-if="stage === 'reading'" class="mono-meta">reading t{{ versions.at.value }}…</p>
+        <UiStateMessage v-if="stage === 'reading'" align="center" kind="loading">
+          Reading turn {{ versions.at.value }}…
+        </UiStateMessage>
         <template v-else>
           <p class="title">This version could not be read back.</p>
           <p class="why">{{ gap }}.</p>
@@ -316,10 +318,10 @@ onScopeDispose(() => {
     </div>
 
     <div v-else class="blank">
-      <p v-if="!sc.ready.value" class="mono-meta">reading {{ slug }}…</p>
-      <p v-else>
+      <UiStateMessage v-if="!sc.ready.value" align="center" kind="loading">Reading the page…</UiStateMessage>
+      <UiStateMessage v-else align="center" kind="error">
         <b>{{ slug }}</b> could not be read from the artifacts directory.
-      </p>
+      </UiStateMessage>
       <slot name="blank" />
     </div>
   </div>

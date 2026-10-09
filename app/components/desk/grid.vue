@@ -92,9 +92,9 @@ chrome.canvas.register({
       </UiCanvasItem>
     </UiCanvas>
 
-    <p v-if="!cards.length" class="empty">
-      No conversation to show.<br />Turn the archive on to see the ones `claude agents` does not list.
-    </p>
+    <UiStateMessage v-if="!cards.length" align="center" class="empty">
+      No conversation to show.<br />Turn the archive on to see the ones <code>claude agents</code> does not list.
+    </UiStateMessage>
 
     <UiContextMenu ref="menuEl" data-region="desk-menu" label="Conversation" width="w-64">
       <template #default="{ close }">
@@ -120,16 +120,16 @@ chrome.canvas.register({
 }
 
 .empty {
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 12px;
+  height: auto;
   left: 50%;
-  line-height: 1.8;
   pointer-events: none;
   position: absolute;
-  text-align: center;
   top: 45%;
   transform: translate(-50%, -50%);
+}
+
+.empty code {
+  font-family: var(--mono);
 }
 
 .menu-head {

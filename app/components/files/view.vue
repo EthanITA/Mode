@@ -160,8 +160,8 @@ onBeforeUnmount(() => {
         <UiChip :selected="showIgnored" size="xs" @click="showIgnored = !showIgnored">Ignored</UiChip>
       </div>
       <div class="scroll">
-        <p v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</p>
-        <p v-else-if="scope !== 'all' && !scoped.root.value" class="empty">{{ EMPTY[scope] }}</p>
+        <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
+        <UiStateMessage v-else-if="scope !== 'all' && !scoped.root.value" class="empty">{{ EMPTY[scope] }}</UiStateMessage>
         <FileTree
           v-else
           :key="`${scope}:${sc.sessionKey.value}`"
@@ -218,7 +218,7 @@ onBeforeUnmount(() => {
           :path="selected"
           :turn="touched.get(selected)?.lastTurn"
         />
-        <p v-else class="empty centered">Pick a file to open it here.</p>
+        <UiStateMessage v-else align="center" class="centered">Pick a file to open it here.</UiStateMessage>
       </UiSurface>
     </div>
   </section>
@@ -374,17 +374,11 @@ onBeforeUnmount(() => {
 }
 
 .empty {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.55;
-  margin: 0;
   padding: 8px;
 }
 
 .centered {
-  display: grid;
   flex: 1;
-  place-items: center;
   padding: 16px;
 }
 </style>

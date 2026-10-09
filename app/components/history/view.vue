@@ -55,10 +55,14 @@ const restoreMessage = computed(() => {
         <span class="meta mono-meta">{{ plural(history.turns.value.length, "turn") }}</span>
       </header>
       <div class="scroll" data-scroll="turns">
-        <p v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</p>
-        <p v-else-if="history.loading.value" class="empty">Reading the receipts…</p>
-        <p v-else-if="history.error.value" class="failure" role="alert">{{ history.error.value }}</p>
-        <p v-else-if="!history.turns.value.length" class="empty">No turns have been recorded for this conversation.</p>
+        <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
+        <UiStateMessage v-else-if="history.loading.value" class="empty" kind="loading">Reading the receipts…</UiStateMessage>
+        <UiStateMessage v-else-if="history.error.value" class="failure" kind="error" :title="history.error.value">
+          Couldn't read this conversation's turns.
+        </UiStateMessage>
+        <UiStateMessage v-else-if="!history.turns.value.length" class="empty">
+          No turns have been recorded for this conversation.
+        </UiStateMessage>
 
         <template v-for="turn in history.turns.value" :key="turn.receipt.turn">
           <p v-if="turn.receipt.turn === firstFresh" class="divider mono-meta">new since you looked</p>
@@ -118,12 +122,12 @@ const restoreMessage = computed(() => {
           </button>
         </div>
 
-        <p v-if="!selectedTurn" class="empty">Pick a turn to see what it changed.</p>
-        <p v-else-if="history.diffing.value" class="empty">Reading the diffs…</p>
-        <p v-else-if="!history.files.value.length" class="empty">
+        <UiStateMessage v-if="!selectedTurn" class="empty">Pick a turn to see what it changed.</UiStateMessage>
+        <UiStateMessage v-else-if="history.diffing.value" class="empty" kind="loading">Reading the diffs…</UiStateMessage>
+        <UiStateMessage v-else-if="!history.files.value.length" class="empty">
           {{ selectedTurn.inFlight ? "This work" : `Turn ${selectedTurn.receipt.turn}` }} touched no files. It read and
           reasoned, but nothing on disk moved.
-        </p>
+        </UiStateMessage>
 
         <HistoryFile
           v-for="file in history.files.value"
@@ -222,10 +226,6 @@ const restoreMessage = computed(() => {
 }
 
 .empty {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.55;
-  margin: 0;
   padding: 2px;
 }
 
