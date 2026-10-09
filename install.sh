@@ -91,15 +91,13 @@ ask_yes_no() {
 # ---------------------------------------------------------------- dependencies
 
 missing=""
-command -v python3 >/dev/null 2>&1 || missing="${missing}
-  python3   runs the plugin's hooks"
 node_version=$(node -v 2>/dev/null) || node_version=""
 node_major=${node_version#v}
 node_major=${node_major%%.*}
 case $node_major in
   ''|*[!0-9]*)
     missing="${missing}
-  node      Node 24 or newer, the current LTS, which this installer and the status line run on" ;;
+  node      Node 24 or newer, the current LTS, which the hooks, this installer and the status line run on" ;;
   *)
     [ "$node_major" -ge 24 ] || missing="${missing}
   node      Node 24 or newer, the current LTS. Found $node_version" ;;
@@ -109,7 +107,7 @@ if [ -n "$missing" ]; then
   warn "Cannot install. These are missing:"
   warn "$missing"
   warn ""
-  warn "On macOS: brew install node, or nvm install --lts   (python3 ships with the Xcode command line tools)"
+  warn "On macOS: brew install node, or nvm install --lts"
   exit 1
 fi
 

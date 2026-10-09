@@ -40,10 +40,10 @@ The short command names are a second question, but a cheap one, so fold it into 
 Check first, so a missing tool is a sentence rather than a half-finished install:
 
 ```
-command -v python3 && node -v
+node -v
 ```
 
-`node` has to be 24 or newer, the current LTS: the installer rewrites `settings.json` with it and the status line runs on it. `python3` runs the hooks. If either is missing or node is older, say which and stop. On macOS, node comes from `brew install node` or `nvm install --lts`.
+`node` has to be 24 or newer, the current LTS, and it is the only thing Mode needs: the hooks, `bin/mode`, the installer and the status line all run on it. If it is missing or older, say what was found and stop. On macOS, node comes from `brew install node` or `nvm install --lts`.
 
 Then, from the plugin root:
 

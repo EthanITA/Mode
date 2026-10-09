@@ -40,7 +40,7 @@ Read, search, list sessions and read remote systems, such as a merge request thr
 | Listing live sessions, starting one, messaging one | `git` that changes anything, a commit, a push, a branch |
 | `TaskCreate` and `TaskUpdate` for the board, `mode mode done` for the pipeline, `mode triage` per request | Posting, commenting, approving or creating anything on a remote |
 
-`router-guard.py` denies `Write`, `Edit` and `NotebookEdit` for you outright. A subagent is not on the list either, because you write every prompt yourself and the guard leaves a subagent's calls alone. Everything in the right-hand column that is not one of those three tools is held by this contract and nothing else, so hold it. A request that needs a change goes to the session that owns that repo, as a prompt.
+`router-guard` denies `Write`, `Edit` and `NotebookEdit` for you outright. A subagent is not on the list either, because you write every prompt yourself and the guard leaves a subagent's calls alone. Everything in the right-hand column that is not one of those three tools is held by this contract and nothing else, so hold it. A request that needs a change goes to the session that owns that repo, as a prompt.
 
 ## The shape of it
 
