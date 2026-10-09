@@ -40,10 +40,10 @@ The short command names are a second question, but a cheap one, so fold it into 
 Check first, so a missing tool is a sentence rather than a half-finished install:
 
 ```
-command -v python3 jq
+command -v python3 && node -v
 ```
 
-`python3` rewrites `settings.json` without disturbing the other keys. `jq` reads the session id out of the JSON that Claude Code pipes into a status line. If either is missing, say which and stop. On macOS, `jq` comes from `brew install jq`.
+`node` has to be 24 or newer, the current LTS: the installer rewrites `settings.json` with it and the status line runs on it. `python3` runs the hooks. If either is missing or node is older, say which and stop. On macOS, node comes from `brew install node` or `nvm install --lts`.
 
 Then, from the plugin root:
 

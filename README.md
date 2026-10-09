@@ -16,7 +16,7 @@ New here? The [visual guide](GUIDE.md) explains how it works and how to write yo
 
 ## Install
 
-You need `python3` and `jq` on your path. The installer checks both and tells you which is missing rather than failing halfway.
+You need `python3` and Node 24 or newer, the current LTS, on your path. The installer checks both and tells you which is missing rather than failing halfway.
 
 There are two routes, and the one you pick decides how you update later.
 

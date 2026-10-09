@@ -114,6 +114,48 @@ def main():
         ok("--yes alone leaves the host script unchanged",
            sha(host2) == before,
            "out=%r" % (p.stdout + p.stderr)[-500:])
+
+        section("the status line renders the chips with no jq anywhere on PATH")
+        # /usr/bin carries jq on recent macOS, so the PATH is built from links to exactly what runs.
+        tools = os.path.join(tmp, "tools")
+        os.makedirs(tools)
+        os.symlink(shutil.which("node"), os.path.join(tools, "node"))
+        os.symlink(sys.executable, os.path.join(tools, "python3"))
+        bare = {"PATH": tools + ":/bin", "HOME": os.environ["HOME"]}
+        ok("the test PATH really has no jq", not shutil.which("jq", path=bare["PATH"]), bare["PATH"])
+
+        config_fresh = os.path.join(tmp, "cfg-fresh")
+        p = run_install(config_fresh)
+        line = os.path.join(config_fresh, "mode", "statusline.sh")
+        ok("a fresh install writes the status line script", p.returncode == 0 and os.path.isfile(line),
+           "rc=%s err=%r" % (p.returncode, p.stderr[-400:]))
+        subprocess.run([os.path.join(PLUGIN, "bin", "mode"), "mode", "set", "debug", "--session", "inst-1"],
+                       env=dict(os.environ, CLAUDE_CONFIG_DIR=config_fresh), capture_output=True)
+        p = subprocess.run(["/bin/bash", line], input=json.dumps({"session_id": "inst-1"}),
+                           env=dict(bare, CLAUDE_CONFIG_DIR=config_fresh), capture_output=True, text=True)
+        ok("it reads the session from the JSON on stdin and prints the held mode",
+           "debug" in p.stdout, "out=%r err=%r" % (p.stdout, p.stderr[-300:]))
+
+        fake = os.path.join(tmp, "installed", "mode")
+        write(os.path.join(fake, "bin", "mode"), "#!/bin/sh\necho from-manifest\n")
+        os.chmod(os.path.join(fake, "bin", "mode"), 0o755)
+        write(os.path.join(config_fresh, "plugins", "installed_plugins.json"),
+              json.dumps({"plugins": {"mode@local": [{"installPath": fake}]}}))
+        p = subprocess.run(["/bin/bash", os.path.join(config_fresh, "mode", "chips.sh"), "inst-1"],
+                           env=dict(bare, CLAUDE_CONFIG_DIR=config_fresh), capture_output=True, text=True)
+        ok("chips.sh finds the plugin through installed_plugins.json with node",
+           p.stdout.strip() == "from-manifest", "out=%r err=%r" % (p.stdout, p.stderr[-300:]))
+
+        section("a node older than the LTS stops the install up front")
+        old_node = os.path.join(tmp, "old-node")
+        write(os.path.join(old_node, "node"), "#!/bin/sh\necho 20.11.1\n")
+        os.chmod(os.path.join(old_node, "node"), 0o755)
+        p = subprocess.run([INSTALL, "--config-dir", os.path.join(tmp, "cfg-old"), "--no-aliases", "--yes"],
+                           cwd=PLUGIN, capture_output=True, text=True,
+                           env=dict(os.environ, PATH=old_node + ":/usr/bin:/bin"))
+        ok("install.sh refuses and names the version it found",
+           p.returncode == 1 and "Node 24 or newer" in p.stderr and "20.11.1" in p.stderr,
+           "rc=%s err=%r" % (p.returncode, p.stderr[-400:]))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

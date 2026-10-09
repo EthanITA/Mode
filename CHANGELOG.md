@@ -205,6 +205,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **jq is no longer needed, and Node 24 or newer is.** The installer edits `settings.json` through
+  `bin/_install.ts`, the generated `statusline.sh` pipes its JSON into `chips.sh`, which hands it to
+  `bin/mode chips --stdin`, and `chips.sh` finds the plugin in `installed_plugins.json` with node.
+  Re-run `./install.sh` to refresh `chips.sh`. A `statusline.sh` written by an older installer still
+  calls jq, so re-run with `--force` before removing jq. python3 is still needed for the hooks.
 - **The theme switch and Comment moved off the faces and onto the artifact.** Both sit with the page,
   as pills in its Files header and as islands when it is fullscreen or open on its own. The theme
   switch still themes the whole sidecar, and the page inside the frame follows it. Comment, the theme

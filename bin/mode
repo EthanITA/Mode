@@ -1270,7 +1270,9 @@ def main():
         slot_add("expired", cmd_expired, "print why the held contract is over, or exit 1 while it stands")
         slot_add("exit", cmd_exit, "end the held contract: back to auto when chosen, off when typed")
 
-    add("chips", cmd_chips, "one chip per axis with colour, ready to paste into a status line")
+    p = add("chips", cmd_chips, "one chip per axis with colour, ready to paste into a status line")
+    p.add_argument("--stdin", action="store_true",
+                   help="take the session from the status-line JSON on stdin when --session is absent")
 
     add("pins", cmd_pins, "what a fresh conversation here would start in, and which file decided it")
 
@@ -1333,8 +1335,13 @@ def main():
     if sys.argv[1:2] == ["chips"]:
         rest = sys.argv[2:]
         at = rest.index("--session") + 1 if "--session" in rest else 0
+        session = rest[at] if 0 < at < len(rest) else None
         try:
-            cmd_chips(argparse.Namespace(session=rest[at] if 0 < at < len(rest) else None))
+            # The status line pipes its JSON straight in, so nothing has to parse it for the id first.
+            if session is None and "--stdin" in rest:
+                data = json.loads(sys.stdin.read() or "{}")
+                session = (data.get("session_id") if isinstance(data, dict) else None) or None
+            cmd_chips(argparse.Namespace(session=session))
         except Exception:
             pass
         return
