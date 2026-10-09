@@ -110,15 +110,21 @@ function clamp(at: number, box: number, axis = window.innerWidth): number {
   return Math.max(EDGE, Math.min(at, axis - box - EDGE));
 }
 
+// Cut to what is on screen, so a tall block scrolled half out never rings the header or the islands above it.
 export function ringOf(hit: FrameHit): CommentHover {
+  const clip = hit.clip ?? { bottom: Infinity, left: -Infinity, right: Infinity, top: -Infinity };
+  const top = Math.max(hit.viewTop, clip.top);
+  const left = Math.max(hit.viewLeft, clip.left);
+  const bottom = Math.min(hit.viewTop + hit.height, clip.bottom);
+  const right = Math.min(hit.viewLeft + hit.width, clip.right);
   return {
-    height: hit.height,
+    height: Math.max(0, bottom - top),
     label: hit.label || hit.path,
-    left: hit.viewLeft,
-    top: hit.viewTop,
-    width: hit.width,
-    x: Math.min(hit.viewLeft + hit.width + 12, window.innerWidth - 360),
-    y: hit.viewTop,
+    left,
+    top,
+    width: Math.max(0, right - left),
+    x: Math.min(right + 12, window.innerWidth - 360),
+    y: top,
   };
 }
 

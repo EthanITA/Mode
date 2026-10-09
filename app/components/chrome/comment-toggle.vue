@@ -19,7 +19,7 @@ function toggle(): void {
     :is-on="chrome.comment.armed.value"
     label="Comment"
     :shape="shape"
-    tip="Comment on anything · hold C"
+    tip="Comment on anything · ⌘K or hold C"
     @click="toggle"
   />
 </template>

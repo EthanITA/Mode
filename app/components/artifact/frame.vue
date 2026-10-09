@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { FrameAnchor, FrameHit, FrameMark, FramePending } from "~/types/frame";
+import type { FrameAnchor, FrameHit, FrameMark, FramePending, ViewBox } from "~/types/frame";
 
 const { edition, html, slug, src, version } = defineProps<{
   edition?: number;
@@ -157,14 +157,32 @@ function indexedOf(el: Element): Indexed | undefined {
   return indexed.find((one) => one.el === el) ?? indexed.find((one) => el.contains(one.el));
 }
 
+// The frame is as tall as its page and its pane scrolls, so only what every clipping ancestor leaves is on screen.
+function visibleBox(el: HTMLElement): ViewBox {
+  let seen: ViewBox = { bottom: window.innerHeight, left: 0, right: window.innerWidth, top: chrome.frame.insets.value.top };
+  for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
+    const { overflowX, overflowY } = getComputedStyle(node);
+    if (overflowX === "visible" && overflowY === "visible") continue;
+    const box = node.getBoundingClientRect();
+    seen = {
+      bottom: Math.min(seen.bottom, box.bottom),
+      left: Math.max(seen.left, box.left),
+      right: Math.min(seen.right, box.right),
+      top: Math.max(seen.top, box.top),
+    };
+  }
+  return seen;
+}
+
 function hitOf(el: Element): FrameHit | undefined {
   const held = indexedOf(el);
   const box = el.getBoundingClientRect();
   const frameBox = frame.value?.getBoundingClientRect();
   const doc = el.ownerDocument;
-  if (!held || !frameBox || !doc) return undefined;
+  if (!held || !frameBox || !doc || !frame.value) return undefined;
   const scroll = doc.documentElement.scrollTop;
   return {
+    clip: visibleBox(frame.value),
     height: box.height,
     key: held.key,
     label: held.label,
@@ -300,7 +318,8 @@ function onLoad(): void {
     if (meta && event.key.toLowerCase() === "k") {
       event.preventDefault();
       if (picked || hot) emit("edit");
-      else chrome.jump.toggle();
+      else if (chrome.comment.armed.value) chrome.comment.disarm();
+      else chrome.comment.arm();
       return;
     }
     if (event.key === "Escape") {

@@ -13,10 +13,6 @@ const waiting = computed(() =>
 
 <template>
   <NuxtLayout>
-    <template #lead>
-      <ChromeListening />
-    </template>
-
     <main class="listening" data-region="listening-stage">
       <UiSurface class="card" pad="md" shape="island" variant="raised">
         <span class="dot" aria-hidden="true" />

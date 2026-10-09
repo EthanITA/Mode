@@ -15,7 +15,16 @@ export interface FrameMark extends FrameBlock {
   text: string;
 }
 
+/** The part of the window the frame is actually seen through, after every clipping ancestor. */
+export interface ViewBox {
+  bottom: number;
+  left: number;
+  right: number;
+  top: number;
+}
+
 export interface FrameHit {
+  clip?: ViewBox;
   height: number;
   key: string;
   label: string;

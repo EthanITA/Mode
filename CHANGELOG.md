@@ -39,9 +39,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   conversation touched, solid for what its latest turn read or edited. Any page the artifact catalogue
   holds, every `.html` and `.md` in the artifacts folder included, opens in `<ArtifactReader>`, the
   reader the artifact route now shares, with comments and the tray working as they do there. Its
-  header carries Comment, a light and dark switch for that page alone, and Fullscreen, which opens the
-  page with the same Comment and theme switch as islands and an X that closes it, in place of the back
-  arrow. Every other file opens in an editable Monaco: ⌘S saves through
+  header carries Comment, a light and dark switch for that page alone, and Fullscreen, which grows the
+  same sheet over the whole face, its shadow deepening as it goes and the frame never reloading, with
+  Comment and the theme switch as islands and an X, or Esc, that shrinks it back. A page opened at its
+  own address carries the same islands, its X in place of the back arrow. A comment ring on a block
+  the pane has scrolled half away stops at the pane's edge. Every other file opens in an editable
+  Monaco: ⌘S saves through
   `PUT /api/sessions/:key/files/content`, which refuses a save over text that changed on disk since it
   was opened, an unsaved draft survives switching files, ⌘K, the comment icon in the gutter or
   "Note for Claude" in the context menu drops a line note into the tray, and the Note pill notes the
@@ -70,8 +73,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   `/api/follow/stream` carries it. While a page listens the sidecar also reads Terminal's front tab
   title once a second and moves when that tab switches to another conversation, so a `/sidecar` point
   holds until you switch. Following and the jump palette replace the page rather than push it, so Back
-  never walks through every conversation the sidecar followed. The head carries the listening pill and
-  its pin where the link back to the desk was, and the desk itself moved to `/desk`.
+  never walks through every conversation the sidecar followed. The head carries only the conversation's
+  name, where the link back to the desk was, and the desk itself moved to `/desk`. ⌘K means comment
+  everywhere: an editor notes its selection, a picked block opens its edit, and anywhere else it arms
+  the comment picker, so it no longer opens the jump palette.
 - **The sidecar installs as an app, at an address of its own.** `nuxt dev` serves it on port 4747, read
   at `http://sidecar.localhost:4747`, which Chrome resolves to this machine with no hosts file, so it
   shares neither a port nor an origin with whatever else runs on `localhost:3000`. A web app

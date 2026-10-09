@@ -4,8 +4,6 @@ const { cwd, title } = defineProps<{ cwd?: string; title: string }>();
 
 <template>
   <div class="head" data-region="conversation-head">
-    <ChromeListening />
-
     <UiSurface class="pill what" data-region="conversation-title" pad="none" shape="pill" variant="glass">
       <span class="title">{{ title }}</span>
       <span v-if="cwd" class="cwd mono-meta">{{ homePath(cwd) }}</span>

@@ -40,13 +40,15 @@ function onKeyDown(event: KeyboardEvent): void {
     event.preventDefault();
     return;
   }
+  // ⌘K means comment everywhere: an editor notes its selection itself, so what reaches here arms the picker.
   if (meta && event.key.toLowerCase() === "k") {
     event.preventDefault();
     if (inlineArmed.value) {
       inlineAsk.value = true;
       return;
     }
-    chrome.jump.toggle();
+    if (chrome.comment.armed.value) chrome.comment.disarm();
+    else chrome.comment.arm();
     return;
   }
   if (event.key === "Escape") {
