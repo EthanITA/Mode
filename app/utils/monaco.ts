@@ -2,6 +2,41 @@ import type * as MonacoApi from "monaco-editor";
 
 let loading: Promise<typeof MonacoApi> | undefined;
 
+// Extensions and dotfiles Monaco ships no language for, sent to the closest one it has.
+const BY_EXTENSION: Record<string, string> = {
+  astro: "html",
+  cfg: "ini",
+  conf: "ini",
+  env: "shell",
+  fish: "shell",
+  json5: "json",
+  jsonc: "json",
+  ksh: "shell",
+  plist: "xml",
+  svelte: "html",
+  svg: "xml",
+  toml: "ini",
+  vue: "html",
+  zsh: "shell",
+};
+
+const BY_NAME: Record<string, string> = {
+  ".bashrc": "shell",
+  ".dockerignore": "shell",
+  ".envrc": "shell",
+  ".gitignore": "shell",
+  ".npmrc": "ini",
+  ".profile": "shell",
+  ".zprofile": "shell",
+  ".zshenv": "shell",
+  ".zshrc": "shell",
+  Brewfile: "ruby",
+  Gemfile: "ruby",
+  Makefile: "shell",
+  Podfile: "ruby",
+  Rakefile: "ruby",
+};
+
 // Loaded on first use, so the editor's few megabytes never weigh on a face that does not show a file.
 function load(): Promise<typeof MonacoApi> {
   loading ??= (async () => {
@@ -23,13 +58,25 @@ function load(): Promise<typeof MonacoApi> {
         return new editor.default();
       },
     };
+    // A file opens without its project, so type errors would only be unresolved imports; syntax errors stay.
+    for (const defaults of [monaco.typescript.typescriptDefaults, monaco.typescript.javascriptDefaults]) {
+      defaults.setDiagnosticsOptions({ noSemanticValidation: true, noSyntaxValidation: false });
+    }
+    monaco.json.jsonDefaults.setDiagnosticsOptions({ allowComments: true, trailingCommas: "ignore", validate: true });
     return monaco;
   })();
   return loading;
+}
+
+// Undefined leaves the choice to Monaco, which reads the model URI's extension and file name itself.
+function languageOf(path: string): string | undefined {
+  const name = path.split("/").pop() ?? "";
+  const extension = name.includes(".") ? name.split(".").pop()?.toLowerCase() : undefined;
+  return BY_NAME[name] ?? (name.startsWith(".env") ? "shell" : undefined) ?? (extension ? BY_EXTENSION[extension] : undefined);
 }
 
 function themeOf(): "vs" | "vs-dark" {
   return document.documentElement.getAttribute("data-theme") === "dark" ? "vs-dark" : "vs";
 }
 
-export const Monaco = { load, themeOf };
+export const Monaco = { languageOf, load, themeOf };
