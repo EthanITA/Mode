@@ -15,8 +15,8 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
-from support import (HOOKS, MODES, PLUGIN, crashed, flag_fixtures, live, ok, out, report, write,
-                     require_tool, section, skip)
+from support import (HOOKS, MODES, PLUGIN, copy_plugin, crashed, flag_fixtures, live, ok, out, report,
+                     write, require_tool, section, skip)
 
 EVENTS = ("UserPromptSubmit", "SessionStart", "PostToolUse", "PostToolUseFailure", "PreToolUse",
           "SessionEnd", "Stop", "SubagentStop", "PreCompact", "Notification", "TaskCreated")
@@ -460,7 +460,7 @@ with tempfile.TemporaryDirectory() as tmp:
         for label, body in (("bin/mode absent", None), ("bin/mode failing", BROKEN),
                             ("bin/mode crashing", CRASHING)):
             hurt = os.path.join(tmp, "hurt-%s" % label.split("/")[-1].replace(" ", "-"))
-            shutil.copytree(PLUGIN, hurt, ignore=shutil.ignore_patterns(".git", "tests"))
+            copy_plugin(hurt, "tests")
             target = os.path.join(hurt, "bin", "mode")
             os.remove(target)
             if body is not None:
@@ -489,7 +489,7 @@ with tempfile.TemporaryDirectory() as tmp:
         # gate.py reads no-dispatch-without-approval, so the same file is judged by both layers.
         flags, wanted = flag_fixtures("enter-never", "no-dispatch-without-approval")
         gateroot = os.path.join(tmp, "gateroot")
-        shutil.copytree(PLUGIN, gateroot, ignore=shutil.ignore_patterns(".git", "tests"))
+        copy_plugin(gateroot, "tests")
         fixtures = os.path.join(gateroot, "skills", "mode", "modes")
         shutil.rmtree(fixtures)
         os.makedirs(fixtures)
@@ -723,7 +723,7 @@ with tempfile.TemporaryDirectory() as tmp:
     if present["sync.sh"]:
         section("sync.sh, PostToolUse")
         copy = os.path.join(tmp, "copy")
-        shutil.copytree(PLUGIN, copy, ignore=shutil.ignore_patterns(".git"))
+        copy_plugin(copy)
         before = {}
         for base, _, names in os.walk(os.path.join(PLUGIN, "skills")):
             for n in names:

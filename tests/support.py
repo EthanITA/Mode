@@ -121,6 +121,14 @@ def fixture_root(tmp, name, modes=None, styles=None, skill=None, rules=None):
     return root
 
 
+# The sidecar's node_modules and build output are most of the checkout and nothing a hook reads.
+HEAVY = (".git", "node_modules", ".nuxt", ".output", ".data")
+
+
+def copy_plugin(dest, *skip):
+    shutil.copytree(PLUGIN, dest, ignore=shutil.ignore_patterns(*HEAVY, *skip))
+
+
 def env_for(root, config):
     env = dict(os.environ, CLAUDE_PLUGIN_ROOT=root, CLAUDE_CONFIG_DIR=config)
     for key in ("CLAUDE_CODE_SESSION_ID", "NOTES_MODES", "NOTES_DIR"):
