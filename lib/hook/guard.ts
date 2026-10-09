@@ -20,9 +20,9 @@ function listed(list: unknown, name: string): boolean {
 }
 
 // Guards are on unless the config says off, and `disarm` names a guard by the stem of the file running it.
-export function armed(): boolean {
+export function armed(guard: string = basename(process.argv[1] ?? "", ".ts")): boolean {
   const settings = modeConfig()
   const value = String(settings.guards ?? "").trim().replace(/^["']+|["']+$/g, "").toLowerCase()
   if (OFF.has(value)) return false
-  return !listed(settings.disarm, basename(process.argv[1] ?? "", ".ts"))
+  return !listed(settings.disarm, guard)
 }
