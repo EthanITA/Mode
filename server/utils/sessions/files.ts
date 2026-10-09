@@ -1,5 +1,6 @@
-import { statSync } from "node:fs"
-import type { FileAction, FileContent, SessionFile, SessionFiles } from "../../../shared/types/files.ts"
+import { createHash } from "node:crypto"
+import { statSync, writeFileSync } from "node:fs"
+import type { FileAction, FileContent, FileSave, SessionFile, SessionFiles } from "../../../shared/types/files.ts"
 import { readTextSafe } from "../mode/fsutil.ts"
 import { cwdOf, isInside } from "../tree/index.ts"
 import { turnsOf } from "./receipts.ts"
@@ -42,11 +43,17 @@ export function filesOf({ key }: { key: string }): SessionFiles {
   return { key, files }
 }
 
+function hashOf(text: string): string {
+  return createHash("sha1").update(text).digest("hex")
+}
+
 // What the conversation touched or what sits under its working directory, never an arbitrary file.
-export function contentOf({ key, path }: { key: string; path: string }): FileContent {
+function isReachable({ key, path }: { key: string; path: string }): boolean {
   const root = cwdOf(key)
-  const isReachable = (!!root && isInside(root, path)) || filesOf({ key }).files.some((file) => file.path === path)
-  if (!isReachable) return { path, reason: "not-touched" }
+  return (!!root && isInside(root, path)) || filesOf({ key }).files.some((file) => file.path === path)
+}
+
+function read(path: string): FileContent {
   let size: number
   try {
     size = statSync(path).size
@@ -55,5 +62,22 @@ export function contentOf({ key, path }: { key: string; path: string }): FileCon
   }
   if (size > MAX_BYTES) return { path, reason: "too-large" }
   const text = readTextSafe(path) ?? ""
-  return text.includes("\u0000") ? { path, reason: "binary" } : { path, text }
+  return text.includes("\u0000") ? { path, reason: "binary" } : { path, text, hash: hashOf(text) }
+}
+
+export function contentOf({ key, path }: { key: string; path: string }): FileContent {
+  return isReachable({ key, path }) ? read(path) : { path, reason: "not-touched" }
+}
+
+// Only over the text the editor opened, so a turn that changed the file in the meantime is never clobbered.
+export function writeOver({ path, text, base }: { path: string; text: string; base: string }): FileSave {
+  const now = read(path)
+  if (!("text" in now)) return { saved: false, reason: now.reason }
+  if (now.hash !== base) return { saved: false, reason: "changed-on-disk" }
+  writeFileSync(path, text)
+  return { saved: true, hash: hashOf(text) }
+}
+
+export function saveContent({ key, path, text, base }: { key: string; path: string; text: string; base: string }): FileSave {
+  return isReachable({ key, path }) ? writeOver({ path, text, base }) : { saved: false, reason: "not-touched" }
 }

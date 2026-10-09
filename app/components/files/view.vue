@@ -1,28 +1,27 @@
 <script lang="ts" setup>
 import { ExternalLink } from "@lucide/vue";
-import type { FileContent, FileGroup, SessionFile } from "~~/shared/types/files";
+import type { FileGroup, SessionFile } from "~~/shared/types/files";
 import type { TreeEntry } from "~~/shared/types/tree";
 
-type Scope = "all" | FileGroup;
+type Scope = "artifacts" | "all" | FileGroup;
 
 const sc = useSidecar();
 const files = useFiles(() => sc.sessionKey.value);
 const selected = useState<string | undefined>("fl:selected");
-const scope = useState<Scope>("fl:scope", () => "all");
+const scope = useState<Scope>("fl:scope", () => "artifacts");
 const showIgnored = useState("fl:ignored", () => false);
-const content = ref<FileContent>();
 
 const SCOPES: { label: string; value: Scope }[] = [
+  { label: "Artifacts", value: "artifacts" },
   { label: "All", value: "all" },
   { label: "Produced", value: "produced" },
   { label: "Interacted", value: "interacted" },
 ];
 
-const UNSHOWN: Record<Exclude<FileContent, { text: string }>["reason"], string> = {
-  "not-touched": "That file is outside this conversation's folder.",
-  missing: "The file is no longer on disk.",
-  "too-large": "The file is over 4 MB, too large to show here.",
-  binary: "The file is binary, so there is nothing to read.",
+const EMPTY: Record<Exclude<Scope, "all">, string> = {
+  artifacts: "This conversation hasn't made an artifact yet.",
+  produced: "This conversation hasn't created a file yet.",
+  interacted: "This conversation hasn't read or changed a file yet.",
 };
 
 const session = computed(() => sc.sessions.value.find((s) => s.key === sc.sessionKey.value));
@@ -35,38 +34,35 @@ const folder = useFolderTree({
   root: () => session.value?.cwd ?? "",
   showIgnored,
 });
-const scoped = usePathsTree(() => (files.value?.files ?? []).filter((file) => file.group === scope.value).map((file) => file.path));
+// Every page the catalogue holds opens as an artifact, stamped on this conversation or not.
+const pages = computed(() => new Map(sc.catalogue.value.map((meta) => [meta.path, meta.slug])));
+const artifacts = computed(() => {
+  const paths = new Map(sc.catalogue.value.map((meta) => [meta.slug, meta.path]));
+  return (session.value?.artifacts ?? []).flatMap((slug) => paths.get(slug) ?? []);
+});
+
+const scoped = usePathsTree(() =>
+  scope.value === "artifacts"
+    ? artifacts.value
+    : (files.value?.files ?? []).filter((file) => file.group === scope.value).map((file) => file.path),
+);
 const source = computed(() => (scope.value === "all" ? folder : scoped));
+const pageOf = computed(() => (selected.value ? pages.value.get(selected.value) : undefined));
 
 // A new turn can create or delete files, so the folders already open are listed again.
 watch(latest, () => folder.refresh());
 
-const pages = computed(() => new Map(sc.catalogue.value.map((meta) => [meta.path, meta.slug])));
-const pageOf = computed(() => {
-  const slug = selected.value ? pages.value.get(selected.value) : undefined;
-  return slug && session.value?.artifacts.includes(slug) ? slug : undefined;
-});
+watch(
+  [scope, artifacts],
+  () => {
+    if (scope.value === "artifacts" && !selected.value) selected.value = artifacts.value[0];
+  },
+  { immediate: true },
+);
 
 function markOf(entry: TreeEntry): SessionFile | undefined {
   return entry.kind === "file" ? touched.value.get(entry.path) : undefined;
 }
-
-let ticket = 0;
-watch(
-  () => [sc.sessionKey.value, selected.value, touched.value.get(selected.value ?? "")?.lastTurn] as const,
-  async ([key, path]) => {
-    const mine = ++ticket;
-    content.value = undefined;
-    if (!key || !path) return;
-    try {
-      const got = await $fetch<FileContent>(`/api/sessions/${encodeURIComponent(key)}/files/content`, { query: { path } });
-      if (mine === ticket) content.value = got;
-    } catch {
-      if (mine === ticket) content.value = { path, reason: "missing" };
-    }
-  },
-  { immediate: true },
-);
 </script>
 
 <template>
@@ -82,9 +78,7 @@ watch(
       <p v-if="session && scope === 'all'" class="root mono-meta">{{ homePath(session.cwd) }}</p>
       <div class="scroll">
         <p v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</p>
-        <p v-else-if="scope !== 'all' && !scoped.root.value" class="empty">
-          {{ scope === "produced" ? "This conversation hasn't created a file yet." : "This conversation hasn't read or changed a file yet." }}
-        </p>
+        <p v-else-if="scope !== 'all' && !scoped.root.value" class="empty">{{ EMPTY[scope] }}</p>
         <FileTree
           v-else
           :key="`${scope}:${sc.sessionKey.value}`"
@@ -107,24 +101,29 @@ watch(
     </UiSurface>
 
     <UiSurface class="pane" data-region="files-preview" pad="none" variant="raised">
-      <template v-if="selected">
+      <template v-if="selected && pageOf && sc.sessionKey.value">
         <header class="bar">
           <span class="path">{{ homePath(selected) }}</span>
           <NuxtLink
-            v-if="pageOf"
             class="open focusable"
             :to="`/c/${sc.sessionKey.value}/${pageOf}`"
-            title="Open the page in the reader"
+            title="Open the page full width in the reader"
           >
             <UiIcon :icon="ExternalLink" size="sm" />
             Open page
           </NuxtLink>
         </header>
-        <FilesViewer v-if="content && 'text' in content" class="code" :path="selected" :text="content.text" />
-        <p v-else-if="content" class="empty centered">{{ UNSHOWN[content.reason] }}</p>
-        <p v-else class="empty centered">Reading the file…</p>
+        <div class="read">
+          <ArtifactReader :conversation="sc.sessionKey.value" :slug="pageOf" />
+        </div>
       </template>
-      <p v-else class="empty centered">Pick a file to read it here.</p>
+      <FilesEditor
+        v-else-if="selected && sc.sessionKey.value"
+        :conversation="sc.sessionKey.value"
+        :path="selected"
+        :turn="touched.get(selected)?.lastTurn"
+      />
+      <p v-else class="empty centered">Pick a file to open it here.</p>
     </UiSurface>
   </section>
 </template>
@@ -224,8 +223,12 @@ watch(
   border-color: var(--ink);
 }
 
-.code {
+/* The reader sizes its frame to the page, so this pane owns the scroll. */
+.read {
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 0 24px;
 }
 
 .empty {

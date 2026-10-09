@@ -21,12 +21,20 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **The chat island is hidden; Claude Code is the chat.** The prompt, the transcript and the mode and
   style pickers no longer show in a conversation or on an artifact page. Notes left on a page or a line
   still collect in the tray, which shows bottom right with one button that sends them to Claude.
-- **A Files face replaces the Canvas.** The conversation's whole folder as a tree that follows
-  `.gitignore`, with a toggle that brings the ignored files back dimmed, and two narrower scopes:
-  Produced, the files Claude created, and Interacted, the ones it read or changed. A dot marks every
-  file the conversation touched, solid for what its latest turn read or edited. A picked file opens
-  read-only in Monaco, and an artifact page opens in the reader. The canvas face and its zoom control
-  are gone from conversations; the desk still uses the canvas.
+- **A Files face replaces the Canvas.** It opens on Artifacts, the pages this conversation made, with
+  the first one showing. All is the conversation's whole folder as a tree that follows `.gitignore`,
+  with a toggle that brings the ignored files back dimmed, and two narrower scopes: Produced, the
+  files Claude created, and Interacted, the ones it read or changed. A dot marks every file the
+  conversation touched, solid for what its latest turn read or edited. Any page the artifact catalogue
+  holds, every `.html` and `.md` in the artifacts folder included, opens in `<ArtifactReader>`, the
+  reader the artifact route now shares, with comments and the tray working as they do there. Every
+  other file opens in an editable Monaco: ⌘S saves through `PUT /api/sessions/:key/files/content`,
+  which refuses a save over text that changed on disk since it was opened, an unsaved draft survives
+  switching files, and the plus in the gutter or "Note for Claude" in the context menu drops a line
+  note into the tray. `.vue`, `.svelte`, `.astro`, `.jsonc`, `.toml`, `.zsh` and the usual dotfiles
+  highlight through the nearest language Monaco ships, and type errors from imports it cannot resolve
+  are off. The canvas face and its zoom control are gone from conversations; the desk still uses the
+  canvas.
 - **History diffs between turns, side by side.** Pick a turn to see what it did, shift-click another
   to see what the turns between did together, or read through to the newest version. Each file draws
   in `<DiffSideBySide>`, the same component Review uses, read-only here, from a `pair` the version
