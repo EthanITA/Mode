@@ -90,12 +90,14 @@ export function loadSidecar(): void {
     onScopeDispose(() => window.clearInterval(timer));
   });
 
-  // The artifact list belongs to the session, so the mount follows the tab.
+  // Any page in the catalogue may be held, since Files opens one this conversation never stamped.
   watch(
-    [() => sc.sessionKey.value, () => sc.sessions.value],
+    [() => sc.sessionKey.value, () => sc.sessions.value, () => sc.catalogue.value],
     () => {
+      const held = sc.slug.value;
       const slugs = sc.sessions.value.find((s) => s.key === sc.sessionKey.value)?.artifacts ?? [];
-      if (!sc.slug.value || !slugs.includes(sc.slug.value)) sc.slug.value = slugs[0];
+      const isKnown = !!held && (slugs.includes(held) || sc.catalogue.value.some((meta) => meta.slug === held));
+      if (!isKnown) sc.slug.value = slugs[0];
     },
     { immediate: true },
   );
@@ -107,11 +109,9 @@ export function loadSidecar(): void {
         sc.artifact.value = undefined;
         return;
       }
-      try {
-        sc.artifact.value = await $fetch<ArtifactDetail>(`/api/artifacts/${slug}`);
-      } catch {
-        sc.artifact.value = undefined;
-      }
+      const got = await $fetch<ArtifactDetail>(`/api/artifacts/${slug}`).catch(() => undefined);
+      // Two picks in one tick fetch twice, and only the one still held may land.
+      if (sc.slug.value === slug) sc.artifact.value = got;
     },
     { immediate: true },
   );

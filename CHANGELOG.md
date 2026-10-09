@@ -176,6 +176,7 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **An artifact fetch that resolves late no longer replaces the one picked after it.**
 - **The version store keeps what a turn writes after the store last looked.** A build in the middle
   of a turn counted that turn as done, so its later writes never reached History; each build now
   writes the last turn it saw again, which adds versions only for what changed since.
