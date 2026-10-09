@@ -16,8 +16,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   disk on the right, highlighted and wrapped in full. Pick lines and accept or reject them, take a
   whole hunk with the arrows between the sides, or approve and reject files. Each press is relayed into
   the session, where the mod applies it and tells Claude about a reject, so the mod stays the only
-  writer. Comments go to the tray. The face follows the conversation in Terminal's front tab, read
-  from the tab titles, and a pin keeps it where it is. `/turn-diff` opens it at `/c/<key>?face=review`.
+  writer. Comments go to the tray. `/turn-diff` opens it at `/c/<key>?face=review`.
+- **The sidecar listens for the conversation open in Terminal.** Home no longer shows the desk: it says
+  it is listening to a Claude Code session and jumps to the one in Terminal's front tab, read from the
+  tab titles, or to the one you last typed in when no tab matches. Every conversation page then
+  follows when that tab switches. The head carries the listening pill and its pin where the link back
+  to the desk was, and the desk itself moved to `/desk`.
 - **"you are dispatcher." takes a pinned default, and the dispatcher runs in `fast`.** A contract that
   sets `enter-over-pin` may take a slot that only holds a pin, judged on the prompt's opening sentence
   so a prompt that merely talks about it never switches, and a slot typed by hand stays out of reach.

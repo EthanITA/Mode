@@ -1,35 +1,68 @@
 <script lang="ts" setup>
-import type { DeskCard } from "~/composables/useDesk";
-
-const sc = useSidecar();
-const chrome = useChrome();
+const follow = useFollow();
 
 loadSidecar();
+follow.listen({ isEager: true });
 
-function open(key: string): void {
-  sc.sessionKey.value = key;
-  navigateTo(`/c/${key}`);
-}
-
-async function remove(card: DeskCard): Promise<void> {
-  try {
-    await $fetch(`/api/sessions/${card.key}`, { method: "DELETE" });
-    // Drop it here rather than waiting for the poll, so the card does not linger for five seconds.
-    sc.sessions.value = sc.sessions.value.filter((session) => session.key !== card.key);
-    chrome.toast(`Deleted ${card.title}. Its transcript stays on disk.`, "success");
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    chrome.toast(`Could not delete ${card.title}. ${reason}`, "destructive");
-  }
-}
+const waiting = computed(() =>
+  follow.pinned.value
+    ? "Pinned, so the sidecar stays here. Unpin to follow Terminal."
+    : "Bring a Claude Code conversation to the front in Terminal and the sidecar focuses on it.",
+);
 </script>
 
 <template>
   <NuxtLayout>
     <template #lead>
-      <DeskHead />
+      <ChromeListening />
     </template>
 
-    <DeskGrid @open="open" @remove="remove" />
+    <main class="listening" data-region="listening-stage">
+      <UiSurface class="card" pad="md" shape="island" variant="raised">
+        <span class="dot" aria-hidden="true" />
+        <p class="title">Listening to Claude Code session</p>
+        <p class="hint">{{ waiting }}</p>
+      </UiSurface>
+    </main>
   </NuxtLayout>
 </template>
+
+<style scoped>
+.listening {
+  display: grid;
+  inset: 0;
+  place-items: center;
+  position: absolute;
+}
+
+.card {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 420px;
+  text-align: center;
+}
+
+.dot {
+  background: var(--success);
+  border-radius: 999px;
+  height: 10px;
+  width: 10px;
+}
+
+.title {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+}
+</style>

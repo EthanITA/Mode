@@ -197,6 +197,7 @@ export const REGIONS: RegionSpec[] = [
     selectors: ['[data-region="review"]'],
     demand: 'required',
     states: ['review'],
+    quotes: true,
   },
   {
     id: 'review-files',

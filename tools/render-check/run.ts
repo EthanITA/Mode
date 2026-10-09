@@ -326,7 +326,9 @@ async function main(): Promise<void> {
       states.push({ state, reached: false, settled: false, skipped: why })
     }
 
-    await cdp.send('Page.navigate', { url: options.url }, sessionId, 60_000)
+    // The root listens for Terminal's conversation and jumps away, so the desk is checked where it lives.
+    const deskUrl = isFile ? options.url : new URL('/desk', options.url).href
+    await cdp.send('Page.navigate', { url: deskUrl }, sessionId, 60_000)
     let seen = await look()
     landing = seen
 

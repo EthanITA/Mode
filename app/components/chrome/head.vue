@@ -1,17 +1,10 @@
 <script lang="ts" setup>
-import { ArrowLeft } from "@lucide/vue";
-
 const { cwd, title } = defineProps<{ cwd?: string; title: string }>();
 </script>
 
 <template>
   <div class="head" data-region="conversation-head">
-    <UiSurface class="pill" pad="none" shape="pill" variant="glass">
-      <NuxtLink v-press class="back focusable" to="/">
-        <UiIcon :icon="ArrowLeft" size="sm" />
-        desk
-      </NuxtLink>
-    </UiSurface>
+    <ChromeListening />
 
     <UiSurface class="pill what" data-region="conversation-title" pad="none" shape="pill" variant="glass">
       <span class="title">{{ title }}</span>
@@ -45,20 +38,6 @@ const { cwd, title } = defineProps<{ cwd?: string; title: string }>();
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
-}
-
-.back {
-  align-items: center;
-  color: var(--ink);
-  display: inline-flex;
-  font-size: 12.5px;
-  font-weight: 600;
-  gap: 8px;
-  text-decoration: none;
-}
-
-.back:hover {
-  color: var(--primary);
 }
 
 .title {

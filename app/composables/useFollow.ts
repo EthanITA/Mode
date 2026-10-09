@@ -1,8 +1,13 @@
 import type { Ref } from "vue";
 import type { FollowTarget } from "~~/shared/types/review";
 
+export interface FollowOptions {
+  /** Jump on the very first read too, for a page that has no conversation of its own to stay on. */
+  isEager?: boolean;
+}
+
 export interface Follow {
-  listen: () => void;
+  listen: (options?: FollowOptions) => void;
   pinned: Ref<boolean>;
   target: Ref<FollowTarget>;
 }
@@ -17,10 +22,10 @@ export function useFollow(): Follow {
     void navigateTo(`/c/${next.key}`);
   }
 
-  // The first read is a baseline, so a review opened by hand stays put until you switch Terminal tabs.
-  function listen(): void {
+  // Otherwise the first read is a baseline, so a conversation opened by hand stays put until Terminal switches.
+  function listen({ isEager = false }: FollowOptions = {}): void {
     const source = new EventSource("/api/follow/stream");
-    let isBaseline = true;
+    let isBaseline = !isEager;
     source.addEventListener("follow", (event: MessageEvent<string>) => {
       target.value = JSON.parse(event.data) as FollowTarget;
       if (!isBaseline) go(target.value);

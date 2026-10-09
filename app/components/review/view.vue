@@ -1,27 +1,15 @@
 <script lang="ts" setup>
-import { Pin, PinOff } from "@lucide/vue";
-
 const sc = useSidecar();
 const chrome = useChrome();
 const review = useReview();
-const follow = useFollow();
 
 review.listen();
-follow.listen();
 
 const files = computed(() => review.snapshot.value?.files ?? []);
 const file = computed(() => review.file.value);
 const isLive = computed(() => !!review.snapshot.value?.live);
 const churn = computed(() => (file.value ? Review.counts(file.value) : undefined));
 const picked = computed(() => (file.value ? Review.picksOf(file.value, review.picks.value) : { old: [], new: [] }));
-
-const following = computed(() => {
-  const target = follow.target.value;
-  if (follow.pinned.value) return "Pinned here";
-  if (target.source === "terminal") return `Following Terminal: ${target.name ?? target.key}`;
-  if (target.source === "prompt") return `Following where you last typed: ${target.name ?? target.key}`;
-  return "No Terminal tab is a conversation";
-});
 
 const empty = computed(() => {
   if (!sc.sessionKey.value) return "No conversation is selected.";
@@ -60,22 +48,6 @@ function comment(event: MouseEvent, scope: "file" | "lines"): void {
         <span class="title">To review</span>
         <span class="meta mono-meta">{{ plural(files.length, "file") }}</span>
       </header>
-
-      <div class="follow">
-        <span class="follow-text" :data-source="follow.pinned.value ? 'pinned' : follow.target.value.source">
-          {{ following }}
-        </span>
-        <button
-          v-press
-          class="pin focusable"
-          type="button"
-          :aria-pressed="follow.pinned.value"
-          :title="follow.pinned.value ? 'Follow Terminal again' : 'Stay on this conversation'"
-          @click="follow.pinned.value = !follow.pinned.value"
-        >
-          <UiIcon :icon="follow.pinned.value ? PinOff : Pin" size="sm" />
-        </button>
-      </div>
 
       <div class="scroll" data-scroll="files">
         <p v-if="!files.length" class="empty">{{ empty }}</p>
@@ -261,49 +233,6 @@ function comment(event: MouseEvent, scope: "file" | "lines"): void {
 
 .churn [data-mark="remove"] {
   color: var(--error);
-}
-
-.follow {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex: none;
-  gap: 8px;
-  padding: 8px 14px;
-}
-
-.follow-text {
-  color: var(--muted);
-  flex: 1;
-  font-size: 12px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.follow-text[data-source="terminal"],
-.follow-text[data-source="prompt"] {
-  color: var(--primary-deep);
-}
-
-.pin {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted);
-  cursor: pointer;
-  display: grid;
-  flex: none;
-  height: 26px;
-  place-items: center;
-  width: 26px;
-}
-
-.pin[aria-pressed="true"] {
-  background: var(--primary-soft);
-  border-color: var(--primary);
-  color: var(--primary-deep);
 }
 
 .scroll {

@@ -4,6 +4,7 @@ import type { Component } from "vue";
 const route = useRoute();
 const sc = useSidecar();
 const chrome = useChrome();
+const follow = useFollow();
 
 // Read off disk at build: an unbuilt face is unreachable, with no list kept by hand.
 const parts = import.meta.glob<Component>(
@@ -40,6 +41,7 @@ const gone = computed(() => sc.ready.value && !session.value);
 watch([key, () => sc.sessions.value], () => (sc.sessionKey.value = key.value), { immediate: true });
 
 loadSidecar();
+follow.listen();
 </script>
 
 <template>
@@ -58,7 +60,7 @@ loadSidecar();
 
     <UiSurface v-if="gone" class="gone" pad="md" shape="island" variant="raised">
       <p class="gone-line">No conversation is running under <code>{{ key }}</code>.</p>
-      <NuxtLink class="gone-back focusable" to="/">Back to the desk</NuxtLink>
+      <NuxtLink class="gone-back focusable" to="/">Listen for the next one</NuxtLink>
     </UiSurface>
 
     <main v-else class="stage" data-region="conversation-stage" :data-face="chrome.view.current.value">
