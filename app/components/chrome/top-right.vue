@@ -4,7 +4,7 @@ import { MessageSquare } from "@lucide/vue";
 const route = useRoute();
 const chrome = useChrome();
 
-const LABELS: Record<Face, string> = { canvas: "Canvas", history: "History" };
+const LABELS: Record<Face, string> = { canvas: "Canvas", history: "History", review: "Review" };
 
 const inSession = computed(() => route.path.startsWith("/c/"));
 // The faces belong to the conversation; an artifact has its own page and nothing to switch between.

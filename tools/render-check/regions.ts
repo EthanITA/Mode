@@ -1,7 +1,7 @@
 import type { RegionSpec } from './types.ts'
 
-const CONVERSATION = ['canvas', 'read', 'history'] as const
-const EVERYWHERE = ['desk', 'canvas', 'read', 'history', 'jump', 'comment'] as const
+const CONVERSATION = ['canvas', 'read', 'history', 'review'] as const
+const EVERYWHERE = ['desk', 'canvas', 'read', 'history', 'review', 'jump', 'comment'] as const
 
 /**
  * A region names a place on the screen, never its contents, so there is no region
@@ -188,6 +188,32 @@ export const REGIONS: RegionSpec[] = [
     selectors: ['[data-region="history-changes"]'],
     demand: 'required',
     states: ['history'],
+    quotes: true,
+  },
+  {
+    id: 'review',
+    label: 'review',
+    design: 'Files Claude changed since the last approval down the left, the selected one side by side on the right.',
+    selectors: ['[data-region="review"]'],
+    demand: 'required',
+    states: ['review'],
+  },
+  {
+    id: 'review-files',
+    label: 'review files',
+    design: 'The unapproved files with their turns and churn, who the sidecar follows, approve and reject all.',
+    selectors: ['[data-region="review-files"]'],
+    demand: 'required',
+    states: ['review'],
+    quotes: true,
+  },
+  {
+    id: 'review-changes',
+    label: 'review changes',
+    design: 'The selected file, original left and disk right, with line picks and hunk arrows.',
+    selectors: ['[data-region="review-changes"]'],
+    demand: 'required',
+    states: ['review'],
     quotes: true,
   },
 

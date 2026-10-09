@@ -292,6 +292,7 @@ const TITLES: Record<ScreenState, string> = {
   history: 'HISTORY · turns, and what each one changed',
   jump: 'JUMP · the command-K palette',
   read: 'READ · the artifact, its versions and its comments',
+  review: 'REVIEW · what Claude changed since the last approval, side by side',
 }
 
 function renderStateTable(report: StateReport): string[] {

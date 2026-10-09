@@ -11,6 +11,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **A Review face, side by side, for what Claude changed since your last approval.** It reads the
+  ledger the `turn-diff` mod keeps in `~/.claude/turn-diff/<session>/`: the original on the left, the
+  disk on the right, highlighted and wrapped in full. Pick lines and accept or reject them, take a
+  whole hunk with the arrows between the sides, or approve and reject files. Each press is relayed into
+  the session, where the mod applies it and tells Claude about a reject, so the mod stays the only
+  writer. Comments go to the tray. The face follows the conversation in Terminal's front tab, read
+  from the tab titles, and a pin keeps it where it is. `/turn-diff` opens it at `/c/<key>?face=review`.
 - **"you are dispatcher." takes a pinned default, and the dispatcher runs in `fast`.** A contract that
   sets `enter-over-pin` may take a slot that only holds a pin, judged on the prompt's opening sentence
   so a prompt that merely talks about it never switches, and a slot typed by hand stays out of reach.

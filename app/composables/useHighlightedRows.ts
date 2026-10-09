@@ -1,12 +1,11 @@
 import type { ComputedRef, Ref } from "vue";
-import type { DiffRow } from "~/utils/diff";
 
 function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /** Highlighting lands async, so v-html gets escaped plain text first and never raw, unescaped code. */
-export function useHighlightedRows(rows: ComputedRef<DiffRow[]>, lang: ComputedRef<string>): Ref<string[]> {
+export function useHighlightedRows(rows: ComputedRef<readonly { text: string }[]>, lang: ComputedRef<string>): Ref<string[]> {
   const highlighted = ref<string[]>([]);
   let ticket = 0;
 

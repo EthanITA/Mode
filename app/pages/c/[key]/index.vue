@@ -7,7 +7,7 @@ const chrome = useChrome();
 
 // Read off disk at build: an unbuilt face is unreachable, with no list kept by hand.
 const parts = import.meta.glob<Component>(
-  "../../../components/{board/island,canvas/view,composer/dock,history/view}.vue",
+  "../../../components/{board/island,canvas/view,composer/dock,history/view,review/view}.vue",
   { import: "default" },
 );
 
@@ -19,11 +19,16 @@ function part(path: string): Component | undefined {
 const built: Record<Face, Component | undefined> = {
   canvas: part("canvas/view"),
   history: part("history/view"),
+  review: part("review/view"),
 };
 const dock = part("composer/dock");
 const board = part("board/island");
 
 chrome.view.faces.value = FACES.filter((face) => built[face]);
+
+// `/turn-diff` opens `?face=review`: a deep link picks the face once, then the switcher owns it.
+const asked = FACES.find((face) => face === route.query.face);
+if (asked) chrome.view.set(asked);
 
 const key = computed(() => String(route.params.key ?? ""));
 const session = computed(() => sc.sessions.value.find((s) => s.key === key.value));
@@ -71,9 +76,10 @@ loadSidecar();
   position: absolute;
 }
 
-/* History owns two independently scrolling panes, so the stage clips instead of scrolling
+/* History and Review own two independently scrolling panes, so the stage clips instead of scrolling
    them. The bottom follows the dock's measured height, whatever state the dock is in. */
-.stage[data-face="history"] {
+.stage[data-face="history"],
+.stage[data-face="review"] {
   box-sizing: border-box;
   overflow: hidden;
   padding: var(--stage-top) var(--gutter) calc(var(--dock-h, var(--dock-rest-h)) + var(--gutter) * 2);
