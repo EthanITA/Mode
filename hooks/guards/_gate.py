@@ -26,7 +26,7 @@ def armed() -> bool:
 
 def held(axis: str, session: str) -> str:
     try:
-        done = subprocess.run([sys.executable, MODE, axis, "get", "--session", session],
+        done = subprocess.run([MODE, axis, "get", "--session", session],
                               capture_output=True, text=True, timeout=5)
         return done.stdout.strip() if done.returncode == 0 else ""
     except Exception:

@@ -59,7 +59,7 @@ def record_document(data):
         return
     if not path.endswith(".md") or not session:
         return
-    subprocess.run([sys.executable, os.path.join(ROOT, "bin", "artifact"), "touch", path],
+    subprocess.run([os.path.join(ROOT, "bin", "artifact"), "touch", path],
                    env=dict(os.environ, CLAUDE_CODE_SESSION_ID=session), capture_output=True, timeout=5)
 
 

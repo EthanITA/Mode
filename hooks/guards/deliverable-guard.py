@@ -60,7 +60,7 @@ try:
         sys.exit(0)
     session = data.get("session_id") or ""
     for verb, path in acts(data):
-        done = subprocess.run([sys.executable, MODE, "deliverable", "check", verb, "--path", path]
+        done = subprocess.run([MODE, "deliverable", "check", verb, "--path", path]
                               + (["--session", session] if session else []),
                               capture_output=True, text=True, timeout=10)
         if done.returncode == 1 and done.stdout.strip():
