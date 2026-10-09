@@ -1,130 +1,132 @@
 <script lang="ts" setup>
-const review = useReview();
+import { ChevronDown, ChevronRight, File, Folder, FolderOpen } from "@lucide/vue";
+import type { ReviewFile } from "~~/shared/types/review";
 
-const files = computed(() =>
-  (review.snapshot.value?.files ?? []).map((file) => ({
-    ...file,
-    churn: Review.counts(file),
-    dir: homePath(file.path.slice(0, file.path.lastIndexOf("/"))),
-  })),
-);
+const review = useReview();
+const collapsed = useState<string[]>("rv:collapsed", () => []);
+
+const rows = computed(() => Review.tree({ files: review.snapshot.value?.files ?? [], collapsed: collapsed.value }));
+
+// JetBrains' colours for a change: added green, modified blue, deleted grey.
+function statusOf(file: ReviewFile): "added" | "modified" | "deleted" {
+  if (file.isDeleted) return "deleted";
+  return file.isNew ? "added" : "modified";
+}
+
+function toggle(key: string): void {
+  collapsed.value = collapsed.value.includes(key) ? collapsed.value.filter((one) => one !== key) : [...collapsed.value, key];
+}
 </script>
 
 <template>
-  <ul class="files" data-region="review-files-list">
-    <li v-for="file in files" :key="file.path">
+  <ul class="tree" role="tree" data-region="review-files-list">
+    <li v-for="row in rows" :key="row.key" role="treeitem" :aria-expanded="row.kind === 'dir' ? row.isOpen : undefined">
       <button
-        v-press
-        class="file focusable"
+        v-if="row.kind === 'dir'"
+        class="row focusable"
         type="button"
-        :data-selected="file.path === review.file.value?.path"
-        @click="review.selected.value = file.path"
+        :style="{ '--depth': row.depth }"
+        :title="row.depth ? row.name : homePath(row.name)"
+        @click="toggle(row.key)"
       >
-        <span class="name">{{ basename(file.path) }}</span>
-        <span class="dir mono-meta">{{ file.dir }}</span>
-        <span class="meta">
-          <span v-for="turn in file.turns" :key="turn" class="turn mono-meta">T{{ turn }}</span>
-          <span v-if="file.isNew" class="tag mono-meta" data-tag="new">new</span>
-          <span v-if="file.isDeleted" class="tag mono-meta" data-tag="deleted">deleted</span>
-          <span class="churn mono-meta">
-            <span data-mark="add">+{{ file.churn.added }}</span>
-            <span data-mark="remove">−{{ file.churn.removed }}</span>
-          </span>
-        </span>
+        <UiIcon class="chevron" :icon="row.isOpen ? ChevronDown : ChevronRight" size="xs" />
+        <UiIcon class="folder" :icon="row.isOpen ? FolderOpen : Folder" size="sm" />
+        <span class="name">{{ row.depth ? row.name : homePath(row.name) }}</span>
+        <span class="count mono-meta">{{ plural(row.count, "file") }}</span>
+      </button>
+      <button
+        v-else
+        class="row focusable"
+        type="button"
+        :style="{ '--depth': row.depth }"
+        :data-selected="row.file.path === review.file.value?.path"
+        :data-status="statusOf(row.file)"
+        :title="homePath(row.file.path)"
+        @click="review.selected.value = row.file.path"
+      >
+        <span class="chevron" />
+        <UiIcon class="icon" :icon="File" size="sm" />
+        <span class="name">{{ row.name }}</span>
+        <span class="turns mono-meta">{{ row.file.turns.map((turn) => `T${turn}`).join(" ") }}</span>
       </button>
     </li>
   </ul>
 </template>
 
 <style scoped>
-.files {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.tree {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.file {
+.row {
+  align-items: center;
   background: none;
-  border: 1px solid transparent;
-  border-radius: var(--radius-field);
+  border: 0;
+  border-radius: 6px;
   color: var(--ink);
   cursor: pointer;
   display: flex;
-  flex-direction: column;
   font: inherit;
-  gap: 3px;
-  padding: 8px 10px;
+  font-size: 12.5px;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 8px 0 calc(6px + var(--depth) * 14px);
   text-align: left;
   width: 100%;
 }
 
-.file:hover {
+.row:hover {
   background: var(--sunken);
 }
 
-.file[data-selected="true"] {
-  background: var(--raised);
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-sm);
+.row[data-selected="true"] {
+  background: var(--primary-soft);
+}
+
+.chevron {
+  color: var(--subtle);
+  flex: none;
+  width: 14px;
+}
+
+.folder {
+  color: var(--warning);
+  flex: none;
+}
+
+.icon {
+  color: var(--subtle);
+  flex: none;
 }
 
 .name {
+  flex: 1;
   font-family: var(--mono);
-  font-size: 12.5px;
-  font-weight: 600;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.dir {
-  color: var(--subtle);
-  overflow-wrap: anywhere;
-  text-transform: none;
-}
-
-.meta {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.turn {
-  background: var(--sunken);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 0 5px;
-  text-transform: none;
-}
-
-.tag {
-  border-radius: 999px;
-  padding: 0 7px;
-}
-
-.tag[data-tag="new"] {
-  background: var(--primary-soft);
-  color: var(--primary-deep);
-}
-
-.tag[data-tag="deleted"] {
-  background: var(--error-soft);
-  color: var(--error);
-}
-
-.churn {
-  display: inline-flex;
-  gap: 5px;
-  text-transform: none;
-}
-
-.churn [data-mark="add"] {
+.row[data-status="added"] .name {
   color: var(--success);
 }
 
-.churn [data-mark="remove"] {
-  color: var(--error);
+.row[data-status="modified"] .name {
+  color: var(--info);
+}
+
+.row[data-status="deleted"] .name {
+  color: var(--subtle);
+  text-decoration: line-through;
+}
+
+.count,
+.turns {
+  color: var(--subtle);
+  flex: none;
+  text-transform: none;
 }
 </style>

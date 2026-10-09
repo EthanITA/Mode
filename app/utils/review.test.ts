@@ -20,6 +20,23 @@ test("a picked row becomes the 1-based line numbers of both of its sides", () =>
   assert.deepEqual(Review.hunkOf(file, 0), { old: [2, 3], new: [2, 3] });
 });
 
+test("the tree hangs files under their shared root, merges single-folder chains and hides what is collapsed", () => {
+  const at = (path: string): ReviewFile => ({ ...file, path });
+  const files = [at("/r/app/utils/a.ts"), at("/r/app/utils/b.ts"), at("/r/docs/deep/only/c.md"), at("/r/top.md")];
+  const shape = (collapsed: string[]): string[] =>
+    Review.tree({ files, collapsed }).map((row) => `${"  ".repeat(row.depth)}${row.name}${row.kind === "dir" ? ` (${row.count})` : ""}`);
+  assert.deepEqual(shape([]), [
+    "/r (4)",
+    "  app/utils (2)",
+    "    a.ts",
+    "    b.ts",
+    "  docs/deep/only (1)",
+    "    c.md",
+    "  top.md",
+  ]);
+  assert.deepEqual(shape(["/r/app/utils"]), ["/r (4)", "  app/utils (2)", "  docs/deep/only (1)", "    c.md", "  top.md"]);
+});
+
 test("compact view folds a long unchanged run and keeps three lines of context", () => {
   const long: ReviewFile = {
     ...file,

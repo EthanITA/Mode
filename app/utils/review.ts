@@ -12,6 +12,15 @@ export interface ReviewPicks {
   new: number[];
 }
 
+export type ReviewTreeRow =
+  | { kind: "dir"; key: string; name: string; depth: number; count: number; isOpen: boolean }
+  | { kind: "file"; key: string; name: string; depth: number; file: ReviewFile };
+
+export interface ReviewTreeOptions {
+  files: readonly ReviewFile[];
+  collapsed: readonly string[];
+}
+
 export interface ReviewRowsOptions {
   file: ReviewFile;
   isCompact: boolean;
@@ -90,4 +99,59 @@ function spanOf(lines: readonly number[]): string {
   return `lines ${sorted[0]}-${sorted.at(-1)}`;
 }
 
-export const Review = { counts, hunkOf, picksOf, rows, spanOf };
+interface Folder {
+  dirs: Map<string, Folder>;
+  files: ReviewFile[];
+}
+
+function countOf(folder: Folder): number {
+  return folder.files.length + [...folder.dirs.values()].reduce((sum, one) => sum + countOf(one), 0);
+}
+
+// JetBrains' commit tree: the shared root on top, a folder holding only one folder merged into it as `a/b`.
+function tree({ files, collapsed }: ReviewTreeOptions): ReviewTreeRow[] {
+  if (!files.length) return [];
+  const shared = files
+    .map((file) => file.path.split("/").slice(0, -1))
+    .reduce((common, parts) => {
+      let n = 0;
+      while (n < common.length && n < parts.length && common[n] === parts[n]) n++;
+      return common.slice(0, n);
+    });
+  const root: Folder = { dirs: new Map(), files: [] };
+  for (const file of files) {
+    let folder = root;
+    for (const part of file.path.split("/").slice(shared.length, -1)) {
+      const next = folder.dirs.get(part) ?? { dirs: new Map(), files: [] };
+      folder.dirs.set(part, next);
+      folder = next;
+    }
+    folder.files.push(file);
+  }
+  const out: ReviewTreeRow[] = [];
+  const walk = (folder: Folder, prefix: string, depth: number): void => {
+    for (const [first, start] of [...folder.dirs].sort(([a], [b]) => a.localeCompare(b))) {
+      let name = first;
+      let at = start;
+      while (!at.files.length && at.dirs.size === 1) {
+        const [[part, only]] = [...at.dirs] as [[string, Folder]];
+        name = `${name}/${part}`;
+        at = only;
+      }
+      const key = `${prefix}/${name}`;
+      const isOpen = !collapsed.includes(key);
+      out.push({ kind: "dir", key, name, depth, count: countOf(at), isOpen });
+      if (isOpen) walk(at, key, depth + 1);
+    }
+    for (const file of [...folder.files].sort((a, b) => a.path.localeCompare(b.path))) {
+      out.push({ kind: "file", key: file.path, name: file.path.slice(file.path.lastIndexOf("/") + 1), depth, file });
+    }
+  };
+  const top = shared.join("/") || "/";
+  const isOpen = !collapsed.includes(top);
+  out.push({ kind: "dir", key: top, name: top, depth: 0, count: files.length, isOpen });
+  if (isOpen) walk(root, top, 1);
+  return out;
+}
+
+export const Review = { counts, hunkOf, picksOf, rows, spanOf, tree };

@@ -13,7 +13,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 - **A Review face, side by side, for what Claude changed since your last approval.** It reads the
   ledger the `turn-diff` mod keeps in `~/.claude/turn-diff/<session>/`: the original on the left, the
-  disk on the right, highlighted and wrapped in full. Pick lines and accept or reject them, take a
+  disk on the right, highlighted and wrapped in full. The files sit in a folder tree like JetBrains'
+  commit view, coloured by status, with single-folder chains merged. Pick lines and accept or reject them, take a
   whole hunk with the arrows between the sides, or approve and reject files. Each press is relayed into
   the session, where the mod applies it and tells Claude about a reject, so the mod stays the only
   writer. Comments go to the tray. `/turn-diff` opens it at `/c/<key>?face=review`.
