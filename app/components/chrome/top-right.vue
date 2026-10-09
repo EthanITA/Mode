@@ -35,7 +35,7 @@ function closePage(): void {
       class="pill"
       pad="none"
       shape="pill"
-      variant="glass"
+      variant="glass-liquid"
     >
       <UiSegmented v-model="face" data-region="view-switcher" :options="faces" />
     </UiSurface>

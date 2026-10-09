@@ -75,6 +75,7 @@ type Box = { height: number; left: number; top: number; width: number };
 const GROW = { duration: 380, easing: "cubic-bezier(0.32, 0.72, 0, 1)" } satisfies KeyframeAnimationOptions;
 
 const isFull = useArtifactFullscreen();
+const look = useArtifactTheme();
 const isExpanded = ref(false);
 const slot = useTemplateRef<HTMLElement>("slot");
 const preview = useTemplateRef<ComponentPublicInstance>("preview");
@@ -189,6 +190,7 @@ onBeforeUnmount(() => {
         class="pane preview"
         data-region="files-preview"
         :data-expanded="isExpanded"
+        :data-pane-theme="pageOf ? look.theme.value : undefined"
         pad="none"
         variant="raised"
       >

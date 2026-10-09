@@ -4,7 +4,7 @@ import type { Maybe, MaybeComputed } from "~/composables/useSidecar";
 import type { FrameHit } from "~/types/frame";
 import type { ArtifactReviewReply } from "~~/shared/types/artifact";
 
-export const FACES = ["files", "history", "review"] as const;
+export const FACES = ["files", "review", "history"] as const;
 export type Face = (typeof FACES)[number];
 
 export type ToastTone = "destructive" | "neutral" | "success" | "warning";

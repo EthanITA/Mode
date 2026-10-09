@@ -10,7 +10,7 @@ const { title } = defineProps<{ title: string }>();
       data-region="artifact-title"
       pad="none"
       shape="pill"
-      variant="glass"
+      variant="glass-liquid"
     >
       <span class="title">{{ title }}</span>
     </UiSurface>

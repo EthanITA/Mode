@@ -79,11 +79,11 @@ follow.listen();
 }
 
 /* Every face owns its own scrolling panes, so the stage clips instead of scrolling them.
-   The bottom follows the dock's measured height, whatever state the dock is in. */
+   The board and the notes float over the panes, so the faces run to the bottom gutter. */
 .stage {
   box-sizing: border-box;
   overflow: hidden;
-  padding: var(--stage-top) var(--gutter) calc(var(--dock-h, var(--dock-rest-h)) + var(--gutter) * 2);
+  padding: var(--stage-top) var(--gutter) var(--gutter);
 }
 
 .empty {

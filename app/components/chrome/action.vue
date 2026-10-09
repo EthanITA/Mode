@@ -15,7 +15,7 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
 </script>
 
 <template>
-  <UiSurface v-if="shape === 'island'" v-island-pop="'top right'" class="island" pad="none" shape="pill" variant="glass">
+  <UiSurface v-if="shape === 'island'" v-island-pop="'top right'" class="island" pad="none" shape="pill" variant="glass-liquid">
     <button
       v-press
       class="action focusable"

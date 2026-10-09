@@ -3,7 +3,7 @@ const { head, hidden, archive } = useDeskCards();
 </script>
 
 <template>
-  <UiSurface v-island-pop="'top left'" class="head" data-region="desk-head" variant="glass" shape="island">
+  <UiSurface v-island-pop="'top left'" class="head" data-region="desk-head" variant="glass-liquid" shape="island">
     <span class="wordmark"><span class="thin">side</span>car</span>
     <span class="rule" />
     <span class="status mono-meta">{{ head }}</span>
