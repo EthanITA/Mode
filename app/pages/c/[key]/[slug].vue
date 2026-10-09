@@ -241,7 +241,7 @@ onScopeDispose(() => {
     </template>
 
     <template #dock>
-      <ComposerDock compact />
+      <ComposerNotes />
     </template>
 
     <template #board>

@@ -17,6 +17,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   whole hunk with the arrows between the sides, or approve and reject files. Each press is relayed into
   the session, where the mod applies it and tells Claude about a reject, so the mod stays the only
   writer. Comments go to the tray. `/turn-diff` opens it at `/c/<key>?face=review`.
+- **The chat island is hidden; Claude Code is the chat.** The prompt, the transcript and the mode and
+  style pickers no longer show in a conversation or on an artifact page. Notes left on a page or a line
+  still collect in the tray, which shows bottom right with one button that sends them to Claude.
 - **A Files face replaces the Canvas.** One table for what the conversation produced, the files Claude
   created, and one for what it interacted with, the files it read or changed. A dot marks what the most
   recent turn read or edited, and an artifact page opens in the reader. The canvas face and its zoom
