@@ -11,10 +11,13 @@ const {
   source,
   selected,
   isOpenByDefault = false,
+  hasGuides = false,
   toneOf,
 } = defineProps<{
   source: TreeSource;
   selected?: string;
+  /** A line down the left of each open folder's children. */
+  hasGuides?: boolean;
   /** Review opens everything; a whole folder opens one level at a time. */
   isOpenByDefault?: boolean;
   /** A word the row is coloured by, such as `added`, `modified` or `deleted`. */
@@ -69,7 +72,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <ul class="tree" role="tree" data-region="file-tree">
+  <ul class="tree" role="tree" data-region="file-tree" :data-guides="hasGuides">
     <li
       v-for="row in rows"
       :key="row.kind === 'entry' ? row.entry.path : row.key"
@@ -120,6 +123,17 @@ watchEffect(() => {
   padding: 0;
 }
 
+.tree[data-guides="true"] .row::before {
+  background: repeating-linear-gradient(to right, var(--border) 0 1px, transparent 1px 14px);
+  bottom: 0;
+  content: "";
+  left: 13px;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: calc((var(--depth) - 1) * 14px + 1px);
+}
+
 .row {
   align-items: center;
   background: none;
@@ -133,6 +147,7 @@ watchEffect(() => {
   gap: 5px;
   min-height: 26px;
   padding: 0 8px 0 calc(6px + var(--depth) * 14px);
+  position: relative;
   text-align: left;
   width: 100%;
 }

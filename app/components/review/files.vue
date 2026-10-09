@@ -18,25 +18,12 @@ function toneOf(entry: TreeEntry): string | undefined {
   <div data-region="review-files-list">
     <FileTree
       :key="review.snapshot.value?.key"
+      has-guides
       is-open-by-default
       :selected="review.file.value?.path"
       :source="tree"
       :tone-of="toneOf"
       @select="review.selected.value = $event"
-    >
-      <template #trailing="{ entry }">
-        <span v-if="entry.kind !== 'file'" class="count mono-meta">
-          {{ plural([...byPath.keys()].filter((path) => path.startsWith(`${entry.path}/`)).length, "file") }}
-        </span>
-      </template>
-    </FileTree>
+    />
   </div>
 </template>
-
-<style scoped>
-.count {
-  color: var(--subtle);
-  flex: none;
-  text-transform: none;
-}
-</style>

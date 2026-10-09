@@ -200,8 +200,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
-- **The Review file tree no longer tags each file with the turns that touched it.** The `T3 T5` labels
-  are gone, and folders still show their file count.
+- **The Review file tree drops its trailing labels.** The `T3 T5` turn tags on files and the file count
+  on folders are gone, and a line down the left of each open folder wraps its children instead.
 - **Mode runs on Node alone.** python3 and jq are no longer needed, and Node 24 or newer is. Every
   hook, `bin/mode`, `bin/artifact` and the create-artifact scripts are TypeScript run by node, and a
   hook reads mode state in process instead of starting `bin/mode`, so the prompt hook went from about
