@@ -1,5 +1,7 @@
 import { closeSync, openSync, readFileSync, readSync, realpathSync, statSync, writeFileSync } from "node:fs"
 import { basename } from "node:path"
+import { isFile } from "../lib/files.ts"
+import { shellWords } from "../lib/shell.ts"
 
 type StatusLine = { kind: "MISSING" | "INVALID" | "ABSENT" } | { kind: "PRESENT"; command: string }
 
@@ -13,14 +15,6 @@ const INTERPRETERS = new Set([
 ])
 const VERSIONED = ["python", "node", "pypy", "ruby", "perl", "php"]
 const SHELL_BANGS = ["/sh", "/bash", "/zsh", " env sh", " env bash", " env zsh"]
-
-function isFile(path: string): boolean {
-  try {
-    return statSync(path).isFile()
-  } catch {
-    return false
-  }
-}
 
 function readSettings(path: string): Record<string, unknown> | "MISSING" | "INVALID" {
   if (!isFile(path) || statSync(path).size === 0) return "MISSING"
@@ -49,41 +43,6 @@ function setStatusLine(path: string, command: string): void {
   const next = { ...(settings === "MISSING" ? {} : settings), statusLine: { type: "command", command } }
   writeFileSync(path, JSON.stringify(next, undefined, 2) + "\n")
   JSON.parse(readFileSync(path, "utf8"))
-}
-
-function shellWords(line: string): string[] | undefined {
-  const words: string[] = []
-  let word = ""
-  let started = false
-  let quote: "'" | '"' | undefined
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i] ?? ""
-    if (quote === "'") {
-      if (c === "'") quote = undefined
-      else word += c
-    } else if (quote === '"') {
-      if (c === '"') quote = undefined
-      else if (c === "\\" && (line[i + 1] === '"' || line[i + 1] === "\\")) word += line[++i]
-      else word += c
-    } else if (c === "'" || c === '"') {
-      quote = c
-      started = true
-    } else if (c === "\\") {
-      if (i + 1 >= line.length) return undefined
-      word += line[++i]
-      started = true
-    } else if (" \t\r\n".includes(c)) {
-      if (started) words.push(word)
-      word = ""
-      started = false
-    } else {
-      word += c
-      started = true
-    }
-  }
-  if (quote) return undefined
-  if (started) words.push(word)
-  return words
 }
 
 function isInterpreter(arg: string): boolean {
