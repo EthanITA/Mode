@@ -68,10 +68,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   holds until you switch. Following and the jump palette replace the page rather than push it, so Back
   never walks through every conversation the sidecar followed. The head carries the listening pill and
   its pin where the link back to the desk was, and the desk itself moved to `/desk`.
-- **The sidecar installs as an app.** A web app manifest, icons and a title bar colour that follows
-  the theme toggle make `http://localhost:3000` installable from Chrome as a standalone window with
-  its own Dock icon, and `/sidecar` launches that app when it is installed, else a Chrome app window,
-  else the default browser. `node tools/icons/render.ts` redraws the PNG icons from their SVGs.
+- **The sidecar installs as an app, at an address of its own.** `nuxt dev` serves it on port 4747, read
+  at `http://claude-code-sidecar.localhost:4747`, which Chrome resolves to this machine with no hosts
+  file, so it shares neither a port nor an origin with whatever else runs on `localhost:3000`. A web app
+  manifest, icons and a title bar colour that follows the theme toggle make it installable from Chrome
+  as a standalone window with its own Dock icon, and `/sidecar` launches that app when it is installed,
+  else a Chrome app window, else the default browser. `node tools/icons/render.ts` redraws the PNG
+  icons from their SVGs.
 - **"you are dispatcher." takes a pinned default, and the dispatcher runs in `fast`.** A contract that
   sets `enter-over-pin` may take a slot that only holds a pin, judged on the prompt's opening sentence
   so a prompt that merely talks about it never switches, and a slot typed by hand stays out of reach.

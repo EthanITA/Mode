@@ -7,6 +7,8 @@ export default defineNuxtConfig({
   compatibilityDate: "2026-09-01",
   // Non-negotiable: this whole app renders client side, never on the server.
   ssr: false,
+  // Its own port, so a dev server on the usual 3000 never takes it; read it at claude-code-sidecar.localhost:4747.
+  devServer: { port: 4747 },
   // The app outranks the package: without it, adding a name the package also has
   // silently reskins every call site using that tag.
   components: [
