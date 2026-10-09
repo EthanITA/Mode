@@ -38,16 +38,24 @@ watch(
 onScopeDispose(() => {
   for (const timer of timers.values()) clearTimeout(timer);
 });
+
+// A leaver goes absolute so the lane can close up, so it keeps the top it had in the flow.
+function pin(el: Element): void {
+  if (el instanceof HTMLElement) el.style.top = `${el.offsetTop}px`;
+}
 </script>
 
 <template>
-  <div
-    v-if="chrome.toasts.value.length"
+  <!-- Mounted while empty: a live region that exists before its first message is the one screen readers announce. -->
+  <TransitionGroup
+    tag="div"
+    name="toast"
     class="toaster"
     data-region="toaster"
     :data-armed="chrome.comment.armed.value"
     role="status"
     aria-live="polite"
+    @before-leave="pin"
   >
     <button
       v-for="row in shown"
@@ -55,7 +63,7 @@ onScopeDispose(() => {
       v-press
       class="one"
       type="button"
-      aria-label="Dismiss"
+      title="Dismiss"
       @click="drop(row.id)"
       @focusin="hold(row.id)"
       @focusout="arm(row.id)"
@@ -65,8 +73,8 @@ onScopeDispose(() => {
       <UiToast :variant="row.tone">{{ row.text }}</UiToast>
     </button>
 
-    <span v-if="queued > 0" class="queued mono-meta">+{{ queued }}</span>
-  </div>
+    <span v-if="queued > 0" key="queued" class="queued mono-meta">+{{ queued }}</span>
+  </TransitionGroup>
 </template>
 
 <style scoped>
@@ -103,6 +111,23 @@ onScopeDispose(() => {
   border-radius: 999px;
   color: var(--muted);
   padding: 3px 9px;
+}
+
+/* New toasts arrive at the bottom and old ones leave off the top, faster than they came. */
+.toast-leave-active {
+  position: absolute;
+  transition:
+    opacity var(--duration-press) var(--ease-out),
+    translate var(--duration-press) var(--ease-out);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  translate: 0 -8px;
+}
+
+.toast-move {
+  transition: transform var(--duration-snappy) var(--ease-out);
 }
 
 @media (prefers-reduced-motion: reduce) {

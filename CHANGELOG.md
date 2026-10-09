@@ -253,6 +253,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   failure is announced.
 - **Lines that are still working sweep, and the desk's running bar and the listening dot breathe.**
   Both come from `@cela/design` and go still under reduced motion.
+- **Toasts leave upward and the lane closes up behind them.** A toast used to vanish in one frame and
+  the ones below it jumped. The lane stays mounted while empty, so the first toast is announced too.
 
 ### Removed
 
