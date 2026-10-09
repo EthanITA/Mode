@@ -13,6 +13,7 @@ import type {
   DiffGap,
   DiffTarget,
   FileDiff,
+  FilePair,
   FileVersion,
   RestoreResult,
   VersionContent,
@@ -425,6 +426,28 @@ function diff({ key, index, path, from, to }: Range): FileDiff {
   return { path, from, to, computed: true, patch, added: added || 0, removed: removed || 0 }
 }
 
+// Same two sides as `diff`, handed over whole so a reader can lay them side by side.
+function pair({ key, index, path, from, to }: Range): FilePair {
+  const entry = index.files[path]
+  const gap = (reason: DiffGap): FilePair => ({ path, from, to, computed: false, reason })
+  if (entry?.skipped) return gap("skipped")
+  const b = resolveTarget({ index, path, from, to })
+  const a = versionAt({ index, path, turn: from })
+  if (!a && entry?.baseline === "unknown") return gap("unknown-baseline")
+  if (!b) return gap(entry?.versions.length ? "unresolved-target" : "missing-content")
+  const file = storePath(path)
+  // A side the file is missing from, created or deleted, reads as empty rather than failing the pair.
+  const at = (sha: string): string => {
+    try {
+      execFileSync("git", ["cat-file", "-e", `${sha}:${file}`], { cwd: treeDir(key), stdio: "ignore" })
+    } catch {
+      return ""
+    }
+    return git(key, ["show", `${sha}:${file}`])
+  }
+  return { path, from, to, computed: true, original: at(a ? a.sha : parentOf(key, b.sha)), current: at(b.sha) }
+}
+
 const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 // A file first touched late has no version at from-1; its baseline commit is that version's parent.
@@ -492,12 +515,13 @@ function main(): void {
   const keep = Number(arg("keep"))
   if (command === "prune") return out(prune(Number.isFinite(keep) ? keep : 20))
   if (!command || !key || key.startsWith("--"))
-    throw new Error("usage: versions <build|list|show|diff|restore|receipts|prune> <key> [--path P] [--turn N] [--from N] [--to N|head|next] [--keep N]")
+    throw new Error("usage: versions <build|list|show|diff|pair|restore|receipts|prune> <key> [--path P] [--turn N] [--from N] [--to N|head|next] [--keep N]")
   if (command === "receipts") return out(receiptsOf({ key }))
   const index = withLock(key, () => build(key))
   if (command === "build" || command === "list") return out(versionsOf(index, arg("path")))
   if (command === "show") return out(show({ key, index, path: need("path"), turn: Number(need("turn")) }))
   if (command === "diff") return out(diff({ key, index, path: need("path"), from: Number(need("from")), to: target() }))
+  if (command === "pair") return out(pair({ key, index, path: need("path"), from: Number(need("from")), to: target() }))
   if (command === "restore")
     return out(withLock(key, () => restore({ key, index, path: need("path"), turn: Number(need("turn")), force: process.argv.includes("--force") })))
   throw new Error(`unknown command ${command}`)

@@ -2,7 +2,7 @@
 import type { HistoryTurn } from "~/composables/useHistory";
 
 const { turn, selected = false } = defineProps<{ turn: HistoryTurn; selected?: boolean }>();
-defineEmits<{ select: [] }>();
+defineEmits<{ select: [extend: boolean] }>();
 
 const age = computed(() => relativeAge(new Date(turn.receipt.at).toISOString()));
 const agents = computed(() => turn.receipt.by ?? []);
@@ -28,7 +28,7 @@ const tell = computed(() => {
     :data-cmt-label="label"
     :data-cmt-tell="tell"
     :data-cmt-excerpt="turn.receipt.prompt"
-    @click="$emit('select')"
+    @click="$emit('select', $event.shiftKey)"
   >
     <span class="head">
       <span class="label mono-meta">{{ label }}</span>

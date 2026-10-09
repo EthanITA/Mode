@@ -17,7 +17,6 @@ export interface ReviewFace {
   picks: Ref<string[]>;
   selected: Maybe<string>;
   snapshot: Maybe<ReviewSnapshot>;
-  unfolded: Ref<string[]>;
 }
 
 const FAILED: Record<Exclude<ReviewActionReply, { delivered: true }>["reason"], string> = {
@@ -33,7 +32,6 @@ export function useReview(): ReviewFace {
   const selected = useState<string | undefined>("rv:selected");
   const isCompact = useState("rv:compact", () => true);
   const isWrapped = useState("rv:wrapped", () => true);
-  const unfolded = useState<string[]>("rv:unfolded", () => []);
   const picks = useState<string[]>("rv:picks", () => []);
   const confirming = useState<string | undefined>("rv:confirming");
   const busy = useState("rv:busy", () => false);
@@ -130,8 +128,7 @@ export function useReview(): ReviewFace {
       { immediate: true },
     );
     // Row keys are line numbers, so a picked row means nothing once the file under it moves.
-    watch(file, (next, previous) => {
-      if (next?.path !== previous?.path) unfolded.value = [];
+    watch(file, () => {
       picks.value = [];
     });
     onScopeDispose(disconnect);
@@ -152,6 +149,5 @@ export function useReview(): ReviewFace {
     picks,
     selected,
     snapshot,
-    unfolded,
   };
 }

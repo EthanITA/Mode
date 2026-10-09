@@ -7,11 +7,22 @@ const firstFresh = computed(() => history.turns.value.find((one) => one.fresh)?.
 
 const selectedTurn = computed(() => history.turns.value.find((one) => one.receipt.turn === history.selected.value));
 
+const span = computed(() => {
+  const range = history.range.value;
+  if (!range) return "";
+  return range.first === range.last ? `turn ${range.first}` : `turns ${range.first} to ${range.last}`;
+});
+
 const subtitle = computed(() => {
   if (!selectedTurn.value) return "";
   const count = history.files.value.length;
-  return count ? plural(count, "file") : "no files changed";
+  return `${span.value}, ${count ? plural(count, "file") : "no files changed"}`;
 });
+
+function isPicked(turn: number): boolean {
+  const range = history.range.value;
+  return !!range && turn >= range.first && turn <= range.last;
+}
 
 async function restore(path: string, force?: boolean): Promise<void> {
   restoring.value = path;
@@ -47,9 +58,9 @@ const restoreMessage = computed(() => {
         <template v-for="turn in history.turns.value" :key="turn.receipt.turn">
           <p v-if="turn.receipt.turn === firstFresh" class="divider mono-meta">new since you looked</p>
           <HistoryTurn
-            :selected="turn.receipt.turn === history.selected.value"
+            :selected="isPicked(turn.receipt.turn)"
             :turn="turn"
-            @select="history.selected.value = turn.receipt.turn"
+            @select="(extend) => history.pick(turn.receipt.turn, extend)"
           />
         </template>
       </div>
@@ -61,11 +72,21 @@ const restoreMessage = computed(() => {
         <span class="meta mono-meta">{{ subtitle }}</span>
         <span class="spacer" />
         <span class="toggle">
-          <UiChip :selected="history.compare.value === 'head'" size="xs" @click="history.compare.value = 'head'">
-            vs head
+          <UiChip
+            :selected="history.compare.value === 'turns'"
+            size="xs"
+            title="What the picked turns did. Shift-click a second turn for a range."
+            @click="history.compare.value = 'turns'"
+          >
+            these turns
           </UiChip>
-          <UiChip :selected="history.compare.value === 'next'" size="xs" @click="history.compare.value = 'next'">
-            vs next
+          <UiChip
+            :selected="history.compare.value === 'head'"
+            size="xs"
+            title="From before the picked turns to the newest version"
+            @click="history.compare.value = 'head'"
+          >
+            through now
           </UiChip>
         </span>
       </header>

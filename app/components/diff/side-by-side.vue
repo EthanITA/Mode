@@ -6,24 +6,45 @@ import type { ReviewFile } from "~~/shared/types/review";
 type Side = "old" | "new";
 type LineRow = ReviewRow & { kind: "change" | "same" };
 
-const { file } = defineProps<{ file: ReviewFile }>();
-const review = useReview();
+const {
+  file,
+  isCompact = true,
+  isWrapped = true,
+  isReadonly = false,
+  isBusy = false,
+  picks = [],
+} = defineProps<{
+  file: ReviewFile;
+  isCompact?: boolean;
+  isWrapped?: boolean;
+  /** History only reads; Review also picks lines and takes whole hunks. */
+  isReadonly?: boolean;
+  isBusy?: boolean;
+  picks?: string[];
+}>();
+
+const emit = defineEmits<{ "update:picks": [keys: string[]]; hunk: [change: number, isAccept: boolean] }>();
+
+const unfolded = ref<string[]>([]);
+watch(
+  () => file.path,
+  () => (unfolded.value = []),
+);
 
 const lang = computed(() => Syntax.languageOf(file.path));
 const original = useHighlightedRows(computed(() => file.original.map((text) => ({ text }))), lang);
 const current = useHighlightedRows(computed(() => file.current.map((text) => ({ text }))), lang);
-const rows = computed(() => Review.rows({ file, isCompact: review.isCompact.value, unfolded: review.unfolded.value }));
+const rows = computed(() => Review.rows({ file, isCompact, unfolded: unfolded.value }));
 const shown = computed(() => homePath(file.path));
 
 let anchor = "";
 
 function pick(key: string, event: MouseEvent): void {
-  const held = review.picks.value;
   if (event.shiftKey && anchor) {
     const order = rows.value.filter((row) => row.kind === "change").map((row) => row.key);
     const [from = 0, to = 0] = [order.indexOf(anchor), order.indexOf(key)].sort((a, b) => a - b);
-    review.picks.value = [...new Set([...held, ...order.slice(from, to + 1)])];
-  } else review.picks.value = held.includes(key) ? held.filter((one) => one !== key) : [...held, key];
+    emit("update:picks", [...new Set([...picks, ...order.slice(from, to + 1)])]);
+  } else emit("update:picks", picks.includes(key) ? picks.filter((one) => one !== key) : [...picks, key]);
   anchor = key;
 }
 
@@ -47,16 +68,16 @@ function tellOf(row: LineRow, side: Side): string {
 }
 
 function isPicked(row: LineRow): boolean {
-  return row.kind === "change" && review.picks.value.includes(row.key);
+  return row.kind === "change" && picks.includes(row.key);
 }
 
 function unfold(key: string): void {
-  review.unfolded.value = [...review.unfolded.value, key];
+  unfolded.value = [...unfolded.value, key];
 }
 </script>
 
 <template>
-  <div class="sbs" data-region="review-diff" :data-wrap="review.isWrapped.value">
+  <div class="sbs" data-region="diff-side-by-side" :data-wrap="isWrapped">
     <template v-for="row in rows" :key="row.key">
       <button v-if="row.kind === 'fold'" v-press class="fold focusable" type="button" @click="unfold(row.key)">
         {{ plural(row.count, "unchanged line") }}
@@ -65,7 +86,7 @@ function unfold(key: string): void {
       <template v-else>
         <template v-for="side in (['old', 'new'] as const)" :key="side">
           <button
-            v-if="row.kind === 'change' && row[side] >= 0"
+            v-if="!isReadonly && row.kind === 'change' && row[side] >= 0"
             class="ln focusable"
             type="button"
             :data-kind="kindOf(row, side)"
@@ -91,13 +112,13 @@ function unfold(key: string): void {
             v-html="htmlOf(row, side)"
           />
           <span v-if="side === 'old'" class="mid">
-            <template v-if="row.kind === 'change' && row.isFirst">
+            <template v-if="!isReadonly && row.kind === 'change' && row.isFirst">
               <button
                 class="hunk focusable"
                 type="button"
                 title="Reject the hunk: copy the original over it"
-                :disabled="review.busy.value"
-                @click="review.decideHunk(row.change, false)"
+                :disabled="isBusy"
+                @click="emit('hunk', row.change, false)"
               >
                 <UiIcon :icon="ChevronsRight" size="sm" />
               </button>
@@ -105,8 +126,8 @@ function unfold(key: string): void {
                 class="hunk focusable"
                 type="button"
                 title="Accept the hunk into the original"
-                :disabled="review.busy.value"
-                @click="review.decideHunk(row.change, true)"
+                :disabled="isBusy"
+                @click="emit('hunk', row.change, true)"
               >
                 <UiIcon :icon="ChevronsLeft" size="sm" />
               </button>

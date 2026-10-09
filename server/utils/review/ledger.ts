@@ -3,7 +3,7 @@ import { join } from "node:path"
 import type { ReviewFile, ReviewSnapshot } from "../../../shared/types/review.ts"
 import { readTextSafe } from "../mode/fsutil.ts"
 import { configRoot } from "../mode/paths.ts"
-import { changesOf } from "./diff.ts"
+import { Lines } from "../../../shared/utils/lines.ts"
 
 // The turn-diff mod's own limit: past it, or holding a NUL byte, a file is not reviewable.
 const MAX_BYTES = 4 * 1024 * 1024
@@ -32,10 +32,6 @@ export function ledgerDirOf(key: string): string | undefined {
   }
 }
 
-function linesOf(text: string): string[] {
-  if (!text) return []
-  return (text.endsWith("\n") ? text.slice(0, -1) : text).split("\n")
-}
 
 // Wrapped so an empty file stays distinct from a missing one.
 function readReviewable(path: string): { text: string } | undefined {
@@ -63,14 +59,14 @@ function fileOf(dir: string, path: string, tracked: Tracked): ReviewFile | undef
   const before = tracked.blob ? readReviewable(join(dir, "blobs", tracked.blob)) : { text: "" }
   if (!before) return undefined
   const after = readReviewable(path)
-  const original = linesOf(before.text)
-  const current = linesOf(after?.text ?? "")
+  const original = Lines.split(before.text)
+  const current = Lines.split(after?.text ?? "")
   return {
     path,
     turns: tracked.turns,
     original,
     current,
-    changes: changesOf(original, current),
+    changes: Lines.changes(original, current),
     ...(tracked.blob ? {} : { isNew: true as const }),
     ...(after ? {} : { isDeleted: true as const }),
   }

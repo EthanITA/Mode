@@ -135,7 +135,16 @@ function comment(event: MouseEvent, scope: "file" | "lines"): void {
         </div>
 
         <div class="scroll" data-scroll="diff">
-          <ReviewDiff :key="file.path" :file="file" />
+          <DiffSideBySide
+            :key="file.path"
+            :file="file"
+            :is-compact="review.isCompact.value"
+            :is-wrapped="review.isWrapped.value"
+            :is-busy="!isLive || review.busy.value"
+            :picks="review.picks.value"
+            @update:picks="review.picks.value = $event"
+            @hunk="(change, isAccept) => review.decideHunk(change, isAccept)"
+          />
         </div>
 
         <footer v-if="review.picks.value.length" class="pickbar">

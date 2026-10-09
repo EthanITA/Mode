@@ -1,10 +1,15 @@
-import type { ReviewChange } from "../../../shared/types/review.ts"
+import type { ReviewChange } from "../types/review.ts"
 
 // Past this many edits the two texts are reported as one whole replacement instead of a minimal script.
 const MAX_EDITS = 4000
 
+function split(text: string): string[] {
+  if (!text) return []
+  return (text.endsWith("\n") ? text.slice(0, -1) : text).split("\n")
+}
+
 // Myers' O(ND) diff over interned lines, after trimming the common head and tail.
-export function changesOf(a: readonly string[], b: readonly string[]): ReviewChange[] {
+function changes(a: readonly string[], b: readonly string[]): ReviewChange[] {
   let start = 0
   while (start < a.length && start < b.length && a[start] === b[start]) start++
   let endA = a.length
@@ -68,15 +73,17 @@ function backtrack(trace: readonly Int32Array[], n: number, m: number): ReviewCh
     x = previousX
     y = previousX - previousK
   }
-  const changes: ReviewChange[] = []
+  const out: ReviewChange[] = []
   for (const edit of edits.reverse()) {
     const oldEnd = edit.isInsert ? edit.x : edit.x + 1
     const newEnd = edit.isInsert ? edit.y + 1 : edit.y
-    const last = changes.at(-1)
+    const last = out.at(-1)
     if (last && last.oldEnd === edit.x && last.newEnd === edit.y) {
       last.oldEnd = oldEnd
       last.newEnd = newEnd
-    } else changes.push({ oldStart: edit.x, oldEnd, newStart: edit.y, newEnd })
+    } else out.push({ oldStart: edit.x, oldEnd, newStart: edit.y, newEnd })
   }
-  return changes
+  return out
 }
+
+export const Lines = { changes, split }

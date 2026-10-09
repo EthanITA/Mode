@@ -1,3 +1,5 @@
+import type { ReviewFile } from "./review.ts"
+
 export type BaselineOrigin = "absent" | "exact" | "reconstructed" | "unknown"
 
 export interface FileVersion {
@@ -39,6 +41,15 @@ export type DiffGap = "unknown-baseline" | "missing-content" | "unresolved-targe
 
 export type FileDiff =
   | { path: string; from: number; to: DiffTarget; computed: true; patch: string; added: number; removed: number }
+  | { path: string; from: number; to: DiffTarget; computed: false; reason: DiffGap }
+
+export type FilePair =
+  | { path: string; from: number; to: DiffTarget; computed: true; original: string; current: string }
+  | { path: string; from: number; to: DiffTarget; computed: false; reason: DiffGap }
+
+// A pair laid out for `<DiffSideBySide>`, with the counts a card shows beside the name.
+export type VersionPair =
+  | { path: string; from: number; to: DiffTarget; computed: true; file: ReviewFile; added: number; removed: number }
   | { path: string; from: number; to: DiffTarget; computed: false; reason: DiffGap }
 
 export interface RestoreResult {

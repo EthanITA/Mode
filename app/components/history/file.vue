@@ -7,8 +7,9 @@ defineEmits<{ restore: [] }>();
 const baseline = computed(() => Diff.baselineNote(file.baseline));
 const note = computed(() => Diff.stateNote(file.state));
 const rows = computed(() => (file.state.kind === "changed" ? file.state.rows : []));
-const churn = computed(() => (file.state.kind === "changed" ? file.state : undefined));
-const against = computed(() => (compare === "head" ? "against the newest version" : "against the next version"));
+const paired = computed(() => (file.state.kind === "paired" ? file.state.file : undefined));
+const churn = computed(() => (file.state.kind === "changed" || file.state.kind === "paired" ? file.state : undefined));
+const against = computed(() => (compare === "head" ? "through to the newest version" : "what these turns did"));
 const lang = computed(() => Syntax.languageOf(file.path));
 const highlighted = useHighlightedRows(rows, lang);
 
@@ -44,7 +45,11 @@ const tell = computed(() => {
 
     <p v-if="baseline" class="note" :data-tone="baseline.tone">{{ baseline.text }}</p>
 
-    <div v-if="rows.length" class="rows">
+    <div v-if="paired" class="pair">
+      <DiffSideBySide :file="paired" is-readonly />
+    </div>
+
+    <div v-else-if="rows.length" class="rows">
       <p v-for="(row, index) in rows" :key="index" class="row" :data-kind="row.kind">
         <span class="mark" aria-hidden="true" />
         <span class="code" v-html="highlighted[index] ?? ''" />
@@ -139,6 +144,13 @@ const tell = computed(() => {
 .restore:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.pair {
+  max-height: var(--transcript-max-h);
+  overflow: auto;
+  padding: 4px 0;
+  scrollbar-width: thin;
 }
 
 .rows {

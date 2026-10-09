@@ -1,10 +1,18 @@
-import type { BaselineOrigin, DiffTarget, FileDiff, FileVersions } from "~~/shared/types/versions";
+import type { ReviewFile } from "~~/shared/types/review";
+import type { BaselineOrigin, DiffGap, DiffTarget, FileDiff, FileVersions, VersionPair } from "~~/shared/types/versions";
 
 export type DiffState =
   | { kind: "changed"; rows: DiffRow[]; added: number; removed: number }
+  | { kind: "paired"; file: ReviewFile; added: number; removed: number }
   | { kind: "unchanged" }
   | { kind: "absent"; reason: string }
   | { kind: "unknown"; reason: string };
+
+export interface PairReading {
+  file: FileVersions;
+  to: DiffTarget;
+  pair?: VersionPair;
+}
 
 export interface DiffRow {
   kind: "add" | "context" | "hunk" | "remove";
@@ -52,39 +60,46 @@ function parse(patch: string): DiffRow[] {
  * pane would tell the reader nothing happened, which is the one thing that must never be said
  * about a change we could not compute.
  */
+function gapOf({ reason, file, to }: { reason: DiffGap; file: FileVersions; to: DiffTarget }): DiffState {
+  switch (reason) {
+    case "skipped":
+      return { kind: "absent", reason: `not versioned — ${file.skipped || "it was over the size budget"}` };
+    case "unknown-baseline":
+      return {
+        kind: "unknown",
+        reason: "what stood before this file was first touched could not be reconstructed, so there is nothing to measure against",
+      };
+    case "unresolved-target":
+      return {
+        kind: "absent",
+        reason:
+          to === "next"
+            ? "nothing came after this turn — this is the newest version of the file"
+            : "there is no version of this file at the point being compared against",
+      };
+    case "missing-content":
+      return { kind: "absent", reason: "no version of this file was stored for this turn" };
+    case "store-failed":
+      return { kind: "unknown", reason: "the version store could not be read" };
+    default:
+      return assertNever(reason);
+  }
+}
+
 function read({ file, to, diff }: DiffReading): DiffState {
   if (!diff) return { kind: "unknown", reason: "the diff request never came back" };
-
-  if (!diff.computed) {
-    switch (diff.reason) {
-      case "skipped":
-        return { kind: "absent", reason: `not versioned — ${file.skipped || "it was over the size budget"}` };
-      case "unknown-baseline":
-        return {
-          kind: "unknown",
-          reason: "what stood before this file was first touched could not be reconstructed, so there is nothing to measure against",
-        };
-      case "unresolved-target":
-        return {
-          kind: "absent",
-          reason:
-            to === "next"
-              ? "nothing came after this turn — this is the newest version of the file"
-              : "there is no version of this file at the point being compared against",
-        };
-      case "missing-content":
-        return { kind: "absent", reason: "no version of this file was stored for this turn" };
-      case "store-failed":
-        return { kind: "unknown", reason: "the version store could not be read" };
-      default:
-        return assertNever(diff.reason);
-    }
-  }
-
+  if (!diff.computed) return gapOf({ reason: diff.reason, file, to });
   const rows = parse(diff.patch);
   // A binary patch reports its counts as "-", which reaches us as 0, so the patch outranks them.
   if (rows.length) return { kind: "changed", rows, added: diff.added, removed: diff.removed };
   return { kind: "unchanged" };
+}
+
+function readPair({ file, to, pair }: PairReading): DiffState {
+  if (!pair) return { kind: "unknown", reason: "the diff request never came back" };
+  if (!pair.computed) return gapOf({ reason: pair.reason, file, to });
+  if (!pair.file.changes.length) return { kind: "unchanged" };
+  return { kind: "paired", file: pair.file, added: pair.added, removed: pair.removed };
 }
 
 /** An unknown baseline is an honest gap and says so; a reconstructed one is a good answer, quietly. */
@@ -109,6 +124,7 @@ function baselineNote(baseline: BaselineOrigin): DiffNote | undefined {
 function stateNote(state: DiffState): DiffNote | undefined {
   switch (state.kind) {
     case "changed":
+    case "paired":
       return undefined;
     case "unchanged":
       return { tone: "quiet", text: "no change between these two points" };
@@ -122,4 +138,4 @@ function stateNote(state: DiffState): DiffNote | undefined {
   }
 }
 
-export const Diff = { baselineNote, read, stateNote };
+export const Diff = { baselineNote, read, readPair, stateNote };

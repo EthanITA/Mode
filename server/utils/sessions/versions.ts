@@ -1,7 +1,8 @@
 import { execFile } from "node:child_process"
 import { join } from "node:path"
 import { promisify } from "node:util"
-import type { ConversationVersions, DiffTarget, FileDiff, RestoreResult, VersionContent } from "../../../shared/types/versions.ts"
+import type { ConversationVersions, DiffTarget, FileDiff, FilePair, RestoreResult, VersionContent, VersionPair } from "../../../shared/types/versions.ts"
+import { Lines } from "../../../shared/utils/lines.ts"
 import { pluginRoot } from "../mode/paths.ts"
 
 const run = promisify(execFile)
@@ -35,6 +36,24 @@ export const Versions = {
   async diff({ key, path, from, to }: Versions.Range): Promise<FileDiff> {
     const found = await call<FileDiff>(["diff", key, "--path", path, "--from", String(from), "--to", String(to)])
     return found || { path, from, to, computed: false, reason: "store-failed" }
+  },
+
+  async pair({ key, path, from, to }: Versions.Range): Promise<VersionPair> {
+    const found = await call<FilePair>(["pair", key, "--path", path, "--from", String(from), "--to", String(to)])
+    if (!found) return { path, from, to, computed: false, reason: "store-failed" }
+    if (!found.computed) return found
+    const original = Lines.split(found.original)
+    const current = Lines.split(found.current)
+    const changes = Lines.changes(original, current)
+    return {
+      path,
+      from,
+      to,
+      computed: true,
+      file: { path, turns: [], original, current, changes },
+      added: changes.reduce((sum, c) => sum + c.newEnd - c.newStart, 0),
+      removed: changes.reduce((sum, c) => sum + c.oldEnd - c.oldStart, 0),
+    }
   },
 
   async restore({ key, path, turn, force }: Versions.At): Promise<RestoreResult> {

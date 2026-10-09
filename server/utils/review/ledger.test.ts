@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { after, before, test } from "node:test"
-import { changesOf } from "./diff.ts"
+import { Lines } from "../../../shared/utils/lines.ts"
 import { snapshotOf } from "./ledger.ts"
 
 const ID = "0a1b2c3d-0000-4000-8000-000000000000"
@@ -48,7 +48,7 @@ test("an unknown key reads as an empty review", () => {
 })
 
 test("the diff keeps a replaced line and an added one in one change", () => {
-  assert.deepEqual(changesOf(["a", "b", "c"], ["a", "B", "c", "d"]), [
+  assert.deepEqual(Lines.changes(["a", "b", "c"], ["a", "B", "c", "d"]), [
     { oldStart: 1, oldEnd: 2, newStart: 1, newEnd: 2 },
     { oldStart: 3, oldEnd: 3, newStart: 3, newEnd: 4 },
   ])

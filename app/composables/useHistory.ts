@@ -1,9 +1,15 @@
 import type { ComputedRef, Ref } from "vue";
-import type { Maybe } from "~/composables/useSidecar";
+import type { Maybe, MaybeComputed } from "~/composables/useSidecar";
 import type { ReceiptsSlice, TurnReceipt } from "~~/shared/types/receipts";
-import type { BaselineOrigin, ConversationVersions, FileDiff, RestoreResult } from "~~/shared/types/versions";
+import type { BaselineOrigin, ConversationVersions, RestoreResult, VersionPair } from "~~/shared/types/versions";
 
-export type Compare = "head" | "next";
+// `turns`: what the picked turns did together. `head`: from before them to the newest version.
+export type Compare = "turns" | "head";
+
+export interface TurnRange {
+  first: number;
+  last: number;
+}
 
 export interface HistoryTurn {
   receipt: TurnReceipt;
@@ -32,6 +38,9 @@ export interface History {
   /** The last restore refused, and overwriting is the one thing that would get past it. */
   forceable: ComputedRef<boolean>;
   loading: Ref<boolean>;
+  /** A plain pick starts a range on that turn; `extend` stretches it to this one, the way shift-click does. */
+  pick: (turn: number, extend?: boolean) => void;
+  range: MaybeComputed<TurnRange>;
   restore: (path: string, force?: boolean) => Promise<void>;
   restored: Maybe<RestoreResult>;
   selected: Maybe<number>;
@@ -75,7 +84,7 @@ function replyBetween(snapshot: Snapshot["turns"], from: number, to: number): st
 export function useHistory(): History {
   const sc = useSidecar();
 
-  const compare = ref<Compare>("head");
+  const compare = ref<Compare>("turns");
   const error = ref<string>();
   const files = ref<HistoryFile[]>([]);
   const loading = ref(false);
@@ -84,7 +93,24 @@ export function useHistory(): History {
   const replies = ref<Map<number, string>>(new Map());
   const restored = ref<RestoreResult>();
   const selected = ref<number>();
+  const through = ref<number>();
   const versions = ref<ConversationVersions>();
+
+  const range = computed<TurnRange | undefined>(() => {
+    const anchor = selected.value;
+    if (!anchor) return undefined;
+    const end = through.value ?? anchor;
+    return { first: Math.min(anchor, end), last: Math.max(anchor, end) };
+  });
+
+  function pick(turn: number, extend = false): void {
+    if (extend && selected.value) {
+      through.value = turn;
+      return;
+    }
+    selected.value = turn;
+    through.value = undefined;
+  }
   const seen = ref(0);
 
   let loadTicket = 0;
@@ -115,6 +141,7 @@ export function useHistory(): History {
     replies.value = new Map();
     restored.value = undefined;
     selected.value = undefined;
+    through.value = undefined;
     error.value = undefined;
     if (!key) return;
 
@@ -153,15 +180,15 @@ export function useHistory(): History {
   async function pullDiffs(): Promise<void> {
     const mine = ++diffTicket;
     const key = sc.sessionKey.value;
-    const turn = selected.value;
+    const span = range.value;
     const store = versions.value;
-    if (!key || !turn || !store) {
+    if (!key || !span || !store) {
       files.value = [];
       return;
     }
 
-    const receipt = receipts.value.find((one) => one.turn === turn);
-    const touched = [...new Set([...(receipt?.wrote ?? []), ...(receipt?.deleted ?? [])])];
+    const inSpan = receipts.value.filter((one) => one.turn >= span.first && one.turn <= span.last);
+    const touched = [...new Set(inSpan.flatMap((one) => [...one.wrote, ...one.deleted]))];
     if (!touched.length) {
       files.value = [];
       return;
@@ -169,21 +196,22 @@ export function useHistory(): History {
 
     diffing.value = true;
     const at = encodeURIComponent(key);
-    const to = compare.value;
+    // Read from before the first picked turn, so its own edit is part of what is shown.
+    const from = span.first - 1;
+    const to = compare.value === "head" ? "head" : span.last;
     const built = await Promise.all(
       touched.map(async (path): Promise<HistoryFile> => {
         // A file the store holds no record of is genuinely unknown, not silently unchanged.
         const file = store.files.find((one) => one.path === path) ?? { path, baseline: "unknown" as const, versions: [] };
-        // vs head reads from before this turn's edit; from=turn would diff the edit against itself and read as unchanged.
-        const from = to === "head" ? turn - 1 : turn;
         const query = `path=${encodeURIComponent(path)}&from=${from}&to=${to}`;
-        const diff = await $fetch<FileDiff>(`/api/sessions/${at}/versions/diff?${query}`).catch(() => undefined);
+        const pair = await $fetch<VersionPair>(`/api/sessions/${at}/versions/pair?${query}`).catch(() => undefined);
+        const by = [...new Set(file.versions.filter((one) => one.turn >= span.first && one.turn <= span.last).map((one) => one.by))];
         return {
           path,
           name: basename(path),
-          by: file.versions.find((one) => one.turn === turn)?.by || undefined,
+          by: by.join(", ") || undefined,
           baseline: file.baseline,
-          state: Diff.read({ file, to, diff }),
+          state: Diff.readPair({ file, to, pair }),
         };
       }),
     );
@@ -194,7 +222,7 @@ export function useHistory(): History {
 
   async function restore(path: string, force?: boolean): Promise<void> {
     const key = sc.sessionKey.value;
-    const turn = selected.value;
+    const turn = range.value?.last;
     if (!key || !turn) return;
     restored.value = await $fetch<RestoreResult>(`/api/sessions/${encodeURIComponent(key)}/versions/restore`, {
       method: "POST",
@@ -211,9 +239,9 @@ export function useHistory(): History {
 
   onMounted(() => {
     watch(() => sc.sessionKey.value, (key) => void load(key), { immediate: true });
-    watch([selected, compare, versions], () => void pullDiffs(), { immediate: true });
+    watch([range, compare, versions], () => void pullDiffs(), { immediate: true });
     // A restore receipt names the turn it acted on, so it must not follow the reader to another turn.
-    watch(selected, () => {
+    watch(range, () => {
       restored.value = undefined;
     });
     onScopeDispose(() => {
@@ -222,5 +250,5 @@ export function useHistory(): History {
     });
   });
 
-  return { capped, compare, diffing, error, files, forceable, loading, restore, restored, selected, turns };
+  return { capped, compare, diffing, error, files, forceable, loading, pick, range, restore, restored, selected, turns };
 }
