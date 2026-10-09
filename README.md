@@ -205,9 +205,11 @@ Beyond the two slots, the plugin carries the skills the contracts reach for, so 
 
 They are namespaced `mode:<name>`, and the installer writes a bare `/<name>` command for each.
 
-`create-artifact` comes with a CLI, `bin/artifact`, which resolves a slug to a file, stamps its
-metadata, and runs the comment round trip that lets you review a page and have Claude answer the
-threads. Three lookups are worth knowing:
+`create-artifact` comes with a CLI, `bin/artifact`, which scaffolds a page, resolves a slug to a file,
+stamps its metadata, and runs the comment round trip that lets you review a page and have Claude answer
+the threads. `artifact new <slug> --ds <key>` writes a page with the pack's stylesheets and the component
+kit already in it, so Claude writes markup rather than CSS and JavaScript, and `artifact kit <slug>`
+refreshes the kit in an older page. Three lookups are worth knowing:
 
 | It resolves | In this order |
 |---|---|

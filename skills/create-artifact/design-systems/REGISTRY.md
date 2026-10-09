@@ -36,6 +36,7 @@ Your own design systems live in `~/.claude/mode/design-systems/` (under `CLAUDE_
 - `artifact ds` lists every resolvable key with the file that answers for it; `artifact ds <key>` prints the winning pack file.
 - If `~/.claude/mode/design-systems/REGISTRY.md` exists, read it straight after this file: it lists the user's keys and any context rules for inferring them (a directory or a topic that implies a pack without the user naming it).
 - A user pack may be **self-contained**: one stylesheet of its own instead of `doc-system.css` + `themes.css`. Its pack file says which, and whether `data-ds` applies or the stylesheet scopes on `data-theme` alone.
+- `artifact new` decides the stylesheets from the files, never from the pack's prose: a shipped key gets `doc-system.css` + `themes.css`, a user `<key>.css` that keys on `[data-ds="<key>"]` is layered after them, and one that does not is inlined alone.
 
 ## How to use a pack
 

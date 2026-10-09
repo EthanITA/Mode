@@ -16,6 +16,8 @@ Whenever you do load one: pin an exact version, load it with `defer` or at the e
 
 ## Fade in up: the default reveal on every artifact
 
+**On Target S the kit already runs this and the count-up below**, so put `.reveal` and `data-count` in the markup and stop. The code here is for a Target B page, which carries no kit.
+
 This is not optional garnish. Every artifact puts `.reveal` on its major blocks (each panel, figure, table wrapper, callout and section head) and lets them rise into place as the reader reaches them. The `js` class is added by the script itself, so the hiding rule cannot apply unless the script ran.
 
 ```css

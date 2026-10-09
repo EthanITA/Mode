@@ -11,6 +11,14 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **create-artifact builds pages from a component kit.** `artifact new <slug> --ds <key>` scaffolds a
+  local page with the pack's stylesheets, the kit and the review layer in it, and `artifact kit <slug>`
+  refreshes the kit in place. The kit is one runtime keyed on `data-cx`: a figure whose named controls
+  drive steps, panes, outputs, bars and a verdict through attribute expressions, a table the reader
+  searches, filters and sorts, a verdict band, folded detail, a chapter rail, the theme toggle, reveal and count-up.
+  `references/components.md` is the contract and `references/components.html` runs every piece.
+  `templates/interactive.html` is rebuilt on it, which also fixes its `--color-*` tokens that no pack
+  defined, and `templates/showpiece.html` drops its own reveal, count-up and toggle for it.
 - **A Review face, side by side, for what Claude changed since your last approval.** It reads the
   ledger the `turn-diff` mod keeps in `~/.claude/turn-diff/<session>/`: the original on the left, the
   disk on the right, highlighted and wrapped in full. The files sit in a folder tree like JetBrains'

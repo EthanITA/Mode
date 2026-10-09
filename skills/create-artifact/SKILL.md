@@ -43,8 +43,8 @@ One profile fixes the page shape, the scaffold, the motion budget, the default t
 | **brief** | a digest, a one-pager, catch me up | title, then a stat row, then three to five panels | `artifact-shell.html` | fade-in-up reveal | S | yes |
 | **report** | a report, a review, a synthesis, an RFC | eyebrow, title, lede, numbered sections, sources | `artifact-shell.html` | fade-in-up reveal | S | yes |
 | **explainer** | explain X, teach me, a study guide | lede, a narrative spine, an anchor visual per concept, recap | `artifact-shell.html` | fade-in-up reveal | S | yes |
-| **dossier** | analyse X, is it worth it, the full picture with data, **make it interactive**, **navigable, something I come back to**, **a document with structure** | thin topbar, hero, scroll chapters each carrying a figure the reader operates, sources | `templates/interactive.html` | reveal on scroll, stepped scenarios, one data-driven 3D moment | S | yes, heavily |
-| **showpiece** | make it impressive, a demo, visualise this | hero, chapters, one signature moment | `templates/showpiece.html` | full, one signature moment | S | only if it asserts |
+| **dossier** | analyse X, is it worth it, the full picture with data, **make it interactive**, **navigable, something I come back to**, **a document with structure** | thin topbar, hero, scroll chapters each carrying a figure the reader operates, sources | `artifact new <slug> --ds <key>` | reveal on scroll, stepped scenarios, one data-driven 3D moment | S | yes, heavily |
+| **showpiece** | make it impressive, a demo, visualise this | hero, chapters, one signature moment | `artifact new <slug> --ds <key> --template showpiece` | full, one signature moment | S | only if it asserts |
 | **mockup** | a mockup of the settings screen | the real screen, chrome and all | the target repo's own scaffold | whatever the app does | A | no, it asserts nothing |
 
 Only **mockup** asserts nothing, so grounding is the default and skipping it is the exception you say out loud. When two profiles both fit, the tie-break is what the reader does with it: something they read start to finish is a **report**, something they navigate and return to is a **dossier**.
@@ -56,6 +56,8 @@ Only **mockup** asserts nothing, so grounding is the default and skipping it is 
 None of that licenses a page that only exists once script runs. Every number, row, caption and definition is authored in the HTML, the opening state of each figure included, and script only takes the interaction over. With script off the chapters stack into one long document that reads start to finish. If the numbers need a single source, splice them in with a build script from a `<slug>.build/` folder beside the artifact, never at runtime. `check-artifact.sh` fails an element left empty for script to fill, which is exactly how this rule is enforced rather than hoped for.
 
 **Every visual is driven by real exported data.** Export the actual rows into the page and render from them: 84 real block orders as 4,553 cells with 157 bad ones reads as evidence, and an invented lattice of the same size reads as a screensaver.
+
+**Assemble the page from the kit: read `references/components.md`.** It maps each subject onto ready markup: a figure whose named controls drive steps, panes, outputs and a verdict through attribute expressions, bars that move with the inputs, a verdict band, folded detail, a table the reader filters and sorts, a chapter rail. Writing the markup is the whole job, because the runtime that makes it operable is already in every page `artifact new` scaffolds. Hand-written component CSS or JS is the exception, for a figure the kit genuinely cannot express.
 
 **Then settle the showpiece anatomy: read `references/showpiece.md`.** Six decisions before the first line: architecture and why, terms of art, the banned shortcut, quantified acceptance, named references, feasibility. They live in that file, canonically, for every profile. Scale them to the piece. A sober RFC keeps all six, it just has no WebGL.
 
@@ -117,14 +119,13 @@ Then carry the sources into the page: a `.receipt` chip beside each claim and a 
 9. **Updating an artifact a previous chat published** (extending a guide, keeping its link): pass its URL as the `url` param, because without it a new session mints a **new** URL. Don't have the URL? `Artifact` with `action: "list"` finds it. Same-session redeploys just reuse the same file path.
 
 ## 8. Build for Target S (local showpiece)
-1. **Start from `templates/showpiece.html`.** It carries the document skeleton, the light-default stamp and the toggle, the dependency-free reveal and count-up, a mermaid figure and a three.js hero; delete the hero when the subject is not spatial.
-2. **Fill every `{{PLACEHOLDER}}`** or delete the block holding it.
-3. **Inline the pack's stylesheets** at `{{INLINE_STYLESHEETS}}`. The template styles only against generic tokens, so it inherits whichever pack you picked.
+1. **Scaffold it: `artifact new <slug> --ds <key> [--title "..."] [--template showpiece]`.** It writes `<artifacts dir>/<slug>.html` from `templates/interactive.html` (or `showpiece.html`) with the pack's stylesheets and Google Fonts link spliced in, the component kit and the review layer installed, and the metadata stamped, then prints the path. It refuses a slug that already has a page.
+2. **Fill every `{{PLACEHOLDER}}`** or delete the block holding it, composing the chapters from `references/components.md`. The three.js hero reads `--cx-*` tokens; delete it when the subject is not spatial.
+3. **A page built before the kit, or one whose kit is stale,** takes `artifact kit <slug>`, which adds or refreshes it in place.
 4. **Add rich media from `references/rich-media.md`**: pinned versions, `try`/`catch` around every init, themed from the pack tokens, reduced motion honoured. Charts load `dataviz` first.
-4b. **Reach for React when the page has real interactive state**: a simulator, a filterable table, anything where hand-rolled DOM string building would be the slow and bug-prone path. React 18 UMD plus `htm` gives JSX-like syntax with no build step; both pin cleanly. **React renders the interactive islands, never the prose**: the document body stays static HTML so the page still reads when a CDN is unreachable. Recipe in `references/interaction.md`.
+4b. **Reach for React when the page has interactive state the kit cannot express**: a simulator with its own loop, anything where hand-rolled DOM string building would be the slow and bug-prone path. React 18 UMD plus `htm` gives JSX-like syntax with no build step; both pin cleanly. **React renders the interactive islands, never the prose**: the document body stays static HTML so the page still reads when a CDN is unreachable. Recipe in `references/interaction.md`.
 5. **Harden per `showpiece.md`**: device pixel ratio capped at 2, loop paused when the tab is hidden, canvas sized to its container, `webglcontextlost` handled, no console errors in any state.
-6. **Write to `<artifacts dir>/<slug>.html`** (`mkdir -p` first; §6 says how the directory resolves), or to an explicit path the user gives. Then `artifact stamp <slug> --target s --ds <key>`, since a local showpiece still needs to be findable by slug.
-6b. **Add the review layer** with `artifact review <slug>`, so the page can be commented on. It carries its own threads, so refreshing it on a rebuild keeps every comment already made. Never paste the layer by hand and never edit it inside a page: the one copy lives at `assets/review-layer.html` and the command is what installs it.
+6. **Refresh the review layer** with `artifact review <slug>` after a rebuild. It carries its own threads, so refreshing keeps every comment already made. Never paste the layer or the kit by hand and never edit either inside a page: the one copies live in `assets/` and the commands install them.
 7. **Gate it, last thing before delivering**: `scripts/check-prose.sh <file>` and `scripts/check-artifact.sh --target s <file>`. Both skip the review layer, so the page is judged on its own content. Edit nothing afterwards.
 8. **Open it for the user, then hand over the absolute path.** Run `open <path>` as the last step so the artifact lands on their screen without them going looking for it, and print the path too. This is delivery, not verification: you still never inspect the rendered page, screenshot it, or ask whether it looks right.
 
@@ -143,7 +144,7 @@ Use the target repo's own scaffold and components; the point of a lab is that it
 - **No emoji in app-surface mockups**: inline SVG icons (Lucide) instead.
 - **Diagrams and math.** Mermaid renders natively **only in a published Artifact page**; opened locally (`file://`) the raw code shows. If the file must also work locally, or carries many diagrams, **pre-render mermaid to static SVG** (headless Chrome) and embed as a data-URI `<img>`: zero runtime deps, no ID collisions, works in both contexts. Never leave unrendered mermaid inside a `display:none` pane (it renders at width 0); use `visibility:hidden` plus absolute positioning. KaTeX: pre-render at build time; its CDN is CSP-blocked.
 - **Prove the behaviour, never judge the look.** Once a page carries controls, "it renders" is not the claim being made: the claim is that the controls do something. So check the mechanism, headlessly: the gate is clean, every script block parses, and the stage logic actually swaps what it says it swaps when driven with a stub. That is a receipt, and a page whose only interactive element throws on click is unfinished whatever the gate said. Taste stays the user's: no browser automation, no screenshots, no asking them to confirm it looks right. Finish by running `open <path>` so the file lands on their screen, then stop.
-- **Motion is a default, not a decision.** Every artifact reveals its major blocks with the fade-in-up in `references/interaction.md`, staggered by a small per-block delay. Content stays visible with no JavaScript and reduced motion turns it off. Anything beyond that reveal still has to earn its place.
+- **Motion is a default, not a decision.** Every artifact reveals its major blocks with a fade-in-up staggered by a small per-block delay: put `.reveal` on them and the kit runs it, or on Target B paste the one in `references/interaction.md`. Content stays visible with no JavaScript and reduced motion turns it off. Anything beyond that reveal still has to earn its place.
 - **Every local artifact carries the review layer, and open comments are read before it is touched.** See §1b. Target B does not get it: the CSP blocks the sink, and a published page's threads cannot be read back from disk.
 - **Keep in sync.** A user pack whose named source has moved gets its asset updated in the same pass.
 
@@ -156,6 +157,9 @@ Use the target repo's own scaffold and components; the point of a lab is that it
 | `assets/doc-system.css` | brand-neutral document system; styles only against generic vars |
 | `assets/themes.css` | every shipped token set, as `[data-ds]` blocks, light + dark |
 | `assets/review-layer.html` | the comment layer, installed by `artifact review <slug>` and never pasted by hand |
+| `assets/kit.html` | the component kit, CSS and one runtime, installed by `artifact new` and `artifact kit <slug>`, never pasted by hand |
+| `references/components.md` | the kit's contract: which component for which subject, the markup, the attributes |
+| `references/components.html` | every kit component running on real markup; open it to see them, copy from it to build |
 | `references/artifact-shell.html` | Target-B scaffold: default-light stamp, toggle, receipts, sources |
 | `references/grounding.md` | how to make the claims true, and what to do with one you cannot source |
 | `references/interaction.md` | dependency-free reveal, count-up, tabs, tooltip, and the no-JS floor |
@@ -165,8 +169,8 @@ Use the target repo's own scaffold and components; the point of a lab is that it
 | `references/prose-register.md` | binding body-copy rules plus few-shot slop-vs-human rewrites |
 | `references/information-design.md` | choose the visual by the information's shape; anchor-visual, flip-test and caption rules |
 | `references/gallery.html` | all ten shipped shared-stylesheet systems in one page, switchable; open it to compare looks before picking |
-| `templates/showpiece.html` | showpiece scaffold: skeleton, toggle, reveal, counters, mermaid, three.js hero |
-| `templates/interactive.html` | the default scaffold: light stamp, thin topbar, hero with a data-driven 3D field, scroll chapters, an operable scenario stage, linked receipts and sources |
+| `templates/showpiece.html` | showpiece scaffold for `artifact new --template showpiece`: skeleton, toggle, mermaid, three.js hero |
+| `templates/interactive.html` | the default scaffold for `artifact new`, built on the kit: topbar with the chapter rail, hero with a data-driven 3D field and a verdict, scroll chapters, a scenario figure, linked receipts and sources |
 | `templates/dossier.html` | retired tabbed scaffold, kept for reading old artifacts built on it |
 | `scripts/check-packs.sh` | asserts shipped pack shape, token coverage, and that no dark block silently inherits neutral's colours |
 | `scripts/check-prose.sh` | fails an authored page on slop fingerprints (em dashes, math symbols, arrow chains) outside code blocks |
@@ -174,4 +178,4 @@ Use the target repo's own scaffold and components; the point of a lab is that it
 | `scripts/smoke-artifact.ts` | runs the page's own scripts against a stubbed DOM; fails on an unfilled host or a stray NaN |
 | `scripts/embed-fonts.sh` | base64 `@font-face` block from a local font directory, for a family Google Fonts does not carry |
 | `scripts/build-gallery.sh` | regenerates `gallery.html` from the real CSS, so it can never drift |
-| `../../bin/artifact` | the CLI: list, resolve, open, stamp, review, comments, wait, and `ds` for pack lookup |
+| `../../bin/artifact` | the CLI: new, kit, list, resolve, open, stamp, review, comments, wait, and `ds` for pack lookup |
