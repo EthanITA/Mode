@@ -37,7 +37,7 @@ interface Indexed {
 }
 
 const chrome = useChrome();
-const look = useArtifactTheme();
+const look = useTheme();
 
 const frame = ref<HTMLIFrameElement>();
 const height = ref(0);
@@ -391,7 +391,7 @@ function clearPick(): void {
   chrome.comment.light(undefined);
 }
 
-// The artifact carries its own theme stamp, so the frame follows the artifact's toggle rather than the OS or the app.
+// The artifact carries its own theme stamp, so the frame follows the sidecar's toggle rather than the OS.
 function syncTheme(doc: Document): void {
   doc.documentElement.setAttribute("data-theme", look.theme.value);
 }

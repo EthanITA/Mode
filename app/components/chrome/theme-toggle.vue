@@ -4,16 +4,16 @@ import type { ActionShape } from "~/components/chrome/action.vue";
 
 const { shape } = defineProps<{ shape: ActionShape }>();
 
-const look = useArtifactTheme();
+const look = useTheme();
 const isDark = computed(() => look.theme.value === "dark");
 </script>
 
 <template>
   <ChromeAction
-    data-region="artifact-theme"
+    data-region="theme-toggle"
     :icon="isDark ? Sun : Moon"
     :shape="shape"
-    :tip="isDark ? 'Show the page light' : 'Show the page dark'"
+    :tip="isDark ? 'Light theme' : 'Dark theme'"
     @click="look.toggle"
   />
 </template>

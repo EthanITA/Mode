@@ -16,16 +16,6 @@ onMounted(() => {
 });
 onBeforeUnmount(() => themes.disconnect());
 
-const route = useRoute();
-const look = useArtifactTheme();
-const isFull = useArtifactFullscreen();
-// A page grown over everything, or open on its own, lends the window its theme; back in its pane the app keeps its own.
-watchEffect(() => {
-  const isWhole = isFull.value || !!route.params.slug;
-  const own = localStorage.getItem("cela-theme") === "dark" ? "dark" : "light";
-  document.documentElement.setAttribute("data-theme", isWhole ? look.theme.value : own);
-});
-
 useHead({
   link: [
     { href: "/manifest.webmanifest", rel: "manifest" },

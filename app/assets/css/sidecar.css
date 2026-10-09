@@ -182,47 +182,6 @@ body {
   color: var(--tint-rose);
 }
 
-/* An artifact's theme switch reaches its whole pane. @cela/design keys its palette on :root alone
-   (css/palette.css and css/theme.css), so its two stamps are restated here for a subtree; keep them in step. */
-[data-pane-theme="light"] {
-  --canvas: #f9f8f5; --raised: #ffffff; --sunken: #f3f1ed; --ink: #0d0425;
-  --muted: #6e6882; --subtle: #9b96ab; --border: #e8e5df; --border-strong: #d4d0c9;
-  --primary: #7c3aed; --primary-deep: #6d28d9; --primary-content: #ffffff;
-  --primary-soft: #ede9fe; --secondary: #0d0425; --accent: #6d28d9;
-  --success: #2d8a56; --success-soft: #e8f5ee; --warning: #d4820c; --warning-soft: #fef3e2;
-  --error: #d1344b; --error-soft: #fde8ec; --error-content: #ffffff; --info: #3b82f6; --info-soft: #eff6ff; --rec-fg: #ffffff;
-  --shadow-sm: 0 1px 3px rgba(13,4,37,.06), 0 1px 2px rgba(13,4,37,.04);
-  --shadow-md: 0 4px 12px rgba(13,4,37,.06), 0 2px 4px rgba(13,4,37,.04);
-  --shadow-lg: 0 12px 32px rgba(13,4,37,.08), 0 4px 8px rgba(13,4,37,.04);
-  --glass-bg: rgba(255,255,255,.65); --glass-bg-strong: rgba(255,255,255,.78); --glass-border: rgba(255,255,255,.5);
-  --glass-shadow: inset 0 1px 0 0 rgba(255,255,255,.8), 0 4px 16px -2px rgba(13,4,37,.04), 0 12px 32px -4px rgba(13,4,37,.06);
-  --glass-liquid-bg: rgba(255,255,255,.15); --glass-liquid-border: rgba(13,4,37,.12);
-  --glass-liquid-shadow: inset 0 1px 0 0 rgba(255,255,255,.85), inset 0 1.5px 3px 0 rgba(255,255,255,.35), 0 4px 16px -2px rgba(13,4,37,.05), 0 12px 32px -4px rgba(13,4,37,.07);
-  --on-status: #ffffff; --on-secondary: #f9f8f5; --row-inset: rgba(255, 255, 255, 0.9);
-  color: var(--ink);
-  color-scheme: light;
-}
-
-[data-pane-theme="dark"] {
-  --canvas: #111113; --raised: #09090b; --sunken: #18181b; --ink: #fafafa;
-  --muted: rgba(250,250,250,.6); --subtle: rgba(250,250,250,.38);
-  --border: rgba(255,255,255,.06); --border-strong: rgba(255,255,255,.12);
-  --primary: #a78bfa; --primary-deep: #c4b5fd; --primary-content: #0d0425;
-  --primary-soft: rgba(167,139,250,.15); --secondary: #fafafa; --accent: #9d5ff5;
-  --success: #4ade80; --success-soft: rgba(74,222,128,.15); --warning: #fbbf24; --warning-soft: rgba(251,191,36,.15);
-  --error: #fb7185; --error-soft: rgba(251,113,133,.15); --error-content: #09090b; --info: #60a5fa; --info-soft: rgba(96,165,250,.15); --rec-fg: #0d0425;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.35), 0 1px 2px rgba(0,0,0,.25);
-  --shadow-md: 0 4px 12px rgba(0,0,0,.35), 0 2px 4px rgba(0,0,0,.2);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,.5), 0 4px 8px rgba(0,0,0,.3);
-  --glass-bg: rgba(9,9,11,.45); --glass-bg-strong: rgba(9,9,11,.55); --glass-border: rgba(255,255,255,.08);
-  --glass-shadow: inset 0 1px 0 0 rgba(255,255,255,.16), 0 16px 40px -8px rgba(0,0,0,.45);
-  --glass-liquid-bg: rgba(9,9,11,.25); --glass-liquid-border: rgba(255,255,255,.2);
-  --glass-liquid-shadow: inset 0 1px 0 0 rgba(255,255,255,.2), inset 0 1px 3px 0 rgba(255,255,255,.08), 0 4px 20px -2px rgba(0,0,0,.35), 0 16px 40px -8px rgba(0,0,0,.55);
-  --on-status: #09090b; --on-secondary: #09090b; --row-inset: rgba(255, 255, 255, 0.05);
-  color: var(--ink);
-  color-scheme: dark;
-}
-
 /* Monaco draws its gutter outside any component's scope; the --ed-* palette comes from OneDarkVivid.cssVars. */
 .monaco-note-add,
 .monaco-noted-glyph {

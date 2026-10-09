@@ -42,7 +42,7 @@ function closePage(): void {
 
     <template v-if="onArtifact">
       <ChromeCommentToggle shape="island" />
-      <ArtifactThemeToggle shape="island" />
+      <ChromeThemeToggle shape="island" />
       <ChromeAction data-region="artifact-close" :icon="X" shape="island" tip="Close the page" @click="closePage" />
     </template>
   </div>

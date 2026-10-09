@@ -205,12 +205,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
-- **The sidecar's own theme switch and its Comment island are gone from the faces.** The theme switch
-  now belongs to an artifact and flips its whole pane, the page with its header, notes and versions,
-  while the rest of the sidecar keeps the light or dark it last had; with the page fullscreen or open
-  on its own the switch is the whole window's. Comment sits with the artifact it acts on. Comment, the
-  page's theme switch, Fullscreen and X are one `<ChromeAction>`, a pill in a bar or an island in the
-  top row, so each keeps one icon, one tooltip and one motion wherever it shows.
+- **The theme switch and Comment moved off the faces and onto the artifact.** Both sit with the page,
+  as pills in its Files header and as islands when it is fullscreen or open on its own. The theme
+  switch still themes the whole sidecar, and the page inside the frame follows it. Comment, the theme
+  switch, Fullscreen and X are one `<ChromeAction>`, a pill in a bar or an island in the top row, so
+  each keeps one icon, one tooltip and one motion wherever it shows.
 - **The board and the notes float over the faces,** which now run to the bottom of the window, the
   counter above Send notes is gone, every island is liquid glass, and the faces read Files, Review,
   History.
