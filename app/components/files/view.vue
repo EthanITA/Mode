@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { prefersReducedMotion } from "@cela/design/utils/motion";
 import { FilePen, FilePlus2, FolderTree, Maximize2, PanelsTopLeft } from "@lucide/vue";
 import { useEventListener, useLocalStorage } from "@vueuse/core";
 import type { Component, ComponentPublicInstance } from "vue";
