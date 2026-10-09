@@ -155,6 +155,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **History's panes scroll instead of squeezing.** Each pane is a flex column, so a turn whose files
+  overflowed shrank every card to fit; the cards now keep their height and the pane scrolls.
 - **`board-check` no longer points at an X/Y/Z read that may not be there.** Its message said the board
   goes up straight after the read, which only happens while the `xyz` style is held. It now says the
   board goes up before the first action.

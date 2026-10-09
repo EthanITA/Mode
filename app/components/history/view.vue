@@ -165,6 +165,11 @@ const restoreMessage = computed(() => {
   padding: 12px;
 }
 
+/* A column flex item shrinks by default, so long content squeezed every card instead of scrolling. */
+.scroll > * {
+  flex-shrink: 0;
+}
+
 .scroll[data-scroll="turns"] {
   gap: 2px;
   padding: 6px 8px 16px;
