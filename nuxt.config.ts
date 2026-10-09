@@ -14,7 +14,7 @@ export default defineNuxtConfig({
   components: [
     {
       path: fileURLToPath(
-        new URL("../cela/packages/design/components", import.meta.url),
+        new URL("node_modules/@cela/design/components", import.meta.url),
       ),
       prefix: "Ui",
       priority: 0,
