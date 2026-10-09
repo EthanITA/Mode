@@ -1,0 +1,4 @@
+#!/bin/sh
+# Without the compile cache node strips a hook's types again on every start, about 40ms each time.
+export NODE_COMPILE_CACHE="${NODE_COMPILE_CACHE:-${TMPDIR:-/tmp}/node-compile-cache}"
+exec node "$(dirname "$0")/$1.ts"

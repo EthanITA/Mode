@@ -57,7 +57,7 @@ function shellWords(line: string): string[] | undefined {
   let started = false
   let quote: "'" | '"' | undefined
   for (let i = 0; i < line.length; i++) {
-    const c = line[i]
+    const c = line[i] ?? ""
     if (quote === "'") {
       if (c === "'") quote = undefined
       else word += c
@@ -115,7 +115,7 @@ function isShellScript(path: string): boolean {
     return false
   }
   if (path.endsWith(".sh")) return true
-  const first = text.trimStart().split("\n", 1)[0]
+  const first = text.trimStart().split("\n", 1)[0] ?? ""
   return first.startsWith("#!") && SHELL_BANGS.some((token) => first.includes(token))
 }
 
@@ -127,25 +127,25 @@ function realpath(path: string): string {
   }
 }
 
-const [verb, ...args] = process.argv.slice(2)
+const [verb, first = "", second = ""] = process.argv.slice(2)
 switch (verb) {
   case "statusline": {
-    const line = statusLine(args[0])
+    const line = statusLine(first)
     console.log(line.kind === "PRESENT" ? `PRESENT\n${line.command}` : line.kind)
     break
   }
   case "set-statusline":
-    setStatusLine(args[0], args[1])
+    setStatusLine(first, second)
     break
   case "script-of": {
-    const script = scriptOf(args[0])
+    const script = scriptOf(first)
     if (script) console.log(script)
     break
   }
   case "is-shell":
-    process.exit(isShellScript(args[0]) ? 0 : 1)
+    process.exit(isShellScript(first) ? 0 : 1)
   case "realpath":
-    console.log(realpath(args[0]))
+    console.log(realpath(first))
     break
   default:
     console.error(`_install.ts: unknown verb ${verb ?? "(none)"}. Known: statusline, set-statusline, script-of, is-shell, realpath`)

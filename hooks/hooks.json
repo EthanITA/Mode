@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/relay.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" relay"
           },
           {
             "type": "command",
@@ -44,19 +44,19 @@
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/comment-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/comment-guard"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/memory-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/memory-guard"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/null-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/null-guard"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/namespace-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/namespace-guard"
           }
         ]
       }
@@ -107,7 +107,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/shell-write-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/shell-write-guard"
           },
           {
             "type": "command",
