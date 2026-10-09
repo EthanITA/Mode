@@ -77,9 +77,9 @@ When approval comes through that question, record it with `bin/mode approve <slu
 
 The spec is a page, and the page carries a comment layer, so the yes can come from there instead of from the chat. It is the better channel: the user is already reading the thing being approved, and a comment lands on the exact block it is about rather than as a paragraph describing which part he means.
 
-Run `artifact wait <slug>` once the spec is open. It listens until the page sends its comments or Approve is pressed, and prints what arrived.
+The page's Send and Approve reach this conversation through the sidecar relay, as a message from the user that quotes each open thread or says `Approved <slug>`. With no sidecar running the page saves a file instead, and `artifact comments <slug>` picks it up from the downloads folder.
 
-| What comes back | What it means |
+| What arrives | What it means |
 |---|---|
 | Approve, no open threads | The yes. Record it with `bin/mode approve <slug>` and dispatch. |
 | Approve with threads still open | Approved with named changes. Those threads are the change list, so work them, resolve each one, then dispatch. |

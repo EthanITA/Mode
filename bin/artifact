@@ -351,7 +351,7 @@ def stamp(path: Path, fields: dict[str, str | None]) -> None:
 
 def cmd_review(args):
     path = resolve(args.slug)
-    what = _review.install(path, sink=args.sink or "", sidecar=args.sidecar or "")
+    what = _review.install(path, sidecar=args.sidecar or "")
     record(entry_of(path))
     print(f"review layer {what} in {path.name}")
 
@@ -384,19 +384,6 @@ def cmd_comments(args):
         print(json.dumps(doc, indent=2, ensure_ascii=False))
         return
     print(_review.render(doc, path.stem))
-
-
-def cmd_wait(args):
-    path = resolve(args.slug)
-    if path.suffix == ".md":
-        die(f"{path.name} has no page to send from: the sidecar writes its comments straight into the file. "
-            f"Read them with: artifact comments {path.stem}", 2)
-    until = ("approve",) if args.approve else ("approve", "send")
-    action = _review.serve(path, until=until, timeout=args.timeout)
-    if not action:
-        die("nothing arrived before the wait ended", 2)
-    print(f"\n{action} from the page")
-    print(_review.render(_review.read_doc(path), path.stem))
 
 
 def main():
@@ -432,7 +419,6 @@ def main():
 
     p = sub.add_parser("review", help="add or refresh the comment layer, keeping the threads it holds")
     p.add_argument("slug")
-    p.add_argument("--sink", help="where the page posts comments (default http://127.0.0.1:7391)")
     p.add_argument("--sidecar", help="where the page posts session messages (default http://127.0.0.1:3210)")
     p.set_defaults(fn=cmd_review)
 
@@ -444,12 +430,6 @@ def main():
     p.add_argument("--resolve", nargs="+", metavar="N", help="close one comment, with what changed")
     p.add_argument("--json", action="store_true")
     p.set_defaults(fn=cmd_comments)
-
-    p = sub.add_parser("wait", help="listen until the page sends its comments or approves")
-    p.add_argument("slug")
-    p.add_argument("--approve", action="store_true", help="return only on an approval")
-    p.add_argument("--timeout", type=int, default=0, metavar="SECONDS")
-    p.set_defaults(fn=cmd_wait)
 
     p = sub.add_parser("new", help="scaffold a local page: template, the pack's stylesheets, the kit, the review layer, stamped")
     p.add_argument("slug")

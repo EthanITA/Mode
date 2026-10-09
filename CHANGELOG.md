@@ -242,6 +242,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   as four categories that read as the labels the prose rule bans, so it now asks for the verb on the
   claim itself.
 
+### Removed
+
+- **`artifact wait` and the page's local sink.** The review layer sends Send and Approve to the
+  sidecar relay, and with no sidecar running it downloads `<slug>.comments.json` for
+  `artifact comments` to pick up. `artifact review --sink` goes with it, and a page built by an
+  older layer still pings port 7391, which now just fails and falls through to the download.
+
 ### Fixed
 
 - **A comment already sent to Claude never rides the next send.** It used to stay in the tray after

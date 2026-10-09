@@ -1284,10 +1284,6 @@ with tempfile.TemporaryDirectory() as tmp:
        [(t.get("body"), len(t.get("replies") or [])) for t in doc.get("threads") or []] == [("before --> after", 1)],
        repr(doc))
 
-    p = artifact("wait", "plan")
-    ok("wait refuses a .md, since no page will ever post to it",
-       p.returncode == 2 and "artifact comments plan" in p.stderr, "rc=%s err=%r" % (p.returncode, p.stderr))
-
     section("artifact new and artifact kit")
     skill = os.path.join(os.path.dirname(tool), os.pardir, "skills", "create-artifact")
     packs = os.path.join(config, "mode", "design-systems")

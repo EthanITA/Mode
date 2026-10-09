@@ -1,4 +1,4 @@
-"""The comment round trip for an artifact: the seed block, the merge, and the local sink.
+"""The comment round trip for an artifact: the seed block and the merge.
 
 `bin/artifact` owns resolving and stamping; this owns everything the review layer writes.
 """
@@ -9,15 +9,12 @@ import datetime
 import json
 import os
 import re
-import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 BLOCK_RE = re.compile(r"<!-- rv:start -->.*?<!-- rv:end -->\n?", re.S)
 SEED_RE = re.compile(r'(<script type="application/json" id="rv-seed">)(.*?)(</script>)', re.S)
 # A .md has no <script> to hold its threads, so they ride in one trailing comment. Mirrors MD_SEED in server/utils/artifacts.ts.
 MD_SEED_RE = re.compile(r"(<!-- rv:seed\n)(.*?)(\n-->\n?)", re.S)
-PORT = 7391
 
 
 def plugin_root() -> Path:
@@ -106,7 +103,7 @@ def ingest(path: Path, incoming: dict) -> tuple[int, int]:
     return len(doc["threads"]) - before, len(doc["threads"])
 
 
-def install(path: Path, sink: str = "", sidecar: str = "") -> str:
+def install(path: Path, sidecar: str = "") -> str:
     """Inject or refresh the layer in place, carrying whatever threads the page already holds."""
     if path.suffix == ".md":
         # The sidecar is a .md's comment surface, so its whole layer is the trailing block.
@@ -122,7 +119,6 @@ def install(path: Path, sink: str = "", sidecar: str = "") -> str:
     doc = {
         "v": 1,
         "slug": path.stem,
-        "sink": sink or existing.get("sink") or "",
         "sidecar": sidecar or existing.get("sidecar") or "",
         "threads": kept,
     }
@@ -188,49 +184,3 @@ def reply(path: Path, n: int, body: str, resolve: bool = False) -> dict:
     doc["updated"] = now()
     write_doc(path, doc)
     return t
-
-
-def serve(path: Path, until: tuple[str, ...] = ("approve", "send"), timeout: int = 0) -> str:
-    """Listen for the page. A file:// page cannot write to disk, but it can reach localhost."""
-    got: dict = {}
-    stop = threading.Event()
-
-    class Handler(BaseHTTPRequestHandler):
-        def log_message(self, *a):
-            pass
-
-        def cors(self, code: int = 200, body: bytes = b"ok"):
-            self.send_response(code)
-            # A file:// page sends Origin: null, so the wildcard is what makes the post land at all.
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Headers", "content-type")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-
-        def do_OPTIONS(self):
-            self.cors()
-
-        def do_GET(self):
-            self.cors()
-
-        def do_POST(self):
-            size = int(self.headers.get("content-length") or 0)
-            try:
-                data = json.loads(self.rfile.read(size) or b"{}")
-            except json.JSONDecodeError:
-                return self.cors(400, b"bad json")
-            self.cors()
-            added, total = ingest(path, data)
-            action = str(data.get("action") or "sync")
-            print(f"{action}: {added} new, {total} total")
-            if action in until:
-                got.update(data)
-                stop.set()
-
-    server = HTTPServer(("127.0.0.1", PORT), Handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    print(f"listening on http://127.0.0.1:{PORT} for {path.name}")
-    stop.wait(timeout or None)
-    server.shutdown()
-    return str(got.get("action") or "")

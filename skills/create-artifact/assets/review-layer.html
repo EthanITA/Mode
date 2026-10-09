@@ -1,5 +1,5 @@
 <!-- rv:start -->
-<script type="application/json" id="rv-seed">{"v":1,"slug":"{{SLUG}}","sink":"","sidecar":"","threads":[]}</script>
+<script type="application/json" id="rv-seed">{"v":1,"slug":"{{SLUG}}","sidecar":"","threads":[]}</script>
 <style>
 /* Packs spell the same roles differently: the doc system uses --surface/--accent/--radius, a
    self-contained pack may use --raised/--primary/--radius-box. Each chain tries both before any literal. */
@@ -86,7 +86,6 @@
   border-bottom:1px solid var(--rv-line)}
 .rv-head strong{font-size:.95rem}
 .rv-state{margin-inline-start:auto;font-size:.72rem;color:var(--rv-dim)}
-.rv-root[data-sink="live"] .rv-state{color:var(--rv-ok)}
 .rv-icon{width:1.9rem;height:1.9rem;display:grid;place-items:center;cursor:pointer;
   border-radius:var(--rv-pill);border:1px solid var(--rv-line);background:var(--rv-ground);color:var(--rv-fg)}
 .rv-icon:focus-visible{outline:2px solid var(--rv-accent);outline-offset:2px}
@@ -147,7 +146,7 @@
 @media print{.rv-root{display:none}}
 </style>
 
-<div class="rv-root" data-panel="closed" data-sink="off">
+<div class="rv-root" data-panel="closed">
   <button class="rv-fab" type="button" aria-pressed="false" aria-label="Comment on this page">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     <span class="rv-tally" data-zero="true">0</span>
@@ -232,11 +231,10 @@
     return '';
   }
 
-  var seed = {v: 1, slug: '', sink: '', sidecar: '', threads: []};
+  var seed = {v: 1, slug: '', sidecar: '', threads: []};
   try { seed = Object.assign(seed, JSON.parse(document.getElementById('rv-seed').textContent) || {}); } catch (e) {}
 
   var SLUG = readSlug() || seed.slug || (location.pathname.split('/').pop() || 'artifact').replace(/\.html$/, '');
-  var SINK = (seed.sink || 'http://127.0.0.1:7391').replace(/\/+$/, '');
   var SIDECAR = (seed.sidecar || 'http://127.0.0.1:3210').replace(/\/+$/, '');
   var KEY = 'rv:' + SLUG;
 
@@ -456,7 +454,6 @@
     writeLocal();
     render();
     paintPins();
-    push('sync');
   }
 
   function focus(id){
@@ -493,24 +490,6 @@
       {v: 1, slug: SLUG, action: action, updated: now(), threads: serializable()}, null, 2);
   }
 
-  // The page cannot write to disk, so a listening sink is the only path that needs no copy-paste.
-  function ping(){
-    if (!window.fetch || !window.AbortSignal || !AbortSignal.timeout) return;
-    fetch(SINK + '/ping', {signal: AbortSignal.timeout(700)})
-      .then(function(r){ root.dataset.sink = r.ok ? 'live' : 'off'; refreshState(); })
-      .catch(function(){ root.dataset.sink = 'off'; refreshState(); });
-  }
-
-  function push(action){
-    if (root.dataset.sink !== 'live') return Promise.resolve(false);
-    return fetch(SINK + '/rv', {
-      method: 'POST',
-      headers: {'content-type': 'application/json'},
-      body: payload(action),
-      signal: AbortSignal.timeout(3000)
-    }).then(function(r){ return r.ok; }).catch(function(){ return false; });
-  }
-
   function postSession(kind, text){
     if (!window.fetch || !window.AbortSignal || !AbortSignal.timeout) return Promise.resolve(false);
     try {
@@ -545,16 +524,8 @@
     var text = action === 'approve' ? ('Approved ' + SLUG) : commentText();
     postSession(kind, text).then(function(ok){
       if (ok) { say(action === 'approve' ? 'Approved. Claude is going ahead.' : 'Sent to Claude.'); return; }
-      push(action).then(function(ok2){
-        if (ok2) { say(action === 'approve' ? 'Approved. Claude is going ahead.' : 'Sent to Claude.'); return; }
-        download();
-      });
+      download();
     });
-  }
-
-  function refreshState(){
-    panel.querySelector('.rv-state').textContent =
-      root.dataset.sink === 'live' ? 'Claude is listening' : 'saved in this browser';
   }
 
   function download(){
@@ -673,8 +644,6 @@
 
   render();
   paintPins();
-  refreshState();
-  ping();
 })();
 </script>
 <!-- rv:end -->
