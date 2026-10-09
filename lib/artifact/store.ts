@@ -1,14 +1,15 @@
-import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, extname, join, resolve as resolvePath } from "node:path";
 import { isDir, isFile, readTextSafe } from "../files.ts";
-import { modeConfig } from "../mode/config.ts";
 import { configRoot, modeHome } from "../mode/paths.ts";
 import { Refusal } from "../mode/refusal.ts";
-import { head, lines, lstrip, pad, pyStr, strip, words } from "../text.ts";
-import { readPage, root } from "./files.ts";
+import { head, lines, lstrip, pad, strip, words } from "../text.ts";
+import { documentSlug } from "../sidecar/comments.ts";
+import { artifactsDir, expandHome, readPage, root } from "./files.ts";
 import { install } from "./review.ts";
+
+export { artifactsDir, documentSlug };
 
 export type Meta = Record<string, string>;
 
@@ -25,13 +26,6 @@ const FIELDS = ["slug", "title", "url", "target", "ds", "updated"];
 export const TEMPLATES = ["interactive", "showpiece"];
 
 const stem = (path: string): string => basename(path, extname(path));
-const expandHome = (path: string): string => (path === "~" || path.startsWith("~/") ? homedir() + path.slice(1) : path);
-
-export function artifactsDir(): string {
-  if (process.env.NOTES_ARTIFACTS) return process.env.NOTES_ARTIFACTS;
-  const configured = modeConfig().artifacts ? pyStr(modeConfig().artifacts) : "";
-  return configured ? expandHome(configured) : join(homedir(), "artifacts");
-}
 
 // Same key the status line derives from its own session_id, so both sides agree.
 const sessionDir = (): string => join(configRoot(), "artifacts");
@@ -53,11 +47,6 @@ export function record(entry: string, sid?: string): void {
   if (!file) return;
   mkdirSync(dirname(file), { recursive: true });
   if (!sessionEntries(sid).includes(entry)) appendFileSync(file, `${entry}\n`);
-}
-
-// The hash keeps two README.md apart. Mirrors Documents.slug in server/utils/sessions/artifact-lists.ts.
-export function documentSlug(path: string): string {
-  return `${stem(path).replace(/[^a-zA-Z0-9._-]+/g, "-")}--${createHash("sha1").update(path).digest("hex").slice(0, 6)}`;
 }
 
 export function documents(entries: string[]): Map<string, string> {

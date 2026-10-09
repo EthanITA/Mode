@@ -137,4 +137,22 @@ describe("a .md outside the folder", () => {
     assert.ok(run(ARTIFACT, ["list", "--session", "--tsv"], { env: mine }).stdout.includes(`${slug}\t${doc}`));
     assert.equal(artifact("path", slug).stdout.trim(), doc);
   });
+
+  test("keeps its comments in the sidecar store, leaving the file as it was and lifting out an old block", () => {
+    const threads = [{ id: "t0", n: 1, by: "user", at: "a", updated: "a", body: "old", status: "open", replies: [] }];
+    const doc = write(
+      join(tmp, "notes", "plan.md"),
+      `# Plan\n\nShip it.\n\n<!-- rv:seed\n${JSON.stringify({ v: 1, threads })}\n-->\n`,
+    );
+    assert.equal(artifact("comments", doc, "--reply", "1", "done").status, 0);
+    assert.equal(read(doc), "# Plan\n\nShip it.\n");
+    const slug = `plan--${createHash("sha1").update(doc).digest("hex").slice(0, 6)}`;
+    const stored = JSON.parse(read(join(config, "sidecar", "comments", `${slug}.json`))) as {
+      threads: { body: string; replies: unknown[] }[];
+    };
+    assert.deepEqual(
+      stored.threads.map(({ body, replies }) => [body, replies.length]),
+      [["old", 1]],
+    );
+  });
 });

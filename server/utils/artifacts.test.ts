@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
-import { applyReviewChange } from "./artifacts.ts";
+import { readComments } from "../../lib/sidecar/comments.ts";
+import { applyReviewChange, applyStoredReview } from "./artifacts.ts";
 import { Markdown } from "./markdown.ts";
 import { Documents } from "./sessions/artifact-lists.ts";
 
@@ -24,6 +28,29 @@ test("a .md takes its first thread with no layer installed, below its own text, 
     replied.threads.map((one) => [one.body, one.replies.length]),
     [["why today", 1]],
   );
+});
+
+test("a document outside the artifacts folder keeps its threads in the store and loses an old block", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "stored-"));
+  process.env.CLAUDE_CONFIG_DIR = dir;
+  try {
+    const path = join(dir, "plan.md");
+    const old = applyReviewChange({ action: "create", body: "first", format: "md", text: "# Plan\n" });
+    if (!old.ok) assert.fail(old.reason);
+
+    const made = applyStoredReview({ action: "create", body: "second", path, text: old.text });
+    if (!made.ok) assert.fail(made.reason);
+
+    assert.equal(made.text, "# Plan\n");
+    assert.deepEqual(
+      made.threads.map((one) => one.body),
+      ["first", "second"],
+    );
+    assert.equal(readComments(path, "# Plan\n")?.threads.length, 2);
+  } finally {
+    delete process.env.CLAUDE_CONFIG_DIR;
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("a document's slug is its stem made url-safe plus six hex of its path, exactly as bin/artifact names it", () => {

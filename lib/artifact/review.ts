@@ -3,8 +3,15 @@ import { basename, extname, join } from "node:path";
 import { isRecord, type Payload } from "../hook/io.ts";
 import { modeConfig } from "../mode/config.ts";
 import { Refusal } from "../mode/refusal.ts";
+import {
+  hasLegacyBlock,
+  isStoredDocument,
+  readComments,
+  withoutLegacyBlock,
+  writeComments,
+} from "../sidecar/comments.ts";
 import { lines, pad, pyJson, pyStr } from "../text.ts";
-import { readPage, root } from "./files.ts";
+import { artifactsDir, readPage, root } from "./files.ts";
 
 export type Thread = Payload & { id?: unknown; n?: unknown; at?: unknown; updated?: unknown; replies?: unknown };
 export type Doc = Payload & { threads: Thread[] };
@@ -23,7 +30,13 @@ export const now = (): string => new Date().toISOString().replace(/\.\d{3}Z$/, "
 
 const asThreads = (value: unknown): Thread[] => (Array.isArray(value) ? value : []) as Thread[];
 
+const isStored = (path: string): boolean => isStoredDocument(path, artifactsDir());
+
 export function readDoc(path: string): Doc {
+  if (isStored(path)) {
+    const stored = readComments(path, readPage(path));
+    return { v: 1, slug: stem(path), ...stored, threads: asThreads(stored?.threads) };
+  }
   const found = seedOf(path).exec(readPage(path));
   if (!found) return { v: 1, slug: stem(path), threads: [] };
   let doc: Payload = {};
@@ -41,6 +54,12 @@ export function readDoc(path: string): Doc {
 
 export function writeDoc(path: string, doc: Doc): void {
   const text = readPage(path);
+  if (isStored(path)) {
+    writeComments(path, doc);
+    // The first write moves an old trailing block out of the document.
+    if (hasLegacyBlock(text)) writeFileSync(path, withoutLegacyBlock(text));
+    return;
+  }
   let body = pyJson(doc, false);
   if (path.endsWith(".md")) {
     // `-->` in a comment body would end the block early; the escape reads back as the same text.
@@ -90,6 +109,7 @@ export function ingest(path: string, incoming: Payload): [added: number, total: 
 
 // Inject or refresh the layer in place, carrying whatever threads the page already holds.
 export function install(path: string, sidecar = ""): string {
+  if (isStored(path)) return "already present";
   if (path.endsWith(".md")) {
     // The sidecar is a .md's comment surface, so its whole layer is the trailing block.
     if (MD_SEED.test(readPage(path))) return "already present";

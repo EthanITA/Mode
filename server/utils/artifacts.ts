@@ -9,6 +9,13 @@ import type {
   ThreadAnchor,
   ThreadReply,
 } from "../../shared/types/artifact";
+import {
+  hasLegacyBlock,
+  isStoredDocument,
+  readComments,
+  withoutLegacyBlock,
+  writeComments,
+} from "../../lib/sidecar/comments.ts";
 import { Markdown } from "./markdown.ts";
 import { Documents } from "./sessions/artifact-lists.ts";
 
@@ -151,6 +158,10 @@ function seedOf(text: string, format: ArtifactFormat): string | undefined {
   return (format === "md" ? MD_SEED : RV_SEED).exec(text)?.[1];
 }
 
+function threadsOf(raw: unknown): ReviewThread[] {
+  return Array.isArray(raw) ? raw.map(toThread).filter((t): t is ReviewThread => Boolean(t)) : [];
+}
+
 function parseThreads(text: string, format: ArtifactFormat): ReviewThread[] {
   const captured = seedOf(text, format);
   if (!captured) return [];
@@ -160,8 +171,7 @@ function parseThreads(text: string, format: ArtifactFormat): ReviewThread[] {
   } catch {
     return []; // a half-written seed block reads as no threads rather than crashing the route
   }
-  const threads = isRecord(doc) ? doc.threads : undefined;
-  return Array.isArray(threads) ? threads.map(toThread).filter((t): t is ReviewThread => Boolean(t)) : [];
+  return threadsOf(isRecord(doc) ? doc.threads : undefined);
 }
 
 // The review layer sits after the seed and measures ~30 KB, so the window has to clear it.
@@ -340,6 +350,7 @@ export async function getArtifact(slug: string): Promise<ArtifactDetail | undefi
   const source = await readArtifact(slug);
   if (!source) return undefined;
   const { text, ...meta } = source;
+  if (await isStoredArtifact(meta.path)) return { ...meta, threads: threadsOf(readComments(meta.path, text)?.threads) };
   return { ...meta, threads: parseThreads(text, meta.format) };
 }
 
@@ -667,22 +678,20 @@ export type ArtifactReviewOutcome =
   | { ok: true; text: string; thread?: ReviewThread; threads: ReviewThread[] }
   | { ok: false; reason: ArtifactReviewFail };
 
-export function applyReviewChange(input: {
+interface ThreadChangeInput {
   action: "create" | "reply" | "resolve";
   anchor?: ThreadAnchor;
   body?: string;
   by?: string;
-  format: ArtifactFormat;
   id?: string;
-  text: string;
-}): ArtifactReviewOutcome {
-  const seed = parseSeed(input.text, input.format);
-  if (!seed) return { ok: false, reason: "no-seed" };
-  const threads = Array.isArray(seed.threads)
-    ? seed.threads.map(toThread).filter((t): t is ReviewThread => Boolean(t))
-    : [];
-  const save = (next: ReviewThread[]): string =>
-    writeSeed({ format: input.format, seed: { ...seed, threads: next }, text: input.text });
+  threads: ReviewThread[];
+}
+
+export type ThreadChange =
+  { ok: true; thread?: ReviewThread; threads: ReviewThread[] } | { ok: false; reason: ArtifactReviewFail };
+
+function changeThreads(input: ThreadChangeInput): ThreadChange {
+  const { threads } = input;
 
   if (input.action === "create") {
     const body = input.body?.trim();
@@ -699,7 +708,7 @@ export function applyReviewChange(input: {
       replies: [],
     };
     const next = [...threads, thread];
-    return { ok: true, text: save(next), thread, threads: next };
+    return { ok: true, thread, threads: next };
   }
 
   if (!input.id) return { ok: false, reason: "invalid" };
@@ -710,7 +719,7 @@ export function applyReviewChange(input: {
   if (input.action === "resolve") {
     const thread: ReviewThread = { ...held, status: "resolved", updated: nowIso() };
     const next = threads.map((one, i) => (i === at ? thread : one));
-    return { ok: true, text: save(next), thread, threads: next };
+    return { ok: true, thread, threads: next };
   }
 
   const body = input.body?.trim();
@@ -722,7 +731,42 @@ export function applyReviewChange(input: {
     replies: [...held.replies, reply],
   };
   const next = threads.map((one, i) => (i === at ? thread : one));
-  return { ok: true, text: save(next), thread, threads: next };
+  return { ok: true, thread, threads: next };
+}
+
+export function applyReviewChange(input: {
+  action: "create" | "reply" | "resolve";
+  anchor?: ThreadAnchor;
+  body?: string;
+  by?: string;
+  format: ArtifactFormat;
+  id?: string;
+  text: string;
+}): ArtifactReviewOutcome {
+  const seed = parseSeed(input.text, input.format);
+  if (!seed) return { ok: false, reason: "no-seed" };
+  const threads = Array.isArray(seed.threads)
+    ? seed.threads.map(toThread).filter((t): t is ReviewThread => Boolean(t))
+    : [];
+  const change = changeThreads({ ...input, threads });
+  if (!change.ok) return change;
+  const text = writeSeed({ format: input.format, seed: { ...seed, threads: change.threads }, text: input.text });
+  return { ...change, text };
+}
+
+/** A document outside the artifacts folder keeps its threads in the sidecar's store, and its text changes only to lose an old block. */
+export function applyStoredReview(
+  input: Omit<ThreadChangeInput, "threads"> & { path: string; text: string },
+): ArtifactReviewOutcome {
+  const doc = readComments(input.path, input.text);
+  const change = changeThreads({ ...input, threads: threadsOf(doc?.threads) });
+  if (!change.ok) return change;
+  writeComments(input.path, { ...doc, threads: change.threads });
+  return { ...change, text: hasLegacyBlock(input.text) ? withoutLegacyBlock(input.text) : input.text };
+}
+
+export async function isStoredArtifact(path: string): Promise<boolean> {
+  return isStoredDocument(path, await artifactsDir());
 }
 
 export function resolveArtifactEdit(input: {

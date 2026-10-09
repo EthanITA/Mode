@@ -1,20 +1,12 @@
-import { createHash } from "node:crypto";
 import { existsSync, readdirSync } from "node:fs";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 import { readTextSafe } from "../../../lib/files.ts";
+import { documentSlug } from "../../../lib/sidecar/comments.ts";
 import { splitLines } from "../../../lib/text.ts";
 import { artifactListsHome, isKey } from "./paths.ts";
 
 function isDocument(entry: string): boolean {
   return entry.startsWith("/") && entry.endsWith(".md");
-}
-
-// The hash keeps two README.md apart. Mirrors document_slug in bin/artifact.
-function documentSlug(path: string): string {
-  const stem = basename(path)
-    .replace(/\.md$/, "")
-    .replace(/[^a-zA-Z0-9._-]+/g, "-");
-  return `${stem}--${createHash("sha1").update(path).digest("hex").slice(0, 6)}`;
 }
 
 // Appended to on each stamp, so newest first is the file read backwards.
