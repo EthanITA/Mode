@@ -18,7 +18,7 @@ watchEffect(() => {
 <template>
   <NuxtLayout>
     <template #lead>
-      <ArtifactHead :conversation="key" :title="title" />
+      <ArtifactHead :title="title" />
     </template>
 
     <template #dock>

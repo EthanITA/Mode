@@ -37,6 +37,7 @@ interface Indexed {
 }
 
 const chrome = useChrome();
+const look = useArtifactTheme();
 
 const frame = ref<HTMLIFrameElement>();
 const height = ref(0);
@@ -371,10 +372,9 @@ function clearPick(): void {
   chrome.comment.light(undefined);
 }
 
-// The artifact carries its own theme stamp, so the frame follows the app's toggle rather than the OS.
+// The artifact carries its own theme stamp, so the frame follows the artifact's toggle rather than the OS or the app.
 function syncTheme(doc: Document): void {
-  const theme = document.documentElement.getAttribute("data-theme");
-  if (theme) doc.documentElement.setAttribute("data-theme", theme);
+  doc.documentElement.setAttribute("data-theme", look.theme.value);
 }
 
 // The page ships its own theme toggle and the frame is sized to its content: both would be a second one over the app.
@@ -417,13 +417,9 @@ function readPending(doc: Document): FramePending[] {
   return out;
 }
 
-onMounted(() => {
-  const observer = new MutationObserver(() => {
-    const doc = frame.value?.contentDocument;
-    if (doc) syncTheme(doc);
-  });
-  observer.observe(document.documentElement, { attributeFilter: ["data-theme"] });
-  onScopeDispose(() => observer.disconnect());
+watch(look.theme, () => {
+  const doc = frame.value?.contentDocument;
+  if (doc) syncTheme(doc);
 });
 
 watch(() => [edition, html, slug, version], reset);

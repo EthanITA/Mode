@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ExternalLink, FilePen, FilePlus2, FolderTree, PanelsTopLeft } from "@lucide/vue";
+import { FilePen, FilePlus2, FolderTree, Maximize2, PanelsTopLeft } from "@lucide/vue";
 import { useLocalStorage } from "@vueuse/core";
 import type { Component } from "vue";
 import type { FileGroup, SessionFile } from "~~/shared/types/files";
@@ -110,14 +110,16 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
       <template v-if="selected && pageOf && sc.sessionKey.value">
         <header class="bar">
           <span class="path">{{ homePath(selected) }}</span>
-          <NuxtLink
-            class="open focusable"
-            :to="`/c/${sc.sessionKey.value}/${pageOf}`"
-            title="Open the page full width in the reader"
-          >
-            <UiIcon :icon="ExternalLink" size="sm" />
-            Open page
-          </NuxtLink>
+          <ChromeCommentToggle shape="pill" />
+          <ArtifactThemeToggle shape="pill" />
+          <ChromeAction
+            data-region="artifact-fullscreen"
+            :icon="Maximize2"
+            label="Fullscreen"
+            shape="pill"
+            tip="Open the page on its own"
+            @click="navigateTo(`/c/${sc.sessionKey.value}/${pageOf}`, { replace: true })"
+          />
         </header>
         <div class="read">
           <ArtifactReader :conversation="sc.sessionKey.value" :slug="pageOf" />
@@ -244,24 +246,6 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
   font-weight: 600;
   min-width: 0;
   overflow-wrap: anywhere;
-}
-
-.open {
-  align-items: center;
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  color: var(--ink);
-  display: inline-flex;
-  flex: none;
-  font-size: 11.5px;
-  font-weight: 600;
-  gap: 6px;
-  padding: 4px 11px;
-  text-decoration: none;
-}
-
-.open:hover {
-  border-color: var(--ink);
 }
 
 /* The reader sizes its frame to the page, so this pane owns the scroll. */
