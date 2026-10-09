@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { afterEach, test } from "node:test"
 import { useFixtures } from "./__fixtures__/env.ts"
-import { sessions } from "./sessions.ts"
+import { sessions } from "../../../lib/mode/sessions.ts"
 
 let restore: () => void
 afterEach(() => restore?.())

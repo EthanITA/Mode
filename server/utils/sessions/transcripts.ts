@@ -1,6 +1,6 @@
 import { closeSync, fstatSync, openSync, readSync, readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
-import { splitLines } from "../mode/fsutil.ts"
+import { splitLines } from "../../../lib/text.ts"
 import { isKey, isSessionId, keyOf, projectsHome } from "./paths.ts"
 
 // Identity sits in the first records written; the current name sits in the last.

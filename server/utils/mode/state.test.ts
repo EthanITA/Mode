@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { afterEach, test } from "node:test"
 import { useFixtures } from "./__fixtures__/env.ts"
-import { approvedSlug, declared, guardsArmed, held, ledger, redStanding, sourceOf } from "./state.ts"
+import { approvedSlug, declared, guardsArmed, held, ledger, redStanding, sourceOf } from "../../../lib/mode/state.ts"
 
 let restore: () => void
 afterEach(() => restore?.())

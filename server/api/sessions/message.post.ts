@@ -1,4 +1,4 @@
-import { readTextSafe } from "~~/server/utils/mode/fsutil"
+import { readTextSafe } from "~~/lib/files.ts"
 import { artifactsOf, keysWithArtifacts } from "~~/server/utils/sessions/artifact-lists"
 import { keyFileOf, sendToInbox } from "~~/server/utils/sessions/inbox"
 import { keyOf } from "~~/server/utils/sessions/paths"

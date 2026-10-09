@@ -3,7 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { test } from "node:test"
 import { FIXTURES_DIR } from "./__fixtures__/env.ts"
-import { resolvePluginRoot } from "./paths.ts"
+import { resolvePluginRoot } from "../../../lib/mode/paths.ts"
 
 const PLUGIN = join(FIXTURES_DIR, "plugin")
 

@@ -1,4 +1,4 @@
-import { contracts } from "./contracts-api.ts"
+import { contracts } from "./contracts.ts"
 import { pins } from "./pins.ts"
 import { sessions } from "./sessions.ts"
 import { why } from "./why.ts"

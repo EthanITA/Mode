@@ -4,7 +4,7 @@ import { renderMermaidSVGAsync } from "beautiful-mermaid"
 import { createMarkdownParser } from "comark"
 import type { MarkdownDocument } from "comark"
 import { Syntax } from "../../shared/utils/highlight.ts"
-import { pluginRoot } from "./mode/paths.ts"
+import { pluginRoot } from "../../lib/mode/paths.ts"
 
 type MdNode = MarkdownDocument["nodes"][number]
 

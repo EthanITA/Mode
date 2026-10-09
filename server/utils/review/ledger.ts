@@ -1,8 +1,8 @@
 import { readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import type { ReviewFile, ReviewSnapshot } from "../../../shared/types/review.ts"
-import { readTextSafe } from "../mode/fsutil.ts"
-import { configRoot } from "../mode/paths.ts"
+import { readTextSafe } from "../../../lib/files.ts"
+import { configRoot } from "../../../lib/mode/paths.ts"
 import { Lines } from "../../../shared/utils/lines.ts"
 
 // The sidecar mod's own limit: past it, or holding a NUL byte, a file is not reviewable.

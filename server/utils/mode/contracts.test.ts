@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { afterEach, test } from "node:test"
 import { useFixtures } from "./__fixtures__/env.ts"
-import { Flow, alternatives, names, truthy } from "./contracts.ts"
+import { Flow, alternatives, names, truthy } from "../../../lib/mode/contracts.ts"
 
 let restore: () => void
 afterEach(() => restore?.())

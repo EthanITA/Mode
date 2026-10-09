@@ -22,6 +22,11 @@ export function lines(text: string): string[] {
   return out
 }
 
+// Only \r\n, \r and \n, unlike lines(): a JSONL record can carry a raw U+2028 inside one of its strings.
+export function splitLines(text: string): string[] {
+  return text.split(/\r\n|\r|\n/)
+}
+
 // Python's json.dumps layout, `", "` and `": "`, so a file python wrote and node rewrites does not churn.
 export function pyJson(value: unknown, ascii = true): string {
   if (Array.isArray(value)) return `[${value.map((item) => pyJson(item, ascii)).join(", ")}]`

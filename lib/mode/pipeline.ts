@@ -1,6 +1,6 @@
-import type { Axis, PipelineStep } from "../../shared/types/mode.ts"
+import type { Axis, Pipeline, PipelineStep } from "../../shared/types/mode.ts"
 import { AUTO } from "./constants.ts"
-import { arcs, steps } from "./contracts.ts"
+import { Flow } from "./contracts.ts"
 import { declared, held } from "./state.ts"
 
 // An event stops at the first required evented step it has not passed, so an early commit cannot finish `deliver@commit`.
@@ -25,7 +25,15 @@ export function furthest(axis: Axis, sid: string | undefined, drawn: PipelineSte
 
 function drawnFor(axis: Axis, sid?: string): { name: string; drawn: PipelineStep[] } {
   const name = held(axis, sid)
-  return { name, drawn: name && name !== AUTO ? steps(axis, name) : [] }
+  return { name, drawn: name && name !== AUTO ? Flow.steps(axis, name) : [] }
+}
+
+export function pipelineFor(sid?: string): Pipeline | undefined {
+  const { drawn } = drawnFor("mode", sid)
+  if (!drawn.length) return undefined
+  const labels = drawn.map((step) => step.label)
+  const at = furthest("mode", sid, drawn)
+  return { axis: "mode", steps: labels, done: labels.slice(0, at), current: labels[at], next: labels[at + 1], complete: at >= labels.length }
 }
 
 // Where the pipeline stands, in the words a turn is told it. Empty when none is declared.
@@ -47,5 +55,5 @@ export function stepReport(axis: Axis, sid: string | undefined, tsv: boolean): s
   if (!tsv) return position(axis, sid)
   const at = furthest(axis, sid, drawn)
   const rows = drawn.map(({ label, gate }, i) => `step\t${label}\t${gate ? 1 : 0}\t${i < at ? "done" : i === at ? "here" : "next"}`)
-  return [...rows, ...arcs(axis, name, drawn).map(([from, to]) => `loop\t${from}\t${to}`)].join("\n")
+  return [...rows, ...Flow.arcs(axis, name, drawn).map(([from, to]) => `loop\t${from}\t${to}`)].join("\n")
 }

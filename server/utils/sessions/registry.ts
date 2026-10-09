@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs"
 import { join } from "node:path"
 import type { SessionStatus } from "../../../shared/types/session.ts"
-import { readTextSafe } from "../mode/fsutil.ts"
+import { readTextSafe } from "../../../lib/files.ts"
 import { isSessionId, registryHome } from "./paths.ts"
 
 export interface RegistryEntry {

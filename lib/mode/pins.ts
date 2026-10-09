@@ -70,6 +70,19 @@ export function pin({ axis, name, forget, path }: { axis: Axis; name?: string; f
   return `${axis} pinned to ${name} for ${folder}`
 }
 
+export type PinSlot = { name?: string; layer?: "personal" | "shared" | typeof OFF; file?: string }
+export type Pins = { path: string; mode: PinSlot; style: PinSlot }
+
+export function pins(path?: string): Pins {
+  const folder = resolveDir(path)
+  const slot = (axis: Axis): PinSlot => {
+    const hit = pinFor(axis, folder)
+    if (hit.layer === OFF) return { layer: OFF, file: hit.folder }
+    return hit.name && hit.layer ? { name: hit.name, layer: hit.layer, file: originOf(hit) } : {}
+  }
+  return { path: folder, mode: slot("mode"), style: slot("style") }
+}
+
 export function pinsReport(path?: string): string {
   const folder = resolveDir(path)
   const out = [`pins for ${folder}`]

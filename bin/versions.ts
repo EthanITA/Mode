@@ -2,8 +2,8 @@
 import { execFileSync } from "node:child_process"
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs"
 import { basename, dirname, isAbsolute, join, normalize } from "node:path"
-import { configRoot } from "../server/utils/mode/paths.ts"
-import { splitLines } from "../server/utils/mode/fsutil.ts"
+import { configRoot } from "../lib/mode/paths.ts"
+import { lines } from "../lib/text.ts"
 import { applyEdit, receiptsOf, turnsOf, type FileTouch, type ParsedTurn } from "../server/utils/sessions/receipts.ts"
 import { identityOf, transcriptIndex } from "../server/utils/sessions/transcripts.ts"
 import { planOf, storePath } from "../server/utils/sessions/store.ts"
@@ -487,7 +487,7 @@ function foreign({ key, index, path }: Omit<At, "turn">): boolean {
   try {
     const disk = git(key, ["hash-object", "--", path]).trim()
     const blobs = git(key, ["rev-parse", ...versions.map((one) => `${one.sha}:${storePath(path)}`)])
-    return !splitLines(blobs).some((one) => one.trim() === disk)
+    return !lines(blobs).some((one) => one.trim() === disk)
   } catch {
     return true
   }

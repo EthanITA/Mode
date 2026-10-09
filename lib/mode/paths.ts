@@ -8,9 +8,14 @@ import { FOLDER, PINS_FILE } from "./constants.ts"
 const moduleDir = dirname(fileURLToPath(import.meta.url))
 
 // Walked up rather than a fixed hop count, which breaks once Nitro bundles this file into .output.
-function findPluginRoot(start: string): string | undefined {
-  for (const dir of ancestors(start)) if (existsSync(join(dir, ".claude-plugin", "plugin.json"))) return dir
-  return undefined
+export function resolvePluginRoot(start: string, guess: string): string {
+  const found = ancestors(start).find((dir) => existsSync(join(dir, ".claude-plugin", "plugin.json")))
+  if (found) return found
+  if (existsSync(join(guess, "skills", "mode"))) return guess
+  throw new Error(
+    `mode plugin root not found: no .claude-plugin/plugin.json above any of ${ancestors(start).join(", ")}, ` +
+      `and no skills/mode under the fallback guess ${guess}. Set MODE_PLUGIN_ROOT to the plugin's root.`,
+  )
 }
 
 export function pluginRoot(): string {
@@ -19,7 +24,7 @@ export function pluginRoot(): string {
   // The platform sets this per hook, so it is only ours when it carries our skill.
   const plugin = process.env.CLAUDE_PLUGIN_ROOT
   if (plugin && existsSync(join(plugin, "skills", "mode"))) return plugin
-  return findPluginRoot(moduleDir) ?? resolve(moduleDir, "..", "..")
+  return resolvePluginRoot(moduleDir, resolve(moduleDir, "..", ".."))
 }
 
 export function configRoot(): string {

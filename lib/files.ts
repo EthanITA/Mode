@@ -31,7 +31,7 @@ export function listMd(dir: string): string[] {
 export function readTextSafe(path?: string): string | undefined {
   if (!path) return undefined
   try {
-    return readFileSync(path, "utf8").replace(/\r\n?/g, "\n")
+    return readFileSync(path, "utf8")
   } catch {
     return undefined
   }

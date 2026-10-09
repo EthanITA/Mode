@@ -1,8 +1,8 @@
 import { join } from "node:path"
-import type { Axis, PipelineStep } from "../../shared/types/mode.ts"
+import type { Axis, Contract, ContractLoop, PipelineStep } from "../../shared/types/mode.ts"
 import { isFile, listMd, readTextSafe } from "../files.ts"
 import { strip, WORD } from "../text.ts"
-import { AUTO, FALSEY, FOLDER } from "./constants.ts"
+import { AUTO, AXES, FALSEY, FOLDER } from "./constants.ts"
 import { splitFrontMatter, type Meta } from "./frontmatter.ts"
 import { contractDirs } from "./paths.ts"
 
@@ -75,7 +75,7 @@ export function substitute(text: string): string {
   return text.replaceAll(USER_TOKEN, DEFAULT_USER)
 }
 
-export function steps(axis: Axis, name: string): PipelineStep[] {
+function steps(axis: Axis, name: string): PipelineStep[] {
   const out: PipelineStep[] = []
   for (const token of (metaOf(axis, name).steps ?? "").split(",")) {
     const at = token.indexOf("@")
@@ -88,15 +88,33 @@ export function steps(axis: Axis, name: string): PipelineStep[] {
 }
 
 // A loop naming a step that no longer exists drops its arc rather than the whole drawing.
-export function arcs(axis: Axis, name: string, drawn: PipelineStep[]): [number, number][] {
-  const where = new Map(drawn.map((step, i) => [step.label.toLowerCase(), i]))
-  const out: [number, number][] = []
+function loops(axis: Axis, name: string, drawn: PipelineStep[]): ContractLoop[] {
+  const labels = new Set(drawn.map((step) => step.label.toLowerCase()))
+  const out: ContractLoop[] = []
   for (const pair of (metaOf(axis, name).loops ?? "").split(",")) {
     const arrow = pair.indexOf(">")
     if (arrow < 0) continue
     const from = strip(pair.slice(0, arrow)).toLowerCase()
     const to = strip(pair.slice(arrow + 1)).toLowerCase()
-    if (where.has(from) && where.has(to)) out.push([where.get(from) ?? 0, where.get(to) ?? 0])
+    if (labels.has(from) && labels.has(to)) out.push({ from, to })
   }
   return out
+}
+
+function arcs(axis: Axis, name: string, drawn: PipelineStep[]): [number, number][] {
+  const index = (label: string): number => drawn.findIndex((step) => step.label.toLowerCase() === label)
+  return loops(axis, name, drawn).map(({ from, to }) => [index(from), index(to)])
+}
+
+// Named for the drawing a contract declares, not for the live position of one.
+export const Flow = { steps, loops, arcs } as const
+
+export function contracts(): Contract[] {
+  return AXES.flatMap((axis) =>
+    names(axis).map((name) => {
+      const meta = metaOf(axis, name)
+      const drawn = steps(axis, name)
+      return { axis, name, summary: meta.summary, color: meta.color, steps: drawn, loops: loops(axis, name, drawn) }
+    }),
+  )
 }

@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import type { CanvasPlacement } from "~~/shared/types/canvas"
-import { readTextSafe } from "../mode/fsutil.ts"
+import { readTextSafe } from "../../../lib/files.ts"
 import { canvasHome } from "./paths.ts"
 
 export function canvasOf(key: string): CanvasPlacement | undefined {

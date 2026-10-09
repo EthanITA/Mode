@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { statSync, writeFileSync } from "node:fs"
 import type { FileAction, FileContent, FileSave, SessionFile, SessionFiles } from "../../../shared/types/files.ts"
-import { readTextSafe } from "../mode/fsutil.ts"
+import { readTextSafe } from "../../../lib/files.ts"
 import { cwdOf, isInside } from "../tree/index.ts"
 import { turnsOf } from "./receipts.ts"
 

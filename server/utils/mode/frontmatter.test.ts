@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { splitFrontMatter, unquote } from "./frontmatter.ts"
+import { splitFrontMatter, unquote } from "../../../lib/mode/frontmatter.ts"
 
 test("splits meta from body and unquotes values", () => {
   const { meta, body } = splitFrontMatter('---\nname: demo\nsummary: "a quoted value"\n---\n\n# Body\n')

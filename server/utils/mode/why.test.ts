@@ -1,8 +1,8 @@
 import assert from "node:assert/strict"
 import { afterEach, test } from "node:test"
 import { useFixtures } from "./__fixtures__/env.ts"
-import { resolveDir } from "./paths.ts"
-import { why } from "./why.ts"
+import { resolveDir } from "../../../lib/mode/paths.ts"
+import { why } from "../../../lib/mode/why.ts"
 
 let restore: () => void
 afterEach(() => restore?.())

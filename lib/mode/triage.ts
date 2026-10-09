@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs"
 import { join } from "node:path"
 import { readTextSafe } from "../files.ts"
-import { lines, strip } from "../text.ts"
+import { lines, splitLines, strip } from "../text.ts"
 import { ask, question } from "./jev.ts"
 import { configRoot } from "./paths.ts"
 
@@ -48,7 +48,7 @@ function firstLine(home: string, sessionId: string): string {
     return ""
   }
   for (const project of projects) {
-    for (const line of lines(readTextSafe(join(home, "projects", project, `${sessionId}.jsonl`)) ?? "")) {
+    for (const line of splitLines(readTextSafe(join(home, "projects", project, `${sessionId}.jsonl`)) ?? "")) {
       let entry: { type?: unknown; isMeta?: unknown; message?: { content?: unknown } }
       try {
         entry = JSON.parse(line)

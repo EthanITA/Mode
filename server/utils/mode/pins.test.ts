@@ -3,8 +3,8 @@ import { writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { afterEach, before, test } from "node:test"
 import { FIXTURES_DIR, useFixtures } from "./__fixtures__/env.ts"
-import { resolveDir } from "./paths.ts"
-import { pins } from "./pins.ts"
+import { resolveDir } from "../../../lib/mode/paths.ts"
+import { pins } from "../../../lib/mode/pins.ts"
 
 // Written from the resolved paths rather than hardcoded, so the fixture survives whichever of
 // ~/.claude/skills/mode or the real Notes checkout this file is reached through.

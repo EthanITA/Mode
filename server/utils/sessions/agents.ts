@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from "node:fs"
 import { join } from "node:path"
 import type { SessionAgent } from "../../../shared/types/session.ts"
-import { readTextSafe } from "../mode/fsutil.ts"
+import { readTextSafe } from "../../../lib/files.ts"
 import { projectsHome, teamsHome } from "./paths.ts"
 import type { TranscriptRef } from "./transcripts.ts"
 

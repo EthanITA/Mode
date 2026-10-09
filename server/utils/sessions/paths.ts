@@ -1,5 +1,5 @@
 import { join } from "node:path"
-import { configRoot } from "../mode/paths.ts"
+import { configRoot } from "../../../lib/mode/paths.ts"
 
 export const KEY_LENGTH = 8
 

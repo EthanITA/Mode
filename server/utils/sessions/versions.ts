@@ -3,7 +3,7 @@ import { join } from "node:path"
 import { promisify } from "node:util"
 import type { ConversationVersions, DiffTarget, FileDiff, FilePair, RestoreResult, VersionContent, VersionPair } from "../../../shared/types/versions.ts"
 import { Lines } from "../../../shared/utils/lines.ts"
-import { pluginRoot } from "../mode/paths.ts"
+import { pluginRoot } from "../../../lib/mode/paths.ts"
 
 const run = promisify(execFile)
 const BUDGET_MS = 120_000

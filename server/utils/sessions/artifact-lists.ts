@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto"
 import { existsSync, readdirSync } from "node:fs"
 import { basename, join } from "node:path"
-import { readTextSafe, splitLines } from "../mode/fsutil.ts"
+import { readTextSafe } from "../../../lib/files.ts"
+import { splitLines } from "../../../lib/text.ts"
 import { artifactListsHome, isKey } from "./paths.ts"
 
 function isDocument(entry: string): boolean {

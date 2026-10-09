@@ -1,11 +1,13 @@
+import type { Gate, Why } from "../../shared/types/mode.ts"
 import { AUTO, AXES, GATES, OFF, STANDING_LINES } from "./constants.ts"
 import { alternatives, metaOf, names, neverAuto, readContract, substitute, summary, truthy } from "./contracts.ts"
 import { standingBlock } from "./frontmatter.ts"
 import { resolveDir } from "./paths.ts"
 import { originOf, pinFor } from "./pins.ts"
-import { position } from "./pipeline.ts"
+import { pipelineFor, position } from "./pipeline.ts"
 import { outranking, ruleState } from "./rules.ts"
-import { approvedSlug, guardsArmed, held, readState, redStanding, sourceOf, statePath } from "./state.ts"
+import { slotOf } from "./sessions.ts"
+import { approvedSlug, guardsArmed, held, readState, redStanding, sessionKey, sourceOf, statePath } from "./state.ts"
 
 const pad = (text: string, width: number): string => text.padEnd(width)
 
@@ -32,22 +34,28 @@ function slotLines(sid: string | undefined, folder: string): string[] {
   return out
 }
 
-function gateLines(sid?: string): string[] {
+export function gatesFor(sid?: string): Gate[] {
   const name = held("mode", sid)
   const meta = name && name !== AUTO ? metaOf("mode", name) : {}
   const armed = guardsArmed()
+  const open = (key: string, reason: string): Gate => ({ name: key, state: "open", reason })
+  const shut = (key: string, reason: string): Gate => ({ name: key, state: "shut", reason })
   return Object.keys(GATES)
     .sort()
     .map((key) => {
       const { what, switchable } = GATES[key] ?? { what: "", switchable: false }
-      if (!truthy(meta, key)) return `  ${pad(key, 30)} open, not declared by ${name || "an empty mode slot"}`
-      if (switchable && !armed) return `  ${pad(key, 30)} open, declared but disarmed by guards: off in config.json`
+      if (!truthy(meta, key)) return open(key, `not declared by ${name || "an empty mode slot"}`)
+      if (switchable && !armed) return open(key, "declared but disarmed by guards: off in config.json")
       if (key === "no-dispatch-without-approval") {
         const slug = approvedSlug(sid)
-        return `  ${pad(key, 30)} ${slug ? `open, ${slug} is approved` : `SHUT, nothing is approved under ${name}, so ${what} is refused`}`
+        return slug ? open(key, `${slug} is approved`) : shut(key, `nothing is approved under ${name}, so ${what} is refused`)
       }
-      return `  ${pad(key, 30)} ${redStanding(sid) ? "open, a red is standing" : `SHUT, no red is standing, so ${what} is refused`}`
+      return redStanding(sid) ? open(key, "a red is standing") : shut(key, `no red is standing, so ${what} is refused`)
     })
+}
+
+function gateLines(sid?: string): string[] {
+  return gatesFor(sid).map(({ name, state, reason }) => `  ${pad(name, 30)} ${state === "shut" ? "SHUT" : "open"}, ${reason}`)
 }
 
 function nextLines(sid?: string): string[] {
@@ -65,6 +73,17 @@ function nextLines(sid?: string): string[] {
     }
   }
   return out.length ? out : ["  nothing, because neither slot holds a contract"]
+}
+
+export function why(sid?: string, path?: string): Why {
+  return {
+    session: sessionKey(sid),
+    path: resolveDir(path),
+    slots: { mode: slotOf("mode", sid), style: slotOf("style", sid) },
+    pipeline: pipelineFor(sid),
+    gates: gatesFor(sid),
+    rules: ruleState(sid),
+  }
 }
 
 // Everything steering this turn on one page, since every other surface is a chip or text nobody sees.

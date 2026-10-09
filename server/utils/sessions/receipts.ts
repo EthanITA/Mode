@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs"
 import { isAbsolute, join, resolve } from "node:path"
 import type { ReceiptCommand, ReceiptsSlice, TurnReceipt } from "../../../shared/types/receipts.ts"
-import { readTextSafe } from "../mode/fsutil.ts"
+import { readTextSafe } from "../../../lib/files.ts"
 import { projectsHome } from "./paths.ts"
 import { readWindow, transcriptIndex, usableLines, type TranscriptRef } from "./transcripts.ts"
 

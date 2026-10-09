@@ -1,4 +1,4 @@
-import { Mode } from "~~/server/utils/mode"
+import { Mode } from "~~/lib/mode/index.ts"
 import type { Contracts } from "../../shared/types/mode"
 
 export default defineEventHandler((): Contracts => {

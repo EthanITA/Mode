@@ -1,8 +1,8 @@
 import { mkdirSync, readdirSync, renameSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import type { BoardAction, BoardCategory, BoardSummary, BoardTask } from "~~/shared/types/board"
-import { readTextSafe } from "../mode/fsutil.ts"
-import { configRoot } from "../mode/paths.ts"
+import { readTextSafe } from "../../../lib/files.ts"
+import { configRoot } from "../../../lib/mode/paths.ts"
 
 const SUBJECT_PREFIX = /^(?:#\d+\s*)?(?:\[(AI|USER|WAIT)\]\s*)?/i
 const TASK_ID = /^\d+$/

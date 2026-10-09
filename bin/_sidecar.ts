@@ -4,7 +4,7 @@ import { homedir, userInfo } from "node:os"
 import { basename, dirname, join } from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
 import { fileURLToPath } from "node:url"
-import { modeHome } from "../server/utils/mode/paths.ts"
+import { modeHome } from "../lib/mode/paths.ts"
 
 type Command = "open" | "status" | "start" | "stop" | "restart" | "install" | "uninstall" | "help"
 type Proc = { pid: number; ppid: number; args: string }

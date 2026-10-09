@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs"
 import { createConnection } from "node:net"
 import { join } from "node:path"
-import { readTextSafe } from "../mode/fsutil.ts"
+import { readTextSafe } from "../../../lib/files.ts"
 import { keyOf, registryHome } from "./paths.ts"
 import { liveEntries } from "./registry.ts"
 import { marked } from "./relay.ts"
