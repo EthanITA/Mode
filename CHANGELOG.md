@@ -174,6 +174,14 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   overflowed shrank every card to fit; the cards now keep their height and the pane scrolls.
 - **`board-check` no longer points at an X/Y/Z read that may not be there.** Its message said the board
   goes up straight after the read, which only happens while the `xyz` style is held. It now says the
+- **The version store keeps what a turn writes after the store last looked.** A build in the middle
+  of a turn counted that turn as done, so its later writes never reached History; each build now
+  writes the last turn it saw again, which adds versions only for what changed since.
+- **A `.gitignore` the conversation wrote no longer hides its other files from the version store.**
+  The store mirrors every touched file into its own git repository, the ignore file included, so a
+  rule like `/projects/*` dropped whole folders from History. The store now adds past ignore rules.
+- **A conversation that has written nothing no longer breaks the version store.** Its first build
+  read the log of a repository with no commit and failed.
   board goes up before the first action.
 - **The artifact prose register points at the live `prose` rule.** It named `~/.claude/rules/prose.md`,
   a path that stopped existing when the rule moved into this plugin.

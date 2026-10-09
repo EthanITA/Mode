@@ -101,7 +101,8 @@ function init(key: string): void {
 
 function commit(key: string, { message, by, at }: { message: string; by: string; at: number }): void {
   const stamp = new Date(at).toISOString()
-  git(key, ["add", "-A", "."])
+  // Forced: a .gitignore the conversation wrote is mirrored too, and must not hide the store's own files.
+  git(key, ["add", "-A", "-f", "."])
   execFileSync("git", ["commit", "-q", "--allow-empty", "-m", message, "--author", `${by || "session"} <sidecar@local>`], {
     cwd: treeDir(key),
     encoding: "utf8",
@@ -203,7 +204,9 @@ function build(key: string): StoreIndex {
   const who = identityOf(ref).names[0] || key
   const fresh = !known || known.id !== ref.id || known.turns > plan.plans.length || !existsSync(treeDir(key))
   if (fresh) init(key)
-  const from = fresh ? 0 : known.turns
+  // The last turn seen may have still been open; rewriting it adds versions only for what changed since.
+  const reopened = fresh ? 0 : known.turns
+  const isStored = (path: string): boolean => existsSync(join(treeDir(key), storePath(path)))
 
   // Built over every turn, not only the newly committed ones, so an incremental run keeps the
   // attribution of versions it is not re-committing.
@@ -227,14 +230,18 @@ function build(key: string): StoreIndex {
       byTurn.set(turn.turn, { by: file.by || who, deleted: typeof file.content === "string" ? undefined : true })
       marks.set(file.path, byTurn)
     }
-    if (turn.turn <= from) continue
-    if (turn.baselines.length) {
-      for (const file of turn.baselines) put({ key, path: file.path, content: file.content })
+    if (turn.turn < reopened) continue
+    // A reopened turn's earlier files already sit in the store, and baselining them again would undo them.
+    const isNew = (file: { path: string }): boolean => turn.turn !== reopened || !isStored(file.path)
+    const baselines = turn.baselines.filter(isNew)
+    const gitNew = gitBases.filter(isNew)
+    if (baselines.length) {
+      for (const file of baselines) put({ key, path: file.path, content: file.content })
       commit(key, { message: `baseline before turn ${turn.turn}`, by: who, at: turn.at })
     }
-    if (gitBases.length) {
-      for (const file of gitBases) put({ key, path: file.path, content: file.content })
-      commit(key, { message: `baseline before turn ${turn.turn} from git ${gitBases[0]!.sha.slice(0, 7)}`, by: who, at: turn.at })
+    if (gitNew.length) {
+      for (const file of gitNew) put({ key, path: file.path, content: file.content })
+      commit(key, { message: `baseline before turn ${turn.turn} from git ${gitNew[0]!.sha.slice(0, 7)}`, by: who, at: turn.at })
     }
     if (!turn.files.length) continue
     for (const file of turn.files) put({ key, path: file.path, content: file.content })
@@ -273,6 +280,12 @@ function hydrate({
   marks: Marks
   who: string
 }): void {
+  // A conversation that has not written anything yet has a store with no commit, and so no versions.
+  try {
+    execFileSync("git", ["rev-parse", "--verify", "-q", "HEAD"], { cwd: treeDir(key), stdio: "ignore" })
+  } catch {
+    return
+  }
   const log = git(key, ["log", "--reverse", "--numstat", "--format=%x00%H %s", "--no-renames"])
   const at = new Map(plans.map((one) => [one.turn, one.at]))
   let turn = 0

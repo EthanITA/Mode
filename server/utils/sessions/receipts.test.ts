@@ -134,6 +134,64 @@ test("git sees the late-touched file as modified rather than added", () => {
   }
 })
 
+test("a turn still open at one build keeps its later writes at the next, without doubling the earlier ones", () => {
+  const root = mkdtempSync(join(tmpdir(), "sidecar-open-turn-"))
+  try {
+    cpSync(RECEIPTS_DIR, root, { recursive: true })
+    const transcript = join(root, "projects", "-tmp-delta", "dddddddd-1111-2222-3333-444444444444.jsonl")
+    const agents = join(root, "projects", "-tmp-delta", "dddddddd-1111-2222-3333-444444444444", "subagents")
+    const full = readFileSync(transcript, "utf8")
+    const run = (args: string[]): string =>
+      execFileSync(process.execPath, ["--experimental-strip-types", BIN, ...args], {
+        encoding: "utf8",
+        env: { ...process.env, CLAUDE_CONFIG_DIR: root },
+      })
+    const turnsOfPath = (path: string): number[] =>
+      (JSON.parse(run(["list", DELTA_KEY, "--path", path])).files[0]?.versions ?? []).map((one: { turn: number }) => one.turn)
+
+    // First build mid turn 1: the Write is called but its result has not landed, and no agent has run.
+    writeFileSync(transcript, full.split("\n").slice(0, 2).join("\n") + "\n")
+    cpSync(agents, `${agents}.later`, { recursive: true })
+    rmSync(agents, { recursive: true })
+    run(["build", DELTA_KEY])
+    assert.deepEqual(turnsOfPath("/tmp/delta/new.ts"), [])
+
+    writeFileSync(transcript, full)
+    cpSync(`${agents}.later`, agents, { recursive: true })
+    run(["build", DELTA_KEY])
+    assert.deepEqual(turnsOfPath("/tmp/delta/new.ts"), [1, 3])
+    assert.deepEqual(turnsOfPath("/tmp/delta/old.ts"), [2])
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("a .gitignore the conversation wrote never hides its other files from the store", () => {
+  const root = mkdtempSync(join(tmpdir(), "sidecar-ignore-"))
+  try {
+    const id = "eeeeeeee-1111-2222-3333-444444444444"
+    const dir = join(root, "projects", "-tmp-echo")
+    mkdirSync(dir, { recursive: true })
+    const write = (n: number, path: string, content: string): object[] => [
+      { type: "assistant", cwd: "/tmp/echo", timestamp: `2026-01-01T10:00:${10 + n * 2}.000Z`, message: { role: "assistant", content: [{ type: "tool_use", id: `w${n}`, name: "Write", input: { file_path: path, content } }] } },
+      { type: "user", cwd: "/tmp/echo", timestamp: `2026-01-01T10:00:${11 + n * 2}.000Z`, message: { role: "user", content: [{ type: "tool_result", tool_use_id: `w${n}`, content: "ok" }] }, toolUseResult: { type: "create", filePath: path, content, originalFile: null, structuredPatch: [] } },
+    ]
+    const lines = [
+      { type: "user", cwd: "/tmp/echo", sessionId: id, timestamp: "2026-01-01T10:00:00.000Z", message: { role: "user", content: "ignore everything, then add a file" } },
+      ...write(1, "/tmp/echo/.gitignore", "*\n"),
+      ...write(2, "/tmp/echo/src/a.ts", "export const a = 1\n"),
+    ]
+    writeFileSync(join(dir, `${id}.jsonl`), lines.map((one) => JSON.stringify(one)).join("\n") + "\n")
+    const out = execFileSync(process.execPath, ["--experimental-strip-types", BIN, "list", "eeeeeeee", "--path", "/tmp/echo/src/a.ts"], {
+      encoding: "utf8",
+      env: { ...process.env, CLAUDE_CONFIG_DIR: root },
+    })
+    assert.deepEqual(JSON.parse(out).files[0]?.versions.map((one: { turn: number }) => one.turn), [1])
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+  }
+})
+
 test("an unknown baseline inside a git tree is reconstructed from the last tracked commit", () => {
   const root = mkdtempSync(join(tmpdir(), "sidecar-git-baseline-"))
   const repo = join(root, "repo")
