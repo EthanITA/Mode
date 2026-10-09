@@ -89,8 +89,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   else a Chrome app window, else the default browser. `node tools/icons/render.ts` redraws the PNG
   icons from their SVGs.
 - **`bin/sidecar` opens, starts, stops, restarts and installs the sidecar, and `/sidecar` is that
-  CLI.** Bare `sidecar` opens it the way `/sidecar` always did: started when down, pointed at the
-  conversation, and a window only when no page is open. `status` says whether it is up. `stop` takes
+  CLI.** Bare `sidecar` opens it the way `/sidecar` always did: started when down and pointed at the
+  conversation, then a sidecar window already open in Chrome comes to the front, even one still
+  reconnecting after a restart, and a new window opens only when there is none. A page whose follow
+  stream a restart closed opens it again by itself. `status` says whether it is up. `stop` takes
   down a sidecar wherever it was started, a terminal's `pnpm dev` included, and leaves another app on
   the port alone. `install` makes it a launchd agent that starts at login. `/sidecar <args>` runs
   `sidecar <args>` in the session and shows what it printed.

@@ -25,8 +25,8 @@ const OPEN = "/usr/bin/open"
 
 const USAGE = `usage: sidecar [command]     /sidecar [command] in a Claude Code session runs the same
 
-  open [key]  the default: start it when down, point it at the conversation, and open the installed
-              app, else a Chrome app window, unless a sidecar page is already open and moved there.
+  open [key]  the default: start it when down, point it at the conversation, and bring an open
+              sidecar window to the front, else open the installed app, else a Chrome app window.
               The conversation is the key given, else the Claude Code session this runs in
   status      whether it is up, where, and whether it starts at login
   start       start it in the background and wait until it answers
@@ -249,9 +249,38 @@ async function listenersAfterPointing(key: string): Promise<number> {
   return listeners ?? 0
 }
 
+// Chrome lists its app windows too, so a sidecar already open is raised, even one still reconnecting after a restart.
+const RAISE = `on run argv
+  if application "Google Chrome" is not running then return "none"
+  tell application "Google Chrome"
+    repeat with w in windows
+      set i to 0
+      repeat with t in tabs of w
+        set i to i + 1
+        if URL of t starts with (item 1 of argv) then
+          set active tab index of w to i
+          set index of w to 1
+          activate
+          return "raised"
+        end if
+      end repeat
+    end repeat
+  end tell
+  return "none"
+end run`
+
+const raiseOpenWindow = (): boolean =>
+  spawnSync("osascript", ["-e", RAISE, `${ADDRESS}/`], { encoding: "utf8" }).stdout.trim() === "raised"
+
 async function open(key = process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8)): Promise<number> {
   if (!(await isSidecar()) && (await start()) !== 0) return 1
-  if (key && (await listenersAfterPointing(key))) {
+  const listeners = key ? await listenersAfterPointing(key) : 0
+  const where = key ? ` on conversation ${key}` : ""
+  if (raiseOpenWindow()) {
+    console.log(`brought the open sidecar to the front${where}`)
+    return 0
+  }
+  if (listeners) {
     console.log(`moved the open sidecar to conversation ${key}`)
     return 0
   }

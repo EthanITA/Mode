@@ -234,7 +234,7 @@ The sidecar, the Nuxt app at the root of this repo, has its own CLI, `bin/sideca
 
 ```sh
 sidecar             # same as open
-sidecar open [key]  # start it when down, point it at the conversation, open the app if no page is open
+sidecar open [key]  # start it when down, point it at the conversation, raise an open sidecar or open one
 sidecar status      # whether it is up, where, and whether it starts at login
 sidecar start       # in the background, waiting until it answers
 sidecar stop        # wherever it was started from, a terminal's pnpm dev included

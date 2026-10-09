@@ -29,17 +29,29 @@ export function useFollow(): Follow {
 
   // Otherwise the first read is a baseline, so a conversation opened by hand stays put until Claude Code points elsewhere.
   function listen({ isEager = false }: FollowOptions = {}): void {
-    const source = new EventSource("/api/follow/stream");
+    let source: EventSource | undefined;
+    let retry = 0;
     let isBaseline = !isEager;
-    source.addEventListener("follow", (event: MessageEvent<string>) => {
-      target.value = JSON.parse(event.data) as FollowTarget;
-      if (!isBaseline) go(target.value);
-      isBaseline = false;
-    });
+    const connect = (): void => {
+      source = new EventSource("/api/follow/stream");
+      source.addEventListener("follow", (event: MessageEvent<string>) => {
+        target.value = JSON.parse(event.data) as FollowTarget;
+        if (!isBaseline) go(target.value);
+        isBaseline = false;
+      });
+      // A restarting server can answer with its loading page, which closes an EventSource for good.
+      source.addEventListener("error", () => {
+        if (source?.readyState === EventSource.CLOSED) retry = window.setTimeout(connect, 2000);
+      });
+    };
+    connect();
     watch(pinned, (isPinned) => {
       if (!isPinned) go(target.value);
     });
-    onScopeDispose(() => source.close());
+    onScopeDispose(() => {
+      window.clearTimeout(retry);
+      source?.close();
+    });
   }
 
   return { listen, pinned, target };
