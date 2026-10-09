@@ -255,6 +255,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   Both come from `@cela/design` and go still under reduced motion.
 - **Toasts leave upward and the lane closes up behind them.** A toast used to vanish in one frame and
   the ones below it jumped. The lane stays mounted while empty, so the first toast is announced too.
+- **A saved note lands beside its line, and the notes column snaps open.** The column used to tween its
+  width, which re-wrapped the page and moved every mark on every frame.
 
 ### Removed
 

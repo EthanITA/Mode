@@ -341,7 +341,6 @@ onScopeDispose(() => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 0;
   position: relative;
-  transition: grid-template-columns var(--duration-base) var(--ease-out);
 }
 
 .stack[data-notes="true"] {
@@ -429,11 +428,5 @@ onScopeDispose(() => {
   position: absolute;
   transform: translate(8px, -50%);
   z-index: 28;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stack {
-    transition: none;
-  }
 }
 </style>

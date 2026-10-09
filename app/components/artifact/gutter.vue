@@ -87,17 +87,17 @@ watchEffect(() => emit("notes", pageCards.value.length + placedNotes.value.lengt
 </script>
 
 <template>
-  <div class="gutter" data-region="gutter-markers" :data-side="side">
+  <TransitionGroup tag="div" name="note" class="gutter" data-region="gutter-markers" :data-side="side">
     <div
       v-for="row in pageCards"
-      :key="row.thread.id"
+      :key="`thread:${row.thread.id}`"
       class="perch perch-note"
       :style="{ top: `${row.top}px` }"
     >
       <ArtifactNote :live="live" :slug="sc.slug.value ?? ''" :thread="row.thread" @reload="emit('reload')" />
     </div>
 
-    <div v-if="adrift" class="perch perch-foot">
+    <div v-if="adrift" key="adrift" class="perch perch-foot">
       <UiPopover :estimated-height="320" :placement="away" width="w-[380px]">
         <template #trigger="{ open }">
           <button
@@ -118,7 +118,7 @@ watchEffect(() => emit("notes", pageCards.value.length + placedNotes.value.lengt
 
     <div
       v-for="row in placedNotes"
-      :key="row.item.id"
+      :key="`tray:${row.item.id}`"
       class="perch perch-note"
       :style="{ top: `${row.top}px` }"
     >
@@ -129,8 +129,7 @@ watchEffect(() => emit("notes", pageCards.value.length + placedNotes.value.lengt
         @reload="emit('reload')"
       />
     </div>
-
-  </div>
+  </TransitionGroup>
 </template>
 
 <style scoped>
@@ -153,6 +152,29 @@ watchEffect(() => emit("notes", pageCards.value.length + placedNotes.value.lengt
 
 .perch-note {
   z-index: 4;
+}
+
+/* A saved note lands beside its line; perches are absolute, so a leaving one shifts nothing. */
+.note-enter-active {
+  transition:
+    opacity var(--duration-snappy) var(--ease-out),
+    translate var(--duration-snappy) var(--ease-out);
+}
+
+.note-enter-from {
+  opacity: 0;
+  translate: 0 8px;
+}
+
+.note-leave-active {
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    scale var(--duration-fast) var(--ease-out);
+}
+
+.note-leave-to {
+  opacity: 0;
+  scale: 0.96;
 }
 
 .loose {
