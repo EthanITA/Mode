@@ -25,12 +25,8 @@ function toneOf(entry: TreeEntry): string | undefined {
       @select="review.selected.value = $event"
     >
       <template #trailing="{ entry }">
-        <span class="turns mono-meta">
-          {{
-            entry.kind === "file"
-              ? (byPath.get(entry.path)?.turns ?? []).map((turn) => `T${turn}`).join(" ")
-              : plural([...byPath.keys()].filter((path) => path.startsWith(`${entry.path}/`)).length, "file")
-          }}
+        <span v-if="entry.kind !== 'file'" class="count mono-meta">
+          {{ plural([...byPath.keys()].filter((path) => path.startsWith(`${entry.path}/`)).length, "file") }}
         </span>
       </template>
     </FileTree>
@@ -38,7 +34,7 @@ function toneOf(entry: TreeEntry): string | undefined {
 </template>
 
 <style scoped>
-.turns {
+.count {
   color: var(--subtle);
   flex: none;
   text-transform: none;
