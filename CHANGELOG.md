@@ -58,12 +58,17 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **The sidecar listens to Claude Code.** Home no longer shows the desk: it says it is listening to a
   Claude Code session and jumps to the one Claude Code points it at, and every conversation page
   follows the next point. The `sidecar` mod points it: `/sidecar` in a conversation, which starts the
-  sidecar when it is down and opens it as a Chrome app window only when no page is listening, and
-  typing in a conversation's prompt. `POST /api/follow` takes the point and `/api/follow/stream`
-  carries it. While a page listens the sidecar also reads Terminal's front tab title once a second
-  and moves when that tab switches to another conversation, so a `/sidecar` point holds until you
-  switch. The head carries the listening pill and its pin where the link back to the desk was, and the
-  desk itself moved to `/desk`.
+  sidecar when it is down and opens it only when no page is listening, and typing in a conversation's
+  prompt. `POST /api/follow` takes the point, with an optional `face` to show there, and
+  `/api/follow/stream` carries it. While a page listens the sidecar also reads Terminal's front tab
+  title once a second and moves when that tab switches to another conversation, so a `/sidecar` point
+  holds until you switch. Following and the jump palette replace the page rather than push it, so Back
+  never walks through every conversation the sidecar followed. The head carries the listening pill and
+  its pin where the link back to the desk was, and the desk itself moved to `/desk`.
+- **The sidecar installs as an app.** A web app manifest, icons and a title bar colour that follows
+  the theme toggle make `http://localhost:3000` installable from Chrome as a standalone window with
+  its own Dock icon, and `/sidecar` launches that app when it is installed, else a Chrome app window,
+  else the default browser. `node tools/icons/render.ts` redraws the PNG icons from their SVGs.
 - **"you are dispatcher." takes a pinned default, and the dispatcher runs in `fast`.** A contract that
   sets `enter-over-pin` may take a slot that only holds a pin, judged on the prompt's opening sentence
   so a prompt that merely talks about it never switches, and a slot typed by hand stays out of reach.

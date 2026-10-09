@@ -55,7 +55,8 @@ function go(row?: JumpRow): void {
   if (!row) return;
   chrome.jump.close();
   sc.sessionKey.value = row.key;
-  navigateTo(`/c/${row.key}`);
+  // Switching conversations is not a step to come back from, so the sidecar keeps no trail of them.
+  void navigateTo(`/c/${row.key}`, { replace: true });
 }
 
 function onKey(event: KeyboardEvent): void {

@@ -33,9 +33,9 @@ export function followTarget(): FollowTarget {
   return target
 }
 
-export function pointAt({ key, source }: { key: string; source: Exclude<FollowSource, "none"> }): number {
+export function pointAt({ face, key, source }: { face?: string; key: string; source: Exclude<FollowSource, "none"> }): number {
   const entry = liveEntries().find((one) => keyOf(one.id) === key)
-  target = { key, name: entry?.name, source }
+  target = { face, key, name: entry?.name, source }
   for (const listener of listeners) listener(target)
   return listeners.size
 }

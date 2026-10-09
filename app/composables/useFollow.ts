@@ -14,12 +14,17 @@ export interface Follow {
 
 export function useFollow(): Follow {
   const sc = useSidecar();
+  const chrome = useChrome();
   const target = useState<FollowTarget>("rv:follow", () => ({ source: "none" }));
   const pinned = useState("rv:pinned", () => false);
 
   function go(next: FollowTarget): void {
-    if (pinned.value || !next.key || next.key === sc.sessionKey.value) return;
-    void navigateTo(`/c/${next.key}`);
+    if (pinned.value || !next.key) return;
+    const face = FACES.find((one) => one === next.face);
+    if (face) chrome.view.set(face);
+    if (next.key === sc.sessionKey.value) return;
+    // Following leaves no trail, so Back never walks through every conversation Claude Code pointed at.
+    void navigateTo(`/c/${next.key}`, { replace: true });
   }
 
   // Otherwise the first read is a baseline, so a conversation opened by hand stays put until Claude Code points elsewhere.

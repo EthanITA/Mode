@@ -36,6 +36,8 @@ export type ReviewActionReply =
 export type FollowSource = "claude" | "prompt" | "terminal" | "none"
 
 export interface FollowTarget {
+  /** The face to show there, as `/turn-diff` asks for Review; the client ignores one it does not know. */
+  face?: string
   key?: string
   name?: string
   source: FollowSource

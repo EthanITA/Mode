@@ -3,6 +3,28 @@ const chrome = useChrome();
 const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
 const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 
+// The installed app's title bar takes this colour, so it follows the theme toggle rather than the OS.
+const TITLE_BAR = { dark: "#111113", light: "#f9f8f5" } as const;
+const titleBar = ref<string>(TITLE_BAR.light);
+const readTheme = (): void => {
+  titleBar.value = document.documentElement.getAttribute("data-theme") === "dark" ? TITLE_BAR.dark : TITLE_BAR.light;
+};
+const themes = new MutationObserver(readTheme);
+onMounted(() => {
+  readTheme();
+  themes.observe(document.documentElement, { attributeFilter: ["data-theme"], attributes: true });
+});
+onBeforeUnmount(() => themes.disconnect());
+
+useHead({
+  link: [
+    { href: "/manifest.webmanifest", rel: "manifest" },
+    { href: "/icons/sidecar.svg", rel: "icon", type: "image/svg+xml" },
+    { href: "/icons/sidecar-192.png", rel: "apple-touch-icon" },
+  ],
+  meta: [{ content: titleBar, name: "theme-color" }],
+});
+
 const EDITABLE = "input, textarea, select, [contenteditable]:not([contenteditable='false'])";
 
 function typing(event: KeyboardEvent): boolean {
