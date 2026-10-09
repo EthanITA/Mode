@@ -40,11 +40,16 @@ function closePage(): void {
       <UiSegmented v-model="face" data-region="view-switcher" :options="faces" />
     </UiSurface>
 
-    <template v-if="onArtifact">
-      <ChromeCommentToggle shape="island" />
-      <ChromeThemeToggle shape="island" />
-      <ChromeAction data-region="artifact-close" :icon="X" shape="island" tip="Close the page" @click="closePage" />
-    </template>
+    <ChromeCommentToggle v-if="onArtifact" shape="island" />
+    <ChromeThemeToggle />
+    <ChromeAction
+      v-if="onArtifact"
+      data-region="artifact-close"
+      :icon="X"
+      shape="island"
+      tip="Close the page"
+      @click="closePage"
+    />
   </div>
 </template>
 

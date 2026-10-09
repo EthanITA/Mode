@@ -43,10 +43,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   conversation touched, solid for what its latest turn read or edited. Any page the artifact catalogue
   holds, every `.html` and `.md` in the artifacts folder included, opens in `<ArtifactReader>`, the
   reader the artifact route now shares, with comments and the tray working as they do there. Its
-  header carries Comment, a light and dark switch for that page alone, and Fullscreen, which grows the
-  same sheet over the whole face, its shadow deepening as it goes and the frame never reloading, with
-  Comment and the theme switch as islands and an X, or Esc, that shrinks it back. A page opened at its
-  own address carries the same islands, its X in place of the back arrow. A comment ring on a block
+  header carries Comment and Fullscreen, which grows the same sheet over the whole face, its shadow
+  deepening as it goes and the frame never reloading, with Comment as an island beside an X, or Esc,
+  that shrinks it back. A page opened at its own address carries the same islands, its X in place of the
+  back arrow. A comment ring on a block
   the pane has scrolled half away stops at the pane's edge. Every other file opens in an editable
   Monaco: ⌘S saves through
   `PUT /api/sessions/:key/files/content`, which refuses a save over text that changed on disk since it
@@ -210,11 +210,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   `chips.sh` finds the plugin in `installed_plugins.json` with node. A `statusline.sh` written by an
   older installer still calls jq, so re-run `./install.sh --force` if you remove jq. The test suite
   is `node --test "tests/**/*.test.ts"`.
-- **The theme switch and Comment moved off the faces and onto the artifact.** Both sit with the page,
-  as pills in its Files header and as islands when it is fullscreen or open on its own. The theme
-  switch still themes the whole sidecar, and the page inside the frame follows it. Comment, the theme
-  switch, Fullscreen and X are one `<ChromeAction>`, a pill in a bar or an island in the top row, so
-  each keeps one icon, one tooltip and one motion wherever it shows.
+- **The theme switch is one island in the top right of every route and face,** beside the other
+  islands, and no view carries its own copy. It themes the whole sidecar, and the page inside the
+  frame follows it. Comment sits with the page, as a pill in its Files header and as an island when it
+  is fullscreen or open on its own. Comment, the theme switch, Fullscreen and X are one
+  `<ChromeAction>`, a pill in a bar or an island in the top row, so each keeps one icon, one tooltip
+  and one motion wherever it shows.
 - **The board and the notes float over the faces,** which now run to the bottom of the window, the
   counter above Send notes is gone, every island is liquid glass, and the faces read Files, Review,
   History.

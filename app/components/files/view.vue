@@ -216,7 +216,6 @@ onBeforeUnmount(() => {
           <header ref="bar" class="bar">
             <span class="path">{{ homePath(selected) }}</span>
             <ChromeCommentToggle shape="pill" />
-            <ChromeThemeToggle shape="pill" />
             <ChromeAction
               data-region="artifact-fullscreen"
               :icon="Maximize2"
