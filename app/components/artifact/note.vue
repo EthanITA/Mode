@@ -79,6 +79,8 @@ async function onReply(text: string): Promise<void> {
       };
       tray.patch(item.id, { replies: [...(item.replies ?? []), next] });
     }
+    // The comment may have gone to Claude already, so the answer waits in the tray on its own.
+    tray.add({ kind: "reply", quote: quote.value, source: slug, text });
     const id = item?.thread || thread?.id;
     if (id) {
       const got = await $fetch<ArtifactReviewReply>(`/api/artifacts/${slug}/review`, {

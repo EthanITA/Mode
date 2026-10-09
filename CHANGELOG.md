@@ -246,7 +246,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 - **A comment already sent to Claude never rides the next send.** It used to stay in the tray after
   sending and go out again with every later note; now it is marked sent, keeps its pin on the page,
-  and leaves the count and the handover.
+  and leaves the count and the handover. Answering a comment's thread queues the answer on its own,
+  so Send notes comes up for it.
 - **Line notes from Review reach Claude with their file and lines.** The tray's handover only carried
   the quoted text before.
 - **An artifact fetch that resolves late no longer replaces the one picked after it.**
