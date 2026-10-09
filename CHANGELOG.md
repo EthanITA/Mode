@@ -7,7 +7,7 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
-## 0.16.0
+## 0.17.0
 
 ### Added
 
@@ -177,11 +177,6 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   and written only if absent, so the two writers cannot collide. The drag order is a webapp-only
   preference kept outside the task store, where the agent never reads it.
 
-- **`namespace-guard`, a fourth style guard on `Write|Edit`.** It reads the whole file after the
-  edit and flags what the domain-namespace rule bans: two or more exports sharing a prefix
-  (`googleLogin` beside `googleSignout`, which want to be `Google.login()`), and `export *`, which
-  turns a curated index into a firehose. Verb prefixes such as `format` and `create`, and the
-  `use` of a composable, are exempt because they name an action rather than a domain.
 - **`board-cap` bounds open USER work on the board.** It guards `TaskCreate` and `TaskUpdate`, denying
   past the cap and naming the alternative: fold the work in, or take the default and proceed.
 - **The chat panel parses an assistant turn's X/Y/Z read into its own panel**, tinted apart from the
@@ -205,11 +200,14 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
-- **jq is no longer needed, and Node 24 or newer is.** The installer edits `settings.json` through
-  `bin/_install.ts`, the generated `statusline.sh` pipes its JSON into `chips.sh`, which hands it to
-  `bin/mode chips --stdin`, and `chips.sh` finds the plugin in `installed_plugins.json` with node.
-  Re-run `./install.sh` to refresh `chips.sh`. A `statusline.sh` written by an older installer still
-  calls jq, so re-run with `--force` before removing jq. python3 is still needed for the hooks.
+- **Mode runs on Node alone.** python3 and jq are no longer needed, and Node 24 or newer is. Every
+  hook, `bin/mode`, `bin/artifact` and the create-artifact scripts are TypeScript run by node, and a
+  hook reads mode state in process instead of starting `bin/mode`, so the prompt hook went from about
+  330ms to about 35ms. The installer edits `settings.json` through `bin/_install.ts`, the generated
+  `statusline.sh` pipes its JSON into `chips.sh`, which hands it to `bin/mode chips --stdin`, and
+  `chips.sh` finds the plugin in `installed_plugins.json` with node. A `statusline.sh` written by an
+  older installer still calls jq, so re-run `./install.sh --force` if you remove jq. The test suite
+  is `node --test "tests/**/*.test.ts"`.
 - **The theme switch and Comment moved off the faces and onto the artifact.** Both sit with the page,
   as pills in its Files header and as islands when it is fullscreen or open on its own. The theme
   switch still themes the whole sidecar, and the page inside the frame follows it. Comment, the theme
@@ -221,7 +219,7 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **A delivery from the sidecar reads as what Marco wrote.** The sidecar marks what it sends
   `[[cc-sidecar]]` instead of `[[mode-relay v1]]`, and the `sidecar` mod takes it out of Claude Code's
   peer envelope before it lands, so the "Another Claude session sent a message" lines never reach
-  the conversation. `hooks/relay.py` still reads both markers, for a session running without the mod.
+  the conversation. `hooks/relay.ts` still reads both markers, for a session running without the mod.
 - **A note sends Claude a short quote.** The lines or block it is about travel cut to one line of 160
   characters, since Claude reads the file itself, and the composer shows only the first three lines
   of a long selection.
@@ -322,6 +320,16 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   A card with no saved spot on first load could still land close enough to overlap its neighbour once
   it grew past that guess; the unplaced ones now settle the same way "Tidy up" packs a selection, by
   their real measured height.
+
+## 0.16.0
+
+### Added
+
+- **`namespace-guard`, a fourth style guard on `Write|Edit`.** It reads the whole file after the
+  edit and flags what the domain-namespace rule bans: two or more exports sharing a prefix
+  (`googleLogin` beside `googleSignout`, which want to be `Google.login()`), and `export *`, which
+  turns a curated index into a firehose. Verb prefixes such as `format` and `create`, and the
+  `use` of a composable, are exempt because they name an action rather than a domain.
 
 ## 0.15.1
 
