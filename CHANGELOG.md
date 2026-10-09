@@ -267,6 +267,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **Buttons at the bottom of Review, Files and History clear the floating Board and Send pills.**
+  Undo, Redo, Reject all, Accept lines and Clear sat under the glass once the islands began floating
+  over the faces.
 - **A comment already sent to Claude never rides the next send.** It used to stay in the tray after
   sending and go out again with every later note; now it is marked sent, keeps its pin on the page,
   and leaves the count and the handover. Answering a comment's thread queues the answer on its own,

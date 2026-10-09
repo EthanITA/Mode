@@ -321,7 +321,7 @@ function rejectFile(event: MouseEvent): void {
 }
 
 .scroll[data-scroll="files"] {
-  padding: 6px 8px 16px;
+  padding: 6px 8px var(--float-clear);
 }
 
 /* The editor owns its scrolling, so this only gives it the pane's remaining height. */
@@ -348,7 +348,7 @@ function rejectFile(event: MouseEvent): void {
   display: flex;
   flex: none;
   gap: 6px;
-  padding: 8px 12px;
+  padding: 8px 12px calc(8px + var(--float-clear));
 }
 
 .all {

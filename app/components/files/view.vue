@@ -333,7 +333,7 @@ onBeforeUnmount(() => {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 6px 6px 16px;
+  padding: 6px 6px var(--float-clear);
 }
 
 .dot {
@@ -370,7 +370,7 @@ onBeforeUnmount(() => {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px 0 24px;
+  padding: 16px 0 var(--float-clear);
 }
 
 .empty {

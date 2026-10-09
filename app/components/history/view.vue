@@ -195,7 +195,7 @@ const restoreMessage = computed(() => {
   gap: 10px;
   min-height: 0;
   overflow-y: auto;
-  padding: 12px;
+  padding: 12px 12px var(--float-clear);
 }
 
 /* A column flex item shrinks by default, so long content squeezed every card instead of scrolling. */
@@ -205,7 +205,7 @@ const restoreMessage = computed(() => {
 
 .scroll[data-scroll="turns"] {
   gap: 2px;
-  padding: 6px 8px 16px;
+  padding: 6px 8px var(--float-clear);
 }
 
 .divider {

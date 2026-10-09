@@ -79,8 +79,10 @@ follow.listen();
 }
 
 /* Every face owns its own scrolling panes, so the stage clips instead of scrolling them.
-   The board and the notes float over the panes, so the faces run to the bottom gutter. */
+   The board and the notes float over the panes, so the faces run to the bottom gutter
+   and a pane's last row pads by --float-clear to stay clickable above them. */
 .stage {
+  --float-clear: calc(max(var(--dock-h, 0px), var(--island-row-h)) + var(--gutter));
   box-sizing: border-box;
   overflow: hidden;
   padding: var(--stage-top) var(--gutter) var(--gutter);
