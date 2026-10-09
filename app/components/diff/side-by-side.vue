@@ -1,10 +1,13 @@
 <script lang="ts" setup>
 import { ChevronsLeft, ChevronsRight } from "@lucide/vue";
-import type { ReviewRow } from "~/utils/review";
+import { useIntersectionObserver } from "@vueuse/core";
+import type * as MonacoApi from "monaco-editor";
+import { EditorNotes, type LineSpan, type NoteAt, type Notes } from "~/utils/monaco/notes";
+import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { ReviewFile } from "~~/shared/types/review";
 
 type Side = "old" | "new";
-type LineRow = ReviewRow & { kind: "change" | "same" };
+type HunkAt = { change: number; top: number };
 
 const {
   file,
@@ -12,6 +15,7 @@ const {
   isWrapped = true,
   isReadonly = false,
   isBusy = false,
+  isFill = false,
   picks = [],
 } = defineProps<{
   file: ReviewFile;
@@ -20,238 +24,331 @@ const {
   /** History only reads; Review also picks lines and takes whole hunks. */
   isReadonly?: boolean;
   isBusy?: boolean;
+  /** Fills a parent with a height of its own; otherwise the diff is as tall as its lines, up to --transcript-max-h. */
+  isFill?: boolean;
   picks?: string[];
 }>();
 
 const emit = defineEmits<{ "update:picks": [keys: string[]]; hunk: [change: number, isAccept: boolean] }>();
 
-const unfolded = ref<string[]>([]);
-watch(
-  () => file.path,
-  () => (unfolded.value = []),
+const LINE_HEIGHT = 18;
+const ESTIMATE_MAX = 480;
+
+const chrome = useChrome();
+const tray = useTray();
+const host = useTemplateRef<HTMLElement>("host");
+// A turn can touch dozens of files, so a card builds its editor only once it scrolls near the view.
+const isNear = ref(isFill);
+const contentHeight = ref(Math.min(Math.max(file.original.length, file.current.length) * LINE_HEIGHT + 8, ESTIMATE_MAX));
+const hunks = ref<HunkAt[]>([]);
+const seam = ref(0);
+
+let api: typeof MonacoApi | undefined;
+let diff: MonacoApi.editor.IStandaloneDiffEditor | undefined;
+let models: MonacoApi.editor.ITextModel[] = [];
+let pens: Notes[] = [];
+let picked: MonacoApi.editor.IEditorDecorationsCollection[] = [];
+let lastPicks = "";
+let modelSeq = 0;
+
+const shown = computed(() => homePath(file.path));
+// Every changed row once, with the key a pick names it by, whichever side it is read from.
+const changeRows = computed(() => Review.rows({ file, isCompact: false, unfolded: [] }).filter((row) => row.kind === "change"));
+const keyOf = computed(() => ({
+  new: new Map(changeRows.value.filter((row) => row.new >= 0).map((row) => [row.new + 1, row.key])),
+  old: new Map(changeRows.value.filter((row) => row.old >= 0).map((row) => [row.old + 1, row.key])),
+}));
+const notes = computed(() => tray.items.value.filter((item) => item.file === shown.value && !!item.path));
+
+function textOf(lines: readonly string[]): string {
+  return lines.join("\n");
+}
+
+function editorOf(side: Side): MonacoApi.editor.ICodeEditor | undefined {
+  return side === "old" ? diff?.getOriginalEditor() : diff?.getModifiedEditor();
+}
+
+// Selecting lines in either pane is the pick, so line numbers, drags and shift-clicks all work as in any editor.
+function pickFrom(side: Side): void {
+  const editor = editorOf(side);
+  if (isReadonly || !editor) return;
+  const keys = new Set<string>();
+  for (const selection of editor.getSelections() ?? []) {
+    if (selection.isEmpty()) continue;
+    const end = selection.endColumn === 1 && selection.endLineNumber > selection.startLineNumber ? selection.endLineNumber - 1 : selection.endLineNumber;
+    for (let line = selection.startLineNumber; line <= end; line++) {
+      const key = keyOf.value[side].get(line);
+      if (key) keys.add(key);
+    }
+  }
+  const next = [...keys];
+  const signature = [...next].sort().join();
+  if (signature === lastPicks) return;
+  lastPicks = signature;
+  emit("update:picks", next);
+}
+
+function paintPicks(): void {
+  if (!api) return;
+  const Range = api.Range;
+  const chosen = changeRows.value.filter((row) => picks.includes(row.key));
+  const lines = { new: chosen.filter((row) => row.new >= 0).map((row) => row.new + 1), old: chosen.filter((row) => row.old >= 0).map((row) => row.old + 1) };
+  (["old", "new"] as const).forEach((side, index) => {
+    picked[index]?.set(
+      lines[side].map((line) => ({
+        options: { className: "monaco-picked", isWholeLine: true, lineNumberClassName: "monaco-picked-number" },
+        range: new Range(line, 1, line, 1),
+      })),
+    );
+  });
+}
+
+// The two panes scroll together, so a hunk's top in whichever pane holds its lines is where its arrows sit.
+function placeHunks(): void {
+  const original = editorOf("old");
+  const modified = editorOf("new");
+  if (isReadonly || !original || !modified) return;
+  seam.value = original.getLayoutInfo().width;
+  hunks.value = file.changes.map((change, index) => {
+    const pane = change.newEnd > change.newStart ? modified : original;
+    const line = (change.newEnd > change.newStart ? change.newStart : change.oldStart) + 1;
+    return { change: index, top: pane.getTopForLineNumber(line) - pane.getScrollTop() };
+  });
+}
+
+function openNote(side: Side, { lines, quote, x, y }: NoteAt): void {
+  const span = EditorNotes.spanOf(lines);
+  const where = side === "old" ? `original ${span}` : span;
+  chrome.comment.open({
+    excerpt: quote,
+    file: shown.value,
+    kind: "line",
+    label: `${basename(file.path)}:${lines[0] === lines[1] ? lines[0] : lines.join("-")}`,
+    path: where,
+    quote,
+    tell: side === "old" ? `About the original ${span} of ${shown.value}:` : `About ${span} of ${shown.value}:`,
+    x,
+    y,
+  });
+}
+
+function paintNotes(): void {
+  (["old", "new"] as const).forEach((side, index) => {
+    const spans = notes.value.flatMap((item) => {
+      const isOriginal = item.path?.startsWith("original") ?? false;
+      const lines: LineSpan | undefined = EditorNotes.parse(item.path ?? "");
+      return lines && isOriginal === (side === "old") ? [{ lines, text: item.text }] : [];
+    });
+    pens[index]?.paint(spans);
+  });
+}
+
+function setModels(): void {
+  if (!api || !diff) return;
+  const [original, modified] = models;
+  if (original && modified) {
+    if (original.getValue() !== textOf(file.original)) original.setValue(textOf(file.original));
+    if (modified.getValue() !== textOf(file.current)) modified.setValue(textOf(file.current));
+    return;
+  }
+  // The URI's extension picks the language, and a sequence keeps two cards of one file apart.
+  const seq = ++modelSeq;
+  const uriOf = (side: string): MonacoApi.Uri =>
+    api!.Uri.from({ path: `/${side}-${seq}/${basename(file.path)}`, scheme: "inmemory" });
+  models = [
+    api.editor.createModel(textOf(file.original), Monaco.languageOf(file.path), uriOf("original")),
+    api.editor.createModel(textOf(file.current), Monaco.languageOf(file.path), uriOf("modified")),
+  ];
+  diff.setModel({ modified: models[1]!, original: models[0]! });
+}
+
+async function build(): Promise<void> {
+  api = await Monaco.load();
+  if (!host.value || diff) return;
+  diff = api.editor.createDiffEditor(host.value, {
+    automaticLayout: true,
+    diffWordWrap: isWrapped ? "on" : "off",
+    fixedOverflowWidgets: true,
+    fontFamily: getComputedStyle(document.documentElement).getPropertyValue("--mono").trim() || undefined,
+    fontSize: 12,
+    glyphMargin: true,
+    hideUnchangedRegions: { contextLineCount: 3, enabled: isCompact, minimumLineCount: 4, revealLineCount: 20 },
+    ignoreTrimWhitespace: false,
+    lineHeight: LINE_HEIGHT,
+    lineNumbersMinChars: 3,
+    minimap: { enabled: false },
+    originalEditable: false,
+    readOnly: true,
+    renderGutterMenu: false,
+    renderMarginRevertIcon: false,
+    renderOverviewRuler: false,
+    renderSideBySide: true,
+    // A card inside History's scrolling list hands the wheel back once its own lines run out.
+    scrollbar: { alwaysConsumeMouseWheel: isFill },
+    scrollBeyondLastLine: false,
+    theme: OneDarkVivid.name,
+    useInlineViewWhenSpaceIsLimited: false,
+    wordWrap: isWrapped ? "on" : "off",
+  });
+  setModels();
+  const sides = [diff.getOriginalEditor(), diff.getModifiedEditor()];
+  pens = sides.map((editor, index) =>
+    EditorNotes.attach({ api: api!, editor, onNote: (at) => openNote(index === 0 ? "old" : "new", at) }),
+  );
+  picked = sides.map((editor) => editor.createDecorationsCollection());
+  for (const [index, editor] of sides.entries()) {
+    editor.onDidChangeCursorSelection(() => pickFrom(index === 0 ? "old" : "new"));
+    editor.onDidScrollChange(placeHunks);
+    editor.onDidLayoutChange(placeHunks);
+    editor.onDidContentSizeChange(() => {
+      contentHeight.value = Math.max(...sides.map((one) => one.getContentHeight()));
+    });
+  }
+  diff.onDidUpdateDiff(() => {
+    contentHeight.value = Math.max(...sides.map((one) => one.getContentHeight()));
+    placeHunks();
+  });
+  paintPicks();
+  paintNotes();
+}
+
+useIntersectionObserver(
+  host,
+  ([entry]) => {
+    if (entry?.isIntersecting) isNear.value = true;
+  },
+  { rootMargin: "600px" },
 );
 
-const lang = computed(() => Syntax.languageOf(file.path));
-const original = useHighlightedRows(computed(() => file.original.map((text) => ({ text }))), lang);
-const current = useHighlightedRows(computed(() => file.current.map((text) => ({ text }))), lang);
-const rows = computed(() => Review.rows({ file, isCompact, unfolded: unfolded.value }));
-const shown = computed(() => homePath(file.path));
+onMounted(() => watch(isNear, (near) => near && void build(), { immediate: true }));
+watch(() => [file.original, file.current], setModels);
+watch(() => file.changes, placeHunks);
+watch(
+  () => [isCompact, isWrapped] as const,
+  ([compact, wrapped]) =>
+    diff?.updateOptions({
+      diffWordWrap: wrapped ? "on" : "off",
+      hideUnchangedRegions: { enabled: compact },
+      wordWrap: wrapped ? "on" : "off",
+    }),
+);
+watch(
+  () => picks,
+  (next) => {
+    lastPicks = [...next].sort().join();
+    paintPicks();
+  },
+);
+watch(notes, paintNotes);
 
-let anchor = "";
-
-function pick(key: string, event: MouseEvent): void {
-  if (event.shiftKey && anchor) {
-    const order = rows.value.filter((row) => row.kind === "change").map((row) => row.key);
-    const [from = 0, to = 0] = [order.indexOf(anchor), order.indexOf(key)].sort((a, b) => a - b);
-    emit("update:picks", [...new Set([...picks, ...order.slice(from, to + 1)])]);
-  } else emit("update:picks", picks.includes(key) ? picks.filter((one) => one !== key) : [...picks, key]);
-  anchor = key;
-}
-
-function kindOf(row: LineRow, side: Side): string {
-  if (row.kind === "same") return "same";
-  if (row[side] < 0) return "blank";
-  return side === "old" ? "remove" : "add";
-}
-
-function htmlOf(row: LineRow, side: Side): string {
-  return (side === "old" ? original.value[row.old] : current.value[row.new]) ?? "";
-}
-
-function textOf(row: LineRow, side: Side): string {
-  return (side === "old" ? file.original[row.old] : file.current[row.new]) ?? "";
-}
-
-function tellOf(row: LineRow, side: Side): string {
-  const at = row[side] + 1;
-  return side === "old" ? `About original line ${at} of ${shown.value}:` : `About line ${at} of ${shown.value}:`;
-}
-
-function isPicked(row: LineRow): boolean {
-  return row.kind === "change" && picks.includes(row.key);
-}
-
-function unfold(key: string): void {
-  unfolded.value = [...unfolded.value, key];
-}
+onBeforeUnmount(() => {
+  for (const pen of pens) pen.dispose();
+  diff?.dispose();
+  for (const model of models) model.dispose();
+});
 </script>
 
 <template>
-  <div class="sbs" data-region="diff-side-by-side" :data-wrap="isWrapped">
-    <template v-for="row in rows" :key="row.key">
-      <button v-if="row.kind === 'fold'" v-press class="fold focusable" type="button" @click="unfold(row.key)">
-        {{ plural(row.count, "unchanged line") }}
-      </button>
-
-      <template v-else>
-        <template v-for="side in (['old', 'new'] as const)" :key="side">
-          <button
-            v-if="!isReadonly && row.kind === 'change' && row[side] >= 0"
-            class="ln focusable"
-            type="button"
-            :data-kind="kindOf(row, side)"
-            :data-picked="isPicked(row)"
-            :aria-label="`Pick line ${row[side] + 1}`"
-            @click="pick(row.key, $event)"
-          >
-            {{ row[side] + 1 }}
-          </button>
-          <span v-else class="ln" :data-kind="kindOf(row, side)" :data-picked="isPicked(row)">
-            {{ row[side] >= 0 ? row[side] + 1 : "" }}
-          </span>
-          <div v-if="row[side] < 0" class="code" data-kind="blank" :data-picked="isPicked(row)" />
-          <div
-            v-else
-            class="code"
-            :data-kind="kindOf(row, side)"
-            :data-picked="isPicked(row)"
-            data-cmt="line"
-            :data-cmt-label="`${basename(file.path)}:${row[side] + 1}`"
-            :data-cmt-tell="tellOf(row, side)"
-            :data-cmt-excerpt="textOf(row, side)"
-            v-html="htmlOf(row, side)"
-          />
-          <span v-if="side === 'old'" class="mid">
-            <template v-if="!isReadonly && row.kind === 'change' && row.isFirst">
-              <button
-                class="hunk focusable"
-                type="button"
-                title="Reject the hunk: copy the original over it"
-                :disabled="isBusy"
-                @click="emit('hunk', row.change, false)"
-              >
-                <UiIcon :icon="ChevronsRight" size="sm" />
-              </button>
-              <button
-                class="hunk focusable"
-                type="button"
-                title="Accept the hunk into the original"
-                :disabled="isBusy"
-                @click="emit('hunk', row.change, true)"
-              >
-                <UiIcon :icon="ChevronsLeft" size="sm" />
-              </button>
-            </template>
-          </span>
-        </template>
-      </template>
-    </template>
+  <div
+    class="sbs"
+    data-region="diff-side-by-side"
+    :data-fill="isFill"
+    :style="[OneDarkVivid.cssVars, isFill ? {} : { height: `${contentHeight}px` }]"
+  >
+    <div ref="host" class="host" />
+    <div v-if="!isReadonly && hunks.length" class="hunks" :style="{ left: `${seam}px` }">
+      <div
+        v-for="hunk in hunks"
+        v-show="hunk.top > -LINE_HEIGHT && (isFill || hunk.top < contentHeight)"
+        :key="hunk.change"
+        class="hunk"
+        :style="{ top: `${hunk.top}px` }"
+      >
+        <button
+          class="arrow focusable"
+          type="button"
+          title="Reject the hunk: copy the original over it"
+          :disabled="isBusy"
+          @click="emit('hunk', hunk.change, false)"
+        >
+          <UiIcon :icon="ChevronsRight" size="xs" />
+        </button>
+        <button
+          class="arrow focusable"
+          type="button"
+          title="Accept the hunk into the original"
+          :disabled="isBusy"
+          @click="emit('hunk', hunk.change, true)"
+        >
+          <UiIcon :icon="ChevronsLeft" size="xs" />
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-/* Rows contribute their cells to one grid: a wrapped line grows its whole row, and no-wrap shares one scroll. */
 .sbs {
-  align-content: start;
-  display: grid;
-  font-family: var(--mono);
-  font-size: 12px;
-  grid-template-columns: 44px minmax(0, 1fr) 36px 44px minmax(0, 1fr);
-  line-height: 1.7;
+  background: var(--ed-bg);
+  max-height: var(--transcript-max-h);
+  overflow: hidden;
+  position: relative;
 }
 
-.sbs[data-wrap="false"] {
-  grid-template-columns: 44px max-content 36px 44px max-content;
+.sbs[data-fill="true"] {
+  height: 100%;
+  max-height: none;
 }
 
-.ln {
-  background: none;
-  border: 0;
-  color: var(--subtle);
-  font: inherit;
-  font-size: 11px;
-  padding: 0 8px;
-  text-align: right;
-  user-select: none;
+.host {
+  height: 100%;
+  width: 100%;
 }
 
-button.ln {
-  cursor: pointer;
-}
-
-button.ln:hover {
-  color: var(--primary-deep);
-  text-decoration: underline;
-}
-
-.code {
-  min-width: 0;
-  padding: 0 10px;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.sbs[data-wrap="false"] .code {
-  white-space: pre;
-  word-break: normal;
-}
-
-[data-kind="remove"] {
-  background: var(--error-soft);
-}
-
-[data-kind="add"] {
-  background: var(--success-soft);
-}
-
-[data-kind="blank"] {
-  background: repeating-linear-gradient(135deg, var(--sunken) 0 6px, transparent 6px 12px);
-}
-
-[data-picked="true"] {
-  box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--primary) 16%, transparent);
-}
-
-.ln[data-picked="true"] {
-  color: var(--primary-deep);
-  font-weight: 700;
-}
-
-.mid {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-top: 2px;
+/* Pinned to the seam between the panes, over the original's right edge where its scrollbar would be. */
+.hunks {
+  inset: 0 auto 0 0;
+  pointer-events: none;
+  position: absolute;
+  width: 0;
 }
 
 .hunk {
+  background: var(--ed-bar);
+  border: 1px solid var(--ed-button);
+  border-radius: 999px;
+  display: flex;
+  gap: 1px;
+  padding: 1px;
+  pointer-events: auto;
+  position: absolute;
+  right: 4px;
+  z-index: 5;
+}
+
+.arrow {
   align-items: center;
   background: none;
   border: 0;
-  border-radius: 6px;
-  color: var(--muted);
+  border-radius: 999px;
+  color: var(--ed-muted);
   cursor: pointer;
   display: grid;
-  height: 20px;
+  height: 16px;
   justify-items: center;
   padding: 0;
-  width: 26px;
+  width: 20px;
 }
 
-.hunk:hover:not(:disabled) {
-  background: var(--primary-soft);
-  color: var(--primary-deep);
+@media (hover: hover) and (pointer: fine) {
+  .arrow:hover:not(:disabled) {
+    background: var(--ed-button);
+    color: var(--ed-ink);
+  }
 }
 
-.hunk:disabled {
+.arrow:disabled {
   cursor: progress;
   opacity: 0.5;
-}
-
-.fold {
-  background: var(--sunken);
-  border: 0;
-  border-block: 1px dashed var(--border);
-  color: var(--muted);
-  cursor: pointer;
-  font-family: var(--sans);
-  font-size: 11.5px;
-  grid-column: 1 / -1;
-  padding: 3px;
-}
-
-.fold:hover {
-  color: var(--primary-deep);
 }
 </style>

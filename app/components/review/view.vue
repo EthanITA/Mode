@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
+import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 
 const SIDE = 300;
 
@@ -138,16 +139,16 @@ function comment(event: MouseEvent, scope: "file" | "lines"): void {
           This conversation isn't running, so nothing here can be applied. Resume it to act on the review.
         </p>
 
-        <div class="heads mono-meta">
+        <div class="heads mono-meta" :style="OneDarkVivid.cssVars">
           <span>{{ file.isNew ? "Did not exist" : "Original, as last approved" }}</span>
-          <span />
           <span>{{ file.isDeleted ? "Deleted on disk" : "Now on disk" }}</span>
         </div>
 
-        <div class="scroll" data-scroll="diff">
+        <div class="diff">
           <DiffSideBySide
             :key="file.path"
             :file="file"
+            is-fill
             :is-compact="review.isCompact.value"
             :is-wrapped="review.isWrapped.value"
             :is-busy="!isLive || review.busy.value"
@@ -265,13 +266,19 @@ function comment(event: MouseEvent, scope: "file" | "lines"): void {
   padding: 6px 8px 16px;
 }
 
+/* The editor owns its scrolling, so this only gives it the pane's remaining height. */
+.diff {
+  flex: 1;
+  min-height: 0;
+}
+
 .heads {
-  background: var(--sunken);
-  border-bottom: 1px solid var(--border);
-  color: var(--subtle);
+  background: var(--ed-bar);
+  border-bottom: 1px solid var(--ed-border);
+  color: var(--ed-muted);
   display: grid;
   flex: none;
-  grid-template-columns: minmax(0, 1fr) 36px minmax(0, 1fr);
+  grid-template-columns: 1fr 1fr;
   padding: 5px 0 5px 54px;
   text-transform: none;
 }

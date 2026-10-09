@@ -30,6 +30,14 @@ const hex = (color: string): string => color.slice(1);
 const theme: MonacoApi.editor.IStandaloneThemeData = {
   base: "vs-dark",
   colors: {
+    // One Dark Pro sets only inserted text, so the rest of the diff takes its vivid green and coral.
+    "diffEditor.diagonalFill": "#3b404880",
+    "diffEditor.insertedLineBackground": "#89ca781a",
+    "diffEditor.insertedTextBackground": "#89ca7840",
+    "diffEditor.removedLineBackground": "#ef596f1a",
+    "diffEditor.removedTextBackground": "#ef596f40",
+    "diffEditor.unchangedRegionBackground": CHROME.bar,
+    "diffEditor.unchangedRegionForeground": VIVID.lightDark,
     "editor.background": CHROME.background,
     "editor.findMatchBackground": "#d19a6644",
     "editor.foreground": VIVID.lightWhite,
@@ -87,4 +95,18 @@ const theme: MonacoApi.editor.IStandaloneThemeData = {
   ],
 };
 
-export const OneDarkVivid = { CHROME, VIVID, name: "one-dark-vivid", theme };
+// Bound on whatever wraps an editor, so its chrome, gutter plus and note tint take the same palette.
+const cssVars = {
+  "--ed-accent": VIVID.malibu,
+  "--ed-add": "#89ca7826",
+  "--ed-bar": CHROME.bar,
+  "--ed-bg": CHROME.background,
+  "--ed-border": CHROME.border,
+  "--ed-button": CHROME.button,
+  "--ed-ink": VIVID.lightWhite,
+  "--ed-muted": VIVID.lightDark,
+  "--ed-remove": "#ef596f26",
+  "--ed-warn": VIVID.whiskey,
+} as const;
+
+export const OneDarkVivid = { CHROME, VIVID, cssVars, name: "one-dark-vivid", theme };

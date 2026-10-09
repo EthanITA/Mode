@@ -181,3 +181,45 @@ body {
 .shj-syn-err, .shj-syn-deleted {
   color: var(--tint-rose);
 }
+
+/* Monaco draws its gutter outside any component's scope; the --ed-* palette comes from OneDarkVivid.cssVars. */
+.monaco-note-add,
+.monaco-noted-glyph {
+  cursor: pointer;
+}
+
+.monaco-note-add::before {
+  background: var(--ed-accent);
+  border-radius: 4px;
+  color: var(--ed-bg);
+  content: "+";
+  display: grid;
+  font: 700 12px/1 var(--sans);
+  height: 16px;
+  margin: 1px 0 0 2px;
+  place-items: center;
+  width: 16px;
+}
+
+.monaco-noted {
+  background: color-mix(in oklch, var(--ed-accent) 12%, transparent);
+}
+
+.monaco-noted-glyph::before {
+  background: var(--ed-accent);
+  border-radius: 999px;
+  content: "";
+  display: block;
+  height: 7px;
+  margin: 6px 0 0 6px;
+  width: 7px;
+}
+
+.monaco-picked {
+  background: color-mix(in oklch, var(--ed-accent) 22%, transparent);
+}
+
+.monaco-picked-number {
+  color: var(--ed-accent) !important;
+  font-weight: 700;
+}

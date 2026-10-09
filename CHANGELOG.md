@@ -21,11 +21,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   defined, and `templates/showpiece.html` drops its own reveal, count-up and toggle for it.
 - **A Review face, side by side, for what Claude changed since your last approval.** It reads the
   ledger the `turn-diff` mod keeps in `~/.claude/turn-diff/<session>/`: the original on the left, the
-  disk on the right, highlighted and wrapped in full. The files sit in a folder tree like JetBrains'
-  commit view, coloured by status, with single-folder chains merged. Pick lines and accept or reject them, take a
-  whole hunk with the arrows between the sides, or approve and reject files. Each press is relayed into
-  the session, where the mod applies it and tells Claude about a reject, so the mod stays the only
-  writer. Comments go to the tray. `/turn-diff` opens it at `/c/<key>?face=review`.
+  disk on the right, in Monaco's diff editor with the One Dark theme the Files editor uses, Compact
+  hiding unchanged regions and Wrap wrapping both sides. The files sit in a folder tree like JetBrains'
+  commit view, coloured by status, with single-folder chains merged. Select lines in either pane to
+  pick them and accept or reject them, take a whole hunk with the arrows on the seam between the sides,
+  or approve and reject files. Each press is relayed into the session, where the mod applies it and
+  tells Claude about a reject, so the mod stays the only writer. Comments go to the tray, and the plus
+  in either gutter notes a line the way it does in Files. `/turn-diff` opens it at `/c/<key>?face=review`.
 - **The chat island is hidden; Claude Code is the chat.** The prompt, the transcript and the mode and
   style pickers no longer show in a conversation or on an artifact page. Notes left on a page or a line
   still collect in the tray, which shows bottom right with one button that sends them to Claude.
@@ -50,8 +52,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   a width kept from a wider window never squeezes the other pane.
 - **History diffs between turns, side by side.** Pick a turn to see what it did, shift-click another
   to see what the turns between did together, or read through to the newest version. Each file draws
-  in `<DiffSideBySide>`, the same component Review uses, read-only here, from a `pair` the version
-  store hands over whole (`GET /api/sessions/:key/versions/pair`).
+  in `<DiffSideBySide>`, the same Monaco diff Review uses, read-only here, as tall as its lines up to a
+  cap and built only once its card scrolls near, from a `pair` the version store hands over whole
+  (`GET /api/sessions/:key/versions/pair`).
 - **One file tree for every face.** `<FileTree>` draws any `TreeSource`: `useFolderTree` lists a folder
   a directory at a time as it opens, with git deciding what is ignored, and `usePathsTree` lays out a
   fixed set of files with single-folder chains merged. Files uses the first, Review the second.

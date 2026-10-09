@@ -9,20 +9,9 @@ const unsaved = new Set<string>();
 <script lang="ts" setup>
 import { MessageSquarePlus } from "@lucide/vue";
 import type * as MonacoApi from "monaco-editor";
+import { EditorNotes, type NoteAt, type Notes } from "~/utils/monaco/notes";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { FileContent, FileSave, FileUnshown } from "~~/shared/types/files";
-
-// Code reads as code on One Dark whatever the sidecar's theme, so the chrome around it takes the same palette.
-const PALETTE = {
-  "--ed-accent": OneDarkVivid.VIVID.malibu,
-  "--ed-bar": OneDarkVivid.CHROME.bar,
-  "--ed-bg": OneDarkVivid.CHROME.background,
-  "--ed-border": OneDarkVivid.CHROME.border,
-  "--ed-button": OneDarkVivid.CHROME.button,
-  "--ed-ink": OneDarkVivid.VIVID.lightWhite,
-  "--ed-muted": OneDarkVivid.VIVID.lightDark,
-  "--ed-warn": OneDarkVivid.VIVID.whiskey,
-};
 
 const { conversation, path, turn } = defineProps<{ conversation: string; path: string; turn?: number }>();
 
@@ -48,21 +37,11 @@ const isSaving = ref(false);
 
 let editor: MonacoApi.editor.IStandaloneCodeEditor | undefined;
 let api: typeof MonacoApi | undefined;
-let hovered: MonacoApi.editor.IEditorDecorationsCollection | undefined;
-let noted: MonacoApi.editor.IEditorDecorationsCollection | undefined;
+let pen: Notes | undefined;
 let ticket = 0;
 
 const file = computed(() => homePath(path));
-const notes = computed(() => tray.items.value.filter((item) => item.file === file.value && !!item.path));
-
-function spanOf(start: number, end: number): string {
-  return start === end ? `line ${start}` : `lines ${start}-${end}`;
-}
-
-function linesOf(span: string): [number, number] | undefined {
-  const [, start, end] = /(\d+)(?:-(\d+))?/.exec(span) ?? [];
-  return start ? [Number(start), Number(end ?? start)] : undefined;
-}
+const noted = computed(() => tray.items.value.filter((item) => item.file === file.value && !!item.path));
 
 function markDirty(): void {
   const model = editor?.getModel();
@@ -140,57 +119,26 @@ async function discard(): Promise<void> {
   await pull();
 }
 
-function linesToNote(line?: number): [number, number] {
-  const selection = editor?.getSelection();
-  const start = selection?.startLineNumber ?? 1;
-  const end = selection?.endLineNumber ?? start;
-  if (selection && !selection.isEmpty() && (!line || (line >= start && line <= end))) {
-    // A selection that ends at the start of a line does not take that line.
-    return [start, selection.endColumn === 1 && end > start ? end - 1 : end];
-  }
-  const at = line ?? selection?.positionLineNumber ?? 1;
-  return [at, at];
-}
-
-function note(line?: number): void {
-  const model = editor?.getModel();
-  const box = host.value?.getBoundingClientRect();
-  if (!editor || !model || !box) return;
-  const [start, end] = linesToNote(line);
-  const quote = model.getValueInRange({ endColumn: model.getLineMaxColumn(end), endLineNumber: end, startColumn: 1, startLineNumber: start });
-  const at = editor.getScrolledVisiblePosition({ column: 1, lineNumber: end + 1 });
-  const span = spanOf(start, end);
+function openNote({ lines, quote, x, y }: NoteAt): void {
+  const span = EditorNotes.spanOf(lines);
   chrome.comment.open({
     excerpt: quote,
     file: file.value,
     kind: "line",
-    label: `${basename(path)}:${start === end ? start : `${start}-${end}`}`,
+    label: `${basename(path)}:${lines[0] === lines[1] ? lines[0] : lines.join("-")}`,
     path: span,
     quote,
     tell: `About ${span} of ${file.value}:`,
-    x: Math.max(12, Math.min(box.left + (at?.left ?? 0), window.innerWidth - 432)),
-    y: Math.max(12, Math.min(box.top + (at?.top ?? 0) + 6, window.innerHeight - 312)),
+    x,
+    y,
   });
 }
 
 function paintNotes(): void {
-  if (!noted || !api) return;
-  const Range = api.Range;
-  noted.set(
-    notes.value.flatMap((item) => {
-      const lines = linesOf(item.path ?? "");
-      if (!lines) return [];
-      return [
-        {
-          options: {
-            className: "files-noted",
-            glyphMarginClassName: "files-noted-glyph",
-            glyphMarginHoverMessage: { value: item.text },
-            isWholeLine: true,
-          },
-          range: new Range(lines[0], 1, lines[1], 1),
-        },
-      ];
+  pen?.paint(
+    noted.value.flatMap((item) => {
+      const lines = EditorNotes.parse(item.path ?? "");
+      return lines ? [{ lines, text: item.text }] : [];
     }),
   );
 }
@@ -202,8 +150,6 @@ function onUnload(event: BeforeUnloadEvent): void {
 onMounted(async () => {
   api = await Monaco.load();
   if (!host.value) return;
-  const Range = api.Range;
-  const Target = api.editor.MouseTargetType;
   editor = api.editor.create(host.value, {
     automaticLayout: true,
     fixedOverflowWidgets: true,
@@ -216,28 +162,9 @@ onMounted(async () => {
     theme: OneDarkVivid.name,
     wordWrap: "on",
   });
-  hovered = editor.createDecorationsCollection();
-  noted = editor.createDecorationsCollection();
+  pen = EditorNotes.attach({ api, editor, onNote: openNote });
   editor.addCommand(api.KeyMod.CtrlCmd | api.KeyCode.KeyS, () => void save());
-  editor.addAction({
-    contextMenuGroupId: "navigation",
-    contextMenuOrder: 0,
-    id: "sidecar.note",
-    label: "Note for Claude",
-    run: () => note(),
-  });
   editor.onDidChangeModelContent(markDirty);
-  // A plus in the glyph margin follows the pointer, so a note is one click from any line.
-  editor.onMouseMove((event) => {
-    const line = event.target.position?.lineNumber;
-    hovered?.set(line ? [{ options: { glyphMarginClassName: "files-note-add" }, range: new Range(line, 1, line, 1) }] : []);
-  });
-  editor.onMouseLeave(() => hovered?.clear());
-  editor.onMouseDown((event) => {
-    if (event.target.type !== Target.GUTTER_GLYPH_MARGIN) return;
-    event.event.preventDefault();
-    note(event.target.position?.lineNumber);
-  });
   await pull();
 });
 
@@ -257,10 +184,11 @@ watch(
   () => void pull(),
 );
 
-watch(notes, paintNotes);
+watch(noted, paintNotes);
 
 onBeforeUnmount(() => {
   window.removeEventListener("beforeunload", onUnload);
+  pen?.dispose();
   const model = editor?.getModel();
   if (model && !unsaved.has(model.uri.fsPath)) model.dispose();
   editor?.dispose();
@@ -268,7 +196,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="editor" data-region="files-editor" :style="PALETTE">
+  <div class="editor" data-region="files-editor" :style="OneDarkVivid.cssVars">
     <header class="bar">
       <span class="path">{{ file }}</span>
       <span v-if="isStale" class="state warn mono-meta" title="A turn changed this file while you were editing">
@@ -280,7 +208,7 @@ onBeforeUnmount(() => {
         class="ghost focusable"
         type="button"
         title="Note the selected lines for Claude, or click the plus beside any line"
-        @click="note()"
+        @click="pen?.note()"
       >
         <UiIcon :icon="MessageSquarePlus" size="xs" />
         Note
@@ -410,40 +338,5 @@ onBeforeUnmount(() => {
   margin: 0;
   padding: 16px;
   place-items: center;
-}
-</style>
-
-<style>
-/* Monaco draws its gutter outside this component's scope, so these classes are global and prefixed. */
-.files-note-add,
-.files-noted-glyph {
-  cursor: pointer;
-}
-
-.files-note-add::before {
-  background: var(--ed-accent);
-  border-radius: 4px;
-  color: var(--ed-bg);
-  content: "+";
-  display: grid;
-  font: 700 12px/1 var(--sans);
-  height: 16px;
-  margin: 1px 0 0 2px;
-  place-items: center;
-  width: 16px;
-}
-
-.files-noted {
-  background: color-mix(in oklch, var(--ed-accent) 12%, transparent);
-}
-
-.files-noted-glyph::before {
-  background: var(--ed-accent);
-  border-radius: 999px;
-  content: "";
-  display: block;
-  height: 7px;
-  margin: 6px 0 0 6px;
-  width: 7px;
 }
 </style>

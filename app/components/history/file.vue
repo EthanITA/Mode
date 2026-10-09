@@ -146,11 +146,9 @@ const tell = computed(() => {
   opacity: 0.5;
 }
 
+/* The diff caps its own height and scrolls inside, so this only frames it. */
 .pair {
-  max-height: var(--transcript-max-h);
-  overflow: auto;
-  padding: 4px 0;
-  scrollbar-width: thin;
+  border-bottom: 1px solid var(--border);
 }
 
 .rows {
