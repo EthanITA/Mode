@@ -61,8 +61,8 @@ useResizeObserver(boardEl, ([entry]) => {
       </div>
 
       <div ref="dockEl" class="foot-dock" data-region="dock-corner">
-        <p v-if="sc.failure.value" class="failure" role="alert">
-          The sidecar server did not answer: {{ sc.failure.value }}
+        <p v-if="sc.failure.value" class="failure" role="alert" :title="sc.failure.value">
+          Can't reach the sidecar server, retrying every few seconds.
         </p>
 
         <slot name="dock" />

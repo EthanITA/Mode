@@ -83,10 +83,20 @@ export function loadSidecar(): void {
     }
   }
 
+  // After a failure the catalogue may never have loaded, so recovery pulls everything again.
+  async function poll(): Promise<void> {
+    if (sc.failure.value) return pullOnce();
+    try {
+      await pullSessions();
+    } catch (error) {
+      sc.failure.value = error instanceof Error ? error.message : String(error);
+    }
+  }
+
   onMounted(() => {
     void pullOnce();
     // A sidecar to running conversations is wrong the moment it stops looking.
-    const timer = window.setInterval(() => void pullSessions().catch(() => undefined), REFRESH_MS);
+    const timer = window.setInterval(() => void poll(), REFRESH_MS);
     onScopeDispose(() => window.clearInterval(timer));
   });
 
