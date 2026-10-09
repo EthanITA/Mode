@@ -229,6 +229,23 @@ an MR or a publish beyond it waits for the row or for `--ship` on the ask's deli
 `jev-model` swaps the judge it asks, `typesafe/jev-1.13` when absent. Without a key it stays
 silent and the dispatcher decides alone.
 
+The sidecar, the Nuxt app at the root of this repo, has its own CLI, `bin/sidecar`:
+
+```sh
+sidecar             # whether it is up, where, and whether it starts at login
+sidecar start       # in the background, waiting until it answers
+sidecar stop        # wherever it was started from, a terminal's pnpm dev included
+sidecar restart
+sidecar open        # the installed app, else a Chrome app window
+sidecar install     # start it now and at every login, through launchd
+sidecar uninstall
+```
+
+It serves `http://sidecar.localhost:4747` unless `SIDECAR_URL` says otherwise and logs to
+`~/.claude/mode/sidecar.log`. Stop only signals a server that answers as the sidecar, so another app
+on the port is left alone. `install` writes `~/Library/LaunchAgents/local.mode.sidecar.plist` with
+the node and `PATH` of the shell that ran it, so run it again after switching node versions.
+
 ---
 
 ## Pinning a pair to a directory
