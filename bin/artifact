@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resolve, open and stamp the artifacts in the artifacts directory.
+"""Scaffold, resolve, open and stamp the artifacts in the artifacts directory.
 
 The directory resolves from NOTES_ARTIFACTS, then the `artifacts` key in
 ~/.claude/mode/config.json, then ~/artifacts. `artifact ds` resolves design
@@ -41,6 +41,10 @@ FENCE_RE = re.compile(r"^(```|~~~).*?^\1", re.S | re.M)
 H1_RE = re.compile(r"^#[ \t]+(.+?)[ \t#]*$", re.M)
 FRONTMATTER_RE = re.compile(r"\A---\n.*?\n---\n", re.S)
 FIELDS = ("slug", "title", "url", "target", "ds", "updated")
+KIT_RE = re.compile(r"<!-- cx:start -->.*?<!-- cx:end -->\n?", re.S)
+FONT_LINK_RE = re.compile(r'<link rel="stylesheet" href="https://fonts\.googleapis\.com/[^"]+">')
+SLUG_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
+TEMPLATES = ("interactive", "showpiece")
 
 
 def session_file(sid: str | None = None) -> Path | None:
@@ -163,10 +167,13 @@ def resolve(token: str) -> Path:
     die(f"no artifact matching '{token}'. Try: artifact list")
 
 
+def skill_dir() -> Path:
+    return _review.plugin_root() / "skills" / "create-artifact"
+
+
 def ds_dirs() -> list[Path]:
     """Shipped first, the user's own second, mirroring the plugin's contract folders."""
-    return [_review.plugin_root() / "skills" / "create-artifact" / "design-systems",
-            _review.config_home() / "design-systems"]
+    return [skill_dir() / "design-systems", _review.config_home() / "design-systems"]
 
 
 def ds_packs() -> dict[str, Path]:
@@ -250,17 +257,79 @@ def cmd_open(args):
     subprocess.run([opener, str(target)], check=False)
 
 
+def stylesheets(key: str, pack: Path) -> list[Path]:
+    shared = [skill_dir() / "assets" / "doc-system.css", skill_dir() / "assets" / "themes.css"]
+    own = pack.with_suffix(".css")
+    if pack.parent == ds_dirs()[0] or not own.is_file():
+        return shared
+    # A pack that keys on data-ds layers over the shared system; one that does not is the whole system.
+    return shared + [own] if f'[data-ds="{key}"]' in own.read_text(errors="replace") else [own]
+
+
+def install_kit(path: Path) -> str:
+    kit = (skill_dir() / "assets" / "kit.html").read_text()
+    text = path.read_text()
+    if KIT_RE.search(text):
+        path.write_text(KIT_RE.sub(lambda _: kit, text, count=1))
+        return "refreshed"
+    if "</head>" not in text:
+        die(f"{path.name} has no </head> to anchor the kit to")
+    # Before </head>, so the layout CSS is in place for the first paint.
+    path.write_text(text.replace("</head>", kit + "</head>", 1))
+    return "added"
+
+
+def cmd_kit(args):
+    path = resolve(args.slug)
+    if path.suffix == ".md":
+        die(f"{path.name} is rendered by the sidecar, so it has no page to carry the kit", 2)
+    print(f"kit {install_kit(path)} in {path.name}")
+    record(entry_of(path))
+
+
+def cmd_new(args):
+    if not SLUG_RE.fullmatch(args.slug):
+        die(f"'{args.slug}' is not a slug: lowercase words and digits joined by dashes", 2)
+    path = ART_DIR / f"{args.slug}.html"
+    if path.exists():
+        die(f"{path} already exists. Edit it, or pick another slug", 2)
+    pack = ds_packs().get(args.ds)
+    if not pack:
+        die(f"no design system named '{args.ds}'. Installed:\n  " + "\n  ".join(sorted(ds_packs())), 2)
+
+    page = (skill_dir() / "templates" / f"{args.template}.html").read_text()
+    font = FONT_LINK_RE.search(pack.read_text(errors="replace"))
+    fills = {"DS_KEY": args.ds, "FONT_LINKS": font.group(0) if font else ""}
+    if args.title:
+        fills["TITLE"] = html.escape(args.title)
+    # Stylesheets go in last, so a placeholder-shaped string inside the CSS is never filled.
+    fills["INLINE_STYLESHEETS"] = "\n".join(p.read_text().rstrip("\n") for p in stylesheets(args.ds, pack))
+    for key, val in fills.items():
+        page = page.replace("{{" + key + "}}", val)
+
+    ART_DIR.mkdir(parents=True, exist_ok=True)
+    path.write_text(page)
+    install_kit(path)
+    _review.install(path)
+    stamp(path, {"ds": args.ds, "target": "s", "title": args.title})
+    print(path)
+
+
 def cmd_stamp(args):
     path = resolve(args.slug)
+    stamp(path, {f: getattr(args, f) for f in ("url", "ds", "target", "title", "updated")})
+    print(f"stamped {path.name}")
+
+
+def stamp(path: Path, fields: dict[str, str | None]) -> None:
     text = path.read_text()
     meta = read_meta(path)
     for field in ("url", "ds", "target", "title"):
-        val = getattr(args, field)
-        if val:
-            meta[field] = val
+        if fields.get(field):
+            meta[field] = fields[field]
     meta["slug"] = path.stem
     # Defaults to the file's own mtime, so the date cannot drift from the build.
-    meta["updated"] = args.updated or datetime.date.fromtimestamp(path.stat().st_mtime).isoformat()
+    meta["updated"] = fields.get("updated") or datetime.date.fromtimestamp(path.stat().st_mtime).isoformat()
 
     body = "\n".join(f"{k + ':':<9}{meta[k]}" for k in FIELDS if meta.get(k))
     block = f"<!-- artifact\n{body}\n-->"
@@ -278,7 +347,6 @@ def cmd_stamp(args):
         text = text[: t.end()] + "\n" + block + text[t.end() :]
     path.write_text(text)
     record(entry_of(path))
-    print(f"stamped {path.name}")
 
 
 def cmd_review(args):
@@ -382,6 +450,17 @@ def main():
     p.add_argument("--approve", action="store_true", help="return only on an approval")
     p.add_argument("--timeout", type=int, default=0, metavar="SECONDS")
     p.set_defaults(fn=cmd_wait)
+
+    p = sub.add_parser("new", help="scaffold a local page: template, the pack's stylesheets, the kit, the review layer, stamped")
+    p.add_argument("slug")
+    p.add_argument("--ds", required=True, help="design pack key, resolved as the skill's §3 says")
+    p.add_argument("--title")
+    p.add_argument("--template", choices=TEMPLATES, default="interactive")
+    p.set_defaults(fn=cmd_new)
+
+    p = sub.add_parser("kit", help="add or refresh the component kit, before </head>")
+    p.add_argument("slug")
+    p.set_defaults(fn=cmd_kit)
 
     p = sub.add_parser("stamp", help="write or update the metadata block")
     p.add_argument("slug")

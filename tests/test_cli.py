@@ -8,6 +8,7 @@ import hashlib
 import http.server
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -1286,6 +1287,54 @@ with tempfile.TemporaryDirectory() as tmp:
     p = artifact("wait", "plan")
     ok("wait refuses a .md, since no page will ever post to it",
        p.returncode == 2 and "artifact comments plan" in p.stderr, "rc=%s err=%r" % (p.returncode, p.stderr))
+
+    section("artifact new and artifact kit")
+    skill = os.path.join(os.path.dirname(tool), os.pardir, "skills", "create-artifact")
+    packs = os.path.join(config, "mode", "design-systems")
+    write(os.path.join(packs, "layered.md"), "# Layered\n\n**Kind:** user pack\n"
+          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter&display=swap">\n')
+    write(os.path.join(packs, "layered.css"), ':root[data-ds="layered"] { --accent: LAYERED; }\n')
+    write(os.path.join(packs, "whole.md"), "# Whole\n\n**Kind:** user pack\n")
+    write(os.path.join(packs, "whole.css"), ":root { --canvas: WHOLE; }\n")
+    shared = "Styles only against generic vars"
+    for key, has_shared, own in (("neutral", True, None), ("layered", True, "LAYERED"), ("whole", False, "WHOLE")):
+        p = artifact("new", "kit-" + key, "--ds", key, "--title", "Kit & co")
+        page = os.path.join(arts, "kit-%s.html" % key)
+        body = open(page).read() if os.path.exists(page) else ""
+        ok("new --ds %s splices the stylesheets that pack names and stamps data-ds" % key,
+           p.returncode == 0 and (shared in body) == has_shared and (not own or own in body)
+           and 'data-ds="%s"' % key in body and "{{INLINE_STYLESHEETS}}" not in body
+           and "<title>Kit &amp; co</title>" in body and "ds:      %s" % key in body,
+           "rc=%s err=%r shared=%s" % (p.returncode, p.stderr, shared in body))
+        ok("and installs the kit and the review layer once each",
+           body.count("<!-- cx:start -->") == 1 and body.count("<!-- rv:start -->") == 1, key)
+    ok("a pack that names a Google Fonts link gets it in the head",
+       "fonts.googleapis.com/css2?family=Inter" in open(os.path.join(arts, "kit-layered.html")).read())
+
+    before = open(os.path.join(arts, "kit-neutral.html")).read()
+    p = artifact("new", "kit-neutral", "--ds", "neutral")
+    ok("new refuses a slug that already has a page, and leaves it alone",
+       p.returncode == 2 and open(os.path.join(arts, "kit-neutral.html")).read() == before,
+       "rc=%s err=%r" % (p.returncode, p.stderr))
+
+    artifact("kit", "kit-neutral")
+    p = artifact("kit", "kit-neutral")
+    body = open(os.path.join(arts, "kit-neutral.html")).read()
+    ok("kit run twice refreshes in place and leaves one block",
+       p.returncode == 0 and body.count("<!-- cx:start -->") == 1 and body.count("<!-- cx:end -->") == 1,
+       "rc=%s out=%r" % (p.returncode, p.stdout))
+
+    kit = open(os.path.join(skill, "assets", "kit.html")).read()
+    demo = os.path.join(skill, "references", "components.html")
+    block = re.search(r"<!-- cx:start -->.*?<!-- cx:end -->\n?", open(demo).read(), re.S)
+    ok("the demo page carries the kit byte for byte",
+       bool(block) and block.group(0) == kit,
+       "references/components.html drifted from assets/kit.html. Refresh it with: "
+       "NOTES_ARTIFACTS=skills/create-artifact/references bin/artifact kit components")
+    for gate in (["check-artifact.sh", "--target", "s"], ["check-prose.sh"]):
+        p = subprocess.run(["bash", os.path.join(skill, "scripts", gate[0])] + gate[1:] + [demo],
+                           capture_output=True, text=True)
+        ok("%s passes the demo page, kit included" % gate[0], p.returncode == 0, p.stdout[-600:])
 
     section("a .md outside the folder, recorded by its path")
     doc = os.path.join(tmp, "notes", "analysis", "Gold timeline.md")
