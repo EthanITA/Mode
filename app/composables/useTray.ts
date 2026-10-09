@@ -61,9 +61,12 @@ export interface Tray {
   remove: (id: string) => void;
 }
 
+// Claude can read the lines or the block itself, so the quote only anchors the note and stays one short line.
+const QUOTE_MAX = 160;
+
 function line(item: TrayItem): string {
   if (item.kind === "task") return `Task: ${item.text}`;
-  const at = item.quote ? `“${item.quote}”` : item.source;
+  const at = item.quote ? `“${shorten(item.quote, QUOTE_MAX)}”` : item.source;
   const where = [item.path, item.file].filter(Boolean).join(" in ");
   const loc = [at, where].filter(Boolean).join(" · ");
   const head = loc ? `${loc} — ${item.text}` : item.text;

@@ -155,11 +155,17 @@ function onEdit(): void {
   text-wrap: pretty;
 }
 
+/* A long selection or block shows its opening only, so the card keeps its size. */
 .tell-quote {
   border-left: 2px solid var(--border-strong);
   color: var(--muted);
+  display: -webkit-box;
   font-size: 11.5px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   line-height: 1.5;
+  overflow: hidden;
   padding-left: 8px;
   text-wrap: pretty;
 }

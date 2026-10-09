@@ -134,6 +134,18 @@ function openNote({ lines, quote, x, y }: NoteAt): void {
   });
 }
 
+// No file field, as Review's file note: the tell already names it, and a line note's file is what paints the gutter.
+function noteFile(event: MouseEvent): void {
+  const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  chrome.comment.open({
+    kind: "file",
+    label: basename(path),
+    tell: `About ${file.value}:`,
+    x: Math.max(12, Math.min(box.right - 432, window.innerWidth - 432)),
+    y: Math.min(box.bottom + 8, window.innerHeight - 312),
+  });
+}
+
 function paintNotes(): void {
   pen?.paint(
     noted.value.flatMap((item) => {
@@ -203,22 +215,19 @@ onBeforeUnmount(() => {
         changed on disk
       </span>
       <span v-else-if="isDirty" class="state mono-meta">unsaved</span>
-      <button
-        v-press
-        class="ghost focusable"
-        type="button"
-        title="Note the selected lines for Claude, or click the plus beside any line"
-        @click="pen?.note()"
-      >
-        <UiIcon :icon="MessageSquarePlus" size="xs" />
-        Note
-      </button>
+      <ChromeAction
+        :icon="MessageSquarePlus"
+        label="Note"
+        shape="pill"
+        tip="Note the whole file · ⌘K notes the selected lines"
+        @click="noteFile"
+      />
       <button v-if="isDirty || isStale" v-press class="ghost focusable" type="button" @click="discard">Discard</button>
       <button
         v-press
         class="save focusable"
         type="button"
-        title="Save (⌘S)"
+        data-tip="Save · ⌘S"
         :disabled="!isDirty || isSaving"
         @click="save"
       >
@@ -243,7 +252,10 @@ onBeforeUnmount(() => {
   min-height: 0;
 }
 
+/* Stacked over the editor below, so a pill's tooltip is not painted under Monaco. */
 .bar {
+  --action-ink: var(--ed-ink);
+  --action-line: var(--ed-button);
   align-items: center;
   background: var(--ed-bar);
   border-bottom: 1px solid var(--ed-border);
@@ -251,6 +263,8 @@ onBeforeUnmount(() => {
   flex: none;
   gap: 8px;
   padding: 8px 12px;
+  position: relative;
+  z-index: 1;
 }
 
 .path {

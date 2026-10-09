@@ -24,6 +24,7 @@ export interface Notes {
 
 // The popover is 420 wide and about 300 tall, and stays inside the window.
 const POPOVER = { height: 312, width: 432 };
+const HINT = "Note for Claude · ⌘K";
 
 function linesOf(editor: MonacoApi.editor.ICodeEditor, line?: number): LineSpan {
   const selection = editor.getSelection();
@@ -37,7 +38,7 @@ function linesOf(editor: MonacoApi.editor.ICodeEditor, line?: number): LineSpan 
   return [at, at];
 }
 
-// A plus in the glyph margin follows the pointer, so a note is one click from any line, and the menu has it too.
+// A comment icon in the glyph margin follows the pointer, so a note is one click from any line; ⌘K and the menu have it too.
 function attach({ api, editor, onNote }: NotesOptions): Notes {
   const hovered = editor.createDecorationsCollection();
   const noted = editor.createDecorationsCollection();
@@ -61,7 +62,8 @@ function attach({ api, editor, onNote }: NotesOptions): Notes {
   const listeners = [
     editor.onMouseMove((event) => {
       const line = event.target.position?.lineNumber;
-      hovered.set(line ? [{ options: { glyphMarginClassName: "monaco-note-add" }, range: new api.Range(line, 1, line, 1) }] : []);
+      const options = { glyphMarginClassName: "monaco-note-add", glyphMarginHoverMessage: { value: HINT } };
+      hovered.set(line ? [{ options, range: new api.Range(line, 1, line, 1) }] : []);
     }),
     editor.onMouseLeave(() => hovered.clear()),
     editor.onMouseDown((event) => {
@@ -73,6 +75,8 @@ function attach({ api, editor, onNote }: NotesOptions): Notes {
       contextMenuGroupId: "navigation",
       contextMenuOrder: 0,
       id: "sidecar.note",
+      // Registered after Monaco's own ⌘K chords, so it wins the first key and those chords go quiet here.
+      keybindings: [api.KeyMod.CtrlCmd | api.KeyCode.KeyK],
       label: "Note for Claude",
       run: () => note(),
     }),
