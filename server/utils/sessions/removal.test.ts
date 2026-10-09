@@ -32,7 +32,7 @@ function seed(key: string, id: string): void {
   put(join(root, "teams", `session-${key}`, "config.json"), "{}");
   put(join(root, "mode", "state", `session-${key}.mode`), "swarm\n");
   put(join(root, "mode", "state", `session-${key}.style`), "edu\n");
-  put(join(root, "mode", "versions", key, "HEAD"), "ref\n");
+  put(join(root, "sidecar", "versions", key, "HEAD"), "ref\n");
   put(join(root, "projects", "-tmp", `${id}.jsonl`), '{"transcript":"stays"}\n');
 }
 

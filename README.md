@@ -246,7 +246,7 @@ sidecar uninstall
 The conversation `open` points at is the key given, else the Claude Code session it runs in, read
 from `CLAUDE_CODE_SESSION_ID`; from a plain terminal it just opens the app. It serves
 `http://sidecar.localhost:4747` unless `SIDECAR_URL` says otherwise and logs to
-`~/.claude/mode/sidecar.log`. Stop only signals a server that answers as the sidecar, so another app
+`~/.claude/sidecar/server.log`. Stop only signals a server that answers as the sidecar, so another app
 on the port is left alone. `install` writes `~/Library/LaunchAgents/local.mode.sidecar.plist` with
 the node and `PATH` of the shell that ran it, so run it again after switching node versions.
 

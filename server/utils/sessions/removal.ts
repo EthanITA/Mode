@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { readTextSafe } from "../../../lib/files.ts";
-import { configRoot, stateHome } from "../../../lib/mode/paths.ts";
+import { configRoot, sidecarHome, stateHome } from "../../../lib/mode/paths.ts";
 import { artifactListsHome, canvasHome, isKey, jobsHome, keyOf, teamsHome } from "./paths.ts";
 import { isAlive, liveEntries } from "./registry.ts";
 import { jobs } from "./jobs.ts";
@@ -94,7 +94,7 @@ function targets(key: string): string[] {
     join(canvasHome(), `session-${key}`),
     join(configRoot(), "tasks", `session-${key}`),
     join(teamsHome(), `session-${key}`),
-    join(configRoot(), "mode", "versions", key),
+    join(sidecarHome(), "versions", key),
     ...modeFiles,
   ];
 }

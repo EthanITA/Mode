@@ -4,7 +4,7 @@ import { homedir, userInfo } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { modeHome } from "../lib/mode/paths.ts";
+import { sidecarHome } from "../lib/mode/paths.ts";
 
 type Command = "open" | "status" | "start" | "stop" | "restart" | "install" | "uninstall" | "help";
 type Proc = { pid: number; ppid: number; args: string };
@@ -13,7 +13,7 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const ADDRESS = (process.env.SIDECAR_URL ?? "http://sidecar.localhost:4747").replace(/\/$/, "");
 const PORT = new URL(ADDRESS).port || "80";
 const NUXT = join(ROOT, "node_modules", "nuxt", "bin", "nuxt.mjs");
-const LOG = join(modeHome(), "sidecar.log");
+const LOG = join(sidecarHome(), "server.log");
 const LABEL = "local.mode.sidecar";
 const AGENT = join(homedir(), "Library", "LaunchAgents", `${LABEL}.plist`);
 const DOMAIN = `gui/${userInfo().uid}`;
@@ -126,7 +126,7 @@ async function status(): Promise<number> {
 }
 
 function spawnServer(): () => boolean {
-  mkdirSync(modeHome(), { recursive: true });
+  mkdirSync(sidecarHome(), { recursive: true });
   const log = openSync(LOG, "w");
   // Detached into its own session, so it outlives this command and the terminal that ran it.
   const child = spawn(process.execPath, [NUXT, "dev", "--port", PORT], {
@@ -216,7 +216,7 @@ async function install(): Promise<number> {
   // A sidecar started by hand holds the port the login one needs.
   if (listeners().length && (await stop()) !== 0) return 1;
   mkdirSync(dirname(AGENT), { recursive: true });
-  mkdirSync(modeHome(), { recursive: true });
+  mkdirSync(sidecarHome(), { recursive: true });
   writeFileSync(AGENT, plist());
   if (!launchctl("bootstrap", DOMAIN, AGENT)) return 1;
   if (!(await waitUntilUp())) {

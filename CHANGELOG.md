@@ -202,6 +202,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 - **The Review file tree drops its trailing labels.** The `T3 T5` turn tags on files and the file count
   on folders are gone, and a line down the left of each open folder wraps its children instead.
+- **The sidecar keeps its data under `~/.claude/sidecar/`.** The server log is `server.log` there, History's
+  versions moved from `~/.claude/mode/versions/` to `versions/`, and the Review ledger is written to `review/`.
+  A review already begun in `~/.claude/turn-diff/` is still read from there and carries on in it, and the
+  existing versions were moved by hand, so a machine with older ones needs
+  `mv ~/.claude/mode/versions ~/.claude/sidecar/versions`.
 - **Mode runs on Node alone.** python3 and jq are no longer needed, and Node 24 or newer is. Every
   hook, `bin/mode`, `bin/artifact` and the create-artifact scripts are TypeScript run by node, and a
   hook reads mode state in process instead of starting `bin/mode`, so the prompt hook went from about

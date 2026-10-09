@@ -1,6 +1,6 @@
-import { watch, type FSWatcher } from "node:fs";
+import { mkdirSync, watch, type FSWatcher } from "node:fs";
 import { basename } from "node:path";
-import { ledgerDirOf, reviewHome, snapshotOf } from "~~/server/utils/review/ledger";
+import { ledgerDirOf, legacyReviewHome, reviewHome, snapshotOf } from "~~/server/utils/review/ledger";
 import { keyOf } from "~~/server/utils/sessions/paths";
 import { liveEntries } from "~~/server/utils/sessions/registry";
 
@@ -10,7 +10,7 @@ const SETTLE_MS = 120;
 export default defineEventHandler((event): Promise<void> => {
   const key = getRouterParam(event, "key") || "";
   const stream = createEventStream(event);
-  let watcher: FSWatcher | undefined;
+  const watchers: FSWatcher[] = [];
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const push = (): void => {
@@ -19,21 +19,25 @@ export default defineEventHandler((event): Promise<void> => {
   };
 
   // Watching the parent folder catches the session's own folder being created by its first edit.
-  try {
-    watcher = watch(reviewHome(), { recursive: true }, (_kind, name) => {
-      const dir = ledgerDirOf(key);
-      if (!name || !dir || !String(name).startsWith(basename(dir))) return;
-      clearTimeout(timer);
-      timer = setTimeout(push, SETTLE_MS);
-    });
-    watcher.on("error", () => watcher?.close());
-  } catch {
-    watcher = undefined;
+  mkdirSync(reviewHome(), { recursive: true });
+  for (const home of [reviewHome(), legacyReviewHome()]) {
+    try {
+      const watcher = watch(home, { recursive: true }, (_kind, name) => {
+        const dir = ledgerDirOf(key);
+        if (!name || !dir || !String(name).startsWith(basename(dir))) return;
+        clearTimeout(timer);
+        timer = setTimeout(push, SETTLE_MS);
+      });
+      watcher.on("error", () => watcher.close());
+      watchers.push(watcher);
+    } catch {
+      continue;
+    }
   }
 
   stream.onClosed(() => {
     clearTimeout(timer);
-    watcher?.close();
+    for (const watcher of watchers) watcher.close();
   });
 
   push();

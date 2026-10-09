@@ -13,7 +13,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, isAbsolute, join, normalize } from "node:path";
-import { configRoot } from "../lib/mode/paths.ts";
+import { sidecarHome } from "../lib/mode/paths.ts";
 import { lines } from "../lib/text.ts";
 import { applyEdit, receiptsOf, turnsOf, type FileTouch, type ParsedTurn } from "../server/utils/sessions/receipts.ts";
 import { identityOf, transcriptIndex } from "../server/utils/sessions/transcripts.ts";
@@ -49,7 +49,7 @@ interface StoreIndex {
 }
 
 function storeHome(): string {
-  return join(configRoot(), "mode", "versions");
+  return join(sidecarHome(), "versions");
 }
 
 function storeDir(key: string): string {

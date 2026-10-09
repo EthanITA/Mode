@@ -46,6 +46,13 @@ test("the snapshot pairs each file's original blob with the disk, and leaves out
   assert.equal(snapshot.redo, undefined);
 });
 
+test("a ledger under sidecar/review is read, and wins over the old turn-diff folder", () => {
+  const dir = join(root, "sidecar", "review", ID);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "review.json"), JSON.stringify({ turn: 9, files: {}, undo: [], redo: [] }));
+  assert.equal(snapshotOf({ key: ID.slice(0, 8), live: true }).turn, 9);
+});
+
 test("an unknown key reads as an empty review", () => {
   assert.deepEqual(snapshotOf({ key: "ffffffff", live: false }), { key: "ffffffff", live: false, turn: 0, files: [] });
 });

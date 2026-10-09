@@ -2,7 +2,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { ReviewFile, ReviewSnapshot } from "../../../shared/types/review.ts";
 import { readTextSafe } from "../../../lib/files.ts";
-import { configRoot } from "../../../lib/mode/paths.ts";
+import { configRoot, sidecarHome } from "../../../lib/mode/paths.ts";
 import { Lines } from "../../../shared/utils/lines.ts";
 
 // The sidecar mod's own limit: past it, or holding a NUL byte, a file is not reviewable.
@@ -24,18 +24,26 @@ interface Ledger {
   redo: Step[];
 }
 
-// The sidecar mod writes one folder per session, named by the full session id, under the name turn-diff began.
 export function reviewHome(): string {
+  return join(sidecarHome(), "review");
+}
+
+// A session whose mod loaded before the move keeps writing here until it restarts.
+export function legacyReviewHome(): string {
   return join(configRoot(), "turn-diff");
 }
 
+// One folder per session, named by the full session id.
 export function ledgerDirOf(key: string): string | undefined {
-  try {
-    const name = readdirSync(reviewHome()).find((one) => one.startsWith(key));
-    return name && join(reviewHome(), name);
-  } catch {
-    return undefined;
+  for (const home of [reviewHome(), legacyReviewHome()]) {
+    try {
+      const name = readdirSync(home).find((one) => one.startsWith(key));
+      if (name) return join(home, name);
+    } catch {
+      continue;
+    }
   }
+  return undefined;
 }
 
 // Wrapped so an empty file stays distinct from a missing one.
