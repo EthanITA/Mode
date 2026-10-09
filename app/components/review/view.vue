@@ -1,7 +1,12 @@
 <script lang="ts" setup>
+import { useLocalStorage } from "@vueuse/core";
+
+const SIDE = 300;
+
 const sc = useSidecar();
 const chrome = useChrome();
 const review = useReview();
+const side = useLocalStorage("sc:pane:review", SIDE);
 
 review.listen();
 
@@ -45,7 +50,7 @@ function comment(event: MouseEvent, scope: "file" | "lines"): void {
 </script>
 
 <template>
-  <section class="review" data-region="review">
+  <section class="review" data-region="review" :style="{ '--side-w': `${side}px` }">
     <UiSurface class="pane" data-region="review-files" pad="none" variant="raised">
       <header class="bar">
         <span class="title">To review</span>
@@ -80,6 +85,8 @@ function comment(event: MouseEvent, scope: "file" | "lines"): void {
         </button>
       </footer>
     </UiSurface>
+
+    <PaneResizer v-model="side" :initial="SIDE" label="Resize the file list" />
 
     <UiSurface class="pane" data-region="review-changes" pad="none" variant="raised">
       <template v-if="file">
@@ -183,10 +190,11 @@ function comment(event: MouseEvent, scope: "file" | "lines"): void {
 </template>
 
 <style scoped>
+/* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
 .review {
+  column-gap: 8px;
   display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  grid-template-columns: min(var(--side-w), 50%) 0 minmax(0, 1fr);
   height: 100%;
   min-height: 0;
 }

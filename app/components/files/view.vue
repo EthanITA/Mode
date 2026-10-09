@@ -1,9 +1,14 @@
 <script lang="ts" setup>
-import { ExternalLink } from "@lucide/vue";
+import { ExternalLink, FilePen, FilePlus2, FolderTree, PanelsTopLeft } from "@lucide/vue";
+import { useLocalStorage } from "@vueuse/core";
+import type { Component } from "vue";
 import type { FileGroup, SessionFile } from "~~/shared/types/files";
 import type { TreeEntry } from "~~/shared/types/tree";
 
 type Scope = "artifacts" | "all" | FileGroup;
+
+const SIDE = 340;
+const side = useLocalStorage("sc:pane:files", SIDE);
 
 const sc = useSidecar();
 const files = useFiles(() => sc.sessionKey.value);
@@ -11,12 +16,12 @@ const selected = useState<string | undefined>("fl:selected");
 const scope = useState<Scope>("fl:scope", () => "artifacts");
 const showIgnored = useState("fl:ignored", () => false);
 
-const SCOPES: { label: string; value: Scope }[] = [
-  { label: "Artifacts", value: "artifacts" },
-  { label: "All", value: "all" },
-  { label: "Produced", value: "produced" },
-  { label: "Interacted", value: "interacted" },
-];
+const SCOPES = [
+  { hint: "Pages this conversation made", icon: PanelsTopLeft, label: "Artifacts", value: "artifacts" },
+  { hint: "The whole folder", icon: FolderTree, label: "All", value: "all" },
+  { hint: "Files Claude created", icon: FilePlus2, label: "Produced", value: "produced" },
+  { hint: "Files Claude read or changed", icon: FilePen, label: "Interacted", value: "interacted" },
+] satisfies { hint: string; icon: Component; label: string; value: Scope }[];
 
 const EMPTY: Record<Exclude<Scope, "all">, string> = {
   artifacts: "This conversation hasn't made an artifact yet.",
@@ -66,16 +71,15 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
 </script>
 
 <template>
-  <section class="files" data-region="files">
+  <section class="files" data-region="files" :style="{ '--side-w': `${side}px` }">
     <UiSurface class="pane" data-region="files-table" pad="none" variant="raised">
-      <header class="bar">
+      <header class="bar scopes">
         <UiSegmented v-model="scope" :options="SCOPES" />
-        <span class="spacer" />
-        <UiChip v-if="scope === 'all'" :selected="showIgnored" size="xs" @click="showIgnored = !showIgnored">
-          Ignored
-        </UiChip>
       </header>
-      <p v-if="session && scope === 'all'" class="root mono-meta">{{ homePath(session.cwd) }}</p>
+      <div v-if="session && scope === 'all'" class="root">
+        <span class="where mono-meta" :title="session.cwd">{{ homePath(session.cwd) }}</span>
+        <UiChip :selected="showIgnored" size="xs" @click="showIgnored = !showIgnored">Ignored</UiChip>
+      </div>
       <div class="scroll">
         <p v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</p>
         <p v-else-if="scope !== 'all' && !scoped.root.value" class="empty">{{ EMPTY[scope] }}</p>
@@ -99,6 +103,8 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
         </FileTree>
       </div>
     </UiSurface>
+
+    <PaneResizer v-model="side" :initial="SIDE" label="Resize the file tree" />
 
     <UiSurface class="pane" data-region="files-preview" pad="none" variant="raised">
       <template v-if="selected && pageOf && sc.sessionKey.value">
@@ -129,10 +135,11 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
 </template>
 
 <style scoped>
+/* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
 .files {
+  column-gap: 8px;
   display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(280px, 400px) minmax(0, 1fr);
+  grid-template-columns: min(var(--side-w), 50%) 0 minmax(0, 1fr);
   height: 100%;
   min-height: 0;
 }
@@ -153,17 +160,51 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
   padding: 8px 12px;
 }
 
-.spacer {
-  flex: 1;
+/* The scopes fill the row while their labels fit, and fall back to icons with the label as a tooltip below that. */
+.scopes {
+  container-type: inline-size;
+}
+
+.scopes :deep(.segmented) {
+  display: flex;
+  width: 100%;
+}
+
+.scopes :deep(.segmented-option) {
+  flex: 1 1 auto;
+  justify-content: center;
+  padding-inline: 10px;
+}
+
+.scopes :deep(.segmented-option svg) {
+  display: none;
+}
+
+@container (width < 280px) {
+  .scopes :deep(.segmented-option) {
+    font-size: 0;
+    gap: 0;
+  }
+
+  .scopes :deep(.segmented-option svg) {
+    display: block;
+  }
 }
 
 .root {
+  align-items: center;
   border-bottom: 1px solid var(--border);
-  color: var(--subtle);
+  display: flex;
   flex: none;
-  margin: 0;
+  gap: 8px;
+  padding: 5px 8px 5px 14px;
+}
+
+.where {
+  color: var(--subtle);
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
-  padding: 6px 14px;
   text-overflow: ellipsis;
   text-transform: none;
   white-space: nowrap;

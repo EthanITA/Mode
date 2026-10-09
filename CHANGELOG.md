@@ -43,6 +43,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   highlight through the nearest language Monaco ships, and type errors from imports it cannot resolve
   are off. The canvas face and its zoom control are gone from conversations; the desk still uses the
   canvas.
+- **The left pane of Files, Review and History resizes.** Drag its edge, or focus the edge and use the
+  arrow keys, and double-click to reset. Each face remembers its own width, capped at half the face so
+  a width kept from a wider window never squeezes the other pane.
 - **History diffs between turns, side by side.** Pick a turn to see what it did, shift-click another
   to see what the turns between did together, or read through to the newest version. Each file draws
   in `<DiffSideBySide>`, the same component Review uses, read-only here, from a `pair` the version

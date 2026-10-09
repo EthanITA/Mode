@@ -1,7 +1,12 @@
 <script lang="ts" setup>
+import { useLocalStorage } from "@vueuse/core";
+
+const SIDE = 340;
+
 const sc = useSidecar();
 const history = useHistory();
 const restoring = ref<string>();
+const side = useLocalStorage("sc:pane:history", SIDE);
 
 const firstFresh = computed(() => history.turns.value.find((one) => one.fresh)?.receipt.turn);
 
@@ -43,7 +48,7 @@ const restoreMessage = computed(() => {
 </script>
 
 <template>
-  <section class="history" data-region="history">
+  <section class="history" data-region="history" :style="{ '--side-w': `${side}px` }">
     <UiSurface class="pane" data-region="history-turns" pad="none" variant="raised">
       <header class="bar">
         <span class="title">Turns</span>
@@ -65,6 +70,8 @@ const restoreMessage = computed(() => {
         </template>
       </div>
     </UiSurface>
+
+    <PaneResizer v-model="side" :initial="SIDE" label="Resize the turns pane" />
 
     <UiSurface class="pane" data-region="history-changes" pad="none" variant="raised">
       <header class="bar">
@@ -132,10 +139,11 @@ const restoreMessage = computed(() => {
 </template>
 
 <style scoped>
+/* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
 .history {
+  column-gap: 8px;
   display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  grid-template-columns: min(var(--side-w), 50%) 0 minmax(0, 1fr);
   height: 100%;
   min-height: 0;
 }
