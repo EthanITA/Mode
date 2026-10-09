@@ -32,8 +32,8 @@ export type ReviewActionReply =
   | { delivered: true }
   | { delivered: false; reason: "bad-action" | "no-live-session" | "refused-by-inbox" }
 
-// `claude` is an explicit `/sidecar`, `prompt` someone typing in that session's prompt.
-export type FollowSource = "claude" | "prompt" | "none"
+// `claude` is an explicit `/sidecar`, `prompt` someone typing in that session's prompt, `terminal` Terminal's front tab switching.
+export type FollowSource = "claude" | "prompt" | "terminal" | "none"
 
 export interface FollowTarget {
   key?: string

@@ -9,7 +9,8 @@ const hint = computed(() => {
   if (follow.pinned.value) return "Unpin to follow Claude Code again";
   if (target.source === "claude") return `Focused by /sidecar in ${target.name ?? target.key}`;
   if (target.source === "prompt") return `Where you last typed: ${target.name ?? target.key}`;
-  return "Run /sidecar in a Claude Code conversation to bring it here";
+  if (target.source === "terminal") return `Terminal's front tab: ${target.name ?? target.key}`;
+  return "Run /sidecar in a Claude Code conversation, or bring one to the front in Terminal";
 });
 </script>
 
