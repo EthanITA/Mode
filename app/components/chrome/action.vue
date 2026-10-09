@@ -73,9 +73,9 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
   justify-content: center;
   padding: 0 14px;
   transition:
-    background-color 150ms ease,
-    border-color 150ms ease,
-    color 150ms ease;
+    background-color var(--duration-press) ease,
+    border-color var(--duration-press) ease,
+    color var(--duration-press) ease;
 }
 
 .action[data-labelled="false"] {

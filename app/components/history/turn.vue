@@ -73,7 +73,7 @@ const tell = computed(() => {
   gap: 8px;
   padding: 10px 12px;
   text-align: left;
-  transition: background var(--duration-fast) ease-out;
+  transition: background var(--duration-fast) var(--ease-out);
   width: 100%;
 }
 

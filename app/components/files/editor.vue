@@ -300,9 +300,9 @@ onBeforeUnmount(() => {
   height: 26px;
   padding: 0 11px;
   transition:
-    background-color 150ms ease,
-    border-color 150ms ease,
-    color 150ms ease;
+    background-color var(--duration-press) ease,
+    border-color var(--duration-press) ease,
+    color var(--duration-press) ease;
 }
 
 .ghost {

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { prefersReducedMotion } from "@cela/design/utils/motion";
+import { EASE_CSS, MOTION_DURATION, prefersReducedMotion } from "@cela/design/utils/motion";
 import { FilePen, FilePlus2, FolderTree, Maximize2, PanelsTopLeft } from "@lucide/vue";
 import { useEventListener, useLocalStorage } from "@vueuse/core";
 import type { Component, ComponentPublicInstance } from "vue";
@@ -72,8 +72,9 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
 
 type Box = { height: number; left: number; top: number; width: number };
 
-// The sheet itself grows, so the frame inside it never reloads; --ease-drawer at a sheet's pace.
-const GROW = { duration: 380, easing: "cubic-bezier(0.32, 0.72, 0, 1)" } satisfies KeyframeAnimationOptions;
+// The sheet itself grows, so the frame inside it never reloads.
+const GROW = { duration: MOTION_DURATION.slow, easing: EASE_CSS.drawer } satisfies KeyframeAnimationOptions;
+const SHRINK = { duration: MOTION_DURATION.base, easing: EASE_CSS.drawer } satisfies KeyframeAnimationOptions;
 
 const isFull = useArtifactFullscreen();
 const isExpanded = ref(false);
@@ -120,11 +121,11 @@ async function collapse(): Promise<void> {
   growth?.cancel();
   // Held on its last frame until the class comes off, or the sheet would flash full size for a frame.
   const shrink = pane.animate([frameOf(boxOf(pane, stage), "0px", "lg"), frameOf(boxOf(slot.value, stage), rest.radius, "sm")], {
-    ...GROW,
+    ...SHRINK,
     fill: "forwards",
   });
   const settle = read.value?.animate([{ paddingTop: getComputedStyle(read.value).paddingTop }, { paddingTop: `${rest.pad}px` }], {
-    ...GROW,
+    ...SHRINK,
     fill: "forwards",
   });
   growth = shrink;

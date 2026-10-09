@@ -244,6 +244,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   example broke. A dash still can't become a colon or parentheses. The evidence rule listed confidence
   as four categories that read as the labels the prose rule bans, so it now asks for the verb on the
   claim itself.
+- **Files fullscreen shrinks back faster than it grows,** and every transition timing on a mounted
+  surface reads a `@cela/design` token instead of a number.
 
 ### Removed
 
