@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url"
 import { after, before, test } from "node:test"
 import { DELTA_KEY, RECEIPTS_DIR, useReceiptFixtures } from "./__fixtures__/env.ts"
 import { resolvePluginRoot } from "../mode/paths.ts"
+import { filesOf } from "./files.ts"
 import { applyEdit, receiptsOf, removedPaths, turnsOf } from "./receipts.ts"
 import { invertEdit, planOf } from "./store.ts"
 
@@ -38,6 +39,21 @@ test("tool calls land in the four buckets, and a failed edit is not a write", ()
   assert.deepEqual(second?.wrote, ["/tmp/delta/old.ts", "/tmp/delta/drifted.ts"])
   assert.deepEqual(second?.deleted, ["/tmp/delta/gone.ts"])
   assert.deepEqual(second?.ran.map((one) => one.command), ["rm -f gone.ts && echo done", "spawned Scribe"])
+})
+
+test("a file Claude created is produced however often it changes after, one it only read or changed is interacted", () => {
+  const byPath = new Map(filesOf({ key: DELTA_KEY }).files.map((one) => [one.path, one]))
+  assert.deepEqual(byPath.get("/tmp/delta/new.ts"), {
+    path: "/tmp/delta/new.ts",
+    group: "produced",
+    reads: 0,
+    edits: 2,
+    lastTurn: 3,
+    lastAction: "edit",
+  })
+  assert.equal(byPath.get("/tmp/delta/old.ts")?.group, "interacted")
+  assert.equal(byPath.get("/tmp/delta/old.ts")?.lastAction, "edit")
+  assert.equal(byPath.get("/tmp/delta/gone.ts")?.lastAction, "delete")
 })
 
 test("a subagent's write belongs to the turn it happened in, under the subagent's name", () => {

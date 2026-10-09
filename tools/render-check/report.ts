@@ -289,6 +289,7 @@ const TITLES: Record<ScreenState, string> = {
   canvas: 'CANVAS · artifacts where they were made',
   comment: 'COMMENT · the page armed, one element picked',
   desk: 'DESK · every conversation as a card',
+  files: 'FILES · what the conversation produced and what it read or changed',
   history: 'HISTORY · turns, and what each one changed',
   jump: 'JUMP · the command-K palette',
   read: 'READ · the artifact, its versions and its comments',

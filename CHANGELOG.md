@@ -17,6 +17,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   whole hunk with the arrows between the sides, or approve and reject files. Each press is relayed into
   the session, where the mod applies it and tells Claude about a reject, so the mod stays the only
   writer. Comments go to the tray. `/turn-diff` opens it at `/c/<key>?face=review`.
+- **A Files face replaces the Canvas.** One table for what the conversation produced, the files Claude
+  created, and one for what it interacted with, the files it read or changed. A dot marks what the most
+  recent turn read or edited, and an artifact page opens in the reader. The canvas face and its zoom
+  control are gone from conversations; the desk still uses the canvas.
 - **The sidecar listens for the conversation open in Terminal.** Home no longer shows the desk: it says
   it is listening to a Claude Code session and jumps to the one in Terminal's front tab, read from the
   tab titles, or to the one you last typed in when no tab matches. Every conversation page then

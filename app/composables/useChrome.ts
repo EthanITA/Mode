@@ -4,7 +4,7 @@ import type { Maybe, MaybeComputed } from "~/composables/useSidecar";
 import type { FrameHit } from "~/types/frame";
 import type { ArtifactReviewReply } from "~~/shared/types/artifact";
 
-export const FACES = ["canvas", "history", "review"] as const;
+export const FACES = ["files", "history", "review"] as const;
 export type Face = (typeof FACES)[number];
 
 export type ToastTone = "destructive" | "neutral" | "success" | "warning";
@@ -131,7 +131,7 @@ export function useChrome(): Chrome {
   const sc = useSidecar();
 
   const faces = useState<Face[]>("sc:faces", () => []);
-  const picked = useState<Face>("sc:view", () => "canvas");
+  const picked = useState<Face>("sc:view", () => "files");
   const jumpOpen = useState<boolean>("sc:jump", () => false);
   const armed = useState<boolean>("sc:cmt-armed", () => false);
   const holding = useState<boolean>("sc:cmt-hold", () => false);
@@ -152,13 +152,14 @@ export function useChrome(): Chrome {
   // Clamping here rather than on the click is what makes an unbuilt view unreachable:
   // a stored pick whose domain never landed can never be the current face.
   const current = computed<Face>(() =>
-    faces.value.includes(picked.value) ? picked.value : (faces.value[0] ?? "canvas"),
+    faces.value.includes(picked.value) ? picked.value : (faces.value[0] ?? "files"),
   );
 
+  // Every face is a pane layout now, so it shelves; this re-asserts it after an artifact page unshelved them.
   watch(
     current,
-    (face) => {
-      shelved.value = face === "history" || face === "review";
+    () => {
+      shelved.value = true;
     },
     { immediate: true },
   );

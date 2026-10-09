@@ -15,7 +15,7 @@ import type {
   StateReport,
 } from './types.ts'
 
-const FACES = ['canvas', 'read', 'history', 'review'] as const
+const FACES = ['canvas', 'files', 'read', 'history', 'review'] as const
 
 interface Options {
   url: string

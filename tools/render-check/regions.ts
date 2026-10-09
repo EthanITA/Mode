@@ -1,7 +1,7 @@
 import type { RegionSpec } from './types.ts'
 
-const CONVERSATION = ['canvas', 'read', 'history', 'review'] as const
-const EVERYWHERE = ['desk', 'canvas', 'read', 'history', 'review', 'jump', 'comment'] as const
+const CONVERSATION = ['canvas', 'files', 'read', 'history', 'review'] as const
+const EVERYWHERE = ['desk', 'canvas', 'files', 'read', 'history', 'review', 'jump', 'comment'] as const
 
 /**
  * A region names a place on the screen, never its contents, so there is no region
@@ -188,6 +188,15 @@ export const REGIONS: RegionSpec[] = [
     selectors: ['[data-region="history-changes"]'],
     demand: 'required',
     states: ['history'],
+    quotes: true,
+  },
+  {
+    id: 'files',
+    label: 'files',
+    design: 'One table per group, produced and interacted, with a dot on what the latest turn read or edited.',
+    selectors: ['[data-region="files-table"]'],
+    demand: 'required',
+    states: ['files'],
     quotes: true,
   },
   {

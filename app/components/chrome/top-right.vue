@@ -4,7 +4,7 @@ import { MessageSquare } from "@lucide/vue";
 const route = useRoute();
 const chrome = useChrome();
 
-const LABELS: Record<Face, string> = { canvas: "Canvas", history: "History", review: "Review" };
+const LABELS: Record<Face, string> = { files: "Files", history: "History", review: "Review" };
 
 const inSession = computed(() => route.path.startsWith("/c/"));
 // The faces belong to the conversation; an artifact has its own page and nothing to switch between.
@@ -26,16 +26,6 @@ function toggleComment(): void {
 <template>
   <div class="top-right" data-region="top-right">
     <template v-if="inSession">
-      <UiCanvasZoom
-        v-if="onFaces && chrome.view.current.value === 'canvas'"
-        class="zoom"
-        data-region="canvas-zoom"
-        variant="glass-liquid"
-        :zoom="chrome.canvas.zoom.value ?? 1"
-        @step="chrome.canvas.step.value?.($event)"
-        @reset="chrome.canvas.reset.value?.()"
-      />
-
       <UiSurface v-if="onFaces && faces.length > 1" class="pill" pad="none" shape="pill" variant="glass">
         <UiSegmented
           v-model="face"
@@ -84,14 +74,6 @@ function toggleComment(): void {
 .pill :deep(.segmented) {
   background: none;
   border: 0;
-}
-
-.zoom {
-  align-items: center;
-  display: flex;
-  flex: none;
-  height: var(--island-row-h);
-  padding: 0 6px;
 }
 
 .comment-cell {

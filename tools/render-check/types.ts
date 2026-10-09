@@ -1,6 +1,6 @@
 // v6 is two routes and three faces, so a screen is where you are rather than
 // whether one panel is collapsed.
-export type ScreenState = 'desk' | 'canvas' | 'read' | 'history' | 'review' | 'jump' | 'comment'
+export type ScreenState = 'desk' | 'canvas' | 'files' | 'read' | 'history' | 'review' | 'jump' | 'comment'
 
 export type RegionDemand = 'required' | 'empty-ok' | 'inert'
 

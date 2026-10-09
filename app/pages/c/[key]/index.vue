@@ -8,7 +8,7 @@ const follow = useFollow();
 
 // Read off disk at build: an unbuilt face is unreachable, with no list kept by hand.
 const parts = import.meta.glob<Component>(
-  "../../../components/{board/island,canvas/view,composer/dock,history/view,review/view}.vue",
+  "../../../components/{board/island,composer/dock,files/view,history/view,review/view}.vue",
   { import: "default" },
 );
 
@@ -18,7 +18,7 @@ function part(path: string): Component | undefined {
 }
 
 const built: Record<Face, Component | undefined> = {
-  canvas: part("canvas/view"),
+  files: part("files/view"),
   history: part("history/view"),
   review: part("review/view"),
 };
@@ -78,10 +78,9 @@ follow.listen();
   position: absolute;
 }
 
-/* History and Review own two independently scrolling panes, so the stage clips instead of scrolling
-   them. The bottom follows the dock's measured height, whatever state the dock is in. */
-.stage[data-face="history"],
-.stage[data-face="review"] {
+/* Every face owns its own scrolling panes, so the stage clips instead of scrolling them.
+   The bottom follows the dock's measured height, whatever state the dock is in. */
+.stage {
   box-sizing: border-box;
   overflow: hidden;
   padding: var(--stage-top) var(--gutter) calc(var(--dock-h, var(--dock-rest-h)) + var(--gutter) * 2);
