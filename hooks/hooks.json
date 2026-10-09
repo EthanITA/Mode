@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/resume.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" resume"
           }
         ]
       }
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sync.sh\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" sync"
           },
           {
             "type": "command",
@@ -67,7 +67,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gate.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" gate"
           },
           {
             "type": "command",
@@ -142,11 +142,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/red-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/red-guard"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/router-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/router-guard"
           }
         ]
       }

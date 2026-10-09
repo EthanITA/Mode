@@ -37,6 +37,13 @@ export function pyJson(value: unknown, ascii = true): string {
   return ascii ? text.replace(NON_ASCII, (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`) : text
 }
 
+// Python's str() of a JSON value, so a missing field still reads `None` in a message the way it always has.
+export function pyStr(value: unknown): string {
+  if (value === undefined || value === null) return "None" // external contract: JSON null is Python's None
+  if (typeof value === "boolean") return value ? "True" : "False"
+  return String(value)
+}
+
 export function words(text: string): string[] {
   return text.split(RUN).filter(Boolean)
 }
