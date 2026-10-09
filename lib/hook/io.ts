@@ -42,3 +42,16 @@ export function postContext(text: string): void {
 export function context(event: ContextEvent, text: string): void {
   emit({ hookSpecificOutput: { hookEventName: event, additionalContext: text }, suppressOutput: true })
 }
+
+// A Stop guard's nudge: the model reads the context and the user sees the one-line message.
+export function zap(text: string, message: string): void {
+  emit({ hookSpecificOutput: { hookEventName: "Stop", additionalContext: text }, systemMessage: `⚡ ${message}`, suppressOutput: true })
+}
+
+export function systemMessage(message: string): void {
+  emit({ systemMessage: message, suppressOutput: true })
+}
+
+export function blockTask(reason: string): void {
+  emit({ decision: "block", reason })
+}

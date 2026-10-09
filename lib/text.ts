@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs"
 // Python's whitespace, which JS's \s misses at \x1c-\x1f and \x85 and widens with the byte order mark.
 const SPACE = "\\t\\n\\v\\f\\r\\x1c-\\x1f \\x85\\xa0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000"
 const EDGES = new RegExp(`^[${SPACE}]+|[${SPACE}]+$`, "g")
+const LEAD = new RegExp(`^[${SPACE}]+`)
 const RUN = new RegExp(`[${SPACE}]+`)
 const BREAKS = new RegExp("\\r\\n|[\\n\\r\\v\\f\\x1c-\\x1e\\x85\\u2028\\u2029]")
 const NON_ASCII = new RegExp("[\\x80-\\uffff]", "g")
@@ -13,6 +14,10 @@ export const WORD = String.raw`[\p{L}\p{N}_]`
 
 export function strip(text: string): string {
   return text.replace(EDGES, "")
+}
+
+export function lstrip(text: string): string {
+  return text.replace(LEAD, "")
 }
 
 // Python's splitlines: every line break it knows, and no empty line after a trailing newline.
@@ -27,11 +32,17 @@ export function splitLines(text: string): string[] {
   return text.split(/\r\n|\r|\n/)
 }
 
-// Python's json.dumps layout, `", "` and `": "`, so a file python wrote and node rewrites does not churn.
-export function pyJson(value: unknown, ascii = true): string {
-  if (Array.isArray(value)) return `[${value.map((item) => pyJson(item, ascii)).join(", ")}]`
+// Python's json.dumps layout, `", "` and `": "` or indented, so a file python wrote and node rewrites does not churn.
+export function pyJson(value: unknown, ascii = true, indent = 0, depth = 0): string {
+  const inner = indent ? `\n${" ".repeat(indent * (depth + 1))}` : ""
+  const outer = indent ? `\n${" ".repeat(indent * depth)}` : ""
+  const sep = indent ? "," : ", "
+  if (Array.isArray(value)) {
+    return value.length ? `[${inner}${value.map((item) => pyJson(item, ascii, indent, depth + 1)).join(sep + inner)}${outer}]` : "[]"
+  }
   if (typeof value === "object" && value) {
-    return `{${Object.entries(value).map(([key, item]) => `${pyJson(key, ascii)}: ${pyJson(item, ascii)}`).join(", ")}}`
+    const entries = Object.entries(value).map(([key, item]) => `${pyJson(key, ascii)}: ${pyJson(item, ascii, indent, depth + 1)}`)
+    return entries.length ? `{${inner}${entries.join(sep + inner)}${outer}}` : "{}"
   }
   const text = JSON.stringify(value) ?? "null"
   return ascii ? text.replace(NON_ASCII, (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`) : text

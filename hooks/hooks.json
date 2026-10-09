@@ -71,7 +71,7 @@
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/roster-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/roster-guard"
           }
         ]
       },
@@ -80,11 +80,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-keep.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-keep"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-cap.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-cap"
           },
           {
             "type": "command",
@@ -98,7 +98,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-cap.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-cap"
           }
         ]
       },
@@ -167,7 +167,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-category.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-category"
           }
         ]
       }
@@ -177,17 +177,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/prose-check.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/prose-check",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/xyz-check.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/xyz-check",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-check.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-check",
             "timeout": 15
           },
           {
