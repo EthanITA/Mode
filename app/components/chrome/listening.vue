@@ -6,10 +6,10 @@ const follow = useFollow();
 const label = computed(() => (follow.pinned.value ? "Pinned to this conversation" : "Listening to Claude Code session"));
 const hint = computed(() => {
   const target = follow.target.value;
-  if (follow.pinned.value) return "Unpin to follow Terminal again";
-  if (target.source === "terminal") return `Terminal's front tab: ${target.name ?? target.key}`;
+  if (follow.pinned.value) return "Unpin to follow Claude Code again";
+  if (target.source === "claude") return `Focused by /sidecar in ${target.name ?? target.key}`;
   if (target.source === "prompt") return `Where you last typed: ${target.name ?? target.key}`;
-  return "No Terminal tab is a Claude Code conversation yet";
+  return "Run /sidecar in a Claude Code conversation to bring it here";
 });
 </script>
 
@@ -22,7 +22,7 @@ const hint = computed(() => {
       class="pin focusable"
       type="button"
       :aria-pressed="follow.pinned.value"
-      :aria-label="follow.pinned.value ? 'Follow Terminal again' : 'Stay on this conversation'"
+      :aria-label="follow.pinned.value ? 'Follow Claude Code again' : 'Stay on this conversation'"
       @click="follow.pinned.value = !follow.pinned.value"
     >
       <UiIcon :icon="follow.pinned.value ? PinOff : Pin" size="sm" />

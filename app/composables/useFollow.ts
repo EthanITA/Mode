@@ -22,7 +22,7 @@ export function useFollow(): Follow {
     void navigateTo(`/c/${next.key}`);
   }
 
-  // Otherwise the first read is a baseline, so a conversation opened by hand stays put until Terminal switches.
+  // Otherwise the first read is a baseline, so a conversation opened by hand stays put until Claude Code points elsewhere.
   function listen({ isEager = false }: FollowOptions = {}): void {
     const source = new EventSource("/api/follow/stream");
     let isBaseline = !isEager;

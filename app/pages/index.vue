@@ -6,8 +6,8 @@ follow.listen({ isEager: true });
 
 const waiting = computed(() =>
   follow.pinned.value
-    ? "Pinned, so the sidecar stays here. Unpin to follow Terminal."
-    : "Bring a Claude Code conversation to the front in Terminal and the sidecar focuses on it.",
+    ? "Pinned, so the sidecar stays here. Unpin to follow Claude Code."
+    : "Run /sidecar in a Claude Code conversation, or type in one, and the sidecar focuses on it.",
 );
 </script>
 

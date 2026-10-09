@@ -30,11 +30,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **One file tree for every face.** `<FileTree>` draws any `TreeSource`: `useFolderTree` lists a folder
   a directory at a time as it opens, with git deciding what is ignored, and `usePathsTree` lays out a
   fixed set of files with single-folder chains merged. Files uses the first, Review the second.
-- **The sidecar listens for the conversation open in Terminal.** Home no longer shows the desk: it says
-  it is listening to a Claude Code session and jumps to the one in Terminal's front tab, read from the
-  tab titles, or to the one you last typed in when no tab matches. Every conversation page then
-  follows when that tab switches. The head carries the listening pill and its pin where the link back
-  to the desk was, and the desk itself moved to `/desk`.
+- **The sidecar listens to Claude Code.** Home no longer shows the desk: it says it is listening to a
+  Claude Code session and jumps to the one Claude Code points it at, and every conversation page
+  follows the next point. The `sidecar` mod points it: `/sidecar` in a conversation, which starts the
+  sidecar when it is down and opens the browser only when no page is listening, and typing in a
+  conversation's prompt. `POST /api/follow` takes the point and `/api/follow/stream` carries it, so
+  nothing reads a terminal. The head carries the listening pill and its pin where the link back to the
+  desk was, and the desk itself moved to `/desk`.
 - **"you are dispatcher." takes a pinned default, and the dispatcher runs in `fast`.** A contract that
   sets `enter-over-pin` may take a slot that only holds a pin, judged on the prompt's opening sentence
   so a prompt that merely talks about it never switches, and a slot typed by hand stays out of reach.

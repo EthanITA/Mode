@@ -32,8 +32,15 @@ export type ReviewActionReply =
   | { delivered: true }
   | { delivered: false; reason: "bad-action" | "no-live-session" | "refused-by-inbox" }
 
+// `claude` is an explicit `/sidecar`, `prompt` someone typing in that session's prompt.
+export type FollowSource = "claude" | "prompt" | "none"
+
 export interface FollowTarget {
   key?: string
   name?: string
-  source: "terminal" | "prompt" | "none"
+  source: FollowSource
+}
+
+export interface FollowReply {
+  listeners: number
 }
