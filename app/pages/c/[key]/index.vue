@@ -26,7 +26,7 @@ const board = part("board/island");
 
 chrome.view.faces.value = FACES.filter((face) => built[face]);
 
-// `/turn-diff` opens `?face=review`: a deep link picks the face once, then the switcher owns it.
+// A link such as `?face=review` picks the face once, then the switcher owns it.
 const asked = FACES.find((face) => face === route.query.face);
 if (asked) chrome.view.set(asked);
 

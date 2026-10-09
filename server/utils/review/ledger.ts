@@ -5,7 +5,7 @@ import { readTextSafe } from "../mode/fsutil.ts"
 import { configRoot } from "../mode/paths.ts"
 import { Lines } from "../../../shared/utils/lines.ts"
 
-// The turn-diff mod's own limit: past it, or holding a NUL byte, a file is not reviewable.
+// The sidecar mod's own limit: past it, or holding a NUL byte, a file is not reviewable.
 const MAX_BYTES = 4 * 1024 * 1024
 
 interface Tracked {
@@ -13,12 +13,18 @@ interface Tracked {
   blob?: string
 }
 
+interface Step {
+  label: string
+}
+
 interface Ledger {
   turn: number
   files: Record<string, Tracked>
+  undo: Step[]
+  redo: Step[]
 }
 
-// The turn-diff mod writes one folder per session, named by the full session id.
+// The sidecar mod writes one folder per session, named by the full session id, under the name turn-diff began.
 export function reviewHome(): string {
   return join(configRoot(), "turn-diff")
 }
@@ -49,7 +55,7 @@ function ledgerOf(dir: string): Ledger | undefined {
   if (!raw) return undefined
   try {
     const parsed = JSON.parse(raw) as Partial<Ledger>
-    return { turn: parsed.turn ?? 0, files: parsed.files ?? {} }
+    return { turn: parsed.turn ?? 0, files: parsed.files ?? {}, undo: parsed.undo ?? [], redo: parsed.redo ?? [] }
   } catch {
     return undefined
   }
@@ -79,5 +85,7 @@ export function snapshotOf({ key, live }: { key: string; live: boolean }): Revie
   const files = Object.entries(ledger.files)
     .map(([path, tracked]) => fileOf(dir, path, tracked))
     .filter((file): file is ReviewFile => !!file && file.changes.length > 0)
-  return { key, live, turn: ledger.turn, files }
+  const undo = ledger.undo.at(-1)?.label
+  const redo = ledger.redo.at(-1)?.label
+  return { key, live, turn: ledger.turn, files, ...(undo && { undo }), ...(redo && { redo }) }
 }

@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { useLocalStorage } from "@vueuse/core";
+import { Redo2, Undo2 } from "@lucide/vue";
+import { useEventListener, useLocalStorage } from "@vueuse/core";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { ReviewPicks } from "~/utils/review";
 
@@ -23,7 +24,7 @@ const empty = computed(() => {
   if (!review.snapshot.value) return "Reading the review…";
   return review.snapshot.value.turn
     ? "Every change is approved. The review is clean."
-    : "Nothing captured yet. The turn-diff mod records each file as Claude first changes it.";
+    : "Nothing captured yet. The sidecar mod records each file as Claude first changes it.";
 });
 
 // The popover sits under whatever asked for it, and the tray chip carries the quote and the lines.
@@ -50,6 +51,21 @@ function comment(event: MouseEvent, lines?: ReviewPicks, isRejected = false): vo
     y: Math.max(12, Math.min(box.top - 312, window.innerHeight - 312)),
   });
 }
+
+// Captured, so a diff pane's own Monaco never takes ⌘Z, and the comment box keeps it for its text.
+useEventListener(
+  window,
+  "keydown",
+  (event: KeyboardEvent) => {
+    if (!(event.metaKey || event.ctrlKey) || event.altKey || event.key.toLowerCase() !== "z") return;
+    const target = event.target instanceof Element ? event.target : undefined;
+    if (target?.closest("input, textarea, [contenteditable]") && !target.closest(".monaco-editor")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (isLive.value && !review.busy.value) void review.travel(event.shiftKey ? "redo" : "undo");
+  },
+  { capture: true },
+);
 
 function rejectLines(event: MouseEvent): void {
   const lines = picked.value;
@@ -85,8 +101,26 @@ function rejectFile(event: MouseEvent): void {
         <ReviewFiles v-else />
       </div>
 
-      <footer v-if="files.length" class="all">
+      <footer v-if="files.length || review.snapshot.value?.undo || review.snapshot.value?.redo" class="all">
+        <ChromeAction
+          v-if="review.snapshot.value?.undo"
+          data-region="review-undo"
+          :icon="Undo2"
+          shape="pill"
+          :tip="`Undo ${review.snapshot.value.undo} · ⌘Z`"
+          @click="review.travel('undo')"
+        />
+        <ChromeAction
+          v-if="review.snapshot.value?.redo"
+          data-region="review-redo"
+          :icon="Redo2"
+          shape="pill"
+          :tip="`Redo ${review.snapshot.value.redo} · ⌘⇧Z`"
+          @click="review.travel('redo')"
+        />
+        <span class="spacer" />
         <button
+          v-if="files.length"
           v-press
           class="action focusable"
           type="button"
@@ -97,6 +131,7 @@ function rejectFile(event: MouseEvent): void {
           {{ review.confirming.value === "*" ? "Reject all? Press again" : "Reject all" }}
         </button>
         <button
+          v-if="files.length"
           v-press
           class="action focusable"
           type="button"

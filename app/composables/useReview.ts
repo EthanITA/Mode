@@ -17,6 +17,7 @@ export interface ReviewFace {
   picks: Ref<string[]>;
   selected: Maybe<string>;
   snapshot: Maybe<ReviewSnapshot>;
+  travel: (way: "redo" | "undo") => Promise<void>;
 }
 
 const FAILED: Record<Exclude<ReviewActionReply, { delivered: true }>["reason"], string> = {
@@ -106,6 +107,12 @@ export function useReview(): ReviewFace {
     await act({ do: isAccept ? "approve" : "reject", paths }, isAccept ? "Approved everything" : "Rejected everything, Claude is told");
   }
 
+  async function travel(way: "redo" | "undo"): Promise<void> {
+    const label = snapshot.value?.[way];
+    if (!label) return;
+    await act({ do: way }, `${way === "undo" ? "Undid" : "Redid"} ${label}`);
+  }
+
   // Called once by the face that shows the review, so one stream serves every part of it.
   function listen(): void {
     let source: EventSource | undefined;
@@ -149,5 +156,6 @@ export function useReview(): ReviewFace {
     picks,
     selected,
     snapshot,
+    travel,
   };
 }

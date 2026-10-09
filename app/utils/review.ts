@@ -6,7 +6,7 @@ export type ReviewRow =
   | { kind: "change"; key: string; change: number; old: number; new: number; isFirst: boolean }
   | { kind: "fold"; key: string; count: number };
 
-// 1-based, as the turn-diff mod takes them.
+// 1-based, as the sidecar mod takes them.
 export interface ReviewPicks {
   old: number[];
   new: number[];

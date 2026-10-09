@@ -25,7 +25,8 @@ before(() => {
     [join(root, "settled")]: { turns: [1], blob: "same" },
     [join(root, "gone")]: { turns: [2], blob: "orig" },
   }
-  writeFileSync(join(dir, "review.json"), JSON.stringify({ turn: 2, files }))
+  const undo = [{ label: "approving a" }, { label: "rejecting line 2 of edited" }]
+  writeFileSync(join(dir, "review.json"), JSON.stringify({ turn: 2, files, undo, redo: [] }))
 })
 
 after(() => {
@@ -41,6 +42,8 @@ test("the snapshot pairs each file's original blob with the disk, and leaves out
   assert.equal(byName.get("created")?.isNew, true)
   assert.equal(byName.get("gone")?.isDeleted, true)
   assert.equal(snapshot.turn, 2)
+  assert.equal(snapshot.undo, "rejecting line 2 of edited")
+  assert.equal(snapshot.redo, undefined)
 })
 
 test("an unknown key reads as an empty review", () => {

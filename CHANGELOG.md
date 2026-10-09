@@ -20,15 +20,19 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   `templates/interactive.html` is rebuilt on it, which also fixes its `--color-*` tokens that no pack
   defined, and `templates/showpiece.html` drops its own reveal, count-up and toggle for it.
 - **A Review face, side by side, for what Claude changed since your last approval.** It reads the
-  ledger the `turn-diff` mod keeps in `~/.claude/turn-diff/<session>/`: the original on the left, the
+  ledger the `sidecar` mod keeps in `~/.claude/turn-diff/<session>/`, a job the `turn-diff` mod did
+  before it folded into `sidecar` with no window of its own in Claude Code: the original on the left, the
   disk on the right, in Monaco's diff editor with the One Dark theme the Files editor uses, Compact
   hiding unchanged regions and Wrap wrapping both sides. The files sit in a folder tree like JetBrains'
   commit view, coloured by status, with single-folder chains merged. Select lines in either pane to
   pick them and accept or reject them, take a whole hunk with the check or the x on the seam between
   the sides, or approve and reject files. Each press is relayed into the session, where the mod applies
   it and tells Claude about a reject, so the mod stays the only writer, and a reject of lines, a hunk or
-  a file opens the composer on it to say why. Comments go to the tray, and the comment icon in either
-  gutter or ⌘K notes a line the way it does in Files. `/turn-diff` opens it at `/c/<key>?face=review`.
+  a file opens the composer on it to say why. ⌘Z undoes the last approve or reject and ⌘⇧Z redoes it,
+  up to 50 back, with the same pair as buttons whose tooltip names the step; the mod refuses one whose
+  file Claude edited since, and tells Claude when an undo or redo rewrites a file. Comments go to the
+  tray, and the comment icon in either gutter or ⌘K notes a line the way it does in Files.
+  `/c/<key>?face=review` opens on it.
 - **The chat island is hidden; Claude Code is the chat.** The prompt, the transcript and the mode and
   style pickers no longer show in a conversation or on an artifact page. Notes left on a page or a line
   still collect in the tray, which shows bottom right with one button that sends them to Claude.

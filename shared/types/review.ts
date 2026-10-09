@@ -21,12 +21,16 @@ export interface ReviewSnapshot {
   live: boolean
   turn: number
   files: ReviewFile[]
+  /** What ⌘Z would take back, or ⌘⇧Z apply again, in the mod's words: "rejecting line 2 of a.ts". */
+  redo?: string
+  undo?: string
 }
 
-// Mirrors the turn-diff mod's TurnDiffAction, which runs it; line numbers are 1-based, as a person reads them.
+// Mirrors the sidecar mod's ReviewAction, which runs it; line numbers are 1-based, as a person reads them.
 export type ReviewAction =
   | { do: "approve" | "reject"; paths: string[] }
   | { do: "accept-lines" | "reject-lines"; path: string; old: number[]; new: number[] }
+  | { do: "undo" | "redo" }
 
 export type ReviewActionReply =
   | { delivered: true }
@@ -36,7 +40,7 @@ export type ReviewActionReply =
 export type FollowSource = "claude" | "prompt" | "terminal" | "none"
 
 export interface FollowTarget {
-  /** The face to show there, as `/turn-diff` asks for Review; the client ignores one it does not know. */
+  /** The face to show there, such as Review; the client ignores one it does not know. */
   face?: string
   key?: string
   name?: string

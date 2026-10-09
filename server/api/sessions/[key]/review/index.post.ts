@@ -9,6 +9,7 @@ const isLines = (value: unknown): value is number[] =>
 function actionOf(raw: unknown): ReviewAction | undefined {
   if (typeof raw !== "object" || !raw) return undefined
   const body = raw as Record<string, unknown>
+  if (body.do === "undo" || body.do === "redo") return { do: body.do }
   if (body.do === "approve" || body.do === "reject") return isPaths(body.paths) ? { do: body.do, paths: body.paths } : undefined
   if (body.do !== "accept-lines" && body.do !== "reject-lines") return undefined
   if (!isPath(body.path) || !isLines(body.old) || !isLines(body.new) || !(body.old.length + body.new.length)) return undefined
