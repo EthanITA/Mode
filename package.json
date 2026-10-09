@@ -8,6 +8,8 @@
     "build": "nuxt build",
     "preview": "nuxt preview",
     "typecheck": "nuxi typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "node --test --experimental-strip-types \"server/utils/**/*.test.ts\" \"app/utils/**/*.test.ts\"",
     "check:render": "node tools/render-check/run.ts",
     "check:render:types": "tsc -p tools/render-check/tsconfig.json --noEmit",
@@ -32,6 +34,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",
     "@types/node": "^25.8.0",
+    "prettier": "^3.9.9",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "vite-plugin-vue-tailwind-auto-reference": "^2.0.2",
