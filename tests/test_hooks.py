@@ -1135,7 +1135,7 @@ with tempfile.TemporaryDirectory() as tmp:
             "confirmation kind none of it exists TradingOrdersClient:87” · main > div:nth-of-type(3) "
             "in /Users/madong/Notes/artifacts/ai-438-cancel-order.html — would that require a tool "
             "change? gemini: No, calling MOE directly bypasses the agent entirely.")
-    MARK = "[[mode-relay v1 slug=ai-438-cancel-order]]\n"
+    MARK = "[[cc-sidecar slug=ai-438-cancel-order]]\n"
 
     def relayed(prompt, kind="injected"):
         done = fire("relay.py", {"session_id": "relay001", "hook_event_name": "UserPromptSubmit",

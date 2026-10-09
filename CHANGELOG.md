@@ -206,10 +206,18 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 ### Changed
 
 - **The sidecar's own theme switch and its Comment island are gone from the faces.** The theme switch
-  now belongs to an artifact and flips only that page, so the sidecar keeps the light or dark it last
-  had, and Comment sits with the artifact it acts on. Comment, the page's theme switch, Fullscreen and
-  X are one `<ChromeAction>`, a pill in a bar or an island in the top row, so each keeps one icon, one
-  tooltip and one motion wherever it shows.
+  now belongs to an artifact and flips its whole pane, the page with its header, notes and versions,
+  while the rest of the sidecar keeps the light or dark it last had; with the page fullscreen or open
+  on its own the switch is the whole window's. Comment sits with the artifact it acts on. Comment, the
+  page's theme switch, Fullscreen and X are one `<ChromeAction>`, a pill in a bar or an island in the
+  top row, so each keeps one icon, one tooltip and one motion wherever it shows.
+- **The board and the notes float over the faces,** which now run to the bottom of the window, the
+  counter above Send notes is gone, every island is liquid glass, and the faces read Files, Review,
+  History.
+- **A delivery from the sidecar reads as what Marco wrote.** The sidecar marks what it sends
+  `[[cc-sidecar]]` instead of `[[mode-relay v1]]`, and the `sidecar` mod takes it out of Claude Code's
+  peer envelope before it lands, so the "Another Claude session sent a message" lines never reach
+  the conversation. `hooks/relay.py` still reads both markers, for a session running without the mod.
 - **A note sends Claude a short quote.** The lines or block it is about travel cut to one line of 160
   characters, since Claude reads the file itself, and the composer shows only the first three lines
   of a long selection.
@@ -237,6 +245,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **A comment already sent to Claude never rides the next send.** It used to stay in the tray after
+  sending and go out again with every later note; now it is marked sent, keeps its pin on the page,
+  and leaves the count and the handover.
 - **Line notes from Review reach Claude with their file and lines.** The tray's handover only carried
   the quoted text before.
 - **An artifact fetch that resolves late no longer replaces the one picked after it.**

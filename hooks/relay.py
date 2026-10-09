@@ -2,12 +2,10 @@ import json
 import re
 import sys
 
-# Claude Code wraps anything arriving on the messaging socket as an untrusted peer. Correct for a
-# real teammate agent, wrong for the sidecar, which only Marco can reach.
-# The separator after the colon is a space in some builds and a newline in others.
+# Only fires where the sidecar mod is absent; with it, deliveries land already unwrapped.
 PREFIX = re.compile(r"^Another Claude session sent a message:\s*")
 PEER_NOTE = "This came from another Claude session"
-MARKER = re.compile(r"\[\[mode-relay v1(?: slug=([A-Za-z0-9._-]+))?\]\]\n?")
+MARKER = re.compile(r"\[\[(?:cc-sidecar|mode-relay v1)(?: slug=([A-Za-z0-9._-]+))?\]\]\n?")
 
 # UserPromptSubmit has no prompt-rewrite field, so the wrapper cannot be deleted from what the
 # model reads; additionalContext is the only channel, and it overrides the wrapper in place.
