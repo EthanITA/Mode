@@ -59,13 +59,14 @@ Either way, `claude plugin list` tells you which one you ended up with.
 
 ### What the installer does
 
-Three things, none of which a plugin can do for itself. It never asks your name: contracts say "the user", and Claude already knows who it is talking to.
+Four things, none of which a plugin can do for itself. It never asks your name: contracts say "the user", and Claude already knows who it is talking to.
 
-| It does                                                                                                  | Because                                                                                                     |
-| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Writes `/mode`, `/style`, `/approve` and `/why` into your commands directory, plus one per shipped skill | A plugin cannot register an un-namespaced command, so without these files those names do not resolve at all |
-| Creates `~/.claude/mode/{modes,styles,rules,design-systems}/`                                            | Somewhere for contracts and design-system packs you write yourself that a plugin update never overwrites    |
-| Wires the status line                                                                                    | `statusLine` is a key in your `settings.json`, and no plugin can set it                                     |
+| It does                                                                                                  | Because                                                                                                                |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Writes `/mode`, `/style`, `/approve` and `/why` into your commands directory, plus one per shipped skill | A plugin cannot register an un-namespaced command, so without these files those names do not resolve at all            |
+| Creates `~/.claude/mode/{modes,styles,rules,design-systems}/`                                            | Somewhere for contracts and design-system packs you write yourself that a plugin update never overwrites               |
+| Wires the status line                                                                                    | `statusLine` is a key in your `settings.json`, and no plugin can set it                                                |
+| Records the node it ran with in `~/.claude/mode/node`                                                    | Hooks use the node on `PATH` and fall back to this one, so a Claude Code started without nvm on `PATH` still runs them |
 
 It then runs `mode sync`, which adds one palette entry per contract.
 
