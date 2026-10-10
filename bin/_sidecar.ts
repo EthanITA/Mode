@@ -6,8 +6,10 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { sidecarHome } from "../lib/mode/paths.ts";
+import * as Events from "../lib/sidecar/events.ts";
+import type { Topics } from "../shared/types/events.ts";
 
-type Command = "open" | "status" | "start" | "stop" | "restart" | "install" | "uninstall" | "help";
+type Command = "open" | "publish" | "status" | "start" | "stop" | "restart" | "install" | "uninstall" | "help";
 type Proc = { pid: number; ppid: number; args: string };
 type Point = { key?: string; slug?: string };
 
@@ -31,6 +33,9 @@ const USAGE = `usage: sidecar [command]     /sidecar [command] in a Claude Code 
               sidecar window to the front, else open the installed app, else a Chrome app window.
               The conversation is the key given, else the Claude Code session this runs in, and
               --artifact <slug> opens that page there, in Artifacts
+  publish <topic> <json>
+              append an event to the log every open sidecar streams, for this conversation.
+              Topics: ${Events.TOPICS.join(", ")}
   status      whether it is up, where, and whether it starts at login
   start       start it in the background and wait until it answers
   stop        stop it, wherever it was started from
@@ -328,6 +333,23 @@ async function open({ key = process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8), slu
   return 1;
 }
 
+// Works with the sidecar down too: the event waits in the log and streams once a sidecar reads it.
+function publish(): number {
+  const [topic = "", body = "{}"] = process.argv.slice(3);
+  if (!Events.isTopic(topic)) {
+    console.error(`sidecar: no topic '${topic}'. Topics: ${Events.TOPICS.join(", ")}`);
+    return 2;
+  }
+  try {
+    Events.publish({ topic, data: JSON.parse(body) as Topics[typeof topic] });
+  } catch (error) {
+    console.error(`sidecar: ${error instanceof Error ? error.message : String(error)}`);
+    return 2;
+  }
+  console.log(`published ${topic} to ${Events.logFile()}`);
+  return 0;
+}
+
 const COMMANDS = {
   open: async () => {
     const { positionals, values } = parseArgs({
@@ -337,6 +359,7 @@ const COMMANDS = {
     });
     return open({ key: positionals[0], slug: values.artifact });
   },
+  publish: async () => publish(),
   status,
   start,
   stop,
