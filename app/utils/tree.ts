@@ -54,7 +54,11 @@ function fromPaths(paths: readonly string[]): PathTree | undefined {
     children.set(at, entries.sort(byName));
   };
   walk(top, root);
-  return { root, children };
+  if (root === "/") return { root, children };
+  const cut = root.lastIndexOf("/");
+  const parent = root.slice(0, cut) || "/";
+  children.set(parent, [{ name: root.slice(cut + 1), path: root, kind: "dir" }]);
+  return { root: parent, children };
 }
 
 export const Tree = { fromPaths };
