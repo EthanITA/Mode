@@ -3,4 +3,5 @@
 export NODE_COMPILE_CACHE="${NODE_COMPILE_CACHE:-${TMPDIR:-/tmp}/node-compile-cache}"
 # Parameter expansion rather than dirname, which lives in /usr/bin and a stripped PATH may not reach.
 case $0 in */*) here=${0%/*} ;; *) here=. ;; esac
-exec node "$here/$1.ts"
+. "$here/../bin/_node.sh"
+exec "$node" "$here/$1.ts"

@@ -280,6 +280,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **A Claude Code started without node on PATH no longer turns every hook off.** The hooks, `bin/mode`,
+  `bin/artifact` and `bin/sidecar` use the node on PATH first and otherwise the one `install.sh` now
+  records in `~/.claude/mode/node`, so run `./install.sh` once after updating.
 - **Buttons at the bottom of Review, Files and History clear the floating Board and Send pills.**
   Undo, Redo, Reject all, Accept lines and Clear sat under the glass once the islands began floating
   over the faces.

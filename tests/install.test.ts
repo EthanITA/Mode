@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { env, MODE, PLUGIN, run, scratch, write } from "./support.ts";
@@ -83,6 +83,24 @@ test("the status line renders the chips with no jq anywhere on PATH", () => {
     env: { ...bare, CLAUDE_CONFIG_DIR: config },
   });
   assert.equal(chips.stdout.trim(), "from-manifest", chips.stderr);
+});
+
+test("with no node on PATH, hooks and bin/mode run on the node the installer recorded", () => {
+  const config = join(tmp, "cfg-nodeless");
+  assert.equal(install(config).status, 0);
+  const recorded = readFileSync(join(config, "mode", "node"), "utf8").trim();
+  assert.equal(recorded, execFileSync("/bin/sh", ["-c", "command -v node"], { encoding: "utf8" }).trim());
+
+  const nodeless = { PATH: "/bin", HOME: process.env.HOME ?? "", CLAUDE_CONFIG_DIR: config };
+  assert.notEqual(run("/bin/sh", ["-c", "command -v node"], { env: nodeless }).status, 0);
+  assert.match(run("/bin/sh", [MODE, "version"], { env: nodeless }).stdout, /\d+\.\d+\.\d+/);
+  const hook = run("/bin/sh", [join(PLUGIN, "hooks", "run"), "resume"], { input: "{}", env: nodeless });
+  assert.ok(hook.status === 0 && existsSync(join(config, "mode", "plugin-root")), hook.stderr);
+
+  rmSync(join(config, "mode", "node"));
+  const lost = run("/bin/sh", [MODE, "version"], { env: nodeless });
+  assert.equal(lost.status, 127);
+  assert.match(lost.stderr, /install\.sh has not recorded one/);
 });
 
 test("a node older than the LTS stops the install up front, naming what it found", () => {

@@ -185,7 +185,22 @@ if [ -d "$PLUGIN_RULES" ]; then
   done
 fi
 
-# ---------------------------------------------------------------- 2. the status line
+# ---------------------------------------------------------------- 2. the node the hooks fall back to
+
+step "2. The node the hooks fall back to"
+
+NODE_POINTER=$USER_CONTRACTS/node
+NODE_BIN=$(command -v node)
+if [ "$(cat "$NODE_POINTER" 2>/dev/null)" = "$NODE_BIN" ]; then
+  say "Already there: $NODE_POINTER"
+else
+  printf '%s\n' "$NODE_BIN" > "$NODE_POINTER"
+  say "Recorded: $NODE_POINTER"
+  touched "$NODE_POINTER: $NODE_BIN, the node a hook runs when Claude Code starts without one on PATH"
+fi
+say "The node on PATH still wins, so switching versions with nvm works. Re-run this if you remove $NODE_BIN."
+
+# ---------------------------------------------------------------- 3. the status line
 
 read_statusline() { node "$INSTALL_TS" statusline "$1"; }
 write_statusline_key() { node "$INSTALL_TS" set-statusline "$1" "$2"; }
@@ -406,7 +421,7 @@ handle_existing_statusline() {
   touched "$host_script: chips block appended at the end"
 }
 
-step "2. The status line"
+step "3. The status line"
 
 if [ "$SKIP_STATUSLINE" -eq 1 ]; then
   say "Skipped, because --no-status-line was given."
@@ -462,7 +477,7 @@ else
   fi
 fi
 
-# ---------------------------------------------------------------- 3. bare command aliases
+# ---------------------------------------------------------------- 4. bare command aliases
 
 # Greppable ownership mark, so a re-run can refresh a file it wrote and must leave yours alone.
 ALIAS_MARKER="mode-plugin:alias"
@@ -582,7 +597,7 @@ write_alias() {
   touched "$target: the bare /$1 command"
 }
 
-step "3. The bare commands: /mode, /style, /approve and /why"
+step "4. The bare commands: /mode, /style, /approve and /why"
 
 say "A plugin cannot register an un-namespaced command, so these four live as small files in"
 say "your own commands directory. Without them the bare names do not exist."
@@ -600,9 +615,9 @@ else
   write_skill_alias showpiece-prompt "Author a one-shot generative prompt using the six-slot anatomy."
 fi
 
-# ---------------------------------------------------------------- 4. the per-contract shortcuts
+# ---------------------------------------------------------------- 5. the per-contract shortcuts
 
-step "4. The per-contract shortcuts"
+step "5. The per-contract shortcuts"
 
 say "mode sync writes one palette entry per contract: /mode:<name> for a mode inside the plugin,"
 say "and style:<name>.md in your commands directory, so a style arrives bare as /style:<name>."
