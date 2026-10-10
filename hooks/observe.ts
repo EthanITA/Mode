@@ -5,8 +5,14 @@ import { deliverableCommand } from "../lib/mode/deliverable.ts";
 import { done } from "../lib/mode/slots.ts";
 
 const TESTS =
-  /\b(pytest|jest|vitest|rspec|phpunit|tox|nose2|(go|cargo|mvn|gradle|swift|dotnet)\s+test|(npm|yarn|pnpm|bun|deno)\s+(run\s+)?test|tests?\/run\.py|make\s+(test|check))\b/;
-const COMMIT = /\bgit\s+(commit|cherry-pick)\b/;
+  /\b(pytest|py\.test|jest|vitest|mocha|rspec|phpunit|tox|nose2|node\s+--test|python3?\s+(-m\s+unittest|\S*tests?\/\S+\.py|\S*test_\S+\.py)|(go|cargo|mvn|gradle|swift|dotnet)\s+test|(npm|yarn|pnpm|bun|deno)\s+(run\s+)?test|tests?\/run\.py|make\s+(test|check))\b/;
+// A pipe exits with its last command's status, so a red suite piped into tail only shows red in what it printed.
+const RED = /\bFAIL(?:ED|URE)?\b|\b[1-9]\d* (?:\w+ )?(?:failed|failures?|errors?)\b|^[ℹ#] fail [1-9]/m;
+// A suite that could not load is broken rather than red, and a red-first gate must not open on it.
+const UNLOADED =
+  /ModuleNotFoundError|ImportError|SyntaxError|IndentationError|NameError|error during collection|Cannot find module/;
+const COMMIT = /\bgit\s+(?:-[Cc]\s+\S+\s+|--?[\w-]+(?:=\S+)?\s+)*(commit|cherry-pick)\b/;
+const NOT_COMMITTED = /nothing (?:added )?to commit|no changes added to commit/;
 // The two delivery acts that finish one part of the north star outright: the MR opened, the page stamped.
 const RECEIPTS: [RegExp, string][] = [
   [/\b(?:glab\s+mr\s+create|gh\s+pr\s+create)\b/, "change"],
@@ -38,10 +44,14 @@ function observed(data: Payload): string {
   }
   if (tool !== "Bash") return "";
   const command = str(args.command);
-  if (COMMIT.test(command)) return failed ? "" : "commit";
+  const response = record(data.tool_response);
+  const printed = failed ? str(data.error) : `${str(response.stdout)}\n${str(response.stderr)}`;
+  if (COMMIT.test(command)) return failed || NOT_COMMITTED.test(printed) ? "" : "commit";
+  if (!TESTS.test(command)) return "";
+  const red = failed || RED.test(printed);
   // A suite that went red is its own event, which is what a red-first pipeline waits on.
-  if (TESTS.test(command)) return failed ? "test-fail" : "test";
-  return "";
+  if (red) return UNLOADED.test(printed) ? "" : "test-fail";
+  return "test";
 }
 
 // lib/artifact is the one writer of a conversation's list, as lib/mode is of its slots.

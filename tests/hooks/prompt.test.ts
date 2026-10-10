@@ -3,7 +3,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 import { deliverableCommand } from "../../lib/mode/deliverable.ts";
-import { approve, getSlot, red, setSlot } from "../../lib/mode/slots.ts";
+import { pipelineFor } from "../../lib/mode/pipeline.ts";
+import { approve, done, getSlot, red, setSlot } from "../../lib/mode/slots.ts";
 import { declared, deliverable } from "../../lib/mode/state.ts";
 import { contextOf, env, fire, fixtureRoot, output, PLUGIN, scratch, write, contract, type Run } from "../support.ts";
 
@@ -427,5 +428,36 @@ describe("the PostToolUse hooks", () => {
     await deliverableCommand({ words: ["change", "artifact", "the fix"], session });
     ran("glab mr create --fill");
     assert.deepEqual(deliverable(session).intents, ["artifact"]);
+  });
+
+  test("observe reads the red a pipe hides, skips a suite that never loaded and a commit that never happened, and an approval passes its step", () => {
+    const session = sid();
+    setSlot({ axis: "mode", session, name: "copilot" });
+    const ran = (command: string, printed = "", event = "PostToolUse") =>
+      fire(
+        "observe",
+        {
+          session_id: session,
+          hook_event_name: event,
+          tool_name: "Bash",
+          cwd: tmp,
+          tool_input: { command },
+          ...(event === "PostToolUse" ? { tool_response: { stdout: printed, stderr: "" } } : { error: printed }),
+        },
+        vars,
+      );
+    ran("pnpm test 2>&1 | tail -5", "Tests: 1 failed, 4 passed");
+    assert.equal(red(session), "test-fail");
+    ran("node --test tests/", "ℹ pass 4\nℹ fail 0\n✖ failing tests:\n⚠ a todo # later");
+    assert.equal(red(session), undefined);
+    ran("pnpm test", "SyntaxError: Unexpected token", "PostToolUseFailure");
+    assert.equal(red(session), undefined);
+    ran("git add -A; git commit -m wip", "nothing to commit, working tree clean");
+    assert.ok(!declared("mode", session).has("commit"));
+    ran("git -C ~/src/app commit -q -m wip");
+    assert.ok(declared("mode", session).has("commit"));
+    done({ axis: "mode", session, reason: "artifact" });
+    approve({ slug: "a-spec", session });
+    assert.equal(pipelineFor(session)?.current, "dispatch");
   });
 });

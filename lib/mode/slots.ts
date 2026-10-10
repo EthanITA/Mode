@@ -151,6 +151,8 @@ export function approve({
 }): string | undefined {
   if (slug) {
     writeState(require(statePath(session, ".approved")), stamp(held("mode", session), slug));
+    // An approval is never a tool call, so observe cannot see it and an `@approve` step is recorded here.
+    done({ axis: "mode", session, reason: "approve" });
     return slug;
   }
   return approvedSlug(session, anyMode) || undefined;
