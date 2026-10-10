@@ -207,10 +207,6 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   A review already begun in `~/.claude/turn-diff/` is still read from there and carries on in it, and the
   existing versions were moved by hand, so a machine with older ones needs
   `mv ~/.claude/mode/versions ~/.claude/sidecar/versions`.
-- **Comments on a `.md` outside the artifacts folder no longer touch the file.** Their threads live in
-  `~/.claude/sidecar/comments/<stem>--<hash>.json`, written by both the sidecar and `artifact comments`, and
-  the first write lifts an old trailing `<!-- rv:seed -->` block out of the document into that file. A `.md` in
-  the artifacts folder and every HTML page keep their threads in the file, so they commit with it.
 - **The deliverable guard only counts a page directly inside an `artifacts/` folder as an artifact.** Code
   under a folder of that name, such as `server/api/artifacts/`, is an ordinary change.
 - **Mode runs on Node alone.** python3 and jq are no longer needed, and Node 24 or newer is. Every
