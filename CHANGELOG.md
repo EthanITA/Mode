@@ -215,8 +215,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   330ms to about 35ms. The installer edits `settings.json` through `bin/_install.ts`, the generated
   `statusline.sh` pipes its JSON into `chips.sh`, which hands it to `bin/mode chips --stdin`, and
   `chips.sh` finds the plugin in `installed_plugins.json` with node. A `statusline.sh` written by an
-  older installer still calls jq, so re-run `./install.sh --force` if you remove jq. The test suite
-  is `node --test "tests/**/*.test.ts"`.
+  older installer still calls jq, so re-run `./install.sh --force` if you remove jq. The plugin's
+  own suite is `pnpm test:plugin` and its typecheck `pnpm typecheck:plugin`.
 - **The theme switch is one island in the top right of every route and face,** beside the other
   islands, and no view carries its own copy. It themes the whole sidecar, and the page inside the
   frame follows it. Comment sits with the page, as a pill in its Files header and as an island when it
