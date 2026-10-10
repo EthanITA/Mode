@@ -29,7 +29,7 @@ export function isStoredDocument(path: string, artifactsDir: string): boolean {
   return path.endsWith(".md") && dirname(path) !== artifactsDir;
 }
 
-function commentsFile(path: string): string {
+export function commentsFile(path: string): string {
   return join(sidecarHome(), "comments", `${documentSlug(path)}.json`);
 }
 

@@ -10,6 +10,7 @@ import type {
   ThreadReply,
 } from "../../shared/types/artifact";
 import {
+  commentsFile,
   hasLegacyBlock,
   isStoredDocument,
   readComments,
@@ -264,24 +265,31 @@ async function artifactFiles(dir: string): Promise<ArtifactFile[]> {
 }
 
 // Each row costs 160 KB of reads, so a list that has not changed on disk is answered from here.
-const listed = new Map<string, { size: number; mtimeMs: number; meta: ArtifactMeta }>();
+const listed = new Map<string, { size: number; mtimeMs: number; storeMtimeMs?: number; meta: ArtifactMeta }>();
 
 interface MetaOfInput {
   file: ArtifactFile;
   path: string;
   stats: { size: number; mtimeMs: number };
+  stored: boolean;
 }
 
-async function metaOf({ file, path, stats }: MetaOfInput): Promise<ArtifactMeta> {
+async function metaOf({ file, path, stats, stored }: MetaOfInput): Promise<ArtifactMeta> {
+  // A stored document's threads change without touching the document, so its store is part of the cache key.
+  const storeMtimeMs = stored ? (await stat(commentsFile(path)).catch(() => undefined))?.mtimeMs : undefined;
   const hit = listed.get(path);
-  if (hit && hit.size === stats.size && hit.mtimeMs === stats.mtimeMs) return hit.meta;
+  if (hit && hit.size === stats.size && hit.mtimeMs === stats.mtimeMs && hit.storeMtimeMs === storeMtimeMs)
+    return hit.meta;
   const [head, tail] = await Promise.all([readHead(path, BODY_BYTES), readTail(path, stats.size)]);
+  const comments = stored ? readComments(path, tail) : undefined;
   const meta: ArtifactMeta = {
     ...parseMeta({ format: file.format, head: head.slice(0, HEAD_BYTES), fallbackSlug: file.slug, path }),
-    threadCount: countThreads({ format: file.format, tail, whole: stats.size <= TAIL_BYTES }),
+    threadCount: comments
+      ? threadsOf(comments.threads).length
+      : countThreads({ format: file.format, tail, whole: stats.size <= TAIL_BYTES }),
     preview: previewOf(file.format === "md" ? `<body>${await Markdown.body(head)}` : head),
   };
-  listed.set(path, { size: stats.size, mtimeMs: stats.mtimeMs, meta });
+  listed.set(path, { size: stats.size, mtimeMs: stats.mtimeMs, storeMtimeMs, meta });
   return meta;
 }
 
@@ -293,7 +301,10 @@ export async function listArtifacts(): Promise<ArtifactMeta[]> {
   for (const { file, path } of sources) {
     try {
       const stats = await stat(path);
-      rows.push({ meta: await metaOf({ file, path, stats }), mtime: stats.mtimeMs });
+      rows.push({
+        meta: await metaOf({ file, path, stats, stored: isStoredDocument(path, dir) }),
+        mtime: stats.mtimeMs,
+      });
     } catch {
       // vanished or unreadable between the readdir and the read: drop it rather than fail the whole list
     }

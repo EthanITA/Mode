@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { readComments } from "../../lib/sidecar/comments.ts";
-import { applyReviewChange, applyStoredReview } from "./artifacts.ts";
+import { applyReviewChange, applyStoredReview, listArtifacts } from "./artifacts.ts";
 import { Markdown } from "./markdown.ts";
 import { Documents } from "./sessions/artifact-lists.ts";
 
@@ -49,6 +49,28 @@ test("a document outside the artifacts folder keeps its threads in the store and
     assert.equal(readComments(path, "# Plan\n")?.threads.length, 2);
   } finally {
     delete process.env.CLAUDE_CONFIG_DIR;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a stored document's card counts the threads in its store, a new one included", async () => {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "listed-")));
+  process.env.CLAUDE_CONFIG_DIR = dir;
+  process.env.NOTES_ARTIFACTS = join(dir, "pages");
+  try {
+    const path = join(dir, "plan.md");
+    writeFileSync(path, "# Plan\n");
+    mkdirSync(join(dir, "artifacts"));
+    writeFileSync(join(dir, "artifacts", "session-0123abcd"), `${path}\n`);
+    const count = async () => (await listArtifacts()).find((one) => one.path === path)?.threadCount;
+
+    applyStoredReview({ action: "create", body: "first", path, text: "# Plan\n" });
+    assert.equal(await count(), 1);
+    applyStoredReview({ action: "create", body: "second", path, text: "# Plan\n" });
+    assert.equal(await count(), 2);
+  } finally {
+    delete process.env.CLAUDE_CONFIG_DIR;
+    delete process.env.NOTES_ARTIFACTS;
     rmSync(dir, { recursive: true, force: true });
   }
 });
