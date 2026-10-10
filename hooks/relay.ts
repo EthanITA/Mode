@@ -4,7 +4,7 @@ import { strip } from "../lib/text.ts";
 // Only fires where the sidecar mod is absent; with it, deliveries land already unwrapped.
 const PREFIX = /^Another Claude session sent a message:\s*/;
 const PEER_NOTE = "This came from another Claude session";
-const MARKER = /^\[\[(?:cc-sidecar|mode-relay v1)(?: slug=([A-Za-z0-9._-]+))?\]\]\n?/;
+const MARKER = /^\[\[(?:sidecar|cc-sidecar|mode-relay v1)(?: slug=([A-Za-z0-9._-]+))?\]\]\n?/;
 
 // There is no prompt-rewrite field, so additionalContext is the only channel and it overrides the wrapper in place.
 function wrote(where: string, body: string): string {

@@ -21,6 +21,11 @@ test("a newline after the colon unwraps the same as a space", () => {
   assert.equal(plain(`Another Claude session sent a message:\n${marked(SAID)}${PEER}`), SAID);
 });
 
+test("a relay marked the way older transcripts were still normalises", () => {
+  assert.equal(plain(`${WRAP}[[cc-sidecar slug=readme]]\n${SAID}${PEER}`), SAID);
+  assert.equal(plain(`${WRAP}[[mode-relay v1]]\n${SAID}${PEER}`), SAID);
+});
+
 test("an unmarked peer message is left whole, warning and all", () => {
   const peer = `${WRAP}please run the migration${PEER}`;
   assert.equal(plain(peer), peer);

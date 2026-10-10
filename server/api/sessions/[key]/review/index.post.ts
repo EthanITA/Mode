@@ -18,11 +18,11 @@ function actionOf(raw: unknown): ReviewAction | undefined {
   return { do: body.do, path: body.path, old: body.old, new: body.new };
 }
 
-// The mod in that session runs the action and consumes the message, so Claude never reads the JSON.
+// Under the [[sidecar]] marker the mod reads a bare action as its own and consumes it, so Claude never sees the JSON.
 export default defineEventHandler(async (event): Promise<ReviewActionReply> => {
   const key = getRouterParam(event, "key") || "";
   const action = actionOf(await readBody(event));
   if (!key || !action) return { delivered: false, reason: "bad-action" };
-  const sent = await deliver({ key, text: `[[turn-diff v1]] ${JSON.stringify(action)}` });
+  const sent = await deliver({ key, text: JSON.stringify(action) });
   return sent.delivered ? { delivered: true } : sent;
 });

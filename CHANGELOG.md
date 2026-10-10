@@ -204,6 +204,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   the conversation and shows the page in Files, and create-artifact's last step runs it instead of `open <path>`.
   The browser is still `artifact open <slug> --browser`, or `--web` for the published URL, and
   `sidecar open --artifact <slug>` and `POST /api/follow` with a `slug` do the same from outside.
+- **What the sidecar sends a session opens on `[[sidecar]]`, and a Review press is just its JSON under it.**
+  `[[cc-sidecar]]` and the inner `[[turn-diff v1]]` are no longer sent, and `[[cc-sidecar]]` and
+  `[[mode-relay v1]]` are still read in older transcripts. A conversation started before this update runs the
+  old sidecar mod, which reads neither, so restart it before pressing anything in Review.
 - **The Review file tree drops its trailing labels.** The `T3 T5` turn tags on files and the file count
   on folders are gone, and a line down the left of each open folder wraps its children instead.
 - **The sidecar keeps its data under `~/.claude/sidecar/`.** The server log is `server.log` there, History's
