@@ -13,6 +13,7 @@ import {
   commentsFile,
   hasLegacyBlock,
   isStoredDocument,
+  MD_SEED,
   readComments,
   withoutLegacyBlock,
   writeComments,
@@ -23,8 +24,6 @@ import { Documents } from "./sessions/artifact-lists.ts";
 const META_BLOCK = /<!--\s*artifact\b([\s\S]*?)-->/;
 const TITLE_TAG = /<title>([\s\S]*?)<\/title>/i;
 const RV_SEED = /<script type="application\/json" id="rv-seed">([\s\S]*?)<\/script>/;
-// A .md has no <script> to hold its threads, so they ride in one trailing comment. Mirrors MD_SEED in lib/artifact/review.ts.
-const MD_SEED = /<!-- rv:seed\n([\s\S]*?)\n-->\n?/;
 const MD_SEED_START = "<!-- rv:seed\n";
 const COMMENT = /<!--[\s\S]*?-->/g;
 const FENCE = /^(```|~~~)[\s\S]*?^\1/gm;
@@ -99,7 +98,7 @@ function parseMeta({ format, head, fallbackSlug, path }: ParseMetaInput): Artifa
   }
   // A document's slug carries a hash, so its own file name reads better than a deslugged fallback.
   const title = fields.title || titleOf(head, format) || (format === "md" ? basename(path, ".md") : "");
-  // A local showpiece owns its own doctype; a published one never does, and a .md is never published. Mirrors bin/artifact's read_meta.
+  // A local showpiece owns its own doctype; a published one never does, and a .md is never published. Mirrors readMeta in lib/artifact/store.ts.
   const target = fields.target || (format === "md" || /^\s*<!doctype/i.test(head) ? "s" : "b");
   return {
     slug: fields.slug || fallbackSlug,
@@ -156,7 +155,7 @@ function toThread(raw: unknown): ReviewThread | undefined {
 }
 
 function seedOf(text: string, format: ArtifactFormat): string | undefined {
-  return (format === "md" ? MD_SEED : RV_SEED).exec(text)?.[1];
+  return format === "md" ? MD_SEED.exec(text)?.[2] : RV_SEED.exec(text)?.[1];
 }
 
 function threadsOf(raw: unknown): ReviewThread[] {

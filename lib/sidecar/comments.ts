@@ -7,7 +7,7 @@ import { sidecarHome } from "../mode/paths.ts";
 export type CommentsDoc = Record<string, unknown> & { threads: unknown[] };
 
 // A .md has no <script> to hold its threads, so an artifact keeps them in one trailing comment.
-const MD_SEED = /(<!-- rv:seed\n)([\s\S]*?)(\n-->\n?)/;
+export const MD_SEED = /(<!-- rv:seed\n)([\s\S]*?)(\n-->\n?)/;
 
 function realPath(path: string): string {
   try {

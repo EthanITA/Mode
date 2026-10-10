@@ -6,6 +6,7 @@ import { Refusal } from "../mode/refusal.ts";
 import {
   hasLegacyBlock,
   isStoredDocument,
+  MD_SEED,
   readComments,
   withoutLegacyBlock,
   writeComments,
@@ -18,8 +19,6 @@ export type Doc = Payload & { threads: Thread[] };
 
 const BLOCK = /<!-- rv:start -->[\s\S]*?<!-- rv:end -->\n?/;
 const SEED = /(<script type="application\/json" id="rv-seed">)([\s\S]*?)(<\/script>)/;
-// A .md has no <script> to hold its threads, so they ride in one trailing comment. Mirrors MD_SEED in server/utils/artifacts.ts.
-const MD_SEED = /(<!-- rv:seed\n)([\s\S]*?)(\n-->\n?)/;
 
 const stem = (path: string): string => basename(path, extname(path));
 const seedOf = (path: string): RegExp => (path.endsWith(".md") ? MD_SEED : SEED);
