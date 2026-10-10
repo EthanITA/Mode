@@ -1,5 +1,4 @@
 import { open, readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
 import { basename, join } from "node:path";
 import type {
   ArtifactDetail,
@@ -9,6 +8,7 @@ import type {
   ThreadAnchor,
   ThreadReply,
 } from "../../shared/types/artifact";
+import { artifactsDir } from "../../lib/artifact/files.ts";
 import {
   commentsFile,
   hasLegacyBlock,
@@ -40,26 +40,6 @@ const SAFE_SLUG = /^[a-zA-Z0-9._-]+$/;
 const SRC_SUFFIX = ".src.html";
 // Precedence on a slug clash: a page beside a same-named .md is the artifact, and the .md its brief.
 const FORMATS: ArtifactFormat[] = ["html", "md"];
-
-function expandHome(path: string): string {
-  return path.startsWith("~") ? join(homedir(), path.slice(1)) : path;
-}
-
-async function configuredDir(): Promise<string | undefined> {
-  const configHome = process.env.CLAUDE_CONFIG_DIR || join(homedir(), ".claude");
-  try {
-    const raw = await readFile(join(configHome, "mode", "config.json"), "utf8");
-    const parsed = JSON.parse(raw) as { artifacts?: unknown };
-    return typeof parsed.artifacts === "string" && parsed.artifacts ? parsed.artifacts : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-export async function artifactsDir(): Promise<string> {
-  if (process.env.NOTES_ARTIFACTS) return expandHome(process.env.NOTES_ARTIFACTS);
-  return expandHome((await configuredDir()) || join(homedir(), "artifacts"));
-}
 
 // The list route touches every file in the dir, so a partial fd read beats loading each one whole.
 async function readHead(path: string, bytes: number = HEAD_BYTES): Promise<string> {
@@ -293,7 +273,7 @@ async function metaOf({ file, path, stats, stored }: MetaOfInput): Promise<Artif
 }
 
 export async function listArtifacts(): Promise<ArtifactMeta[]> {
-  const dir = await artifactsDir();
+  const dir = artifactsDir();
   const documents = [...Documents.paths()].map(([slug, path]) => ({ file: documentFile({ path, slug }), path }));
   const sources = [...(await artifactFiles(dir)).map((file) => ({ file, path: join(dir, file.name) })), ...documents];
   const rows: { meta: ArtifactMeta; mtime: number }[] = [];
@@ -313,7 +293,7 @@ export async function listArtifacts(): Promise<ArtifactMeta[]> {
 
 async function artifactFile(slug: string): Promise<(ArtifactFile & { path: string }) | undefined> {
   if (!SAFE_SLUG.test(slug)) return undefined;
-  const dir = await artifactsDir();
+  const dir = artifactsDir();
   for (const format of FORMATS) {
     const file = fileOf(`${slug}.${format}`);
     const path = file ? join(dir, file.name) : undefined;
@@ -360,7 +340,7 @@ export async function getArtifact(slug: string): Promise<ArtifactDetail | undefi
   const source = await readArtifact(slug);
   if (!source) return undefined;
   const { text, ...meta } = source;
-  if (await isStoredArtifact(meta.path)) return { ...meta, threads: threadsOf(readComments(meta.path, text)?.threads) };
+  if (isStoredArtifact(meta.path)) return { ...meta, threads: threadsOf(readComments(meta.path, text)?.threads) };
   return { ...meta, threads: parseThreads(text, meta.format) };
 }
 
@@ -775,8 +755,8 @@ export function applyStoredReview(
   return { ...change, text: hasLegacyBlock(input.text) ? withoutLegacyBlock(input.text) : input.text };
 }
 
-export async function isStoredArtifact(path: string): Promise<boolean> {
-  return isStoredDocument(path, await artifactsDir());
+export function isStoredArtifact(path: string): boolean {
+  return isStoredDocument(path, artifactsDir());
 }
 
 export function resolveArtifactEdit(input: {

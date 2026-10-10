@@ -35,6 +35,13 @@ describe("stamp and list", () => {
     assert.ok(!listed.includes("alpha.md"), listed);
   });
 
+  test("with no env and no config key, artifacts live in the sidecar home", () => {
+    const home = join(tmp, "bare-config");
+    const page = write(join(home, "sidecar", "artifacts", "solo.html"), "<!doctype html>\n<title>Solo</title>\n");
+    const listed = run(ARTIFACT, ["list", "--tsv"], { env: env({ CLAUDE_CONFIG_DIR: home }) }).stdout;
+    assert.equal(listed.trim(), `solo\t${page}`);
+  });
+
   test("stamping a .md puts the block on top, titled from its first heading", () => {
     assert.equal(artifact("stamp", "plan").status, 0);
     const body = read(join(arts, "plan.md"));

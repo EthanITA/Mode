@@ -40,7 +40,7 @@ export default defineEventHandler(async (event): Promise<ArtifactReviewReply> =>
   const source = await readArtifact(slug);
   if (!source) throw createError({ statusCode: 404, statusMessage: `no artifact matching '${slug}'` });
 
-  const outcome = (await isStoredArtifact(source.path))
+  const outcome = isStoredArtifact(source.path)
     ? applyStoredReview({ ...body, path: source.path, text: source.text })
     : applyReviewChange({ ...body, format: source.format, text: source.text });
   if (!outcome.ok) {

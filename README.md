@@ -214,11 +214,11 @@ refreshes the kit in an older page. `artifact open <slug>` shows the page in the
 when you want to look at it, and `--browser` opens the file in the browser instead, or `--web` its
 published URL. Claude never runs it for you. Three lookups are worth knowing:
 
-| It resolves           | In this order                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------- |
-| A design system       | The packs shipped here, then `~/.claude/mode/design-systems/`, where yours wins on a name clash |
-| Where artifacts live  | `NOTES_ARTIFACTS`, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/artifacts` |
-| Who a comment is from | The `user` key in that same config, defaulting to "User"                                        |
+| It resolves           | In this order                                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- |
+| A design system       | The packs shipped here, then `~/.claude/mode/design-systems/`, where yours wins on a name clash                 |
+| Where artifacts live  | `NOTES_ARTIFACTS`, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/.claude/sidecar/artifacts` |
+| Who a comment is from | The `user` key in that same config, defaulting to "User"                                                        |
 
 That config file holds the plugin's own settings too: `guards` turns every guard off at once,
 `disarm` turns off only the guards it lists by file stem, such as `["board-check"]`, and

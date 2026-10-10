@@ -217,6 +217,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   A review already begun in `~/.claude/turn-diff/` is still read from there and carries on in it, and the
   existing versions were moved by hand, so a machine with older ones needs
   `mv ~/.claude/mode/versions ~/.claude/sidecar/versions`.
+- **Artifacts live in `~/.claude/sidecar/artifacts` by default, instead of `~/artifacts`.** `NOTES_ARTIFACTS`
+  and the `artifacts` key in `~/.claude/mode/config.json` still override it, and the CLI and the sidecar now
+  resolve it in one place. A machine on the old default either runs `mv ~/artifacts ~/.claude/sidecar/artifacts`
+  or sets the key to `~/artifacts`.
 - **The deliverable guard only counts a page directly inside an `artifacts/` folder as an artifact.** Code
   under a folder of that name, such as `server/api/artifacts/`, is an ordinary change.
 - **Mode runs on Node alone.** python3 and jq are no longer needed, and Node 24 or newer is. Every

@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { modeConfig } from "../mode/config.ts";
-import { resolvePluginRoot } from "../mode/paths.ts";
+import { resolvePluginRoot, sidecarHome } from "../mode/paths.ts";
 import { pyStr } from "../text.ts";
 
 const moduleDir = dirname(fileURLToPath(import.meta.url));
@@ -22,7 +22,6 @@ export const expandHome = (path: string): string =>
   path === "~" || path.startsWith("~/") ? homedir() + path.slice(1) : path;
 
 export function artifactsDir(): string {
-  if (process.env.NOTES_ARTIFACTS) return process.env.NOTES_ARTIFACTS;
-  const configured = modeConfig().artifacts ? pyStr(modeConfig().artifacts) : "";
-  return configured ? expandHome(configured) : join(homedir(), "artifacts");
+  const configured = process.env.NOTES_ARTIFACTS || (modeConfig().artifacts ? pyStr(modeConfig().artifacts) : "");
+  return configured ? expandHome(configured) : join(sidecarHome(), "artifacts");
 }

@@ -109,7 +109,7 @@ Then carry the sources into the page: a `.receipt` chip beside each claim and a 
 
 **Being local changes what you may reach for, so use it.** Three.js, GSAP, a real charting library and React are all available. The rules that remain are the ones that keep the file working in a year: pin an exact version, wrap initialisation in `try`/`catch` or a check that the global exists, and keep the prose readable when a library fails to load. See §8 and `references/rich-media.md`.
 
-**The artifacts directory** resolves in this order: the `NOTES_ARTIFACTS` environment variable, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/artifacts`. `artifact list` reads the same chain, so where the CLI looks and where you write can never disagree.
+**The artifacts directory** resolves in this order: the `NOTES_ARTIFACTS` environment variable, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/.claude/sidecar/artifacts`. `artifact list` reads the same chain, so where the CLI looks and where you write can never disagree.
 
 ## 7. Build for Target B (published artifact)
 
