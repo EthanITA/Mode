@@ -20,6 +20,12 @@ test("a picked row becomes the 1-based line numbers of both of its sides", () =>
   assert.deepEqual(Review.hunkOf(file, 0), { old: [2, 3], new: [2, 3] });
 });
 
+test("a folder row covers every file under it and nothing in a sibling sharing its prefix, a file row only itself", () => {
+  const files = ["/r/x/a", "/r/x/y/b", "/r/xy/c"].map((path) => ({ ...file, path }));
+  assert.deepEqual(Review.under(files, "/r/x"), ["/r/x/a", "/r/x/y/b"]);
+  assert.deepEqual(Review.under(files, "/r/xy/c"), ["/r/xy/c"]);
+});
+
 test("compact view folds a long unchanged run and keeps three lines of context", () => {
   const long: ReviewFile = {
     ...file,

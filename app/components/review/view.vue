@@ -2,7 +2,7 @@
 import { Redo2, Undo2 } from "@lucide/vue";
 import { useEventListener, useLocalStorage } from "@vueuse/core";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
-import type { ReviewPicks } from "~/utils/review";
+import type { ReviewPicks, ReviewRowRejected } from "~/utils/review";
 
 const SIDE = 300;
 
@@ -28,11 +28,19 @@ const empty = computed(() => {
 });
 const isReading = computed(() => !!sc.sessionKey.value && !review.snapshot.value);
 
-// The popover sits under whatever asked for it, and the tray chip carries the quote and the lines.
+// The popover sits under whatever asked for it.
+function spotNear(event: MouseEvent): { x: number; y: number } {
+  const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  return {
+    x: Math.max(12, Math.min(box.left, window.innerWidth - 432)),
+    y: Math.max(12, Math.min(box.top - 312, window.innerHeight - 312)),
+  };
+}
+
+// The tray chip carries the quote and the lines.
 function comment(event: MouseEvent, lines?: ReviewPicks, isRejected = false): void {
   const here = file.value;
   if (!here) return;
-  const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
   const isNew = !!lines?.new.length;
   const span = lines && (isNew ? lines.new : lines.old);
   const source = isNew ? here.current : here.original;
@@ -48,8 +56,18 @@ function comment(event: MouseEvent, lines?: ReviewPicks, isRejected = false): vo
     label: span ? `${basename(here.path)}:${span.join(",")}` : basename(here.path),
     quote,
     tell: isRejected ? `I rejected ${about}, because:` : `About ${about}:`,
-    x: Math.max(12, Math.min(box.left, window.innerWidth - 432)),
-    y: Math.max(12, Math.min(box.top - 312, window.innerHeight - 312)),
+    ...spotNear(event),
+  });
+}
+
+function rejectedRow({ event, path, count }: ReviewRowRejected): void {
+  const isFile = files.value.some((one) => one.path === path);
+  const about = isFile ? homePath(path) : `${homePath(path)}/ (${plural(count, "file")})`;
+  chrome.comment.open({
+    kind: "file",
+    label: isFile ? basename(path) : `${basename(path)}/`,
+    tell: `I rejected ${about}, because:`,
+    ...spotNear(event),
   });
 }
 
@@ -58,6 +76,10 @@ useEventListener(
   window,
   "keydown",
   (event: KeyboardEvent) => {
+    if (event.key === "Escape" && review.confirming.value) {
+      review.confirming.value = undefined;
+      return;
+    }
     if (!(event.metaKey || event.ctrlKey) || event.altKey || event.key.toLowerCase() !== "z") return;
     const target = event.target instanceof Element ? event.target : undefined;
     if (target?.closest("input, textarea, [contenteditable]") && !target.closest(".monaco-editor")) return;
@@ -101,7 +123,7 @@ function rejectFile(event: MouseEvent): void {
         <UiStateMessage v-if="!files.length" class="empty" :kind="isReading ? 'loading' : 'empty'">{{
           empty
         }}</UiStateMessage>
-        <ReviewFiles v-else />
+        <ReviewFiles v-else @rejected="rejectedRow" />
       </div>
 
       <footer v-if="files.length || review.snapshot.value?.undo || review.snapshot.value?.redo" class="all">

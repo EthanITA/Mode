@@ -33,6 +33,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   file Claude edited since, and tells Claude when an undo or redo rewrites a file. Comments go to the
   tray, and the comment icon in either gutter or ⌘K notes a line the way it does in Files.
   `/c/<key>?face=review` opens on it.
+- **Review approves or rejects a whole folder, or one file, from its row in the tree.** Hovering or
+  focusing a row lays the hunk seam's check and cross over its right end, so the row keeps its full
+  width at rest and its name runs under the pill with no ellipsis. A folder's pill opens on how many
+  files it decides and sends their paths in one press, which ⌘Z takes back as one step. Reject arms
+  first and asks Reject 8?, the second press opens the composer to say why, and Esc disarms it. The
+  sidecar mod labels a step over several files by their count and shared folder, `approving 8 files in
+  .claude/hooks/`, so the undo tooltip stays one line.
 - **The chat island is hidden; Claude Code is the chat.** The prompt, the transcript and the mode and
   style pickers no longer show in a conversation or on an artifact page. Notes left on a page or a line
   still collect in the tray, which shows bottom right with one button that sends them to Claude.

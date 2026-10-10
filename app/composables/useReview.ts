@@ -10,6 +10,7 @@ export interface ReviewFace {
   decideFile: (isAccept: boolean) => Promise<void>;
   decideHunk: (change: number, isAccept: boolean) => Promise<void>;
   decideLines: (isAccept: boolean) => Promise<void>;
+  decideUnder: (path: string, isAccept: boolean) => Promise<void>;
   file: MaybeComputed<ReviewFile>;
   isCompact: Ref<boolean>;
   isWrapped: Ref<boolean>;
@@ -97,6 +98,22 @@ export function useReview(): ReviewFace {
     );
   }
 
+  // A tree row's press, a folder's or a file's, arming its reject on the row's own path.
+  async function decideUnder(path: string, isAccept: boolean): Promise<void> {
+    const paths = Review.under(snapshot.value?.files ?? [], path);
+    const [only] = paths;
+    if (!only) return;
+    if (!isAccept && confirming.value !== path) {
+      confirming.value = path;
+      return;
+    }
+    const what = paths.length === 1 ? basename(only) : `${plural(paths.length, "file")} in ${basename(path)}/`;
+    await act(
+      { do: isAccept ? "approve" : "reject", paths },
+      isAccept ? `Approved ${what}` : `Rejected ${what}, Claude is told`,
+    );
+  }
+
   async function decideAll(isAccept: boolean): Promise<void> {
     const paths = (snapshot.value?.files ?? []).map((one) => one.path);
     if (!paths.length) return;
@@ -152,6 +169,7 @@ export function useReview(): ReviewFace {
     decideFile,
     decideHunk,
     decideLines,
+    decideUnder,
     file,
     isCompact,
     isWrapped,

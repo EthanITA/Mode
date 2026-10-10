@@ -12,6 +12,13 @@ export interface ReviewPicks {
   new: number[];
 }
 
+// A reject pressed on a tree row, carried up so the face can open the composer under it.
+export interface ReviewRowRejected {
+  event: MouseEvent;
+  path: string;
+  count: number;
+}
+
 export interface ReviewRowsOptions {
   file: ReviewFile;
   isCompact: boolean;
@@ -90,4 +97,9 @@ function spanOf(lines: readonly number[]): string {
   return `lines ${sorted[0]}-${sorted.at(-1)}`;
 }
 
-export const Review = { counts, hunkOf, picksOf, rows, spanOf };
+// A tree row stands for every file still under it, so a folder's press carries those paths, never the folder.
+function under(files: readonly ReviewFile[], path: string): string[] {
+  return files.filter((file) => file.path === path || file.path.startsWith(`${path}/`)).map((file) => file.path);
+}
+
+export const Review = { counts, hunkOf, picksOf, rows, spanOf, under };
