@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { mkdirSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join } from "node:path";
 import { readTextSafe } from "../files.ts";
 import { sidecarHome } from "../mode/paths.ts";
@@ -9,10 +9,19 @@ export type CommentsDoc = Record<string, unknown> & { threads: unknown[] };
 // A .md has no <script> to hold its threads, so an artifact keeps them in one trailing comment.
 const MD_SEED = /(<!-- rv:seed\n)([\s\S]*?)(\n-->\n?)/;
 
-// The hash keeps two README.md apart.
+function realPath(path: string): string {
+  try {
+    return realpathSync.native(path);
+  } catch {
+    return path;
+  }
+}
+
+// Hashed on the real path, native so case settles too, so a symlink or a Mode/mode alias is one document; the hash keeps two README.md apart.
 export function documentSlug(path: string): string {
-  const stem = basename(path, extname(path)).replace(/[^a-zA-Z0-9._-]+/g, "-");
-  return `${stem}--${createHash("sha1").update(path).digest("hex").slice(0, 6)}`;
+  const real = realPath(path);
+  const stem = basename(real, extname(real)).replace(/[^a-zA-Z0-9._-]+/g, "-");
+  return `${stem}--${createHash("sha1").update(real).digest("hex").slice(0, 6)}`;
 }
 
 // A .md outside the artifacts folder is somebody's document, so its comments stay out of it.
@@ -44,7 +53,7 @@ export function writeComments(path: string, doc: CommentsDoc): void {
   const file = commentsFile(path);
   mkdirSync(dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  writeFileSync(tmp, `${JSON.stringify({ ...doc, v: 1, path })}\n`);
+  writeFileSync(tmp, `${JSON.stringify({ ...doc, v: 1, path: realPath(path) })}\n`);
   renameSync(tmp, file);
 }
 

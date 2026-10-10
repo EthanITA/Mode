@@ -22,10 +22,11 @@ function entriesOf(key: string): string[] {
 }
 
 export function artifactsOf(key: string): string[] {
-  return entriesOf(key).flatMap((entry) => {
+  const slugs = entriesOf(key).flatMap((entry) => {
     if (!isDocument(entry)) return [entry];
     return existsSync(entry) ? [documentSlug(entry)] : [];
   });
+  return [...new Set(slugs)];
 }
 
 export function keysWithArtifacts(): string[] {

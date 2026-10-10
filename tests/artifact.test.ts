@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readFileSync, symlinkSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { describe, test } from "node:test";
 import { ARTIFACT, env, PLUGIN, run, scratch, write } from "./support.ts";
 
@@ -153,6 +153,25 @@ describe("a .md outside the folder", () => {
     assert.deepEqual(
       stored.threads.map(({ body, replies }) => [body, replies.length]),
       [["old", 1]],
+    );
+  });
+
+  test("reached through a symlink reads the same store as its real path", () => {
+    const threads = [{ id: "t0", n: 1, by: "user", at: "a", updated: "a", body: "old", status: "open", replies: [] }];
+    const doc = write(
+      join(tmp, "rules", "relay.md"),
+      `# Relay\n\n<!-- rv:seed\n${JSON.stringify({ v: 1, threads })}\n-->\n`,
+    );
+    const link = join(tmp, "linked", "relay.md");
+    mkdirSync(dirname(link), { recursive: true });
+    symlinkSync(doc, link);
+    assert.equal(artifact("comments", doc, "--reply", "1", "done").status, 0);
+    const seen = JSON.parse(artifact("comments", link, "--json", "--no-ingest").stdout || "{}") as {
+      threads?: { replies: unknown[] }[];
+    };
+    assert.deepEqual(
+      seen.threads?.map(({ replies }) => replies.length),
+      [1],
     );
   });
 });
