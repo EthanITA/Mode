@@ -9,12 +9,15 @@ type Row =
 const {
   source,
   selected,
+  pinned,
   isOpenByDefault = false,
   hasGuides = false,
   toneOf,
 } = defineProps<{
   source: TreeSource;
   selected?: string;
+  /** The row whose actions stay up without a hover, such as one waiting for a second press. */
+  pinned?: string;
   /** A line down the left of each open folder's children. */
   hasGuides?: boolean;
   /** Review opens everything; a whole folder opens one level at a time. */
@@ -24,7 +27,10 @@ const {
 }>();
 
 defineEmits<{ select: [path: string] }>();
-defineSlots<{ trailing?: (props: { entry: TreeEntry }) => unknown }>();
+defineSlots<{
+  trailing?: (props: { entry: TreeEntry }) => unknown;
+  actions?: (props: { entry: TreeEntry }) => unknown;
+}>();
 
 // What the person flipped from the default, so a new folder still opens or stays shut as the tree says.
 const flipped = ref(new Set<string>());
@@ -71,12 +77,14 @@ watchEffect(() => {
 </script>
 
 <template>
-  <ul class="tree" role="tree" data-region="file-tree" :data-guides="hasGuides">
+  <ul class="tree" role="tree" data-region="file-tree" :data-guides="hasGuides" :data-actions="!!$slots.actions">
     <li
       v-for="row in rows"
       :key="row.kind === 'entry' ? row.entry.path : row.key"
+      class="item"
       role="treeitem"
       :aria-expanded="row.kind === 'entry' && row.entry.kind === 'dir' ? row.isOpen : undefined"
+      :data-selected="row.kind === 'entry' && row.entry.path === selected"
     >
       <span v-if="row.kind === 'loading'" class="row loading mono-meta" :style="{ '--depth': row.depth }">
         <span class="reading">Reading…</span>
@@ -111,6 +119,9 @@ watchEffect(() => {
         <span class="name">{{ row.entry.name }}</span>
         <slot name="trailing" :entry="row.entry" />
       </button>
+      <span v-if="$slots.actions && row.kind === 'entry'" class="actions" :data-pinned="row.entry.path === pinned">
+        <slot name="actions" :entry="row.entry" />
+      </span>
     </li>
   </ul>
 </template>
@@ -151,12 +162,68 @@ watchEffect(() => {
   width: 100%;
 }
 
-.row:hover {
+.item {
+  --row-bg: var(--raised);
+  position: relative;
+}
+
+.item:hover {
+  --row-bg: var(--sunken);
+}
+
+.item[data-selected="true"] {
+  --row-bg: var(--primary-soft);
+}
+
+/* On the item, so the row keeps its hover while the pointer sits on the actions laid over it. */
+.item:hover > .row:not([data-selected="true"]) {
   background: var(--sunken);
 }
 
 .row[data-selected="true"] {
   background: var(--primary-soft);
+}
+
+/* Laid over the row's right end, so the slot takes no room at rest and the name runs under it. */
+.actions {
+  align-items: center;
+  background: linear-gradient(to right, transparent, var(--row-bg) 18px);
+  border-radius: 0 6px 6px 0;
+  bottom: 0;
+  display: flex;
+  opacity: 0;
+  padding: 0 4px 0 18px;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.item:hover > .actions,
+.item:focus-within > .actions,
+.actions[data-pinned="true"] {
+  opacity: 1;
+}
+
+.item:hover > .actions > :slotted(*),
+.item:focus-within > .actions > :slotted(*),
+.actions[data-pinned="true"] > :slotted(*) {
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .actions {
+    opacity: 1;
+  }
+
+  .actions > :slotted(*) {
+    pointer-events: auto;
+  }
+}
+
+.tree[data-actions="true"] .name {
+  text-overflow: clip;
 }
 
 .row[data-ignored="true"] {
