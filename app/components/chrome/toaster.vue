@@ -1,5 +1,9 @@
 <script lang="ts" setup>
+import type { Toast } from "~/composables/useChrome";
+
 const DWELL_MS = 2800;
+// A toast you can open stays long enough to be reached for.
+const OPEN_DWELL_MS = 6000;
 const VISIBLE = 3;
 
 const chrome = useChrome();
@@ -15,12 +19,17 @@ function drop(id: number): void {
   chrome.toasts.value = chrome.toasts.value.filter((row) => row.id !== id);
 }
 
-function arm(id: number): void {
-  clearTimeout(timers.get(id));
+function arm(row: Toast): void {
+  clearTimeout(timers.get(row.id));
   timers.set(
-    id,
-    setTimeout(() => drop(id), DWELL_MS),
+    row.id,
+    setTimeout(() => drop(row.id), row.open ? OPEN_DWELL_MS : DWELL_MS),
   );
+}
+
+function press(row: Toast): void {
+  row.open?.();
+  drop(row.id);
 }
 
 // Held, not paused: a reader who leaves gets the full dwell again rather than its remainder.
@@ -33,7 +42,7 @@ function hold(id: number): void {
 watch(
   chrome.toasts,
   (rows) => {
-    for (const row of rows) if (!timers.has(row.id)) arm(row.id);
+    for (const row of rows) if (!timers.has(row.id)) arm(row);
   },
   { immediate: true },
 );
@@ -66,14 +75,17 @@ function pin(el: Element): void {
       v-press
       class="one"
       type="button"
-      title="Dismiss"
-      @click="drop(row.id)"
+      :title="row.open ? 'Open' : 'Dismiss'"
+      @click="press(row)"
       @focusin="hold(row.id)"
-      @focusout="arm(row.id)"
+      @focusout="arm(row)"
       @mouseenter="hold(row.id)"
-      @mouseleave="arm(row.id)"
+      @mouseleave="arm(row)"
     >
-      <UiToast :variant="row.tone">{{ row.text }}</UiToast>
+      <UiToast :variant="row.tone">
+        {{ row.text }}
+        <span v-if="row.open" class="open">Open</span>
+      </UiToast>
     </button>
 
     <span v-if="queued > 0" key="queued" class="queued mono-meta">+{{ queued }}</span>
@@ -107,6 +119,12 @@ function pin(el: Element): void {
   cursor: pointer;
   padding: 0;
   pointer-events: auto;
+}
+
+.open {
+  font-weight: 600;
+  margin-left: 6px;
+  opacity: 0.72;
 }
 
 .queued {

@@ -93,6 +93,13 @@ export function loadSidecar(): void {
     }
   }
 
+  // The catalogue is read once, so a page made after that would never list without this.
+  useEvents().on("artifact.created", () => {
+    void $fetch<ArtifactMeta[]>("/api/artifacts")
+      .then((catalogue) => (sc.catalogue.value = catalogue))
+      .catch(() => {});
+  });
+
   onMounted(() => {
     void pullOnce();
     // A sidecar to running conversations is wrong the moment it stops looking.

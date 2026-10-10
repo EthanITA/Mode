@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, symlinkSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, symlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, test } from "node:test";
 import { ARTIFACT, env, PLUGIN, run, scratch, write } from "./support.ts";
@@ -102,6 +102,20 @@ describe("new and kit", () => {
       assert.deepEqual([body.split("<!-- cx:start -->").length, body.split("<!-- rv:start -->").length], [2, 2], key);
     }
     assert.match(page("layered"), /fonts\.googleapis\.com\/css2\?family=Inter/);
+  });
+
+  test("new announces the page, and a read resumes from its offset while a half-written line waits", async () => {
+    process.env.CLAUDE_CONFIG_DIR = config;
+    const Events = await import("../lib/sidecar/events.ts");
+    const before = Events.end();
+    assert.equal(artifact("new", "announced", "--ds", "neutral", "--title", "Announced").status, 0);
+    const { events, offset } = Events.read(before);
+    assert.deepEqual(
+      events.map(({ topic, data }) => [topic, data.slug, data.title]),
+      [["artifact.created", "announced", "Announced"]],
+    );
+    appendFileSync(Events.logFile(), '{"topic":"artifact.created"');
+    assert.deepEqual(Events.read(offset), { events: [], offset });
   });
 
   test("new refuses a slug that already has a page, and kit refreshes in place", () => {

@@ -7,11 +7,15 @@ export interface FollowOptions {
   isEager?: boolean;
 }
 
+export type FollowPlace = Pick<FollowTarget, "face" | "key" | "slug">;
+
 export interface Follow {
   listen: (options?: FollowOptions) => void;
   /** The artifact Claude Code asked to show, held until Artifacts mounts and opens it. */
   opening: Maybe<string>;
   pinned: Ref<boolean>;
+  /** Goes there even while pinned, since a person asked for it rather than Claude Code. */
+  show: (place: FollowPlace) => void;
   target: Ref<FollowTarget>;
 }
 
@@ -22,14 +26,18 @@ export function useFollow(): Follow {
   const opening = useState<string | undefined>("rv:opening");
   const pinned = useState("rv:pinned", () => false);
 
+  function show(place: FollowPlace): void {
+    const face = FACES.find((one) => one === (place.slug ? "artifacts" : place.face));
+    if (face) chrome.view.set(face);
+    opening.value = place.slug;
+    if (!place.key || place.key === sc.sessionKey.value) return;
+    // Following leaves no trail, so Back never walks through every conversation Claude Code pointed at.
+    void navigateTo(`/c/${place.key}`, { replace: true });
+  }
+
   function go(next: FollowTarget): void {
     if (pinned.value || !next.key) return;
-    const face = FACES.find((one) => one === (next.slug ? "artifacts" : next.face));
-    if (face) chrome.view.set(face);
-    opening.value = next.slug;
-    if (next.key === sc.sessionKey.value) return;
-    // Following leaves no trail, so Back never walks through every conversation Claude Code pointed at.
-    void navigateTo(`/c/${next.key}`, { replace: true });
+    show(next);
   }
 
   // Otherwise the first read is a baseline, so a conversation opened by hand stays put until Claude Code points elsewhere.
@@ -59,5 +67,5 @@ export function useFollow(): Follow {
     });
   }
 
-  return { listen, opening, pinned, target };
+  return { listen, opening, pinned, show, target };
 }

@@ -239,6 +239,7 @@ The sidecar, the Nuxt app at the root of this repo, has its own CLI, `bin/sideca
 sidecar             # same as open
 sidecar open [key]  # start it when down, point it at the conversation, raise an open sidecar or open one
 sidecar open --artifact <slug>  # the same, showing that page in Artifacts
+sidecar publish <topic> <json>  # append an event every open sidecar hears
 sidecar status      # whether it is up, where, and whether it starts at login
 sidecar start       # in the background, waiting until it answers
 sidecar stop        # wherever it was started from, a terminal's pnpm dev included
@@ -253,6 +254,24 @@ from `CLAUDE_CODE_SESSION_ID`; from a plain terminal it just opens the app. It s
 `~/.claude/sidecar/server.log`. Stop only signals a server that answers as the sidecar, so another app
 on the port is left alone. `install` writes `~/Library/LaunchAgents/local.mode.sidecar.plist` with
 the node and `PATH` of the shell that ran it, so run it again after switching node versions.
+
+Claude talks to the sidecar through events, the way a Kafka producer talks to its consumers. Each
+event is one line appended to `~/.claude/sidecar/events.jsonl` under a topic, with the conversation's
+key, the time and a payload, and the sidecar streams that log to every open window, so an event
+published while the sidecar is down still arrives once it starts. The topics and their payloads are
+`Topics` in `shared/types/events.ts`, and a topic only exists once it has a parser in
+`lib/sidecar/events.ts`, which refuses a payload that does not fit it.
+
+| Topic              | Payload                 | Published by                                                         | What the sidecar does                       |
+| ------------------ | ----------------------- | -------------------------------------------------------------------- | ------------------------------------------- |
+| `artifact.created` | `slug`, `title`, `path` | `artifact new`, and the observe hook when Write creates a page there | Lists the page, and a notification opens it |
+
+A producer in this repo calls `publish({ topic, data })` from `lib/sidecar/events.ts`, and anything
+else runs `sidecar publish artifact.created '{"slug":"…","path":"…"}'`. A component consumes with
+`useEvents().on("artifact.created", ({ data, key }) => …)`, typed by topic and dropped with the
+component's scope. Outside the app, `/api/events/stream` is plain server-sent events: each message is
+named after its topic and its id is the offset to resume from, `?topic=` narrows it, and `?since=` or a
+`Last-Event-ID` header replays from an offset where a new connection starts at the end.
 
 ---
 

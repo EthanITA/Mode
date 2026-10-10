@@ -65,12 +65,20 @@ function recordDocument(data: Payload): void {
   } catch {}
 }
 
+// Write reports `create` only for a file that did not exist, so a rewrite of a page is never announced twice.
+function announceCreated(data: Payload): void {
+  if (data.hook_event_name !== "PostToolUse" || str(data.tool_name) !== "Write") return;
+  if (str(record(data.tool_response).type) !== "create") return;
+  Artifacts.announce(str(record(data.tool_input).file_path), str(data.session_id));
+}
+
 try {
   const data = payload() ?? {};
   const session = str(data.session_id) || undefined;
   const token = observed(data);
   if (token) await quietly(() => done({ axis: "mode", session, reason: token }));
   recordDocument(data);
+  await quietly(() => announceCreated(data));
 
   if (data.hook_event_name === "PostToolUse" && !data.agent_id) {
     const command = data.tool_name === "Bash" ? str(record(data.tool_input).command) : "";

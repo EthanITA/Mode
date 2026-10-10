@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 const chrome = useChrome();
+const follow = useFollow();
+const sc = useSidecar();
 const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
 const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 
@@ -74,6 +76,14 @@ function onBlur(): void {
   if (document.activeElement instanceof HTMLIFrameElement) return;
   chrome.comment.disarm();
 }
+
+useEvents().on("artifact.created", ({ data, key = sc.sessionKey.value }) => {
+  const elsewhere = key === sc.sessionKey.value ? undefined : sc.sessions.value.find((one) => one.key === key);
+  chrome.notify({
+    open: () => follow.show({ key, slug: data.slug }),
+    text: elsewhere ? `New artifact in ${nameOf(elsewhere)} · ${data.title}` : `New artifact · ${data.title}`,
+  });
+});
 
 onMounted(() => {
   window.addEventListener("keydown", onKeyDown);

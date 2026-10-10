@@ -6,6 +6,7 @@ import { configRoot, modeHome } from "../mode/paths.ts";
 import { Refusal } from "../mode/refusal.ts";
 import { head, lines, lstrip, pad, strip, words } from "../text.ts";
 import { documentSlug } from "../sidecar/comments.ts";
+import * as Events from "../sidecar/events.ts";
 import { artifactsDir, expandHome, readPage, root } from "./files.ts";
 import { install } from "./review.ts";
 
@@ -341,7 +342,15 @@ export function scaffold({
   installKit(path);
   install(path);
   stamp(path, { ds: key, target: "s", title });
+  announce(path);
   return path;
+}
+
+// Called once per page, where it comes into existence, so every open sidecar hears of it.
+export function announce(path: string, sid?: string): void {
+  if (!artifactFiles().includes(path)) return;
+  const { slug = stem(path), title = "" } = readMeta(path);
+  Events.publish({ topic: "artifact.created", data: { slug, title, path }, key: sid?.slice(0, 8) || undefined });
 }
 
 // What the page's Save button wrote, which lands wherever the browser puts a download.

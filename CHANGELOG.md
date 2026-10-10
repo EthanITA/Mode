@@ -11,6 +11,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **Claude reaches the sidecar through events, and a new artifact raises a notification.** Producers
+  append typed events to `~/.claude/sidecar/events.jsonl`, and `/api/events/stream` streams them to every
+  open sidecar with Kafka's offsets, so a consumer resumes where it stopped. The first topic,
+  `artifact.created`, is published by `artifact new` and by the observe hook when Write creates a page in
+  the artifacts folder; the sidecar shows "New artifact" with an Open that takes you to it, and the
+  Artifacts list picks the page up without a reload. `sidecar publish <topic> <json>` publishes from a
+  shell and `useEvents().on(topic, handler)` consumes in the app.
 - **create-artifact builds pages from a component kit.** `artifact new <slug> --ds <key>` scaffolds a
   local page with the pack's stylesheets, the kit and the review layer in it, and `artifact kit <slug>`
   refreshes the kit in place. The kit is one runtime keyed on `data-cx`: a figure whose named controls

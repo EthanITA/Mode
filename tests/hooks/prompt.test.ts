@@ -412,6 +412,33 @@ describe("the PostToolUse hooks", () => {
     assert.ok(recorded.split("\n").includes(doc) && !recorded.includes("plan.ts"), recorded);
   });
 
+  test("observe announces a page Write created in the artifacts folder, and not one it rewrote", () => {
+    const page = write(join(config, "sidecar", "artifacts", "fresh.html"), "<!doctype html>\n<title>Fresh</title>\n");
+    const wrote = (type: string) =>
+      fire(
+        "observe",
+        {
+          session_id: "e7e4a11c-hook",
+          hook_event_name: "PostToolUse",
+          tool_name: "Write",
+          cwd: tmp,
+          tool_input: { file_path: page },
+          tool_response: { type },
+        },
+        vars,
+      );
+    wrote("create");
+    wrote("update");
+    const announced = readFileSync(join(config, "sidecar", "events.jsonl"), "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { topic: string; key: string; data: { slug: string; title: string } });
+    assert.deepEqual(
+      announced.map(({ topic, key, data }) => [topic, key, data.slug, data.title]),
+      [["artifact.created", "e7e4a11c", "fresh", "Fresh"]],
+    );
+  });
+
   test("observe records the step a call satisfied, a failing suite as test-fail, and ticks the deliverable an MR delivers", async () => {
     const session = sid();
     setSlot({ axis: "mode", session, name: "pair" });

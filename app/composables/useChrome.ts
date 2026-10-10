@@ -11,9 +11,12 @@ export type ToastTone = "destructive" | "neutral" | "success" | "warning";
 
 export interface Toast {
   id: number;
+  open?: () => void;
   text: string;
   tone: ToastTone;
 }
+
+export type Notice = Omit<Toast, "id" | "tone"> & { tone?: ToastTone };
 
 /** Every field is read off the element's own `data-cmt-*`: chrome cannot describe what another domain drew. */
 export interface CommentTarget {
@@ -89,6 +92,7 @@ export interface Chrome {
   };
   islands: { shelved: Ref<boolean> };
   jump: { close: () => void; open: Ref<boolean>; toggle: () => void };
+  notify: (notice: Notice) => void;
   toast: (text: string, tone?: ToastTone) => void;
   toasts: Ref<Toast[]>;
   view: { current: ComputedRef<Face>; faces: Ref<Face[]>; set: (face: Face) => void };
@@ -171,8 +175,12 @@ export function useChrome(): Chrome {
   );
 
   // A colour asserts an outcome, and most of these only say a message left.
-  function toast(text: string, tone: ToastTone = "neutral"): void {
-    toasts.value = [...toasts.value, { id: ++toastSeq, text, tone }];
+  function notify({ tone = "neutral", ...notice }: Notice): void {
+    toasts.value = [...toasts.value, { id: ++toastSeq, tone, ...notice }];
+  }
+
+  function toast(text: string, tone?: ToastTone): void {
+    notify({ text, tone });
   }
 
   function disarm(): void {
@@ -341,6 +349,7 @@ export function useChrome(): Chrome {
         jumpOpen.value = !jumpOpen.value;
       },
     },
+    notify,
     toast,
     toasts,
     view: {
