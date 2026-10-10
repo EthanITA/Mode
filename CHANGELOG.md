@@ -200,10 +200,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
-- **A finished artifact opens in the sidecar, not the browser.** `artifact open <slug>` points the sidecar at
-  the conversation and shows the page in Files, and create-artifact's last step runs it instead of `open <path>`.
-  The browser is still `artifact open <slug> --browser`, or `--web` for the published URL, and
-  `sidecar open --artifact <slug>` and `POST /api/follow` with a `slug` do the same from outside.
+- **`artifact open` shows the page in the sidecar, not the browser.** `artifact open <slug>` points the
+  sidecar at the conversation and shows the page in Files. The browser is still `artifact open <slug> --browser`,
+  or `--web` for the published URL, and `sidecar open --artifact <slug>` and `POST /api/follow` with a `slug`
+  do the same from outside.
+- **create-artifact no longer opens the page it built.** It hands over the path and stops, and the artifact
+  rule says the same, so a finished page opens only when you run `artifact open <slug>` yourself.
 - **What the sidecar sends a session opens on `[[sidecar]]`, and a Review press is just its JSON under it.**
   `[[cc-sidecar]]` and the inner `[[turn-diff v1]]` are no longer sent, and `[[cc-sidecar]]` and
   `[[mode-relay v1]]` are still read in older transcripts. A conversation started before this update runs the
