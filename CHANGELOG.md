@@ -280,6 +280,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **Review shows the folder its files share, so files from one folder get a tree too.** The shared
+  folder used to be left off the top, which made a review of files from a single folder a flat list.
+  The switcher now reads Review, Files, History.
 - **A Claude Code started without node on PATH no longer turns every hook off.** The hooks, `bin/mode`,
   `bin/artifact` and `bin/sidecar` use the node on PATH first and otherwise the one `install.sh` now
   records in `~/.claude/mode/node`, so run `./install.sh` once after updating.
