@@ -1,0 +1,7 @@
+#!/bin/sh
+# Without the compile cache node strips a hook's types again on every start, about 40ms each time.
+export NODE_COMPILE_CACHE="${NODE_COMPILE_CACHE:-${TMPDIR:-/tmp}/node-compile-cache}"
+# Parameter expansion rather than dirname, which lives in /usr/bin and a stripped PATH may not reach.
+case $0 in */*) here=${0%/*} ;; *) here=. ;; esac
+. "$here/../bin/_node.sh"
+exec "$node" "$here/$1.ts"

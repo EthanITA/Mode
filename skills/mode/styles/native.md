@@ -24,14 +24,14 @@ The three files nearest your change tell you what is actually practised. Read th
 
 ## What gets matched
 
-| In the code | In the prose |
-|---|---|
-| Naming: casing, abbreviations, whether types carry a prefix | Commit message format, including the tense and the subject-line length |
-| File and directory layout, and where a new thing goes | Pull request description shape: their sections, their level of detail |
-| Test framework, test file location, assertion style, fixture idiom | Code comments: their density, their tone, whether they exist at all |
-| Error handling: exceptions or returned errors, and how they are wrapped | Issue and review replies |
-| Imports: grouping, ordering, absolute or relative | The natural language the project is written in |
-| Async idiom, logging idiom, configuration idiom | Whether they use emoji, and whether they write in the first person |
+| In the code                                                             | In the prose                                                           |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Naming: casing, abbreviations, whether types carry a prefix             | Commit message format, including the tense and the subject-line length |
+| File and directory layout, and where a new thing goes                   | Pull request description shape: their sections, their level of detail  |
+| Test framework, test file location, assertion style, fixture idiom      | Code comments: their density, their tone, whether they exist at all    |
+| Error handling: exceptions or returned errors, and how they are wrapped | Issue and review replies                                               |
+| Imports: grouping, ordering, absolute or relative                       | The natural language the project is written in                         |
+| Async idiom, logging idiom, configuration idiom                         | Whether they use emoji, and whether they write in the first person     |
 
 A commit message in your own house voice is as foreign as a brace in the wrong place. It is just harder to notice.
 

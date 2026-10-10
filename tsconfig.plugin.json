@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "preserve",
+    "moduleResolution": "Bundler",
+    "moduleDetection": "force",
+    "lib": ["ESNext"],
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitOverride": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": [
+    "bin/_install.ts",
+    "bin/_mode.ts",
+    "bin/_artifact.ts",
+    "hooks/**/*.ts",
+    "lib/**/*.ts",
+    "scripts/*.ts",
+    "skills/create-artifact/scripts/checks.ts",
+    "skills/create-artifact/scripts/highlight-ts.ts",
+    "tests/**/*.ts"
+  ]
+}

@@ -1,10 +1,10 @@
 ---
 name: mode
-description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, goal, ic, studio, swarm, tdd, tester. Styles available: creative, edu, fast, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", when they ask what is currently active or type /why, and when they pin a contract to a directory.
+description: Hold a working mode and a speaking style for this conversation, changing how you work and how you sound on every turn until they are cleared. A mode is a procedure with gates and a definition of done; a style is a register with no steps of its own. Modes available: autopilot, copilot, debug, dispatcher, goal, ic, pair, studio, swarm, tdd, tester. Styles available: creative, edu, fast, native, ship, xyz. Load when the user types /mode or /style with or without a name, when they type /mode off or /style off, when they name any of those contracts or say "switch to X mode", when they ask what is currently active or type /why, and when they pin a contract to a directory.
 user-invocable: true
 disable-model-invocation: false
 args: "[<name>|auto|off]"
-modes: autopilot, copilot, debug, goal, ic, studio, swarm, tdd, tester
+modes: autopilot, copilot, debug, dispatcher, goal, ic, pair, studio, swarm, tdd, tester
 styles: creative, edu, fast, native, ship, xyz
 ---
 
@@ -16,14 +16,14 @@ This manual drives the switching and nothing else. It is deliberately not a regi
 
 ## Two axes, and what belongs on each
 
-| | A **mode** | A **style** |
-|---|---|---|
-| Answers | How the work runs | How you sound while it runs |
-| Has | Steps, gates and a definition of done | No steps at all |
-| Applies to | The shape of the turn | Every step of whatever mode is running |
-| Example | `copilot` stops on a question before dispatching a team | `fast` makes that question two lines instead of ten |
+|            | A **mode**                                              | A **style**                                         |
+| ---------- | ------------------------------------------------------- | --------------------------------------------------- |
+| Answers    | How the work runs                                       | How you sound while it runs                         |
+| Has        | Steps, gates and a definition of done                   | No steps at all                                     |
+| Applies to | The shape of the turn                                   | Every step of whatever mode is running              |
+| Example    | `copilot` stops on a question before dispatching a team | `fast` makes that question two lines instead of ten |
 
-The split is what keeps the file count down. Nine modes and six styles cover fifty-four combinations, so a new way of talking costs one file rather than nine rewrites.
+The split is what keeps the file count down. Ten modes and six styles cover sixty combinations, so a new way of talking costs one file rather than nine rewrites.
 
 The test for which folder a new contract belongs in is whether it has an order. If it says do this, then that, and stop here, it is a mode. If it only changes the texture of whatever you were already doing, it is a style.
 
@@ -31,18 +31,18 @@ The test for which folder a new contract belongs in is whether it has an order. 
 
 The switch is not yours to perform. A `UserPromptSubmit` hook reads the message and does it before you see anything, so by the time you are reading this the slot is already set and the contract is already in your context.
 
-| The user types | The hook already did | You do |
-|---|---|---|
-| `/mode <name>` | Looked up which axis owns that name and set it there, then injected the whole contract into this very prompt | Follow it from here on, and say in one line what is active and what changes. Do not run the set yourself. |
-| `/mode:<name>` or `/style:<name>` | The same, from the per-contract shortcut rather than an argument | The same. The two spellings are one code path, so nothing here depends on which was typed. |
-| `/mode <name> <name>` | The same for both, in either order, so `/mode tdd native` fills the mode and the style at once | Confirm both, and write the line in the style if one was set |
-| `/style <name>` | The same on the style slot, named outright | The same, except write that line in the style you just picked, so the change shows rather than being announced |
-| `/mode` or `/style`, with no name | Nothing, because there is no name to act on | Run `mode list` for both, or `mode list style` for one, and show what exists and what is held |
-| `/mode auto` or `/style auto` | Set that slot to `auto`, so a contract gets chosen from what gets written | Say the slot is on auto, and name what it holds right now if it holds anything |
-| `/mode off` or `/style off` | Emptied that slot, and the mode one also dropped the recorded approval | Confirm which slot is empty. The other slot is untouched. |
-| `/approve <slug>` | Recorded the yes against that slug, stamped with whichever mode is active | Say what it unblocks. The record already exists, so do not run `mode approve` over it. |
-| `/why` | Printed the whole state back and ended the turn, so nothing reached you at all | Nothing. If the report is in your context rather than answered outright, words were typed after it and those are the ask. |
-| a name that does not exist | Nothing switched, because `mode <axis> set` refuses a name with no file behind it | Run `mode list` and show the real names rather than guessing which one was meant |
+| The user types                    | The hook already did                                                                                         | You do                                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `/mode <name>`                    | Looked up which axis owns that name and set it there, then injected the whole contract into this very prompt | Follow it from here on, and say in one line what is active and what changes. Do not run the set yourself.                 |
+| `/mode:<name>` or `/style:<name>` | The same, from the per-contract shortcut rather than an argument                                             | The same. The two spellings are one code path, so nothing here depends on which was typed.                                |
+| `/mode <name> <name>`             | The same for both, in either order, so `/mode tdd native` fills the mode and the style at once               | Confirm both, and write the line in the style if one was set                                                              |
+| `/style <name>`                   | The same on the style slot, named outright                                                                   | The same, except write that line in the style you just picked, so the change shows rather than being announced            |
+| `/mode` or `/style`, with no name | Nothing, because there is no name to act on                                                                  | Run `mode list` for both, or `mode list style` for one, and show what exists and what is held                             |
+| `/mode auto` or `/style auto`     | Set that slot to `auto`, so a contract gets chosen from what gets written                                    | Say the slot is on auto, and name what it holds right now if it holds anything                                            |
+| `/mode off` or `/style off`       | Emptied that slot, and the mode one also dropped the recorded approval                                       | Confirm which slot is empty. The other slot is untouched.                                                                 |
+| `/approve <slug>`                 | Recorded the yes against that slug, stamped with whichever mode is active                                    | Say what it unblocks. The record already exists, so do not run `mode approve` over it.                                    |
+| `/why`                            | Printed the whole state back and ended the turn, so nothing reached you at all                               | Nothing. If the report is in your context rather than answered outright, words were typed after it and those are the ask. |
+| a name that does not exist        | Nothing switched, because `mode <axis> set` refuses a name with no file behind it                            | Run `mode list` and show the real names rather than guessing which one was meant                                          |
 
 Every typed form is a registered command, because Claude Code rejects an unknown slash command before any hook runs. The palette holds exactly three shapes and nothing else: `mode`, `mode:<mode name>` and `style:<style name>`. The bare `/mode`, `/style` and `/approve` are files the installer writes into the user commands directory, since a plugin cannot register an un-namespaced name. Each one carries `disable-model-invocation: true`, which is what keeps them the user's alone.
 
@@ -82,17 +82,19 @@ In the writing, no mode file changes what it asks for depending on the style, an
 
 Where the two genuinely meet, one line settles it. A mode owns what must happen; a style owns how much of it gets said and how it reads. When a style would delete something a mode requires, the mode wins. **A style never opens a gate.** Being in a hurry makes copilot's approval question shorter and never makes it optional.
 
+Above both axes sits the prose ground rule. No mode and no style changes how a sentence reads against it, and where one asks for something else, prose wins.
+
 ## Starting and stopping by condition
 
 Typing a name is not the only way in, and typing `off` is not the only way out. Every contract on both axes declares both ends in its own front matter.
 
-| Key | Means | Read by |
-|---|---|---|
-| `enter-when` | Alternatives separated by a vertical bar. One of them matching the message selects this contract, but only while that slot is set to `auto`. | The prompt hook, matching before anything else runs |
-| `enter-never: true` | This contract is never chosen and has to be typed | The same hook. Only `autopilot` carries it. |
-| `exit-when: approved` | A yes was recorded with `/approve` under this contract, so its job is done | The approval record, which the tool observes on its own |
-| `exit-when: mr-opened` | A merge request exists for the branch this contract worked on | Nothing observes this, so the mode that opened the merge request records it with `mode mode done mr-opened` |
-| `exit-when: manual` | Only `/mode off` or `/style off` ends it | Nothing. This is the plain behaviour, now stated rather than assumed. |
+| Key                    | Means                                                                                                                                        | Read by                                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `enter-when`           | Alternatives separated by a vertical bar. One of them matching the message selects this contract, but only while that slot is set to `auto`. | The prompt hook, matching before anything else runs                                                         |
+| `enter-never: true`    | This contract is never chosen and has to be typed                                                                                            | The same hook. Only `autopilot` carries it.                                                                 |
+| `exit-when: approved`  | A yes was recorded with `/approve` under this contract, so its job is done                                                                   | The approval record, which the tool observes on its own                                                     |
+| `exit-when: mr-opened` | A merge request exists for the branch this contract worked on                                                                                | Nothing observes this, so the mode that opened the merge request records it with `mode mode done mr-opened` |
+| `exit-when: manual`    | Only `/mode off` or `/style off` ends it                                                                                                     | Nothing. This is the plain behaviour, now stated rather than assumed.                                       |
 
 Matching anchors at the **start** of a word and runs free at the end. So `fail` covers fails, failed, failing and failure, while `build the` never matches "rebuild the". The missing trailing boundary is deliberate, and it is why every alternative has to be verb-shaped or phrase-shaped. A bare noun like `build` would match "the build fails on startup" and hand a broken pipeline to the mode that spawns a team.
 
@@ -126,11 +128,13 @@ The point of the tier is migration. Standing text that lives in a CLAUDE.md is p
 
 A rules file may also carry a `when:` pattern, alternatives split on a vertical bar exactly as `enter-when` is. Such a scoped rule stays out of the first prompt and injects once, in the same conversation-long voice, on the first prompt that matches it. The shipped `artifact` rule works this way: the HTML theming contract arrives the first time a page is asked for, and never costs a token in a conversation that builds none.
 
+A rules file carrying `outranks: contracts` is told whole like any other, and then its own `## Standing reminder`, capped at four lines, is restated on every turn after the mode's and the style's, under a line saying it wins wherever they disagree. That exists because a contract's reminder repeats every turn while a ground rule is told once, so without it the contract wins by repetition. The shipped `prose` rule carries the flag, which is what keeps human prose in force under every mode, style and skill.
+
 ## The guards
 
 The rules are fenced as well as stated. `hooks/guards/` holds the enforcement hooks: the board fences, the prose fence, the comment, null and shell-write guards, the memory guard, an X/Y/Z read fence that stands only while the `xyz` style is held, and the red guard that refuses an implementation edit for any mode declaring `no-code-without-red`. Each one interrupts the specific violation it names, which is what makes a rule a mechanism rather than a request.
 
-One switch disarms them all: `"guards": "off"` in `~/.claude/mode/config.json`. Absent means armed, matching the flag philosophy above, and the ground rules keep injecting either way, so switching the guards off changes what gets enforced and never what gets said. The dispatch gate in `hooks/gate.py` sits outside that switch, since it guards a mode's own contract rather than a ground rule.
+One switch disarms them all: `"guards": "off"` in `~/.claude/mode/config.json`. Absent means armed, matching the flag philosophy above, and the ground rules keep injecting either way, so switching the guards off changes what gets enforced and never what gets said. The dispatch gate in `hooks/gate.ts` sits outside that switch, since it guards a mode's own contract rather than a ground rule.
 
 `mode why` prints every one of these at once: what each slot holds and how it got there, where the pipeline stands, which gates are open and what would open the shut ones, which ground rules have been injected, and whether the next prompt costs the whole contract or the reminder. Reach for it when the user asks what is running, and when a guard refuses something and the reason is not obvious.
 
@@ -152,8 +156,10 @@ Both this table and the `Modes available:` list in the front matter are written 
 | `autopilot` | `modes/autopilot.md` | The user wants X and is away. Every decision is Claude's, one report waits. |
 | `copilot` | `modes/copilot.md` | Refine it together, then a team builds it while the user watches. |
 | `debug` | `modes/debug.md` | Find it, prove it reproduces, fix it, and draw why it happened. |
+| `dispatcher` | `modes/dispatcher.md` | Triage each request into a new conversation, a relay to a live one, or an answer here. Read-only, delivers nothing. |
 | `goal` | `modes/goal.md` | Loop until it is truly done, verified for real and audited clean, twice in a row. |
-| `ic` | `modes/ic.md` | The all-rounder default. One senior contributor runs the whole loop, the user watches. |
+| `ic` | `modes/ic.md` | The all-rounder, alone. One senior contributor runs the whole loop, the user watches. |
+| `pair` | `modes/pair.md` | The default. You build it, a director teammate owns the outcome, the advisor checks your method. |
 | `studio` | `modes/studio.md` | Think together on one artifact, and it grows while you talk. |
 | `swarm` | `modes/swarm.md` | A gateway on a stream of work. Check briefly, route to an owner, hire when none fits, never build. |
 | `tdd` | `modes/tdd.md` | No implementation line exists before a test that fails for the right reason. |
@@ -170,7 +176,7 @@ Written by the same command, from `styles/`, under the same rule.
 | Name | File | Summary |
 |---|---|---|
 | `creative` | `styles/creative.md` | Go wide. Several real options, boldness spent in one place, nothing sanded down. |
-| `edu` | `styles/edu.md` | Teach it top down, in plain words, carried by pictures rather than prose. |
+| `edu` | `styles/edu.md` | Explain it like a friend who knows it. Top down, in human prose, drawn where it has shape. |
 | `fast` | `styles/fast.md` | The user is in a hurry. Make it work, say done, polish nothing. |
 | `native` | `styles/native.md` | Somebody else's house. Match the neighbours and add none of your own idiom. |
 | `ship` | `styles/ship.md` | Ship it properly. Readable, named, grouped by domain, and everything a dependent needs travels with it. |
@@ -181,12 +187,12 @@ Written by the same command, from `styles/`, under the same rule.
 
 ## Adding another contract
 
-One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the shipped ones use. The heading carries no count on purpose, since a number here goes stale on the next contract and nobody notices. Which folder it goes in is decided by the question in *Two axes* above: an order of operations makes it a mode, and a texture makes it a style.
+One file, `modes/<name>.md` or `styles/<name>.md`, following the shape the shipped ones use. The heading carries no count on purpose, since a number here goes stale on the next contract and nobody notices. Which folder it goes in is decided by the question in _Two axes_ above: an order of operations makes it a mode, and a texture makes it a style.
 
 - Front matter with `name`, matching the filename stem, and a one-line `summary`. The summary is what `mode list` prints and what the status line chip shows.
 - `enter-when`, `enter-never` and `exit-when`, per the table above. A contract with no `enter-when` can only be typed, and one with no `exit-when` behaves as `manual`. Write the line anyway, because an implied contract is one nobody can read off the file.
 - Any flag the contract declares, such as `no-implement: true` or `no-dispatch-without-approval: true`. A flag is **on** whenever the key is present and not explicitly switched off, so `true`, `yes`, `1` and even a typo all count as on. It is off only when the key is absent, empty, or set to one of `false`, `no`, `off`, `n` or `0`, in any case and with quotes stripped. These flags are opt-in restrictions and nobody writes one meaning to leave it off, so a misread lands with the gate closed rather than open. Two have hooks behind them: `no-dispatch-without-approval` refuses a teammate until a yes is recorded, and `no-code-without-red` refuses an edit to an implementation file while no watched failure stands. `no-implement` is still a declaration that no hook reads.
-- An optional `color`, one of red, green, yellow, blue, magenta, cyan, grey, sky or pink, which is what the status line chip uses. No two contracts on the same axis may share one, and the nine modes now hold all nine, so a tenth mode means a tenth colour in `bin/mode` and in the test that lists them.
+- An optional `color`, one of red, green, yellow, blue, magenta, cyan, grey, sky, pink or orange, which is what the status line chip uses. No two contracts on the same axis may share one, and the ten modes now hold all ten, so an eleventh mode means an eleventh colour in `bin/mode` and in the test that lists them.
 - An optional `steps`, on a mode only: the pipeline the contract runs, in order, comma separated. Each entry is a lowercase name, and a name ending in `?` is a gate the run stops at rather than a box it walks through. A name may carry `@event` after it, naming the event that records the step with nothing for the model to say, and the recorder publishes seven: `artifact` for a write under the artifacts folder, `approve` for an approval landing, `agent` for a teammate spawned, `question` for a question asked, `commit` for a commit, `test` for a test run that passed, and `test-fail` for one that failed. A step whose gate is a run the author watched fail names `test-fail`, which is how tdd's `red?` stays put on a green suite. A bare name has no event behind it, so reaching it is the model's own claim. Keep the names short. The status line draws them as a row of boxes and the whole drawing has to fit inside 78 columns, which a test measures for every mode that declares the key.
 - An optional `loops` beside it, carrying the backward edges the contract's own flowchart already draws: comma separated, each one `from>to` by step name, so copilot's `integrate>dispatch` is failed work going back to the IC that produced it. Both ends have to name a step in the same `steps` line. A pipeline that only runs forwards leaves the key out, and so does a mode with no `steps` at all.
 - A body carrying the full contract, at whatever length it needs.

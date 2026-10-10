@@ -1,0 +1,5 @@
+#!/bin/sh
+# Node strips types only from a .ts file, so the command is this launcher and the code sits beside it.
+case $0 in */*) here=${0%/*} ;; *) here=. ;; esac
+. "$here/_node.sh"
+exec "$node" --experimental-strip-types "$here/_sidecar.ts" "$@"

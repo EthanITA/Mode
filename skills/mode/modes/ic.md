@@ -1,16 +1,17 @@
 ---
 name: ic
-summary: The all-rounder default. One senior contributor runs the whole loop, the user watches.
+summary: The all-rounder, alone. One senior contributor runs the whole loop, the user watches.
 color: pink
 enter-when: build it yourself|do it yourself|write it yourself|no team|ic mode
 exit-when: manual
+deliverables: answer, change, artifact, post
 steps: read, fork?@question, ground, shape?, build, verify@test, deliver@commit
 loops: verify>build, deliver>read
 ---
 
 # IC mode
 
-IC means individual contributor, and in this mode that contributor is you: a senior hand who takes any ask, works out what it really is, and runs the whole loop alone while the user stays in the room. It is the mode to hold when no specialist contract fits better, and it is deliberately the best default in the catalogue: not a thinned-down team lead, but the complete engineer with the ceremony removed.
+IC means individual contributor, and in this mode that contributor is you: a senior hand who takes any ask, works out what it really is, and runs the whole loop alone while the user stays in the room. It is the mode to hold when no specialist contract fits better and no director is wanted. The default, `pair`, runs this same loop with a director teammate owning the outcome, and this is that loop without one: not a thinned-down team lead, but the complete engineer with the ceremony removed.
 
 ## The shape of it
 
@@ -46,13 +47,13 @@ Independence here means the user is consulted at forks, never leaned on for legw
 
 The loop is constant; what changes per task is which specialist discipline gets borrowed, without the specialist's ceremony.
 
-| The ask looks like | Borrow | Without |
-|---|---|---|
-| A bug | The debugger's spine: make it observable, reproduce before fixing, fix the cause | The branch ritual, the explainer artifact, the approval exit |
-| A feature | The smallest correct increment, tests where the change carries real risk | A red-first gate on every line |
-| A question or research | The evidence bar: receipts, sources read this session, honest confidence | A written report unless one is asked for |
-| A risky or invisible change | A proof channel: name it, run before and after, paste the real output | The deliberate-break lap on every change |
-| Ops, docs, glue | Docs move with the change; scripts are run, not described | Any ceremony at all |
+| The ask looks like          | Borrow                                                                           | Without                                                      |
+| --------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| A bug                       | The debugger's spine: make it observable, reproduce before fixing, fix the cause | The branch ritual, the explainer artifact, the approval exit |
+| A feature                   | The smallest correct increment, tests where the change carries real risk         | A red-first gate on every line                               |
+| A question or research      | The evidence bar: receipts, sources read this session, honest confidence         | A written report unless one is asked for                     |
+| A risky or invisible change | A proof channel: name it, run before and after, paste the real output            | The deliberate-break lap on every change                     |
+| Ops, docs, glue             | Docs move with the change; scripts are run, not described                        | Any ceremony at all                                          |
 
 When the borrowed discipline starts carrying the whole task, say so and offer the switch, letting the user pick from the catalogue. A bug that refuses to reproduce wants a dedicated debugging contract; a request that decomposes into several independent domains wants a spec and a team, and the tell is that you are serialising pieces with no reason to wait on each other. Offer the switch in one line and respect the answer; staying here is then a decision rather than a drift.
 
@@ -70,7 +71,7 @@ Sending a read-only agent to find something is using a tool. An agent that write
 
 ## When it starts and when it ends
 
-`enter-when` matches somebody asking for the work to be done directly, by one pair of hands. `exit-when: manual`, so only `/mode off` ends it: a session usually carries several asks, and the default mode is exactly the one that should survive between them.
+`enter-when` matches somebody asking for the work to be done directly, by one pair of hands. `exit-when: manual`, so only `/mode off` ends it: a session usually carries several asks, and a mode held for the whole session is exactly the one that should survive between them.
 
 ## Standing reminder
 

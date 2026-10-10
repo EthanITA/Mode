@@ -4,6 +4,7 @@ summary: No implementation line exists before a test that fails for the right re
 color: green
 enter-when: tdd|test-driven|test driven|test first|test-first|write a failing test|write the test first|write tests first
 exit-when: manual
+deliverables: change
 no-code-without-red: true
 steps: cases, reduce, direction, red?@test-fail, green@test, refactor
 loops: refactor>red
@@ -68,10 +69,10 @@ The list you finish with is the minimum set. Exhaustive was the input, not the t
 
 Outside-in or inside-out, and the deciding question is whether the contract is already frozen. One grep for an existing caller of the identifier answers it.
 
-| The grep finds | The contract is | Go | Because |
-|---|---|---|---|
-| Nothing | Not fixed yet | Outside-in | The test names the interface before it exists, so the design pressure lands on the signature while moving it is still free. |
-| A caller | Frozen | Inside-out | Somebody already depends on this shape, so real objects beat mocks. A mock of a frozen contract only re-asserts what you already believe. |
+| The grep finds | The contract is | Go         | Because                                                                                                                                   |
+| -------------- | --------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Nothing        | Not fixed yet   | Outside-in | The test names the interface before it exists, so the design pressure lands on the signature while moving it is still free.               |
+| A caller       | Frozen          | Inside-out | Somebody already depends on this shape, so real objects beat mocks. A mock of a frozen contract only re-asserts what you already believe. |
 
 Say which direction you took and what the grep found. That one sentence is what lets the choice be argued with later.
 
@@ -97,13 +98,13 @@ The failure message is part of the test. A stranger reading only that line shoul
 
 ## What changes, turn to turn
 
-| Ordinarily | In this mode |
-|---|---|
-| A test is written once the code works | No implementation line exists before a test that was watched failing |
-| Cases come to mind while writing | Cases come from a structured pass, then get reduced to the minimum set |
-| Mocks stand in for whatever is inconvenient | Direction is decided first, and a frozen contract gets real objects |
-| "The tests pass" | "It failed on the assertion with this message, then passed" |
-| Refactoring and new behaviour ride in together | Refactoring happens green, and new behaviour needs a new red |
+| Ordinarily                                     | In this mode                                                           |
+| ---------------------------------------------- | ---------------------------------------------------------------------- |
+| A test is written once the code works          | No implementation line exists before a test that was watched failing   |
+| Cases come to mind while writing               | Cases come from a structured pass, then get reduced to the minimum set |
+| Mocks stand in for whatever is inconvenient    | Direction is decided first, and a frozen contract gets real objects    |
+| "The tests pass"                               | "It failed on the assertion with this message, then passed"            |
+| Refactoring and new behaviour ride in together | Refactoring happens green, and new behaviour needs a new red           |
 
 ## A hook enforces this
 
@@ -111,10 +112,10 @@ The `no-code-without-red` flag in the front matter above arms a guard, and the g
 
 What the guard watches is narrow and worth knowing exactly.
 
-| It judges | It never judges |
-|---|---|
+| It judges                                                                       | It never judges                                                        |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | A file whose extension carries behaviour, in a directory that is not a test one | Markdown, JSON, YAML, CSS, fixtures, anything the rule was never about |
-| A file whose name is not test shaped | A test file, wherever it lives, so the test is always writable |
+| A file whose name is not test shaped                                            | A test file, wherever it lives, so the test is always writable         |
 
 It opens on one condition: a suite the recorder watched exit non-zero, with no passing run recorded after it. That is the red the mode already asks for, read off the run rather than off a claim. A green closes the lap, and the next implementation edit waits for a new red.
 

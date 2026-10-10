@@ -57,13 +57,13 @@ Follow the repo's standard when it has one worth the name. Most repos do not. Th
 
 Each of these moves in the same diff as the code it describes, or it drifts. A doc updated next week is a doc that spent a week lying.
 
-| Travels | Moves when | What wrong looks like |
-|---|---|---|
-| Tests | Behaviour changed, a bug was fixed, or the change carries real risk: money paths, state machines, parsing, a security property | The bug can come back and nothing notices |
-| README and usage docs | The way somebody installs, configures or calls the thing changed | A newcomer follows the instructions and hits an error |
-| The API description, where the project keeps one | A request shape, a response shape or a status code changed | Generated clients are wrong and nobody finds out until integration |
-| Changelog, where the project keeps one | Anything a user of this code would want to know about | The upgrade is a surprise, every time |
-| Migration note | A breaking change ships | People stay on the old version because nobody wrote the path off it |
+| Travels                                          | Moves when                                                                                                                     | What wrong looks like                                               |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| Tests                                            | Behaviour changed, a bug was fixed, or the change carries real risk: money paths, state machines, parsing, a security property | The bug can come back and nothing notices                           |
+| README and usage docs                            | The way somebody installs, configures or calls the thing changed                                                               | A newcomer follows the instructions and hits an error               |
+| The API description, where the project keeps one | A request shape, a response shape or a status code changed                                                                     | Generated clients are wrong and nobody finds out until integration  |
+| Changelog, where the project keeps one           | Anything a user of this code would want to know about                                                                          | The upgrade is a surprise, every time                               |
+| Migration note                                   | A breaking change ships                                                                                                        | People stay on the old version because nobody wrote the path off it |
 
 Correct and short, both. Verbosity is a maintenance cost like any other: a changelog entry is one line saying what changed and who it affects, and a README section explains what is not obvious and skips what is. Paste the real command over a description of it.
 

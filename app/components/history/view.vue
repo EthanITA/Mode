@@ -1,0 +1,277 @@
+<script lang="ts" setup>
+import { useLocalStorage } from "@vueuse/core";
+
+const SIDE = 340;
+
+const sc = useSidecar();
+const history = useHistory();
+const restoring = ref<string>();
+const side = useLocalStorage("sc:pane:history", SIDE);
+
+const firstFresh = computed(() => history.turns.value.find((one) => one.fresh)?.receipt.turn);
+
+const selectedTurn = computed(() => history.turns.value.find((one) => one.receipt.turn === history.selected.value));
+
+const span = computed(() => {
+  const range = history.range.value;
+  if (!range) return "";
+  return range.first === range.last ? `turn ${range.first}` : `turns ${range.first} to ${range.last}`;
+});
+
+const subtitle = computed(() => {
+  if (!selectedTurn.value) return "";
+  const count = history.files.value.length;
+  return `${span.value}, ${count ? plural(count, "file") : "no files changed"}`;
+});
+
+function isPicked(turn: number): boolean {
+  const range = history.range.value;
+  return !!range && turn >= range.first && turn <= range.last;
+}
+
+async function restore(path: string, force?: boolean): Promise<void> {
+  restoring.value = path;
+  await history.restore(path, force);
+  restoring.value = undefined;
+}
+
+const restoreMessage = computed(() => {
+  const done = history.restored.value;
+  if (!done) return "";
+  if (done.restored) return `Restored ${basename(done.path)} to turn ${done.turn}.`;
+  // The store refuses only when disk matches no version it holds, so this is never our own earlier restore.
+  if (history.forceable.value) {
+    return `${basename(done.path)} on disk is not any version this conversation stored. Something outside this conversation — a hand edit, or another session — has changed it since. Restoring will overwrite that work.`;
+  }
+  return `Could not restore ${basename(done.path)} — ${done.reason || "no reason was given"}`;
+});
+</script>
+
+<template>
+  <section class="history" data-region="history" :style="{ '--side-w': `${side}px` }">
+    <UiSurface class="pane" data-region="history-turns" pad="none" variant="raised">
+      <header class="bar">
+        <span class="title">Turns</span>
+        <span class="meta mono-meta">{{ plural(history.turns.value.length, "turn") }}</span>
+      </header>
+      <div class="scroll" data-scroll="turns">
+        <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
+        <UiStateMessage v-else-if="history.loading.value" class="empty" kind="loading"
+          >Reading the receipts…</UiStateMessage
+        >
+        <UiStateMessage v-else-if="history.error.value" class="failure" kind="error" :title="history.error.value">
+          Couldn't read this conversation's turns.
+        </UiStateMessage>
+        <UiStateMessage v-else-if="!history.turns.value.length" class="empty">
+          No turns have been recorded for this conversation.
+        </UiStateMessage>
+
+        <template v-for="turn in history.turns.value" :key="turn.receipt.turn">
+          <p v-if="turn.receipt.turn === firstFresh" class="divider mono-meta">new since you looked</p>
+          <HistoryTurn
+            :selected="isPicked(turn.receipt.turn)"
+            :turn="turn"
+            @select="(extend) => history.pick(turn.receipt.turn, extend)"
+          />
+        </template>
+      </div>
+    </UiSurface>
+
+    <PaneResizer v-model="side" :initial="SIDE" label="Resize the turns pane" />
+
+    <UiSurface class="pane" data-region="history-changes" pad="none" variant="raised">
+      <header class="bar">
+        <span class="title">Changes</span>
+        <span class="meta mono-meta">{{ subtitle }}</span>
+        <span class="spacer" />
+        <span class="toggle">
+          <UiChip
+            :selected="history.compare.value === 'turns'"
+            size="xs"
+            title="What the picked turns did. Shift-click a second turn for a range."
+            @click="history.compare.value = 'turns'"
+          >
+            these turns
+          </UiChip>
+          <UiChip
+            :selected="history.compare.value === 'head'"
+            size="xs"
+            title="From before the picked turns to the newest version"
+            @click="history.compare.value = 'head'"
+          >
+            through now
+          </UiChip>
+        </span>
+      </header>
+
+      <div class="scroll" data-scroll="changes">
+        <p v-if="history.capped.value" class="notice" role="status">
+          The version store hit its size budget for this conversation, so some files were never kept. Anything missing
+          below is missing from the store, not from the conversation.
+        </p>
+
+        <div v-if="history.restored.value" class="notice" :data-ok="history.restored.value.restored" role="status">
+          <span>{{ restoreMessage }}</span>
+          <!-- Overwriting work we never wrote is a second, deliberate act, never a retry of the first. -->
+          <button
+            v-if="history.forceable.value"
+            v-press
+            class="overwrite focusable"
+            type="button"
+            @click="restore(history.restored.value.path, true)"
+          >
+            Overwrite anyway
+          </button>
+        </div>
+
+        <UiStateMessage v-if="!selectedTurn" class="empty">Pick a turn to see what it changed.</UiStateMessage>
+        <UiStateMessage v-else-if="history.diffing.value" class="empty" kind="loading"
+          >Reading the diffs…</UiStateMessage
+        >
+        <UiStateMessage v-else-if="!history.files.value.length" class="empty">
+          {{ selectedTurn.inFlight ? "This work" : `Turn ${selectedTurn.receipt.turn}` }} touched no files. It read and
+          reasoned, but nothing on disk moved.
+        </UiStateMessage>
+
+        <HistoryFile
+          v-for="file in history.files.value"
+          :key="file.path"
+          :compare="history.compare.value"
+          :file="file"
+          :restoring="restoring === file.path"
+          @restore="restore(file.path)"
+        />
+      </div>
+    </UiSurface>
+  </section>
+</template>
+
+<style scoped>
+/* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
+.history {
+  column-gap: 8px;
+  display: grid;
+  grid-template-columns: min(var(--side-w), 50%) 0 minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bar {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex: none;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.title {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.meta {
+  color: var(--muted);
+  text-transform: none;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.toggle {
+  display: inline-flex;
+  flex: none;
+  gap: 4px;
+}
+
+.scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 12px var(--float-clear);
+}
+
+/* A column flex item shrinks by default, so long content squeezed every card instead of scrolling. */
+.scroll > * {
+  flex-shrink: 0;
+}
+
+.scroll[data-scroll="turns"] {
+  gap: 2px;
+  padding: 6px 8px var(--float-clear);
+}
+
+.divider {
+  align-items: center;
+  color: var(--primary);
+  display: flex;
+  gap: 10px;
+  margin: 10px 0 4px;
+  text-transform: none;
+}
+
+.divider::before,
+.divider::after {
+  background: var(--primary);
+  content: "";
+  flex: 1;
+  height: 1px;
+}
+
+.empty {
+  padding: 2px;
+}
+
+.failure {
+  background: var(--error-soft);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-field);
+  color: var(--error);
+  font-size: 13px;
+  margin: 0;
+  padding: 9px 13px;
+}
+
+.notice {
+  align-items: flex-start;
+  background: var(--warning-soft);
+  border-radius: var(--radius-field);
+  color: var(--warning);
+  display: flex;
+  font-size: 12.5px;
+  gap: 10px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 9px 13px;
+}
+
+.overwrite {
+  background: var(--warning);
+  border: 0;
+  border-radius: 999px;
+  color: var(--canvas);
+  cursor: pointer;
+  flex: none;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  margin-left: auto;
+  padding: 4px 11px;
+}
+
+.notice[data-ok="true"] {
+  background: var(--success-soft);
+  color: var(--success);
+}
+</style>

@@ -6,7 +6,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/inject.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" relay"
+          },
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" inject"
           }
         ]
       }
@@ -16,18 +20,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/resume.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" resume"
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Bash|Write|Edit|NotebookEdit|Agent|AskUserQuestion|Artifact",
+        "matcher": "Bash|Write|Edit|NotebookEdit|Agent|AskUserQuestion|Artifact|mcp__.*__create_merge_request|mcp__.*__create_pull_request",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/observe.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" observe"
           }
         ]
       },
@@ -36,23 +40,23 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sync.sh\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" sync"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/comment-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/comment-guard"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/memory-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/memory-guard"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/null-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/null-guard"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/namespace-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/namespace-guard"
           }
         ]
       }
@@ -63,11 +67,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/gate.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" gate"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/roster-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/roster-guard"
           }
         ]
       },
@@ -76,12 +80,25 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-keep.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-keep"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-deliver.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-cap"
+          },
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-deliver",
             "timeout": 90
+          }
+        ]
+      },
+      {
+        "matcher": "TaskCreate",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-cap"
           }
         ]
       },
@@ -90,7 +107,33 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/shell-write-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/shell-write-guard"
+          },
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/git-guard"
+          },
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/pair-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Agent|TaskCreate|TaskUpdate|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/director-guard"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Agent|Bash|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/deliverable-guard"
           }
         ]
       },
@@ -99,11 +142,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/red-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/red-guard"
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/router-guard.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/router-guard"
           }
         ]
       }
@@ -114,7 +157,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/observe.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" observe"
           }
         ]
       }
@@ -124,7 +167,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-category.py\""
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-category"
           }
         ]
       }
@@ -134,22 +177,22 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/prose-check.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/prose-check",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/xyz-check.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/xyz-check",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-check.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-check",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guards/board-done.py\"",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-done",
             "timeout": 60
           }
         ]

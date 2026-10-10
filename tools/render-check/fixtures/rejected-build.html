@@ -1,0 +1,38 @@
+<!doctype html>
+<html data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <title>Mode sidecar</title>
+</head>
+<body>
+  <!--
+    A v6 conversation that rendered badly, kept as the check's own regression target:
+    `npm run check:render -- --url <this file>` must fail on it. It opens straight
+    onto the read face, so the driver reaches that screen with no desk to click
+    through. Three separate failures, one per mechanism: the artifact region holds no
+    frame at all, the title renders raw session keys where names belong, and the page
+    says the words it says when a mount never happened.
+  -->
+  <div data-region="top-right">
+    <button data-region="theme-toggle" class="theme-toggle">Theme</button>
+  </div>
+
+  <div data-region="conversation-head">
+    <a href="#">desk</a>
+    <span data-region="conversation-title">3f9a1c02 · 7b21de44 · c0ffee11</span>
+  </div>
+
+  <main data-region="conversation-stage" data-face="read">
+    <div data-region="read-view">
+      <div data-region="version-tabs"></div>
+      <article data-region="artifact-page">
+        <p>No artifact mounted yet.</p>
+      </article>
+    </div>
+  </main>
+
+  <div data-region="composer-dock">
+    <textarea placeholder="Prompt Claude…"></textarea>
+  </div>
+</body>
+</html>
