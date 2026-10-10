@@ -36,8 +36,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **The chat island is hidden; Claude Code is the chat.** The prompt, the transcript and the mode and
   style pickers no longer show in a conversation or on an artifact page. Notes left on a page or a line
   still collect in the tray, which shows bottom right with one button that sends them to Claude.
-- **A Files face replaces the Canvas.** It opens on Artifacts, the pages this conversation made, with
-  the first one showing. All is the conversation's whole folder as a tree that follows `.gitignore`,
+- **An Artifacts face lists what a conversation made: its pages and its plans.** A page is one in the artifacts
+  folder and a plan is one Claude Code wrote to `~/.claude/plans/`, both newest first and each opening in the
+  reader beside the list. A conversation opens on it, after Review in the switcher, and `artifact open`,
+  `?artifact=<slug>` and a followed slug land here. Any other `.md` the conversation wrote stays in Files.
+- **A Files face replaces the Canvas.** All is the conversation's whole folder as a tree that follows `.gitignore`,
   with a toggle that brings the ignored files back dimmed, and two narrower scopes: Produced, the
   files Claude created, and Interacted, the ones it read or changed. A dot marks every file the
   conversation touched, solid for what its latest turn read or edited. Any page the artifact catalogue
@@ -201,7 +204,7 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 ### Changed
 
 - **`artifact open` shows the page in the sidecar, not the browser.** `artifact open <slug>` points the
-  sidecar at the conversation and shows the page in Files. The browser is still `artifact open <slug> --browser`,
+  sidecar at the conversation and shows the page in Artifacts. The browser is still `artifact open <slug> --browser`,
   or `--web` for the published URL, and `sidecar open --artifact <slug>` and `POST /api/follow` with a `slug`
   do the same from outside.
 - **create-artifact no longer opens the page it built.** It hands over the path and stops, and the artifact

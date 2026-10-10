@@ -30,7 +30,7 @@ const USAGE = `usage: sidecar [command]     /sidecar [command] in a Claude Code 
   open [key]  the default: start it when down, point it at the conversation, and bring an open
               sidecar window to the front, else open the installed app, else a Chrome app window.
               The conversation is the key given, else the Claude Code session this runs in, and
-              --artifact <slug> opens that page there, in Files
+              --artifact <slug> opens that page there, in Artifacts
   status      whether it is up, where, and whether it starts at login
   start       start it in the background and wait until it answers
   stop        stop it, wherever it was started from

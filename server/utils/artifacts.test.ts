@@ -75,6 +75,27 @@ test("a stored document's card counts the threads in its store, a new one includ
   }
 });
 
+test("a listed entry is a page in the artifacts folder, a plan in the plans folder, and a document anywhere else", async () => {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "kinds-")));
+  process.env.CLAUDE_CONFIG_DIR = dir;
+  try {
+    mkdirSync(join(dir, "sidecar", "artifacts"), { recursive: true });
+    writeFileSync(join(dir, "sidecar", "artifacts", "deck.html"), "<!doctype html>\n<title>Deck</title>\n");
+    mkdirSync(join(dir, "plans"));
+    const plan = join(dir, "plans", "brave-plan.md");
+    const scratch = join(dir, "scratch.md");
+    writeFileSync(plan, "# Plan\n");
+    writeFileSync(scratch, "# Notes\n");
+    mkdirSync(join(dir, "artifacts"));
+    writeFileSync(join(dir, "artifacts", "session-0123abcd"), `${plan}\n${scratch}\n`);
+    const kinds = Object.fromEntries((await listArtifacts()).map((one) => [one.title, one.kind]));
+    assert.deepEqual(kinds, { Deck: "page", Plan: "plan", Notes: "document" });
+  } finally {
+    delete process.env.CLAUDE_CONFIG_DIR;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("a document's slug is its stem made url-safe plus six hex of its path, exactly as bin/artifact names it", () => {
   assert.equal(Documents.slug("/tmp/notes/analysis/My Plan.md"), "My-Plan--5471ce");
 });

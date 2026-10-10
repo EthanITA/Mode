@@ -210,7 +210,7 @@ They are namespaced `mode:<name>`, and the installer writes a bare `/<name>` com
 stamps its metadata, and runs the comment round trip that lets you review a page and have Claude answer
 the threads. `artifact new <slug> --ds <key>` writes a page with the pack's stylesheets and the component
 kit already in it, so Claude writes markup rather than CSS and JavaScript, and `artifact kit <slug>`
-refreshes the kit in an older page. `artifact open <slug>` shows the page in the sidecar's Files face
+refreshes the kit in an older page. `artifact open <slug>` shows the page in the sidecar's Artifacts face
 when you want to look at it, and `--browser` opens the file in the browser instead, or `--web` its
 published URL. Claude never runs it for you. Three lookups are worth knowing:
 
@@ -238,7 +238,7 @@ The sidecar, the Nuxt app at the root of this repo, has its own CLI, `bin/sideca
 ```sh
 sidecar             # same as open
 sidecar open [key]  # start it when down, point it at the conversation, raise an open sidecar or open one
-sidecar open --artifact <slug>  # the same, showing that page in Files
+sidecar open --artifact <slug>  # the same, showing that page in Artifacts
 sidecar status      # whether it is up, where, and whether it starts at login
 sidecar start       # in the background, waiting until it answers
 sidecar stop        # wherever it was started from, a terminal's pnpm dev included

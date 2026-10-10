@@ -1,4 +1,6 @@
 export type ArtifactFormat = "html" | "md";
+// A page sits in the artifacts folder, a plan in Claude Code's plans folder, and a document anywhere else a conversation wrote a .md.
+export type ArtifactKind = "page" | "plan" | "document";
 
 export interface ArtifactMeta {
   slug: string;
@@ -9,6 +11,7 @@ export interface ArtifactMeta {
   updated?: string;
   path: string;
   format: ArtifactFormat;
+  kind: ArtifactKind;
   // Not `threads`: ArtifactDetail already owns that name for the array itself.
   threadCount?: number;
   preview?: string;

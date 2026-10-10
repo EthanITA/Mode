@@ -8,7 +8,7 @@ const follow = useFollow();
 
 // Read off disk at build: an unbuilt face is unreachable, with no list kept by hand.
 const parts = import.meta.glob<Component>(
-  "../../../components/{board/island,files/view,history/view,review/view}.vue",
+  "../../../components/{artifacts/view,board/island,files/view,history/view,review/view}.vue",
   { import: "default" },
 );
 
@@ -18,6 +18,7 @@ function part(path: string): Component | undefined {
 }
 
 const built: Record<Face, Component | undefined> = {
+  artifacts: part("artifacts/view"),
   files: part("files/view"),
   history: part("history/view"),
   review: part("review/view"),
@@ -30,7 +31,7 @@ chrome.view.faces.value = FACES.filter((face) => built[face]);
 const asked = FACES.find((face) => face === route.query.face);
 if (asked) chrome.view.set(asked);
 if (typeof route.query.artifact === "string") {
-  chrome.view.set("files");
+  chrome.view.set("artifacts");
   follow.opening.value = route.query.artifact;
 }
 

@@ -1,14 +1,16 @@
 import { open, readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import type {
   ArtifactDetail,
   ArtifactFormat,
+  ArtifactKind,
   ArtifactMeta,
   ReviewThread,
   ThreadAnchor,
   ThreadReply,
 } from "../../shared/types/artifact";
 import { artifactsDir } from "../../lib/artifact/files.ts";
+import { plansHome } from "../../lib/mode/paths.ts";
 import {
   commentsFile,
   hasLegacyBlock,
@@ -60,6 +62,12 @@ interface ParseMetaInput {
   path: string;
 }
 
+function kindOf(path: string): ArtifactKind {
+  const folder = dirname(path);
+  if (folder === artifactsDir()) return "page";
+  return folder === plansHome() ? "plan" : "document";
+}
+
 function titleOf(head: string, format: ArtifactFormat): string {
   if (format === "html") return TITLE_TAG.exec(head)?.[1]?.trim() || "";
   return H1.exec(head.replace(COMMENT, "").replace(FENCE, ""))?.[1] || "";
@@ -89,6 +97,7 @@ function parseMeta({ format, head, fallbackSlug, path }: ParseMetaInput): Artifa
     updated: fields.updated,
     path,
     format,
+    kind: kindOf(path),
   };
 }
 

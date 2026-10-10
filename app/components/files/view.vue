@@ -1,32 +1,28 @@
 <script lang="ts" setup>
-import { FilePen, FilePlus2, FolderTree, PanelsTopLeft } from "@lucide/vue";
+import { FilePen, FilePlus2, FolderTree } from "@lucide/vue";
 import { useLocalStorage } from "@vueuse/core";
 import type { Component } from "vue";
-import type { ArtifactMeta } from "~~/shared/types/artifact";
 import type { FileGroup, SessionFile } from "~~/shared/types/files";
 import type { TreeEntry } from "~~/shared/types/tree";
 
-type Scope = "artifacts" | "all" | FileGroup;
+type Scope = "all" | FileGroup;
 
 const SIDE = 340;
 const side = useLocalStorage("sc:pane:files", SIDE);
 
 const sc = useSidecar();
-const follow = useFollow();
 const files = useFiles(() => sc.sessionKey.value);
 const selected = useState<string | undefined>("fl:selected");
-const scope = useState<Scope>("fl:scope", () => "artifacts");
+const scope = useState<Scope>("fl:scope", () => "produced");
 const showIgnored = useState("fl:ignored", () => false);
 
 const SCOPES = [
-  { hint: "Pages this conversation made", icon: PanelsTopLeft, label: "Artifacts", value: "artifacts" },
   { hint: "The whole folder", icon: FolderTree, label: "All", value: "all" },
   { hint: "Files Claude created", icon: FilePlus2, label: "Produced", value: "produced" },
   { hint: "Files Claude read or changed", icon: FilePen, label: "Interacted", value: "interacted" },
 ] satisfies { hint: string; icon: Component; label: string; value: Scope }[];
 
 const EMPTY: Record<Exclude<Scope, "all">, string> = {
-  artifacts: "This conversation hasn't made an artifact yet.",
   produced: "This conversation hasn't created a file yet.",
   interacted: "This conversation hasn't read or changed a file yet.",
 };
@@ -43,43 +39,15 @@ const folder = useFolderTree({
 });
 // Every page the catalogue holds opens as an artifact, stamped on this conversation or not.
 const pages = computed(() => new Map(sc.catalogue.value.map((meta) => [meta.path, meta.slug])));
-const artifacts = computed(() => {
-  const paths = new Map(sc.catalogue.value.map((meta) => [meta.slug, meta.path]));
-  return (session.value?.artifacts ?? []).flatMap((slug) => paths.get(slug) ?? []);
-});
 
 const scoped = usePathsTree(() =>
-  scope.value === "artifacts"
-    ? artifacts.value
-    : (files.value?.files ?? []).filter((file) => file.group === scope.value).map((file) => file.path),
+  (files.value?.files ?? []).filter((file) => file.group === scope.value).map((file) => file.path),
 );
 const source = computed(() => (scope.value === "all" ? folder : scoped));
 const pageOf = computed(() => (selected.value ? pages.value.get(selected.value) : undefined));
 
 // A new turn can create or delete files, so the folders already open are listed again.
 watch(latest, () => folder.refresh());
-
-watch(
-  [scope, artifacts],
-  () => {
-    if (scope.value === "artifacts" && !selected.value) selected.value = artifacts.value[0];
-  },
-  { immediate: true },
-);
-
-// A page made after the catalogue loaded is not in it yet, so the catalogue is read again before giving up.
-watch(
-  () => follow.opening.value,
-  async (slug) => {
-    if (!slug) return;
-    const pathOf = (): string | undefined => sc.catalogue.value.find((meta) => meta.slug === slug)?.path;
-    if (!pathOf()) sc.catalogue.value = await $fetch<ArtifactMeta[]>("/api/artifacts").catch(() => sc.catalogue.value);
-    if (follow.opening.value !== slug) return;
-    follow.opening.value = undefined;
-    selected.value = pathOf() ?? selected.value;
-  },
-  { immediate: true },
-);
 
 function markOf(entry: TreeEntry): SessionFile | undefined {
   return entry.kind === "file" ? touched.value.get(entry.path) : undefined;

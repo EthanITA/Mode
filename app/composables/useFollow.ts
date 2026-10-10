@@ -9,7 +9,7 @@ export interface FollowOptions {
 
 export interface Follow {
   listen: (options?: FollowOptions) => void;
-  /** The artifact Claude Code asked to show, held until Files mounts and opens it. */
+  /** The artifact Claude Code asked to show, held until Artifacts mounts and opens it. */
   opening: Maybe<string>;
   pinned: Ref<boolean>;
   target: Ref<FollowTarget>;
@@ -24,7 +24,7 @@ export function useFollow(): Follow {
 
   function go(next: FollowTarget): void {
     if (pinned.value || !next.key) return;
-    const face = FACES.find((one) => one === (next.slug ? "files" : next.face));
+    const face = FACES.find((one) => one === (next.slug ? "artifacts" : next.face));
     if (face) chrome.view.set(face);
     opening.value = next.slug;
     if (next.key === sc.sessionKey.value) return;

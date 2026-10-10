@@ -4,7 +4,7 @@ import { X } from "@lucide/vue";
 const route = useRoute();
 const chrome = useChrome();
 
-const LABELS: Record<Face, string> = { files: "Files", history: "History", review: "Review" };
+const LABELS: Record<Face, string> = { artifacts: "Artifacts", files: "Files", history: "History", review: "Review" };
 
 const isFull = useArtifactFullscreen();
 

@@ -39,6 +39,11 @@ export function sidecarHome(): string {
   return join(configRoot(), "sidecar");
 }
 
+// Claude Code's own: plan mode writes each plan here as a .md.
+export function plansHome(): string {
+  return join(configRoot(), "plans");
+}
+
 // Session state sits one level down, so it can never be mistaken for a contract folder.
 export function stateHome(): string {
   return join(modeHome(), "state");
