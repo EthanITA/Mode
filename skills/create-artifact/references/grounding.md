@@ -53,9 +53,9 @@ Several subsystems at once: dispatch one subagent per subsystem, in parallel, ea
 
 ## Write the findings down
 
-Put them in `~/Notes/analysis/<slug>-artifact-notes.md` as a structured list, one line per fact, each carrying its source. Two reasons this beats keeping them in your head. The authoring phase then reads structured facts instead of chat memory, which is where invention creeps in. And a later session refreshing the artifact starts from the findings rather than redoing the research.
+Put them in `notes.md` in the session's build folder (SKILL.md §6) as a structured list, one line per fact, each carrying its source. The authoring phase then reads structured facts instead of chat memory, which is where invention creeps in.
 
-If that file already exists from an earlier run, read it before you write. Update what changed and keep what still holds; never clobber a previous investigation with a fresh one that happens to be shallower.
+The build folder goes with the session, so a later session refreshing the artifact starts from the page's own Sources section and re-reads what it cites.
 
 ## Termination: how you know grounding is finished
 

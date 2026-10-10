@@ -34,7 +34,7 @@ Every local artifact ships a review layer, so a page you are asked to change may
 
 **What the user sends.** The page's Send and Approve go to the sidecar, which relays them into the conversation that built the page as a message from the user. With no sidecar running the page downloads `<slug>.comments.json`, and `artifact comments <slug>` takes it from the downloads folder, so the artifact still works alone on a laptop.
 
-**A `.md` in the artifacts directory is an artifact too.** The sidecar renders it in the house style and takes comments on it the way it does on a page, writing them into one `<!-- rv:seed -->` comment block at the end of the file. `artifact comments`, `--reply` and `--resolve` work on it unchanged. `artifact review` only adds the empty block. A `<slug>.md` beside `<slug>.html` is that page's brief and is never listed. Beyond that folder, every `.md` a conversation writes or edits is recorded against it by the PostToolUse hook, shows in the sidecar as `<stem>--<hash>`, and answers to `artifact comments <that slug or its path>`. A comment on one lands in that file, wherever it lives.
+**A `.md` in the artifacts directory is an artifact too.** The sidecar renders it in the house style and takes comments on it the way it does on a page, writing them into one `<!-- rv:seed -->` comment block at the end of the file. `artifact comments`, `--reply` and `--resolve` work on it unchanged. `artifact review` only adds the empty block. Beyond that folder, every `.md` a conversation writes or edits is recorded against it by the PostToolUse hook, shows in the sidecar as `<stem>--<hash>`, and answers to `artifact comments <that slug or its path>`. A comment on one lands in that file, wherever it lives.
 
 **In copilot mode this is the approval gate.** Approve pressed with no open threads is the yes: record it with `mode approve <slug>` and dispatch. Approve pressed with threads still open is an approval with named changes, so those threads are the work. Anything weaker is not an approval, and silence never is.
 
@@ -57,7 +57,7 @@ Only **mockup** asserts nothing, so grounding is the default and skipping it is 
 
 **Interactive means operable, and the page is still a document first.** The reader must be able to do the subject's thing: reproduce the bug, switch the mockup variants, run the backend scenario, filter the real rows and reach a count nobody pre-wrote. Two tests before shipping. Strip every control: if the page still says the same thing, the interactivity was decoration. Then ask whether a reader can reach a conclusion you did not write into the page; if not, it is still a report.
 
-None of that licenses a page that only exists once script runs. Every number, row, caption and definition is authored in the HTML, the opening state of each figure included, and script only takes the interaction over. With script off the chapters stack into one long document that reads start to finish. If the numbers need a single source, splice them in with a build script from a `<slug>.build/` folder beside the artifact, never at runtime. `check-artifact.sh` fails an element left empty for script to fill, which is exactly how this rule is enforced rather than hoped for.
+None of that licenses a page that only exists once script runs. Every number, row, caption and definition is authored in the HTML, the opening state of each figure included, and script only takes the interaction over. With script off the chapters stack into one long document that reads start to finish. If the numbers need a single source, splice them in with a build script kept in the build folder (§6), never at runtime. `check-artifact.sh` fails an element left empty for script to fill, which is exactly how this rule is enforced rather than hoped for.
 
 **Every visual is driven by real exported data.** Export the actual rows into the page and render from them: 84 real block orders as 4,553 cells with 157 bad ones reads as evidence, and an invented lattice of the same size reads as a screensaver.
 
@@ -89,7 +89,7 @@ Resolve in this order, stopping at the first hit:
 
 §4 makes the artifact _look_ real. This makes it _be_ real, and it is the step that separates an artifact from a nicely-typeset guess.
 
-Find out before you render. Trace the thing end to end, collect a source for every load-bearing claim, and write the findings to a notes file (for example `<slug>-artifact-notes.md` in your scratch or analysis folder) so the authoring phase reads structured facts rather than chat memory. Grounding is finished when every claim has one source you read this session. A claim you could not source gets **cut**, marked `.rec-label` as your judgement, or marked `.open-label` as an unresolved question. Rendering it as plain fact is never available.
+Find out before you render. Trace the thing end to end, collect a source for every load-bearing claim, and write the findings to a notes file (`notes.md` in the build folder, §6) so the authoring phase reads structured facts rather than chat memory. Grounding is finished when every claim has one source you read this session. A claim you could not source gets **cut**, marked `.rec-label` as your judgement, or marked `.open-label` as an unresolved question. Rendering it as plain fact is never available.
 
 Then carry the sources into the page: a `.receipt` chip beside each claim and a `.sources` section near the end, dated. Skip all of this only for a kind that asserts nothing (§2), and say that you skipped it.
 
@@ -110,6 +110,8 @@ Then carry the sources into the page: a `.receipt` chip beside each claim and a 
 **Being local changes what you may reach for, so use it.** Three.js, GSAP, a real charting library and React are all available. The rules that remain are the ones that keep the file working in a year: pin an exact version, wrap initialisation in `try`/`catch` or a check that the global exists, and keep the prose readable when a library fails to load. See §8 and `references/rich-media.md`.
 
 **The artifacts directory** resolves in this order: the `NOTES_ARTIFACTS` environment variable, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/.claude/sidecar/artifacts`. `artifact list` reads the same chain, so where the CLI looks and where you write can never disagree.
+
+**Only the finished page goes in it**: a `<slug>.html`, or a `<slug>.md` that is itself the artifact. Everything that builds the page lives in the session's own **build folder**, `$CLAUDE_JOB_DIR/tmp/<slug>/`, or `$TMPDIR/claude-<first 8 of $CLAUDE_CODE_SESSION_ID>/<slug>/` when `CLAUDE_JOB_DIR` is unset. That covers a pre-build source, build scripts, data exports, a brief and the notes file. It goes away when the session does, so the page has to stand on its own.
 
 ## 7. Build for Target B (published artifact)
 
