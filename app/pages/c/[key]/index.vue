@@ -26,9 +26,13 @@ const board = part("board/island");
 
 chrome.view.faces.value = FACES.filter((face) => built[face]);
 
-// A link such as `?face=review` picks the face once, then the switcher owns it.
+// A link such as `?face=review` or `?artifact=<slug>` picks once, then the switcher owns it.
 const asked = FACES.find((face) => face === route.query.face);
 if (asked) chrome.view.set(asked);
+if (typeof route.query.artifact === "string") {
+  chrome.view.set("files");
+  follow.opening.value = route.query.artifact;
+}
 
 const key = computed(() => String(route.params.key ?? ""));
 const session = computed(() => sc.sessions.value.find((s) => s.key === key.value));

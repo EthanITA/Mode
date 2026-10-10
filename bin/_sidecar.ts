@@ -4,10 +4,12 @@ import { homedir, userInfo } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
 import { sidecarHome } from "../lib/mode/paths.ts";
 
 type Command = "open" | "status" | "start" | "stop" | "restart" | "install" | "uninstall" | "help";
 type Proc = { pid: number; ppid: number; args: string };
+type Point = { key?: string; slug?: string };
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const ADDRESS = (process.env.SIDECAR_URL ?? "http://sidecar.localhost:4747").replace(/\/$/, "");
@@ -27,7 +29,8 @@ const USAGE = `usage: sidecar [command]     /sidecar [command] in a Claude Code 
 
   open [key]  the default: start it when down, point it at the conversation, and bring an open
               sidecar window to the front, else open the installed app, else a Chrome app window.
-              The conversation is the key given, else the Claude Code session this runs in
+              The conversation is the key given, else the Claude Code session this runs in, and
+              --artifact <slug> opens that page there, in Files
   status      whether it is up, where, and whether it starts at login
   start       start it in the background and wait until it answers
   stop        stop it, wherever it was started from
@@ -254,11 +257,11 @@ function installedApp(): string | undefined {
     });
 }
 
-async function listenersAfterPointing(key: string): Promise<number> {
+async function listenersAfterPointing({ key, slug }: Point): Promise<number> {
   const reply = await fetch(`${ADDRESS}/api/follow`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ key, source: "claude" }),
+    body: JSON.stringify({ key, slug, source: "claude" }),
     signal: AbortSignal.timeout(5000),
   }).catch(() => undefined);
   if (!reply?.ok) return 0;
@@ -289,16 +292,20 @@ end run`;
 const raiseOpenWindow = (): boolean =>
   spawnSync("osascript", ["-e", RAISE, `${ADDRESS}/`], { encoding: "utf8" }).stdout.trim() === "raised";
 
-async function open(key = process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8)): Promise<number> {
+async function open({ key = process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8), slug }: Point): Promise<number> {
+  if (slug && !key) {
+    console.error(`no conversation to open ${slug} in: run it inside Claude Code, or give the key`);
+    return 2;
+  }
   if (!(await isSidecar()) && (await start()) !== 0) return 1;
-  const listeners = key ? await listenersAfterPointing(key) : 0;
-  const where = key ? ` on conversation ${key}` : "";
+  const listeners = key ? await listenersAfterPointing({ key, slug }) : 0;
+  const what = slug ? `${slug} in conversation ${key}` : `conversation ${key}`;
   if (raiseOpenWindow()) {
-    console.log(`brought the open sidecar to the front${where}`);
+    console.log(`brought the open sidecar to the front${key ? ` on ${what}` : ""}`);
     return 0;
   }
   if (listeners) {
-    console.log(`moved the open sidecar to conversation ${key}`);
+    console.log(`moved the open sidecar to ${what}`);
     return 0;
   }
   // The installed app opens on its home, which follows the point just made.
@@ -307,7 +314,7 @@ async function open(key = process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8)): Prom
     console.log(`opened the ${basename(app, ".app")} app`);
     return 0;
   }
-  const page = key ? `${ADDRESS}/c/${key}` : `${ADDRESS}/`;
+  const page = key ? `${ADDRESS}/c/${key}${slug ? `?artifact=${encodeURIComponent(slug)}` : ""}` : `${ADDRESS}/`;
   // -n hands --app to a Chrome that is already running; without it the flag is dropped.
   if (spawnSync(OPEN, ["-na", "Google Chrome", "--args", `--app=${page}`]).status === 0) {
     console.log(`opened ${page} in a Chrome app window`);
@@ -322,7 +329,14 @@ async function open(key = process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8)): Prom
 }
 
 const COMMANDS = {
-  open: async () => open(process.argv[3]),
+  open: async () => {
+    const { positionals, values } = parseArgs({
+      args: process.argv.slice(3),
+      allowPositionals: true,
+      options: { artifact: { type: "string" } },
+    });
+    return open({ key: positionals[0], slug: values.artifact });
+  },
   status,
   start,
   stop,

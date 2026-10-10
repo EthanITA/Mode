@@ -3,6 +3,7 @@ import { EASE_CSS, MOTION_DURATION, prefersReducedMotion } from "@cela/design/ut
 import { FilePen, FilePlus2, FolderTree, Maximize2, PanelsTopLeft } from "@lucide/vue";
 import { useEventListener, useLocalStorage } from "@vueuse/core";
 import type { Component, ComponentPublicInstance } from "vue";
+import type { ArtifactMeta } from "~~/shared/types/artifact";
 import type { FileGroup, SessionFile } from "~~/shared/types/files";
 import type { TreeEntry } from "~~/shared/types/tree";
 
@@ -12,6 +13,7 @@ const SIDE = 340;
 const side = useLocalStorage("sc:pane:files", SIDE);
 
 const sc = useSidecar();
+const follow = useFollow();
 const files = useFiles(() => sc.sessionKey.value);
 const selected = useState<string | undefined>("fl:selected");
 const scope = useState<Scope>("fl:scope", () => "artifacts");
@@ -62,6 +64,20 @@ watch(
   [scope, artifacts],
   () => {
     if (scope.value === "artifacts" && !selected.value) selected.value = artifacts.value[0];
+  },
+  { immediate: true },
+);
+
+// A page made after the catalogue loaded is not in it yet, so the catalogue is read again before giving up.
+watch(
+  () => follow.opening.value,
+  async (slug) => {
+    if (!slug) return;
+    const pathOf = (): string | undefined => sc.catalogue.value.find((meta) => meta.slug === slug)?.path;
+    if (!pathOf()) sc.catalogue.value = await $fetch<ArtifactMeta[]>("/api/artifacts").catch(() => sc.catalogue.value);
+    if (follow.opening.value !== slug) return;
+    follow.opening.value = undefined;
+    selected.value = pathOf() ?? selected.value;
   },
   { immediate: true },
 );

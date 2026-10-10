@@ -12,5 +12,8 @@ export default defineEventHandler(async (event): Promise<FollowReply> => {
   const key = fieldOf(raw, "key").toLowerCase();
   if (!isKey(key)) throw createError({ statusCode: 400, statusMessage: "key must be a session's 8-hex key" });
   const face = fieldOf(raw, "face") || undefined;
-  return { listeners: pointAt({ face, key, source: fieldOf(raw, "source") === "prompt" ? "prompt" : "claude" }) };
+  const slug = fieldOf(raw, "slug") || undefined;
+  return {
+    listeners: pointAt({ face, key, slug, source: fieldOf(raw, "source") === "prompt" ? "prompt" : "claude" }),
+  };
 });

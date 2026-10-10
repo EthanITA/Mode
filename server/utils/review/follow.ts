@@ -36,14 +36,16 @@ export function followTarget(): FollowTarget {
 export function pointAt({
   face,
   key,
+  slug,
   source,
 }: {
   face?: string;
   key: string;
+  slug?: string;
   source: Exclude<FollowSource, "none">;
 }): number {
   const entry = liveEntries().find((one) => keyOf(one.id) === key);
-  target = { face, key, name: entry?.name, source };
+  target = { face, key, name: entry?.name, slug, source };
   for (const listener of listeners) listener(target);
   return listeners.size;
 }

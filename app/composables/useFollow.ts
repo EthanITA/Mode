@@ -1,4 +1,5 @@
 import type { Ref } from "vue";
+import type { Maybe } from "~/composables/useSidecar";
 import type { FollowTarget } from "~~/shared/types/review";
 
 export interface FollowOptions {
@@ -8,6 +9,8 @@ export interface FollowOptions {
 
 export interface Follow {
   listen: (options?: FollowOptions) => void;
+  /** The artifact Claude Code asked to show, held until Files mounts and opens it. */
+  opening: Maybe<string>;
   pinned: Ref<boolean>;
   target: Ref<FollowTarget>;
 }
@@ -16,12 +19,14 @@ export function useFollow(): Follow {
   const sc = useSidecar();
   const chrome = useChrome();
   const target = useState<FollowTarget>("rv:follow", () => ({ source: "none" }));
+  const opening = useState<string | undefined>("rv:opening");
   const pinned = useState("rv:pinned", () => false);
 
   function go(next: FollowTarget): void {
     if (pinned.value || !next.key) return;
-    const face = FACES.find((one) => one === next.face);
+    const face = FACES.find((one) => one === (next.slug ? "files" : next.face));
     if (face) chrome.view.set(face);
+    opening.value = next.slug;
     if (next.key === sc.sessionKey.value) return;
     // Following leaves no trail, so Back never walks through every conversation Claude Code pointed at.
     void navigateTo(`/c/${next.key}`, { replace: true });
@@ -54,5 +59,5 @@ export function useFollow(): Follow {
     });
   }
 
-  return { listen, pinned, target };
+  return { listen, opening, pinned, target };
 }

@@ -43,6 +43,8 @@ export interface FollowTarget {
   face?: string;
   key?: string;
   name?: string;
+  /** An artifact to open there, which always shows in Files. */
+  slug?: string;
   source: FollowSource;
 }
 
