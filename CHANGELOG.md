@@ -200,6 +200,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **A finished artifact opens in the sidecar, not the browser.** `artifact open <slug>` points the sidecar at
+  the conversation and shows the page in Files, and create-artifact's last step runs it instead of `open <path>`.
+  The browser is still `artifact open <slug> --browser`, or `--web` for the published URL, and
+  `sidecar open --artifact <slug>` and `POST /api/follow` with a `slug` do the same from outside.
 - **The Review file tree drops its trailing labels.** The `T3 T5` turn tags on files and the file count
   on folders are gone, and a line down the left of each open folder wraps its children instead.
 - **The sidecar keeps its data under `~/.claude/sidecar/`.** The server log is `server.log` there, History's

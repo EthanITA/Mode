@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { basename, extname } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { ingest, install, readDoc, render, reply } from "../lib/artifact/review.ts";
 import {
   artifactFiles,
@@ -43,6 +44,8 @@ const NEGATIVE = /^-\d+$|^-\d*\.\d+$/;
 
 const print = (text: string): void => void process.stdout.write(`${text}\n`);
 const stemOf = (path: string): string => basename(path, extname(path));
+const slugOf = (path: string): string => (artifactFiles().includes(path) ? stemOf(path) : documentSlug(path));
+const SIDECAR = join(dirname(fileURLToPath(import.meta.url)), "sidecar");
 
 function parse(argv: string[], spec: Spec): Parsed {
   const parsed: Parsed = { positionals: [], values: {}, lists: {}, flags: new Set() };
@@ -105,7 +108,7 @@ const VERBS: Record<string, Spec> = {
     run: ({ positionals: [slug = ""] }) => {
       const path = resolve(slug);
       record(entryOf(path));
-      return `${artifactFiles().includes(path) ? stemOf(path) : documentSlug(path)} recorded for this conversation`;
+      return `${slugOf(path)} recorded for this conversation`;
     },
   },
   path: {
@@ -126,11 +129,15 @@ const VERBS: Record<string, Spec> = {
     },
   },
   open: {
-    help: "open the artifact, locally or on the web",
+    help: "open the artifact in the sidecar, or with --browser or --web in the browser",
     positionals: 1,
-    options: { web: "flag" },
+    options: { browser: "flag", web: "flag" },
     run: ({ positionals: [slug = ""], flags }) => {
       const path = resolve(slug);
+      if (!flags.has("browser") && !flags.has("web")) {
+        process.exitCode = spawnSync(SIDECAR, ["open", "--artifact", slugOf(path)], { stdio: "inherit" }).status ?? 1;
+        return;
+      }
       let target = path;
       if (flags.has("web")) {
         const meta = readMeta(path);

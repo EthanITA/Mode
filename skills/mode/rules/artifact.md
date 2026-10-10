@@ -49,4 +49,4 @@ Light is the default, always. The base `:root` block carries the complete light 
 
 ### Verifying it
 
-Behaviour is provable and is yours to check: the console is clean, every library loaded, and each control actually does what the page claims. Taste is the user's, so never drive a browser to judge how it looks, and never ask whether it renders nicely. Build it, check it runs, open it, and hand over the path.
+Behaviour is provable and is yours to check: the console is clean, every library loaded, and each control actually does what the page claims. Taste is the user's, so never drive a browser to judge how it looks, and never ask whether it renders nicely. Build it, check it runs, open it in the sidecar with `artifact open <slug>`, and hand over the path.
