@@ -1,18 +1,34 @@
-import { defineStore as defineStoreOf, storeToRefs, type StoreGeneric } from "pinia";
+import { defineStore as defineStoreOf } from "pinia";
+import { isRef, toRaw, toRef } from "vue";
 
-// Pinia's setup store with state and getters already as refs, so `const { isFull } = $artifact()` stays reactive.
+// Pinia's setup store with state and getters as refs, so `const { isFull } = $artifact()` stays reactive.
 export function defineStore<Id extends string, Setup extends object>(id: Id, setup: () => Setup) {
   const useStore = defineStoreOf(id, setup);
   type Base = ReturnType<typeof useStore>;
+  type Wrapped = Setup & Omit<Base, keyof Setup>;
 
-  function accessor(...args: Parameters<typeof useStore>): Setup & Omit<Base, keyof Setup> {
-    const store = useStore(...args);
-    // Pinia's generic store never narrows to StoreGeneric while Setup is open.
-    const refs = storeToRefs(store as StoreGeneric);
+  const wrapped = new WeakMap<Base, Wrapped>();
+
+  function wrap(store: Base): Wrapped {
+    const refs = new Map<string | symbol, unknown>();
     // A Proxy rather than a copy, so actions, `$patch` and `$subscribe` stay the store's own.
     return new Proxy(store, {
-      get: (target, key) => (Reflect.has(refs, key) ? Reflect.get(refs, key) : Reflect.get(target, key)),
-    }) as Setup & Omit<Base, keyof Setup>;
+      get(target, key) {
+        // Looked up per access, since HMR and plugins add keys after the first call.
+        if (!isRef(Reflect.get(toRaw(target), key))) return Reflect.get(target, key);
+        if (!refs.has(key)) refs.set(key, toRef(target, key as keyof Base));
+        return refs.get(key);
+      },
+    }) as Wrapped;
+  }
+
+  function accessor(...args: Parameters<typeof useStore>): Wrapped {
+    const store = useStore(...args);
+    const known = wrapped.get(store);
+    if (known) return known;
+    const one = wrap(store);
+    wrapped.set(store, one);
+    return one;
   }
 
   // Pinia's HMR plugin reads these off whatever `defineStore` returned.

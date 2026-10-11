@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createPinia, setActivePinia } from "pinia";
-import { computed, ref } from "vue";
+import { acceptHMRUpdate, createPinia, setActivePinia } from "pinia";
+import { computed, ref, toRaw } from "vue";
 import { defineStore } from "./define-store.ts";
 
 const $counter = defineStore("counter", () => {
@@ -29,4 +29,30 @@ test("the store's own members still pass through", () => {
   store.$patch({ count: 3 });
   assert.equal(store.count.value, 3);
   assert.equal(store.$id, "counter");
+});
+
+test("every call hands back the same store and the same refs", () => {
+  setActivePinia(createPinia());
+  assert.equal($counter(), $counter());
+  assert.equal($counter().count, $counter().count);
+});
+
+test("a plain value stays plain, and a ref added after the first call is still a ref", () => {
+  setActivePinia(createPinia());
+  const $labelled = defineStore("labelled", () => ({ label: "x" }));
+  assert.equal($labelled().label, "x");
+  const held = $counter();
+  Object.assign(toRaw(held), { late: ref(1) });
+  assert.equal((held as unknown as { late: { value: number } }).late.value, 1);
+});
+
+test("an HMR update neither throws nor cuts a destructured ref off the store", () => {
+  setActivePinia(createPinia());
+  const { count } = $counter();
+  const next = defineStore("counter", () => ({ count: ref(0), extra: ref("new") }));
+  // The Vite plugin injects this call as plain JS, so its Pinia-typed signature only gets in the way here.
+  acceptHMRUpdate($counter as never, { data: {}, invalidate: () => undefined } as never)({ $counter: next });
+  count.value = 7;
+  assert.equal($counter().count.value, 7);
+  assert.equal(next().extra.value, "new");
 });

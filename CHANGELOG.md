@@ -228,6 +228,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **The sidecar app keeps shared state in Pinia.** Stores are `$<name>()` and composables stay `use<Name>()`.
   The app's `defineStore` (`app/utils/define-store.ts`) wraps Pinia's setup stores so state and getters come back
   as refs, and `const { isFull } = $artifact()` stays reactive with no `storeToRefs`; actions, `$patch` and `$id` are Pinia's own.
+  Always destructure: `$artifact().isFull` is a ref, so a `v-if` on it is always true. The call returns one
+  stable store and survives a store HMR update, which Pinia's own `storeToRefs` throws on.
   The first is `$artifact` in `app/stores/`, holding the fullscreen flag and replacing the `useArtifactFullscreen`
   composable; the other `useState` flags move as they are touched.
 - **`artifact open` shows the page in the sidecar, not the browser.** `artifact open <slug>` points the
