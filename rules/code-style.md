@@ -59,6 +59,8 @@ Every top-level export is a tax on every keystroke, forever. `googleLogin`/`goog
 
 - **SPA only: `ssr: false` in every Nuxt project's `nuxt.config.ts`.** All rendering is client-side; never add SSR or assume server-render. Content that must render **outside the running app** (offline preview, or publish-time pre-render of a document) uses a **standalone build script**: Vue `renderToString`, or a headless-Chromium snapshot for components that aren't SSR-safe. That's a build tool, not a change to `ssr: false`.
 
+- **Shared state is a Pinia store, never `useState`.** Anything two components read or write lives in `app/stores/<name>.ts`, setup-style `defineStore`, named `use<Name>Store`, read with `storeToRefs`. A composable is reusable logic, not a home for state.
+
 ## Typing
 
 Type safety is a deliverable, not optional: consumer DX (autocomplete, type hints, compile-time errors at the call site) depends on it.
