@@ -4,18 +4,6 @@ export type SessionAgent = { name: string; color: string };
 
 export type SessionStatus = "busy" | "idle";
 
-export interface PreviewCard {
-  slug: string;
-  x: number;
-  y: number;
-  width?: number;
-}
-
-export interface SessionPreview {
-  cards: PreviewCard[];
-  notes: { x: number; y: number; width?: number }[];
-}
-
 export interface SessionLane {
   name: "review" | "blocked" | "working" | "done";
   // Set when `claude agents` could not be run and the lane came off the job file, which disagrees.
@@ -42,5 +30,4 @@ export interface LiveSession {
   // No background job owns this key: history the sidecar kept, not a conversation `claude agents` lists.
   archived?: boolean;
   startedAt?: number;
-  preview?: SessionPreview;
 }

@@ -6,7 +6,6 @@ import { artifactsOf, keysWithArtifacts } from "./artifact-lists.ts";
 import { sessionColor } from "./identity.ts";
 import { jobs, type JobEntry } from "./jobs.ts";
 import { keyOf } from "./paths.ts";
-import { previewOf } from "./preview.ts";
 import { liveEntries, type RegistryEntry } from "./registry.ts";
 import { cwdFromSlug } from "./slug.ts";
 import { identityOf, transcriptIndex, type TranscriptIdentity, type TranscriptRef } from "./transcripts.ts";
@@ -50,7 +49,6 @@ function build(key: string, { entry, job, ref }: Sources): LiveSession | undefin
     detail: job?.detail,
     archived: job ? undefined : true,
     startedAt: job?.startedAt,
-    preview: previewOf(key),
   };
 }
 

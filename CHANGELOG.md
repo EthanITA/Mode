@@ -229,7 +229,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   ones ready for review or needing input first, each with its tint, its age and the job's one-line status
   (`detail` on `/api/sessions`, read off the job's state file). ↑↓ and ↵ open one, esc or the Back island
   returns, and right-click still deletes. The archive toggle, card previews, badges and Tidy up are gone,
-  so a conversation `claude agents` no longer lists is reached through the jump palette. When the server
+  so a conversation `claude agents` no longer lists is reached through the jump palette, and
+  `/api/sessions` no longer carries the `preview` the cards drew. When the server
   stops answering, every route shows the Reconnecting screen over a page that stays mounted underneath,
   in place of the banner by the composer.
 - **Every mode and style contract keeps every rule in about two thirds of the words.** The eleven modes
