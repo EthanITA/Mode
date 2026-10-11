@@ -19,17 +19,7 @@ export default defineNuxtConfig({
     },
     { path: "~/components", priority: 10 },
   ],
-  modules: [
-    "@comark/nuxt",
-    "@pinia/nuxt",
-    // After Pinia, so its hook runs once Pinia's defineStore is in the list: app/utils/define-store.ts takes the name.
-    (_options, nuxt) => {
-      nuxt.hook("imports:extend", (imports) => {
-        const pinia = imports.findIndex((entry) => entry.name === "defineStore" && entry.from.includes("@pinia/nuxt"));
-        if (pinia !== -1) imports.splice(pinia, 1);
-      });
-    },
-  ],
+  modules: ["@comark/nuxt", "@pinia/nuxt"],
   // Nitro scans server/utils/** wholesale. Test-only modules are not server surface, and two
   // __fixtures__/env.ts both exporting useFixtures is a collision the scan cannot resolve.
   nitro: {

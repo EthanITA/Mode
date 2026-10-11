@@ -46,6 +46,10 @@ test("a plain value stays plain, and a ref added after the first call is still a
   assert.equal((held as unknown as { late: { value: number } }).late.value, 1);
 });
 
+test("a store with no id throws where the build did not inject one", () => {
+  assert.throws(() => defineStore(() => ({})), /takes its id from the build/);
+});
+
 test("an HMR update neither throws nor cuts a destructured ref off the store", () => {
   setActivePinia(createPinia());
   const { count } = $counter();

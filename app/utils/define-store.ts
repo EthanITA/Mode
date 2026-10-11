@@ -2,7 +2,7 @@ import { defineStore as defineStoreOf } from "pinia";
 import { isRef, toRaw, toRef } from "vue";
 
 // Pinia's setup store with state and getters as refs, so `const { isFull } = $artifact()` stays reactive.
-export function defineStore<Id extends string, Setup extends object>(id: Id, setup: () => Setup) {
+function build<Id extends string, Setup extends object>(id: Id, setup: () => Setup) {
   const useStore = defineStoreOf(id, setup);
   type Base = ReturnType<typeof useStore>;
   type Wrapped = Setup & Omit<Base, keyof Setup>;
@@ -36,4 +36,17 @@ export function defineStore<Id extends string, Setup extends object>(id: Id, set
     $id: { value: id },
     _pinia: { get: () => Reflect.get(useStore, "_pinia") },
   });
+}
+
+export function defineStore<Id extends string, Setup extends object>(
+  id: Id,
+  setup: () => Setup,
+): ReturnType<typeof build<Id, Setup>>;
+// In app/stores the build injects the id from the `$name` variable, so the id is written once.
+export function defineStore<Setup extends object>(setup: () => Setup): ReturnType<typeof build<string, Setup>>;
+export function defineStore(first: string | (() => object), second?: () => object): unknown {
+  if (typeof first === "string" && second) return build(first, second);
+  throw new Error(
+    "defineStore(setup) takes its id from the build: export it as `export const $name = defineStore(...)` in app/stores, or pass the id.",
+  );
 }
