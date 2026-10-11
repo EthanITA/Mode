@@ -263,6 +263,7 @@ async function build(): Promise<void> {
     originalEditable: false,
     readOnly: !isEditable.value,
     renderGutterMenu: false,
+    renderIndicators: false,
     renderMarginRevertIcon: false,
     renderOverviewRuler: false,
     renderSideBySide: true,
