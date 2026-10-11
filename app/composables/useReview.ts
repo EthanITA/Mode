@@ -9,14 +9,12 @@ export interface ReviewFace {
   decideAll: (isAccept: boolean) => Promise<void>;
   decideFile: (isAccept: boolean) => Promise<void>;
   decideHunk: (change: number, isAccept: boolean) => Promise<void>;
-  decideLines: (isAccept: boolean) => Promise<void>;
   decideUnder: (path: string, isAccept: boolean) => Promise<void>;
   file: MaybeComputed<ReviewFile>;
   isCompact: Ref<boolean>;
   isDirty: Ref<boolean>;
   isWrapped: Ref<boolean>;
   listen: () => void;
-  picks: Ref<string[]>;
   selected: Maybe<string>;
   snapshot: Maybe<ReviewSnapshot>;
   travel: (way: "redo" | "undo") => Promise<void>;
@@ -36,7 +34,6 @@ export function useReview(): ReviewFace {
   const isCompact = useState("rv:compact", () => true);
   const isWrapped = useState("rv:wrapped", () => true);
   const isDirty = useState("rv:dirty", () => false);
-  const picks = useState<string[]>("rv:picks", () => []);
   const confirming = useState<string | undefined>("rv:confirming");
   const busy = useState("rv:busy", () => false);
 
@@ -60,20 +57,8 @@ export function useReview(): ReviewFace {
       chrome.toast("The sidecar could not reach its server.", "destructive");
     } finally {
       busy.value = false;
-      picks.value = [];
       confirming.value = undefined;
     }
-  }
-
-  async function decideLines(isAccept: boolean): Promise<void> {
-    const here = file.value;
-    if (!here || !picks.value.length) return;
-    const lines = Review.picksOf(here, picks.value);
-    const where = Review.spanOf(lines.new.length ? lines.new : lines.old);
-    await act(
-      { do: isAccept ? "accept-lines" : "reject-lines", path: here.path, ...lines },
-      isAccept ? `Accepted ${where}` : `Rejected ${where}, Claude is told`,
-    );
   }
 
   async function decideHunk(change: number, isAccept: boolean): Promise<void> {
@@ -147,7 +132,6 @@ export function useReview(): ReviewFace {
       (key) => {
         disconnect();
         snapshot.value = undefined;
-        picks.value = [];
         if (!key) return;
         source = new EventSource(`/api/sessions/${encodeURIComponent(key)}/review/stream`);
         source.addEventListener("review", (event: MessageEvent<string>) => {
@@ -156,10 +140,6 @@ export function useReview(): ReviewFace {
       },
       { immediate: true },
     );
-    // Row keys are line numbers, so a picked row means nothing once the file under it moves.
-    watch(file, () => {
-      picks.value = [];
-    });
     onScopeDispose(disconnect);
   }
 
@@ -170,14 +150,12 @@ export function useReview(): ReviewFace {
     decideAll,
     decideFile,
     decideHunk,
-    decideLines,
     decideUnder,
     file,
     isCompact,
     isDirty,
     isWrapped,
     listen,
-    picks,
     selected,
     snapshot,
     travel,

@@ -15,7 +15,6 @@ const files = computed(() => review.snapshot.value?.files ?? []);
 const file = computed(() => review.file.value);
 const isLive = computed(() => !!review.snapshot.value?.live);
 const churn = computed(() => (file.value ? Review.counts(file.value) : undefined));
-const picked = computed(() => (file.value ? Review.picksOf(file.value, review.picks.value) : { old: [], new: [] }));
 
 const empty = computed(() => {
   if (!sc.sessionKey.value) return "No conversation is selected.";
@@ -89,12 +88,6 @@ useEventListener(
   },
   { capture: true },
 );
-
-function rejectLines(event: MouseEvent): void {
-  const lines = picked.value;
-  void review.decideLines(false);
-  comment(event, lines, true);
-}
 
 function decideHunk(change: number, isAccept: boolean, event: MouseEvent): void {
   const here = file.value;
@@ -242,37 +235,9 @@ function rejectFile(event: MouseEvent): void {
             :is-compact="review.isCompact.value"
             :is-wrapped="review.isWrapped.value"
             :is-busy="!isLive || review.busy.value"
-            :picks="review.picks.value"
-            @update:picks="review.picks.value = $event"
             @hunk="decideHunk"
           />
         </div>
-
-        <footer v-if="review.picks.value.length" class="pickbar">
-          <span class="picked">{{ plural(review.picks.value.length, "line") }} picked</span>
-          <button v-press class="action focusable" type="button" @click="comment($event, picked)">Comment</button>
-          <button
-            v-press
-            class="action focusable"
-            type="button"
-            data-tone="danger"
-            :disabled="!isLive || review.busy.value"
-            @click="rejectLines"
-          >
-            Reject lines
-          </button>
-          <button
-            v-press
-            class="action focusable"
-            type="button"
-            data-tone="primary"
-            :disabled="!isLive || review.busy.value"
-            @click="review.decideLines(true)"
-          >
-            Accept lines
-          </button>
-          <button v-press class="action focusable" type="button" @click="review.picks.value = []">Clear</button>
-        </footer>
       </template>
 
       <UiStateMessage v-else align="center" :kind="isReading ? 'loading' : 'empty'">{{ empty }}</UiStateMessage>
@@ -373,25 +338,14 @@ function rejectFile(event: MouseEvent): void {
   text-transform: none;
 }
 
-.all,
-.pickbar {
+.all {
   align-items: center;
   border-top: 1px solid var(--border);
   display: flex;
   flex: none;
   gap: 6px;
-  padding: 8px 12px calc(8px + var(--float-clear));
-}
-
-.all {
   justify-content: flex-end;
-}
-
-.picked {
-  color: var(--primary-deep);
-  font-size: 12.5px;
-  font-weight: 600;
-  margin-right: auto;
+  padding: 8px 12px calc(8px + var(--float-clear));
 }
 
 .action {

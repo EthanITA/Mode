@@ -24,21 +24,18 @@ const {
   isReadonly = false,
   isBusy = false,
   isFill = false,
-  picks = [],
 } = defineProps<{
   file: ReviewFile;
   isCompact?: boolean;
   isWrapped?: boolean;
-  /** History only reads; Review also edits the right pane, picks lines and takes whole hunks. */
+  /** History only reads; Review also edits the right pane and takes whole hunks. */
   isReadonly?: boolean;
   isBusy?: boolean;
   /** Fills a parent with a height of its own; otherwise the diff is as tall as its lines, up to --transcript-max-h. */
   isFill?: boolean;
-  picks?: string[];
 }>();
 
 const emit = defineEmits<{
-  "update:picks": [keys: string[]];
   hunk: [change: number, isAccept: boolean, event: MouseEvent];
 }>();
 
@@ -65,20 +62,10 @@ let api: typeof MonacoApi | undefined;
 let diff: MonacoApi.editor.IStandaloneDiffEditor | undefined;
 let models: MonacoApi.editor.ITextModel[] = [];
 let pens: Notes[] = [];
-let picked: MonacoApi.editor.IEditorDecorationsCollection[] = [];
-let lastPicks = "";
 let modelSeq = 0;
 let base: Base = { hash: file.hash, text: textOf(file.current) };
 
 const shown = computed(() => homePath(file.path));
-// Every changed row once, with the key a pick names it by, whichever side it is read from.
-const changeRows = computed(() =>
-  Review.rows({ file, isCompact: false, unfolded: [] }).filter((row) => row.kind === "change"),
-);
-const keyOf = computed(() => ({
-  new: new Map(changeRows.value.filter((row) => row.new >= 0).map((row) => [row.new + 1, row.key])),
-  old: new Map(changeRows.value.filter((row) => row.old >= 0).map((row) => [row.old + 1, row.key])),
-}));
 const notes = computed(() => tray.items.value.filter((item) => item.file === shown.value && !!item.path));
 
 function textOf(lines: readonly string[]): string {
@@ -87,47 +74,6 @@ function textOf(lines: readonly string[]): string {
 
 function editorOf(side: Side): MonacoApi.editor.ICodeEditor | undefined {
   return side === "old" ? diff?.getOriginalEditor() : diff?.getModifiedEditor();
-}
-
-// Selecting lines in either pane is the pick, so line numbers, drags and shift-clicks all work as in any editor.
-function pickFrom(side: Side): void {
-  const editor = editorOf(side);
-  if (isReadonly || isDirty.value || !editor) return;
-  const keys = new Set<string>();
-  for (const selection of editor.getSelections() ?? []) {
-    if (selection.isEmpty()) continue;
-    const end =
-      selection.endColumn === 1 && selection.endLineNumber > selection.startLineNumber
-        ? selection.endLineNumber - 1
-        : selection.endLineNumber;
-    for (let line = selection.startLineNumber; line <= end; line++) {
-      const key = keyOf.value[side].get(line);
-      if (key) keys.add(key);
-    }
-  }
-  const next = [...keys];
-  const signature = [...next].sort().join();
-  if (signature === lastPicks) return;
-  lastPicks = signature;
-  emit("update:picks", next);
-}
-
-function paintPicks(): void {
-  if (!api) return;
-  const Range = api.Range;
-  const chosen = changeRows.value.filter((row) => picks.includes(row.key));
-  const lines = {
-    new: chosen.filter((row) => row.new >= 0).map((row) => row.new + 1),
-    old: chosen.filter((row) => row.old >= 0).map((row) => row.old + 1),
-  };
-  (["old", "new"] as const).forEach((side, index) => {
-    picked[index]?.set(
-      lines[side].map((line) => ({
-        options: { className: "monaco-picked", isWholeLine: true, lineNumberClassName: "monaco-picked-number" },
-        range: new Range(line, 1, line, 1),
-      })),
-    );
-  });
 }
 
 // The two panes scroll together, so a hunk's top in whichever pane holds its lines is where its arrows sit.
@@ -270,9 +216,7 @@ async function build(): Promise<void> {
   pens = sides.map((editor, index) =>
     EditorNotes.attach({ api: api!, editor, onNote: (at) => openNote(index === 0 ? "old" : "new", at) }),
   );
-  picked = sides.map((editor) => editor.createDecorationsCollection());
-  for (const [index, editor] of sides.entries()) {
-    editor.onDidChangeCursorSelection(() => pickFrom(index === 0 ? "old" : "new"));
+  for (const editor of sides) {
     editor.onDidScrollChange(placeHunks);
     editor.onDidLayoutChange(placeHunks);
     editor.onDidContentSizeChange(() => {
@@ -283,7 +227,6 @@ async function build(): Promise<void> {
     contentHeight.value = Math.max(...sides.map((one) => one.getContentHeight()));
     placeHunks();
   });
-  paintPicks();
   paintNotes();
 }
 
@@ -306,13 +249,6 @@ watch(
       hideUnchangedRegions: { enabled: compact },
       wordWrap: wrapped ? "on" : "off",
     }),
-);
-watch(
-  () => picks,
-  (next) => {
-    lastPicks = [...next].sort().join();
-    paintPicks();
-  },
 );
 watch(notes, paintNotes);
 watch(isEditable, (editable) => diff?.updateOptions({ readOnly: !editable }));

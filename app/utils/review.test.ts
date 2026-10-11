@@ -14,10 +14,9 @@ const file: ReviewFile = {
   ],
 };
 
-test("a picked row becomes the 1-based line numbers of both of its sides", () => {
-  assert.deepEqual(Review.picksOf(file, ["n1"]), { old: [2], new: [2] });
-  assert.deepEqual(Review.picksOf(file, ["n4"]), { old: [], new: [5] });
+test("a hunk becomes the 1-based line numbers of both of its sides", () => {
   assert.deepEqual(Review.hunkOf(file, 0), { old: [2, 3], new: [2, 3] });
+  assert.deepEqual(Review.hunkOf(file, 1), { old: [], new: [5] });
 });
 
 test("a folder row covers every file under it and nothing in a sibling sharing its prefix, a file row only itself", () => {

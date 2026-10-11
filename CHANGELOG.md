@@ -31,11 +31,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   before it folded into `sidecar` with no window of its own in Claude Code: the original on the left, the
   disk on the right, in Monaco's diff editor with the One Dark theme the Files editor uses, Compact
   hiding unchanged regions and Wrap wrapping both sides. The files sit in a folder tree like JetBrains'
-  commit view, coloured by status, with single-folder chains merged. Select lines in either pane to
-  pick them and accept or reject them, take a whole hunk with the check or the x on the seam between
-  the sides, or approve and reject files. Each press is relayed into the session, where the mod applies
-  it and tells Claude about a reject, so the mod stays the only writer, and a reject of lines, a hunk or
-  a file opens the composer on it to say why. ⌘Z undoes the last approve or reject and ⌘⇧Z redoes it,
+  commit view, coloured by status, with single-folder chains merged. Take a whole hunk with the check
+  or the x on the seam between the sides, or approve and reject files, while selecting text in a pane
+  stays a plain selection. Each press is relayed into the session, where the mod applies it and tells
+  Claude about a reject, so the mod stays the only writer, and a reject of a hunk or a file opens the
+  composer on it to say why. ⌘Z undoes the last approve or reject and ⌘⇧Z redoes it,
   up to 50 back, with the same pair as buttons whose tooltip names the step; the mod refuses one whose
   file Claude edited since, and tells Claude when an undo or redo rewrites a file. Comments go to the
   tray, and the comment icon in either gutter or ⌘K notes a line the way it does in Files.
@@ -82,7 +82,7 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **Review's right pane is editable, and the left stays read-only.** ⌘S saves through the same hash-guarded
   endpoint as Files, so a turn that changed the file in the meantime is never overwritten; the diff
   refreshes after a save, an unsaved edit survives switching files, and while one is open ⌘Z undoes
-  the edit and the hunk arrows and line picks wait. A deleted file and History stay read-only.
+  the edit and the hunk arrows wait. A deleted file and History stay read-only.
 - **History diffs between turns, side by side.** Pick a turn to see what it did, shift-click another
   to see what the turns between did together, or read through to the newest version. Each file draws
   in `<DiffSideBySide>`, the same Monaco diff Review uses, read-only here, as tall as its lines up to a
@@ -327,7 +327,7 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   had nothing to commit is not a commit, and `git -C <dir> commit`, `node --test`, mocha and python test
   files are recognised. `/approve` now passes an `@approve` step, which nothing recorded before.
 - **Buttons at the bottom of Review, Files and History clear the floating Board and Send pills.**
-  Undo, Redo, Reject all, Accept lines and Clear sat under the glass once the islands began floating
+  Undo, Redo and Reject all sat under the glass once the islands began floating
   over the faces.
 - **The server banner follows every poll.** It used to show only when the first load failed and then
   stay; now it appears when the server stops answering, says it is retrying, and clears with

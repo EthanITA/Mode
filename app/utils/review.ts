@@ -67,16 +67,6 @@ function rows({ file, isCompact, unfolded }: ReviewRowsOptions): ReviewRow[] {
   return out;
 }
 
-function picksOf(file: ReviewFile, keys: readonly string[]): ReviewPicks {
-  const picked = rows({ file, isCompact: false, unfolded: [] }).filter(
-    (row): row is ReviewRow & { kind: "change" } => row.kind === "change" && keys.includes(row.key),
-  );
-  return {
-    old: picked.filter((row) => row.old >= 0).map((row) => row.old + 1),
-    new: picked.filter((row) => row.new >= 0).map((row) => row.new + 1),
-  };
-}
-
 function hunkOf(file: ReviewFile, change: number): ReviewPicks {
   const c = file.changes[change];
   if (!c) return { old: [], new: [] };
@@ -102,4 +92,4 @@ function under(files: readonly ReviewFile[], path: string): string[] {
   return files.filter((file) => file.path === path || file.path.startsWith(`${path}/`)).map((file) => file.path);
 }
 
-export const Review = { counts, hunkOf, picksOf, rows, spanOf, under };
+export const Review = { counts, hunkOf, rows, spanOf, under };

@@ -213,12 +213,3 @@ body {
   margin: 6px 0 0 6px;
   width: 7px;
 }
-
-.monaco-picked {
-  background: color-mix(in oklch, var(--ed-accent) 22%, transparent);
-}
-
-.monaco-picked-number {
-  color: var(--ed-accent) !important;
-  font-weight: 700;
-}

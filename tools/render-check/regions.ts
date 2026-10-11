@@ -221,7 +221,7 @@ export const REGIONS: RegionSpec[] = [
   {
     id: "review-changes",
     label: "review changes",
-    design: "The selected file, original left and disk right, with line picks and hunk arrows.",
+    design: "The selected file, original left and disk right, with hunk arrows.",
     selectors: ['[data-region="review-changes"]'],
     demand: "required",
     states: ["review"],
