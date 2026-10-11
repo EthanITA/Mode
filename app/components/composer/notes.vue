@@ -35,7 +35,16 @@ async function send(): Promise<void> {
   }
 }
 
+// A note box saves on its own Enter and prevents it, so only a ⌘↵ nobody handled sends.
+function onSendKey(event: KeyboardEvent): void {
+  if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey) || event.defaultPrevented) return;
+  event.preventDefault();
+  void send();
+}
+
 onMounted(() => {
+  window.addEventListener("keydown", onSendKey);
+  onScopeDispose(() => window.removeEventListener("keydown", onSendKey));
   // The chips are deliberately not persisted, so a refresh would drop typed words with no receipt.
   function warn(event: BeforeUnloadEvent): void {
     if (tray.count.value) event.preventDefault();
@@ -52,6 +61,7 @@ onMounted(() => {
       <button v-press class="send focusable" type="button" :disabled="sending" @click="send">
         <UiIcon :icon="Send" size="sm" />
         {{ sending ? "Sending…" : `Send ${plural(tray.count.value, "note")} to Claude` }}
+        <span class="key mono-meta">⌘↵</span>
       </button>
     </UiSurface>
   </div>
@@ -90,6 +100,10 @@ onMounted(() => {
 
 .send:disabled {
   cursor: progress;
+  opacity: 0.7;
+}
+
+.key {
   opacity: 0.7;
 }
 </style>

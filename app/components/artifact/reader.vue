@@ -17,6 +17,11 @@ const GAP: Record<DiffGap, string> = {
 
 const sc = useSidecar();
 const chrome = useChrome();
+const route = useRoute();
+const isFull = useArtifactFullscreen();
+
+// The sheet on a face is too narrow for a second column; a routed page or a grown sheet has the room.
+const roomy = computed(() => isFull.value || !!route.params.slug);
 
 const frame = ref<{ clearPick: () => void }>();
 const marks = ref<FrameMark[]>([]);
@@ -240,7 +245,7 @@ onScopeDispose(() => {
       :unreachable="versions.unreachable.value"
     />
 
-    <div v-if="sc.artifact.value?.slug === slug" class="stack" :data-notes="noteCount > 0">
+    <div v-if="sc.artifact.value?.slug === slug" class="stack" :data-notes="roomy && noteCount > 0">
       <ArtifactDiff
         v-if="showDiff && stage === 'version'"
         class="sheet-cell"
@@ -266,7 +271,7 @@ onScopeDispose(() => {
       />
 
       <ArtifactGutter
-        v-if="measured && !showDiff"
+        v-if="roomy && measured && !showDiff"
         class="notes-cell"
         side="right"
         :live="live"

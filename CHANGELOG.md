@@ -222,6 +222,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **The notes column shows only on a routed page or a fullscreen sheet, and ⌘↵ sends the notes.** On a face
+  the sheet is too narrow for it, so notes stay in the tray until the page grows. ⌘↵ does what Send notes to
+  Claude does, unless a note box already took the keystroke to save.
 - **`artifact open` shows the page in the sidecar, not the browser.** `artifact open <slug>` points the
   sidecar at the conversation and shows the page in Artifacts. The browser is still `artifact open <slug> --browser`,
   or `--web` for the published URL, and `sidecar open --artifact <slug>` and `POST /api/follow` with a `slug`
