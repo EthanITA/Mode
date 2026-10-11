@@ -30,8 +30,10 @@ export const GATES: Record<string, { what: string; switchable: boolean }> = {
 };
 
 export const MARK: Record<string, string> = { chosen: "~", pinned: "=" };
-// A hook repeats this every turn, so each axis is capped and the pair still fits in eight lines.
+// What an overflow preview and an outranking rule repeat, so each is capped at what still gets read.
 export const STANDING_LINES = 4;
+// Claude Code caps a hook string at 10,000 characters and shows only the first 2,000 of a longer one.
+export const HOOK_CAP = 9_500;
 // One colour per mode. Orange and violet are 256-colour because no unused 16-colour code reads apart from these.
 export const COLORS: Record<string, string> = {
   red: "31",

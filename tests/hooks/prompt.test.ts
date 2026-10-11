@@ -35,6 +35,14 @@ const prompt = (session: string, text?: string, cwd = PLUGIN): Run =>
   );
 const start = (session: string, source: string, cwd = PLUGIN): Run =>
   fire("resume", { session_id: session, hook_event_name: "SessionStart", source, cwd }, vars);
+const PARTS = ["start/rules-1", "start/rules-2", "start/mode", "start/style"];
+// Every SessionStart command, each one's context kept apart, because each gets its own hook budget.
+const opening = (session: string, source: string, cwd = PLUGIN): string[] => {
+  start(session, source, cwd);
+  return PARTS.map((part) =>
+    contextOf(fire(part, { session_id: session, hook_event_name: "SessionStart", source, cwd }, vars)),
+  );
+};
 
 // A prompt the hook answers itself: its reason is the whole reply, and the prompt never reaches the model.
 const ended = (done: Run): { reason: string; suppressed: boolean } => {
@@ -90,13 +98,28 @@ describe("hooks.json", () => {
 });
 
 describe("inject, on every prompt", () => {
-  test("the first prompt carries the ground rules, later ones only the prose reminder, and a resume re-arms them", () => {
+  test("with no start hook the first prompt carries the ground rules, later ones only the prose reminder", () => {
     const session = sid();
     assert.match(contextOf(prompt(session, "carry on")), /Ground rules/);
     const later = contextOf(prompt(session, "carry on"));
     assert.ok(!later.includes("Ground rules") && later.includes("Ground rule prose, which outranks"), later);
-    start(session, "resume");
-    assert.match(contextOf(prompt(session, "carry on")), /Ground rules/);
+  });
+
+  test("a start sends the ground rules and the held contracts in parts under the cap, and the first prompt repeats none", () => {
+    const session = sid();
+    setSlot({ axis: "mode", session, name: "ic" });
+    setSlot({ axis: "style", session, name: "native" });
+    const parts = opening(session, "startup");
+    assert.match(parts[0] ?? "", /^# Ground rules/);
+    assert.ok((parts[2] ?? "").includes("Active mode: ic") && (parts[3] ?? "").includes("Active style: native"));
+    assert.deepEqual(
+      parts.filter((part) => part.length > 10_000),
+      [],
+    );
+    const first = contextOf(prompt(session, "go"));
+    assert.ok(!first.includes("Ground rules") && !first.includes("Standing reminder"), first);
+    const resumed = opening(session, "compact").join("\n");
+    assert.ok(resumed.includes("Ground rules") && resumed.includes("Active mode: ic"), resumed);
   });
 
   test("a held mode comes back as one line of UserPromptSubmit context, its placeholders filled", () => {
@@ -147,8 +170,7 @@ describe("inject, on every prompt", () => {
     setSlot({ axis: "mode", session, name: "copilot" });
     const [entered, settled] = [contextOf(prompt(session, "two")), contextOf(prompt(session, "three"))];
     assert.ok(entered.length > settled.length && settled.length > 0);
-    assert.equal(start(session, "resume").status, 0);
-    assert.ok(contextOf(prompt(session, "four")).length > settled.length);
+    assert.ok(opening(session, "resume").join("\n").includes("Active mode: copilot"));
     assert.equal(get("mode", session), "copilot");
   });
 });

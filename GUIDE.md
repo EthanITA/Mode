@@ -38,11 +38,11 @@ A `UserPromptSubmit` hook runs _before_ Claude reads your message. It performs a
 
 <p align="center"><img src="assets/hook-sequence.svg" alt="The hook intercepts your message before Claude sees it, asks bin/mode to expire, switch and choose, receives what each slot now holds, and passes Claude the message together with the contract text." width="660"></p>
 
-What gets injected depends on whether this is the first prompt or a later one:
+What gets injected depends on whether the session is starting or already running:
 
-<p align="center"><img src="assets/injection.svg" alt="On the first prompt of a conversation Claude receives the ground rules once, the whole contract of any slot just set, and the message. On every later turn it receives only what moved, such as a pipeline step, the four-line prose reminder and the message, and a contract comes again only when it is switched." width="900"></p>
+<p align="center"><img src="assets/injection.svg" alt="When a session starts, resumes or compacts Claude receives the ground rules once and the whole contract of each held slot, each from a SessionStart hook of its own. On every later turn it receives only what moved, such as a pipeline step, the four-line prose reminder and the message, and a contract comes again only when it is switched." width="900"></p>
 
-So Claude is told a contract once, whole, and **told again the moment it changes**: a switch arrives as a line naming the contract it replaced followed by the new one, and a slot turned off arrives as a line saying its contract no longer applies. A resume or a compact drops the injected text, so the next prompt gets the whole contract again.
+So Claude is told a contract once, whole, and **told again the moment it changes**: a switch arrives as a line naming the contract it replaced followed by the new one, and a slot turned off arrives as a line saying its contract no longer applies. A resume, a clear or a compact drops the injected text, so the start hooks send the ground rules and every held contract again before the next prompt. Each of those is a hook of its own because Claude Code caps a hook's text at 10,000 characters, and a hook over that hands Claude a file to read instead.
 
 ### The pipeline is told again too
 
@@ -74,7 +74,7 @@ The confirmation closes with "Set. The status line catches up when the conversat
 
 Beside the two slots sits a set of files that are not switched at all. They live in `skills/mode/rules/`, layered under `~/.claude/mode/rules/`, and they are **always on**.
 
-<p align="center"><img src="assets/rules-tiers.svg" alt="A rules file with no when pattern is injected whole on the first prompt of every conversation. A rules file carrying a when pattern waits and costs nothing until a message matches it. A resume or a compact re-arms both." width="620"></p>
+<p align="center"><img src="assets/rules-tiers.svg" alt="A rules file with no when pattern is injected whole when every conversation starts. A rules file carrying a when pattern waits and costs nothing until a message matches it. A resume or a compact re-arms both." width="620"></p>
 
 Seven ship with the plugin:
 

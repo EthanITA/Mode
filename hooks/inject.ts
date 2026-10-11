@@ -2,7 +2,7 @@ import { newsLine } from "../lib/hook/board.ts";
 import { payload, str, type Payload } from "../lib/hook/io.ts";
 import { announce } from "../lib/mode/announce.ts";
 import { list } from "../lib/mode/catalogue.ts";
-import { AUTO, AXES } from "../lib/mode/constants.ts";
+import { AUTO, AXES, HOOK_CAP } from "../lib/mode/constants.ts";
 import { deliverableCommand } from "../lib/mode/deliverable.ts";
 import { rulesDue } from "../lib/mode/rules.ts";
 import {
@@ -25,8 +25,6 @@ const ended = (name: string, axis: string, reason: string): string =>
   `The '${name}' ${axis} ended: ${reason}. Its rules no longer apply. Say that it ended and why, then work the normal way until another one is set.`;
 const SET = "Set. The status line catches up when the conversation continues.";
 
-// Claude Code caps a hook string at 10,000 characters and shows only the first 2,000 of a longer one.
-const CAP = 9_500;
 const overflow = (mode: string, style: string): string =>
   `Active mode: ${mode}. Active style: ${style}. This context is over Claude Code's 10,000-character hook ` +
   "limit, so only this preview is shown and the whole of it is in the file named above. Read that " +
@@ -230,7 +228,7 @@ try {
 
     if (blocks.length) {
       let context = blocks.join("\n\n");
-      if (context.length > CAP) {
+      if (context.length > HOOK_CAP) {
         const [mode = "none", style = "none"] = AXES.map((axis) => ask(() => getSlot({ axis, session })) ?? "none");
         // The north star rides in the preview, since the first turn is when it has to be named.
         const north = lines(announced ?? "").find((line) => line.startsWith("Deliverable:")) ?? "";

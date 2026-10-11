@@ -1,17 +1,21 @@
-import { join } from "node:path";
+import { readdirSync } from "node:fs";
+import { basename, join } from "node:path";
 import { isFile, listMd, readTextSafe } from "../files.ts";
 import { strip } from "../text.ts";
 import { modeConfig } from "./config.ts";
 import { STANDING_LINES } from "./constants.ts";
 import { alternatives, hits, substitute, truthy } from "./contracts.ts";
 import { splitFrontMatter, standingBlock, type Meta } from "./frontmatter.ts";
-import { rulesDirs } from "./paths.ts";
-import { statePath, writeState } from "./state.ts";
+import { rulesDirs, stateHome } from "./paths.ts";
+import { removeState, statePath, writeState } from "./state.ts";
 
 const GROUNDED =
   "# Ground rules\n\nThese rules hold for this entire conversation. They are injected " +
   "once, here, and never repeated, except a rule that outranks the contracts, whose " +
   "reminder comes back every turn. Keep applying all of them without being reminded.";
+const CONTINUED = "# Ground rules, continued";
+// Room for the heading and the joins, so a packed part stays under the hook cap with its header on.
+const HEADROOM = 400;
 
 type Rule = { stem: string; meta: Meta; body: string };
 
@@ -63,6 +67,36 @@ export function rulesDue({ session, message = "" }: { session?: string; message?
   }
   if (toldBase) writeState(base, "told");
   return bodies.length ? substitute(`${GROUNDED}\n\n${bodies.join("\n\n")}`) : undefined;
+}
+
+// The unscoped rules packed in stem order into parts under the cap, one per SessionStart hook, each with its own budget.
+export function groundParts(cap: number): string[] {
+  const remembered = inMemory();
+  const bodies = groundRules()
+    .filter(({ stem, meta, body }) => strip(body) && !alternatives(meta, "when").length && !remembered.has(stem))
+    .map(({ body }) => strip(body));
+  const parts: string[] = [];
+  let current = "";
+  for (const body of bodies) {
+    const joined = current ? `${current}\n\n${body}` : body;
+    if (current && joined.length > cap - HEADROOM) {
+      parts.push(current);
+      current = body;
+    } else current = joined;
+  }
+  if (current) parts.push(current);
+  return parts.map((text, index) => substitute(`${index ? CONTINUED : GROUNDED}\n\n${text}`));
+}
+
+// A start drops whatever was injected before it, so a scoped rule may come again and the base set counts as told now.
+export function rearmGround(session?: string): void {
+  const base = statePath(session, ".rules");
+  if (!base) return;
+  const scoped = basename(base).replace(".rules", ".rule-");
+  try {
+    for (const file of readdirSync(stateHome())) if (file.startsWith(scoped)) removeState(join(stateHome(), file));
+  } catch {}
+  writeState(base, "told");
 }
 
 export function ruleState(sid?: string): { told: string[]; waiting: { name: string; until?: string }[] } {

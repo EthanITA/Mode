@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" width="900" height="380" role="img" aria-label="What the hook adds to a prompt. On the first prompt of a conversation Claude receives the ground rules once, the whole contract of any slot just set, and the message. On every later turn it receives only what moved, such as a pipeline step, the four-line prose reminder and the message, and a contract comes again only when it is switched.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 380" width="900" height="380" role="img" aria-label="What the hooks add. When a session starts, resumes or compacts Claude receives the ground rules once and the whole contract of each held slot, each from a SessionStart hook of its own. On every later turn it receives only what moved, such as a pipeline step, the four-line prose reminder and the message, and a contract comes again only when it is switched.">
 <style>
   .bg{fill:none}
   .lbl{font:600 13px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#1f2328}
@@ -21,28 +21,28 @@
 </style>
 <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8c959f"/></marker></defs>
 
-<text class="lbl" x="20" y="26">First prompt of a conversation</text>
+<text class="lbl" x="20" y="26">A session starts, resumes or compacts</text>
 <rect class="box" x="20" y="40" width="132" height="46"/>
-<text class="sub" x="86" y="62" text-anchor="middle">your message</text>
-<text class="mono" x="86" y="77" text-anchor="middle">/mode debug</text>
+<text class="sub" x="86" y="62" text-anchor="middle">the session</text>
+<text class="mono" x="86" y="77" text-anchor="middle">startup, compact</text>
 <path class="ln" d="M156 63 H196" marker-end="url(#a)"/>
 <rect class="box" x="200" y="40" width="126" height="46"/>
-<text class="sub" x="263" y="62" text-anchor="middle">the hook</text>
-<text class="mono" x="263" y="77" text-anchor="middle">UserPromptSubmit</text>
+<text class="sub" x="263" y="62" text-anchor="middle">four hooks</text>
+<text class="mono" x="263" y="77" text-anchor="middle">SessionStart</text>
 <path class="ln" d="M330 63 H370" marker-end="url(#a)"/>
 
 <rect class="box rules" x="374" y="18" width="240" height="40"/>
 <text class="lbl rules-t" x="386" y="35">Ground rules</text>
-<text class="sub rules-t" x="386" y="50">all seven, whole</text>
+<text class="sub rules-t" x="386" y="50">whole, in parts under 10k</text>
 <text class="once rules-t" x="602" y="35" text-anchor="end">ONCE</text>
 
 <rect class="box mode" x="374" y="64" width="240" height="40"/>
-<text class="lbl mode-t" x="386" y="81">The debug contract</text>
-<text class="sub mode-t" x="386" y="96">every word of the file</text>
-<text class="once mode-t" x="602" y="81" text-anchor="end">ON SWITCH</text>
+<text class="lbl mode-t" x="386" y="81">The held debug contract</text>
+<text class="sub mode-t" x="386" y="96">every word, a hook of its own</text>
+<text class="once mode-t" x="602" y="81" text-anchor="end">AT START</text>
 
-<rect class="box" x="374" y="110" width="240" height="34"/>
-<text class="sub" x="386" y="131">your message</text>
+<rect class="box style" x="374" y="110" width="240" height="34"/>
+<text class="sub style-t" x="386" y="131">the held style contract, its own hook</text>
 
 <path class="ln" d="M618 81 H660" marker-end="url(#a)"/>
 <rect class="box" x="664" y="52" width="120" height="58"/>

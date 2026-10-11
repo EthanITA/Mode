@@ -222,6 +222,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **The ground rules and the held contracts arrive at session start, each part under the hook cap.** Four
+  new `SessionStart` hooks, `start/rules-1`, `start/rules-2`, `start/mode` and `start/style`, each carry
+  one part with Claude Code's whole 10,000-character budget, so the first prompt no longer runs over the
+  cap and hands Claude a file to read. They fire again on a resume, a clear or a compact, which re-arms
+  everything before the next prompt instead of on it, so `resume` no longer clears the announced markers.
+  A session whose start hooks never ran still gets the ground rules on its first prompt.
 - **A held contract goes out once, and again only when it changes.** The prompt hook no longer restates a
   mode's or a style's standing reminder every turn: an unchanged turn carries only a pipeline position or
   deliverable that moved, plus the outranking rule's reminder. A switch arrives as "The mode switched from X
