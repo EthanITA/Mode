@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
+import { HOOK_CAP } from "../lib/mode/constants.ts";
 import { choose, setSlot } from "../lib/mode/slots.ts";
 import { PLUGIN, scratch } from "./support.ts";
 
@@ -13,6 +14,8 @@ const COLORS = ["red", "green", "yellow", "blue", "magenta", "cyan", "grey", "sk
 const EXITS = ["manual", "approved", "mr-opened"];
 const BUDGET = 4;
 const SUMMARY_MAX = 120;
+// A switch prompt carries the head, the switch line, position, deliverable and an outranking reminder beside the body.
+const LINES_ROOM = 1_600;
 
 type Parsed = { stem: string; file: string; meta: Record<string, string>; body: string; text: string };
 
@@ -126,6 +129,13 @@ describe("every shipped contract's body", () => {
       assert.ok(tester && standing(tester.body).length <= BUDGET);
     },
   );
+
+  test("fits one hook beside its position and deliverable lines, so it never spills to a file", () => {
+    assert.deepEqual(
+      offenders(contracts, ({ body }) => body.length > HOOK_CAP - LINES_ROOM),
+      [],
+    );
+  });
 
   test("carries no placeholder but USER, the one the tool substitutes", () => {
     assert.deepEqual(

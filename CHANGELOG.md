@@ -222,6 +222,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **Every mode and style contract keeps every rule in about two thirds of the words.** The eleven modes
+  went from 113k to 75k characters and the six styles from 33k to 25k, each body small enough to share
+  one hook with a switch line, the pipeline position, the deliverable and an outranking reminder, which
+  a contract test now enforces. Front matter and standing reminders are unchanged.
+- **A mode and a style switched on one prompt never spill to a file.** When the two whole contracts
+  would outgrow one hook, the mode's goes now and the style's arrives with the next prompt, under a
+  line saying so. Entering `dispatcher`, which also sets `fast`, is the case that needed it.
 - **The ground rules and the held contracts arrive at session start, each part under the hook cap.** Four
   new `SessionStart` hooks, `start/rules-1`, `start/rules-2`, `start/mode` and `start/style`, each carry
   one part with Claude Code's whole 10,000-character budget, so the first prompt no longer runs over the
