@@ -148,6 +148,22 @@ describe("inject, on every prompt", () => {
     assert.ok(!contextOf(prompt(session, "five")).includes("off now"));
   });
 
+  test("a mode and a style switched on one prompt that would outgrow a hook send the style on the next prompt, said so", () => {
+    const session = sid();
+    setSlot({ axis: "mode", session, name: "ic" });
+    setSlot({ axis: "style", session, name: "native" });
+    opening(session, "startup");
+    const both = prompt(session, "/mode:copilot /style:edu plan the dashboard");
+    const now = contextOf(both);
+    assert.ok(now.length <= 10_000 && !now.includes("Read that file"), `${now.length}`);
+    assert.ok(
+      now.includes("switched from ic to copilot") && now.includes("its contract arrives with the next prompt"),
+      now,
+    );
+    const next = contextOf(prompt(session, "go on"));
+    assert.ok(next.includes("The style switched from native to edu") && next.includes("Standing reminder"), next);
+  });
+
   test("a rule the user loads as memory is never injected again, and its reminder still comes every turn", () => {
     const session = sid();
     const settings = write(join(config, "mode", "config.json"), JSON.stringify({ memory: ["prose"] }));

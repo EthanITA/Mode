@@ -223,7 +223,7 @@ try {
     }
 
     // One call, because lib/mode owns whether this prompt gets the whole contract or the reminder.
-    const announced = ask(() => announce({ session, path: cwd }));
+    const announced = ask(() => announce({ session, path: cwd, room: HOOK_CAP - blocks.join("\n\n").length - 2 }));
     if (announced) blocks.push(announced);
 
     if (blocks.length) {
