@@ -3,7 +3,7 @@ import type { ArtifactKind, ArtifactMeta } from "~~/shared/types/artifact";
 
 const KIND: Record<ArtifactKind, string> = { document: "Document", page: "Page", plan: "Plan" };
 
-const side = usePaneWidth();
+const { initial: sideInitial, width: side } = usePaneWidth();
 const sc = useSidecar();
 const follow = useFollow();
 const selected = useState<string | undefined>("ar:selected");
@@ -75,7 +75,7 @@ watch(
       </div>
     </UiSurface>
 
-    <PaneResizer v-model="side" :initial="PANE_WIDTH" label="Resize the artifact list" />
+    <PaneResizer v-model="side" :initial="sideInitial" label="Resize the artifact list" />
 
     <ArtifactSheet :conversation="sc.sessionKey.value" :path="picked?.path" :slug="picked?.slug">
       <UiStateMessage align="center" class="centered">Pick a page or a plan to open it here.</UiStateMessage>

@@ -2,7 +2,7 @@
 const sc = useSidecar();
 const history = useHistory();
 const restoring = ref<string>();
-const side = usePaneWidth();
+const { initial: sideInitial, width: side } = usePaneWidth();
 
 const firstFresh = computed(() => history.turns.value.find((one) => one.fresh)?.receipt.turn);
 
@@ -73,7 +73,7 @@ const restoreMessage = computed(() => {
       </div>
     </UiSurface>
 
-    <PaneResizer v-model="side" :initial="PANE_WIDTH" label="Resize the turns pane" />
+    <PaneResizer v-model="side" :initial="sideInitial" label="Resize the turns pane" />
 
     <UiSurface class="pane" data-region="history-changes" pad="none" variant="raised">
       <header class="bar">

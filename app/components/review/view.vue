@@ -7,7 +7,7 @@ import type { ReviewPicks, ReviewRowRejected } from "~/utils/review";
 const sc = useSidecar();
 const chrome = useChrome();
 const review = useReview();
-const side = usePaneWidth();
+const { initial: sideInitial, width: side } = usePaneWidth();
 
 review.listen();
 
@@ -167,7 +167,7 @@ function rejectFile(event: MouseEvent): void {
       </footer>
     </UiSurface>
 
-    <PaneResizer v-model="side" :initial="PANE_WIDTH" label="Resize the file list" />
+    <PaneResizer v-model="side" :initial="sideInitial" label="Resize the file list" />
 
     <UiSurface class="pane" data-region="review-changes" pad="none" variant="raised">
       <template v-if="file">

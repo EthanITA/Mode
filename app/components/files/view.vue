@@ -6,7 +6,7 @@ import type { TreeEntry } from "~~/shared/types/tree";
 
 type Scope = "all" | FileGroup;
 
-const side = usePaneWidth();
+const { initial: sideInitial, width: side } = usePaneWidth();
 
 const sc = useSidecar();
 const files = useFiles(() => sc.sessionKey.value);
@@ -88,7 +88,7 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
       </div>
     </UiSurface>
 
-    <PaneResizer v-model="side" :initial="PANE_WIDTH" label="Resize the file tree" />
+    <PaneResizer v-model="side" :initial="sideInitial" label="Resize the file tree" />
 
     <ArtifactSheet :conversation="sc.sessionKey.value" :path="selected" :slug="pageOf">
       <FilesEditor
