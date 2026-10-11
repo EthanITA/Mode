@@ -25,12 +25,16 @@ return ""`;
 
 const TERMINAL_EVERY_MS = 1000;
 
+// Long enough for `/sidecar` to launch the app and have its home read the point, short enough that a reopened app stays idle.
+export const POINT_TTL_MS = 15_000;
+
 let target: FollowTarget = { source: "none" };
+let pointedAt = 0;
 const listeners = new Set<Listener>();
 let watch: Watch | undefined;
 
-export function followTarget(): FollowTarget {
-  return target;
+export function standingTarget(now = Date.now()): FollowTarget {
+  return now - pointedAt < POINT_TTL_MS ? target : { source: "none" };
 }
 
 export function pointAt({
@@ -46,6 +50,7 @@ export function pointAt({
 }): number {
   const entry = liveEntries().find((one) => keyOf(one.id) === key);
   target = { face, key, name: entry?.name, slug, source };
+  pointedAt = Date.now();
   for (const listener of listeners) listener(target);
   return listeners.size;
 }
@@ -92,12 +97,12 @@ async function tick(current: Watch): Promise<void> {
   current.isBaseline = false;
   if (key === current.seen) return;
   current.seen = key;
-  if (!isBaseline && key && key !== target.key) pointAt({ key, source: "terminal" });
+  if (!isBaseline && key && key !== standingTarget().key) pointAt({ key, source: "terminal" });
 }
 
 // Polls only while a page listens, because one osascript call takes about a tenth of a second.
 function watchTerminal(): void {
-  const current: Watch = { timer: setInterval(() => void tick(current), TERMINAL_EVERY_MS), isBaseline: !!target.key };
+  const current: Watch = { timer: setInterval(() => void tick(current), TERMINAL_EVERY_MS), isBaseline: !!standingTarget().key };
   watch = current;
   void tick(current);
 }

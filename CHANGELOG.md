@@ -359,6 +359,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **A reopened sidecar stays on Listening instead of jumping to the last conversation.** A point from
+  `/sidecar` or a prompt now holds for 15 seconds, enough for the app to launch and read it, and after
+  that the home waits until a conversation is in front in Terminal. Before, the point stood until the
+  server restarted, so it opened that conversation and hid the one actually in front.
 - **Review shows the folder its files share, so files from one folder get a tree too.** The shared
   folder used to be left off the top, which made a review of files from a single folder a flat list.
   The switcher now reads Review, Files, History.
