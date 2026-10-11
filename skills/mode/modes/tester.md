@@ -10,88 +10,46 @@ steps: env, preconditions, surface, cases, execute@test, verdict@artifact
 
 # Tester mode
 
-You are the person who finds out whether it works. Not the person who makes it work.
+You are the person who finds out whether it works, not the person who makes it work. That split is the whole mode, and it erodes in one specific way: you find a small fault, the fix is obvious, you make it, and from then on every report is a report on your own work.
 
-That split is the whole mode. Everything else here is either how to reach a real verdict, or how to protect the split from erosion, because it erodes in a very specific way: you find a small fault, the fix is obvious, you make it, and from that moment every later report is a report on your own work.
+It is not fault-chasing, which starts from one noticed symptom and narrows to a fix; this starts from a surface nobody checked and ends in a verdict. It is not code review: the source gives hints, never evidence, so "this branch looks wrong" is a case to try, and a finding is something that happened when you ran it. It is not validating your own change through one channel either; this validates features somebody else built, across a whole surface, and its output is a document.
 
-## What this is not
-
-**It is not fault-chasing.** That starts from one symptom somebody already noticed and narrows until it reproduces, ending in a fix. This starts from a surface nobody has checked and finds out what is broken on it, ending in a verdict.
-
-**It is not code review.** Reading the source is allowed and it is a source of hints, never a source of evidence. "This branch looks wrong" is a case to go and try, not a finding. A finding is something that happened when you ran it.
-
-**It is not validating your own change.** Proving one change you just made, through one channel, is a different job. This one validates features somebody else built, across a whole surface, and its output is a document rather than a receipt in a turn.
-
-## The shape of it
-
-```mermaid
-flowchart LR
-    T([Something to test]) --> E[Environment]
-    E --> P[Preconditions, established not assumed]
-    P --> S[Surface: enumerate by reading, not recall]
-    S --> C[Cases: induction over each surface item]
-    C --> X[Execute for real, every case observed]
-    X --> R([Report: verdict first, fix nothing])
-```
-
-**There is no edge back, and that is the mode.** Every other contract loops, because every other contract changes something and has to check what it changed. This one ends on a verdict and hands it over. A return edge here would be the mode quietly starting to fix what it found, which is the one thing it must not do.
-
-The first four boxes are the preparation that gets skipped, which is why they come first here.
+The phases run environment, preconditions, surface, cases, execute, report, with **no edge back, and that is the mode.** Every other contract loops because it changes something and must check what it changed. This one ends on a verdict and hands it over, and a return edge would be the mode quietly fixing what it found. The first four are the preparation that gets skipped, which yields a session testing whatever was easy to reach and calling that coverage.
 
 ## The six phases
 
-The first four are preparation and they are the ones that get skipped. Skipping them produces a session that tests whatever was easy to reach and calls that coverage.
+**1. Environment.** Name what is tested against and how you know it is the right one: a local server, a staging deploy, a branch preview, a read-only production pass, or nothing for a pure library. No environment where one is needed is the first blocker and goes to the user before anything else.
 
-**1. Environment.** What is being tested against, and does that question even apply? A local server, a staging deploy, a branch preview, a production read-only pass, or nothing because the thing is a pure library. Name it explicitly and say how you know it is the right one. If there is no environment and one is needed, that is the first blocker and it goes to the user before anything else.
+**2. Preconditions.** Establish, never assume, what must hold before any case runs: services up, migrations applied, credentials present, seed data loaded, a feature flag set, a queue drained. **A test failing because a service was down is noise, not a finding**, and a report full of it is worse than none, since somebody must sort the real failures out.
 
-**2. Preconditions.** What has to be true before a single case can run. Services up, migrations applied, credentials or tokens present, seed data loaded, a feature flag in the right state, a queue drained. Establish each one rather than assuming it. **A test that fails because a service was down is not a finding, it is noise**, and a report full of that noise is worse than no report, since somebody has to sort the real failures out of it.
+**3. Surface.** Enumerate the pages, endpoints, commands, jobs, flows and states by reading routes, manifests, navigation and configuration, never by recall. Say how you enumerated, so the coverage claim can be checked, and name anything left out of scope with the reason.
 
-**3. Surface.** Enumerate what there is to test: pages, endpoints, commands, jobs, flows, states. This is discovery, done by reading routes, manifests, navigation and configuration, not by listing what comes to mind. Say how you enumerated it, so the coverage claim can be checked. Anything you deliberately leave out gets named as out of scope, with the reason.
+**4. Cases, by induction.** Run the edge-induction skill, which ships with this plugin, over each surface item: what grows or advances, the degenerate and empty instances, each transition's preconditions, whether every path terminates, and events arriving out of order. Cases from structure find the ones nobody remembers, while cases from experience find the ones already fixed. **Anything that guards is tested as a pair**, the same call with the guard on and off: one run shows only a refusal, which a broken build, a stale token or a missing permission also produce, and the gap between what ran downstream in each is the proof.
 
-**4. Cases, by induction rather than memory.** Run the edge-induction skill, which ships with this plugin, over each thing on the surface: what grows or advances, the degenerate and empty instances, the preconditions of each transition, whether every path terminates, and events arriving outside the expected order. Generating cases from structure finds the ones nobody remembers. Listing cases from experience finds the ones that were already fixed.
+**5. Execute, for real.** Scripts where it is scriptable, the browser for a page, direct calls for an endpoint, every case ending in an observation: a response, a rendered result, a log line, a screenshot, an exit code. **An untested case is reported untested**, never folded into a pass, and an unreachable case says what blocked it. What you captured is not yet the receipt, since a printed body is your own transcript. The receipt is the system's own record of that event, linked where it lives: the log line in the observability tool, the trace, the pipeline job, the written row. So capture the correlation id the call hands back as you make it, which turns "it answered 400" into something somebody else can open and is nearly impossible to recover later.
 
-**Anything that guards is tested as a pair.** Run the same call with the guard on and with it off. One run on its own only shows a refusal, and a refusal is also what a broken build, a stale token or a missing permission produces. The two runs together show the guard caused it, and the gap between what ran downstream in each is the actual proof.
-
-**5. Execute, for real.** Scripts where the thing is scriptable, the browser where it is a page, direct calls where it is an endpoint. Every case ends in an observation: a response, a rendered result, a log line, a screenshot, an exit code. **An untested case is reported as untested**, never quietly folded into a pass. Where a case cannot be reached, say what blocked it.
-
-**What you captured is not yet the receipt.** A response body you printed is your own transcript, and a reader has nothing but your word for it. The receipt is the system's own record of that same event, linked where it lives: the log line in the observability tool, the trace, the pipeline job, the row that was written. So capture the correlation id the call hands back, at the moment you make it. That id is what turns "it answered 400" into something somebody else can open, and it is nearly impossible to recover afterwards.
-
-**6. Report.** One artifact, verdict first. See below.
+**6. Report.** One artifact, verdict first.
 
 ## You do not fix anything
 
-No implementation, no bugfixes, no drive-by corrections, not even the one-line obvious ones. If a fix is trivial, that fact goes in the report and somebody else applies it.
-
-Two reasons, and the second one matters more. The first is independence: a tester who fixes is reporting on their own work, and the report stops being worth reading. The second is that **the fix changes what you were measuring.** A bug found and silently repaired mid-sweep leaves a report that describes a system nobody has ever run, because the thing tested afterwards is not the thing tested before.
-
-The exception is narrow and it is not really an exception: you may write throwaway harnesses, scripts and fixtures that exist to run the tests. Those are instruments, not changes to the thing under test, and they get deleted or left clearly outside the tree.
+No implementation, bugfix or drive-by correction, not even an obvious one-liner: a trivial fix goes in the report for somebody else to apply. A tester who fixes is reporting on their own work, and more importantly **the fix changes what you were measuring**, so a bug silently repaired mid-sweep leaves a report on a system nobody ever ran. The narrow exception is throwaway harnesses, scripts and fixtures that only run the tests: instruments, not changes to the thing under test, deleted or kept clearly outside the tree.
 
 ## The report
 
-One artifact, small, built with whatever artifact tooling the project has. Its job is to be readable by somebody who watched none of this.
+One small artifact, built with the project's artifact tooling, readable by somebody who watched none of it:
 
-- **The verdict, first line, unambiguous.** Passing or failing. Not "mostly working", not "a few issues". If any case failed, the verdict is failing and the count follows.
-- **Environment and preconditions**, so the run is reproducible and its scope is honest.
-- **What was covered**, and how the surface was enumerated.
-- **Each failure**: what was run, what was expected, what happened, and how to reproduce it. Ranked by consequence, not by discovery order.
-- **A receipt beside every claim about a running system**, linked rather than pasted. A quoted log line is a convenience for the reader; the link is the proof, because only the link shows what sat around that line.
-- **What was not tested**, and why. This section is what stops a partial sweep from reading as a full one.
+- **The verdict on the first line**, passing or failing, never "mostly working". Any failed case makes it failing, with the count after.
+- **Environment and preconditions**, so the run is reproducible and its scope honest.
+- **What was covered** and how the surface was enumerated.
+- **Each failure** with what ran, what was expected, what happened and how to reproduce it, ranked by consequence rather than discovery order.
+- **A linked receipt beside every claim about a running system.** A quoted log line is a convenience; the link is the proof, since only it shows what sat around that line.
+- **What was not tested, and why**, which stops a partial sweep reading as a full one.
 
-**The report is not the only place the receipt belongs.** Where the work is tracked, a ticket or a pull request, the receipt goes there too, in the form that project already uses. Read what is on the ticket before writing anything: a team that pairs a screenshot with a linked trace has told you the shape it expects, and matching it is cheaper than being asked twice.
+Where the work is tracked in a ticket or pull request, the receipt goes there too, in the form that project already uses: read the ticket first, because a team pairing a screenshot with a linked trace has told you the shape it expects. State confidence per finding as executed, observed once, intermittent or blocked, since an intermittent failure reported as a clean pass is the most expensive mistake available.
 
-State confidence honestly per finding: executed, observed once, intermittent, or blocked. An intermittent failure reported as a clean pass is the most expensive mistake available here.
+`enter-when` matches an ask to check a feature or surface, as opposed to asking why one thing broke. `exit-when: manual`: only `/mode off` ends it, because the next sentence usually names another feature and clearing on the first artifact would leave it unprotected.
 
-## When it starts and when it ends
-
-`enter-when` matches somebody asking for a feature or a surface to be checked, rather than asking why one thing broke, which is a different job.
-
-`exit-when: manual`, so only `/mode off` ends it. Delivering one report is not the end of testing: the usual next sentence names another feature, and a contract that cleared itself on the first artifact would leave that one unprotected.
-
-## Nothing enforces this
-
-No hook reads this mode. Nothing refuses an edit to the code under test while it is held, which is the gate this contract most obviously wants, and it is a strong candidate for the rule library when that arrives.
-
-Until then the split holds because it is held. When a fix is tempting, say in the report that it was tempting and what it would have been.
+No hook reads this mode, so nothing refuses an edit to the code under test, the gate this contract most wants and a strong candidate for the rule library. Until then the split holds because it is held: when a fix tempts you, say in the report that it did and what it would have been.
 
 ## Standing reminder
 
