@@ -366,6 +366,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **Notes beside an artifact push its content, not the page.** The page keeps its full width and its own
   background runs under the notes column, while its content reflows clear of the notes. Before, the
   whole page narrowed and the notes sat on the sidecar's background beside it.
+- **`artifact review` and `artifact kit` no longer list a page as the conversation's own.** Refreshing
+  the layer or the kit is upkeep, so a conversation that refreshes many pages no longer shows them all
+  in its Artifacts face. `artifact new` and `artifact stamp` still record the pages a conversation builds.
 - **Review shows the folder its files share, so files from one folder get a tree too.** The shared
   folder used to be left off the top, which made a review of files from a single folder a flat list.
   The switcher now reads Review, Files, History.

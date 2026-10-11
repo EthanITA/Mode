@@ -152,11 +152,10 @@ const VERBS: Record<string, Spec> = {
     help: "add or refresh the comment layer, keeping the threads it holds",
     positionals: 1,
     options: { sidecar: "value" },
+    // The layer, like the kit, is upkeep rather than authorship, so only a stamp lists the page as this conversation's.
     run: ({ positionals: [slug = ""], values }) => {
       const path = resolve(slug);
-      const what = install(path, values.sidecar ?? "");
-      record(entryOf(path));
-      return `review layer ${what} in ${basename(path)}`;
+      return `review layer ${install(path, values.sidecar ?? "")} in ${basename(path)}`;
     },
   },
   comments: {
@@ -202,7 +201,6 @@ const VERBS: Record<string, Spec> = {
       if (path.endsWith(".md"))
         throw new Refusal(`${basename(path)} is rendered by the sidecar, so it has no page to carry the kit`, 2);
       print(`kit ${installKit(path)} in ${basename(path)}`);
-      record(entryOf(path));
     },
   },
   stamp: {

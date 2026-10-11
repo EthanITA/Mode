@@ -130,6 +130,16 @@ describe("new and kit", () => {
     );
   });
 
+  test("refreshing the layer or the kit leaves the page off the conversation's list, and a stamp puts it on", () => {
+    const fresh = env({ ...vars, CLAUDE_CODE_SESSION_ID: "c1ea4ed0-cli" });
+    const listed = (): string => run(ARTIFACT, ["list", "--session", "--tsv"], { env: fresh }).stdout;
+    assert.equal(run(ARTIFACT, ["review", "kit-neutral"], { env: fresh }).status, 0);
+    assert.equal(run(ARTIFACT, ["kit", "kit-neutral"], { env: fresh }).status, 0);
+    assert.equal(listed(), "");
+    assert.equal(run(ARTIFACT, ["stamp", "kit-neutral"], { env: fresh }).status, 0);
+    assert.match(listed(), /^kit-neutral\t/);
+  });
+
   test("the demo page carries the kit byte for byte, and passes both publishing gates", () => {
     const demo = join(SKILL, "references", "components.html");
     const block = /<!-- cx:start -->[\s\S]*?<!-- cx:end -->\n?/.exec(read(demo))?.[0];
