@@ -41,7 +41,7 @@ test("a harness wrapper sharing an entry with real prose keeps the prose after i
 })
 
 test("an action carries the one argument worth reading", () => {
-  assert.equal(argOf("Read", { file_path: "/Users/madong/Notes/projects/Cela/Mode/server/utils/sessions/relay.ts" }), "sessions/relay.ts")
+  assert.equal(argOf("Read", { file_path: "/Users/madong/Notes/projects/Cela/mode/server/utils/sessions/relay.ts" }), "sessions/relay.ts")
   assert.equal(argOf("Grep", { pattern: "mode-relay", output_mode: "content" }), "mode-relay")
   assert.equal(argOf("Skill", { skill: "create-artifact" }), "create-artifact")
   assert.equal(argOf("TaskUpdate", { taskId: "42", status: "completed" }), "42")
