@@ -359,6 +359,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **Opening the comment panel pushes the page's content, not the page.** The layer used to add a margin
+  to `body`, which narrowed the page itself and let the root's colour show beside it. It now pads the
+  root, so the page's ground keeps running under the panel while the content moves over. A page already
+  carrying the layer picks this up with `artifact review <slug>`.
 - **A reopened sidecar stays on Listening instead of jumping to the last conversation.** A point from
   `/sidecar` or a prompt now holds for 15 seconds, enough for the app to launch and read it, and after
   that the home waits until a conversation is in front in Terminal. Before, the point stood until the
