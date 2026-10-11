@@ -19,7 +19,7 @@ export default defineNuxtConfig({
     },
     { path: "~/components", priority: 10 },
   ],
-  modules: ["@comark/nuxt"],
+  modules: ["@comark/nuxt", "@pinia/nuxt"],
   // Nitro scans server/utils/** wholesale. Test-only modules are not server surface, and two
   // __fixtures__/env.ts both exporting useFixtures is a collision the scan cannot resolve.
   nitro: {
