@@ -41,6 +41,7 @@ const emit = defineEmits<{
 
 const LINE_HEIGHT = 18;
 const ESTIMATE_MAX = 480;
+const REGIONS = { contextLineCount: 3, minimumLineCount: 4, revealLineCount: 20 };
 
 const chrome = useChrome();
 const tray = useTray();
@@ -63,6 +64,7 @@ let diff: MonacoApi.editor.IStandaloneDiffEditor | undefined;
 let models: MonacoApi.editor.ITextModel[] = [];
 let pens: Notes[] = [];
 let modelSeq = 0;
+let isRefolding = false;
 let base: Base = { hash: file.hash, text: textOf(file.current) };
 
 const shown = computed(() => homePath(file.path));
@@ -162,8 +164,10 @@ function setModels(): void {
   if (!api || !diff) return;
   const [original, modified] = models;
   if (original && modified) {
-    if (original.getValue() !== textOf(file.original)) original.setValue(textOf(file.original));
+    const before = [original.getValue(), modified.getValue()];
+    if (before[0] !== textOf(file.original)) original.setValue(textOf(file.original));
     followDisk(modified);
+    isRefolding = isCompact && (before[0] !== original.getValue() || before[1] !== modified.getValue());
     return;
   }
   // The URI's extension picks the language, and a sequence keeps two cards of one file apart.
@@ -191,7 +195,7 @@ async function build(): Promise<void> {
     fontFamily: getComputedStyle(document.documentElement).getPropertyValue("--mono").trim() || undefined,
     fontSize: 12,
     glyphMargin: true,
-    hideUnchangedRegions: { contextLineCount: 3, enabled: isCompact, minimumLineCount: 4, revealLineCount: 20 },
+    hideUnchangedRegions: { ...REGIONS, enabled: isCompact },
     ignoreTrimWhitespace: false,
     lineHeight: LINE_HEIGHT,
     lineNumbersMinChars: 3,
@@ -224,6 +228,12 @@ async function build(): Promise<void> {
     });
   }
   diff.onDidUpdateDiff(() => {
+    // New text makes Monaco expand every folded region, so folding is switched off and on again once the diff settles.
+    if (isRefolding) {
+      isRefolding = false;
+      diff?.updateOptions({ hideUnchangedRegions: { ...REGIONS, enabled: false } });
+      diff?.updateOptions({ hideUnchangedRegions: { ...REGIONS, enabled: true } });
+    }
     contentHeight.value = Math.max(...sides.map((one) => one.getContentHeight()));
     placeHunks();
   });
@@ -246,7 +256,7 @@ watch(
   ([compact, wrapped]) =>
     diff?.updateOptions({
       diffWordWrap: wrapped ? "on" : "off",
-      hideUnchangedRegions: { enabled: compact },
+      hideUnchangedRegions: { ...REGIONS, enabled: compact },
       wordWrap: wrapped ? "on" : "off",
     }),
 );
