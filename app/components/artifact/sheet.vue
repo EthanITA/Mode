@@ -12,7 +12,7 @@ type Box = { height: number; left: number; top: number; width: number };
 const GROW = { duration: MOTION_DURATION.slow, easing: EASE_CSS.drawer } satisfies KeyframeAnimationOptions;
 const SHRINK = { duration: MOTION_DURATION.base, easing: EASE_CSS.drawer } satisfies KeyframeAnimationOptions;
 
-const { isFull } = storeToRefs(useArtifactFullscreenStore());
+const { isFull } = storeToRefs($artifact());
 const isExpanded = ref(false);
 const slot = useTemplateRef<HTMLElement>("slot");
 const preview = useTemplateRef<ComponentPublicInstance>("preview");
