@@ -1,13 +1,15 @@
-import { addVitePlugin, defineNuxtModule } from "@nuxt/kit";
+import { addVitePlugin, createResolver, defineNuxtModule } from "@nuxt/kit";
 import { injectStoreId } from "./inject-id.ts";
 
 export default defineNuxtModule({
   meta: { name: "define-store" },
   setup(_options, nuxt) {
-    // Local modules load after the modules array, so Pinia's defineStore is already in the list to drop.
+    const { resolve } = createResolver(import.meta.url);
+
+    // Nuxt scans only the top level of utils, so this folder registers its own defineStore in Pinia's place.
     nuxt.hook("imports:extend", (imports) => {
       const pinia = imports.findIndex((entry) => entry.name === "defineStore" && entry.from.includes("@pinia/nuxt"));
-      if (pinia !== -1) imports.splice(pinia, 1);
+      if (pinia !== -1) imports.splice(pinia, 1, { name: "defineStore", from: resolve("./index.ts") });
     });
 
     addVitePlugin({

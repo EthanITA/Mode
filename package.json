@@ -10,7 +10,7 @@
     "typecheck": "nuxi typecheck",
     "typecheck:plugin": "tsc -p tsconfig.plugin.json",
     "format": "prettier --write .",
-    "test": "node --test --experimental-strip-types \"server/utils/**/*.test.ts\" \"app/utils/**/*.test.ts\" \"modules/**/*.test.ts\"",
+    "test": "node --test --experimental-strip-types \"server/utils/**/*.test.ts\" \"app/utils/**/*.test.ts\"",
     "test:plugin": "node --test --experimental-strip-types \"tests/**/*.test.ts\"",
     "check:render": "node tools/render-check/run.ts",
     "check:render:types": "tsc -p tools/render-check/tsconfig.json --noEmit",

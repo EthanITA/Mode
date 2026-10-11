@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { acceptHMRUpdate, createPinia, setActivePinia } from "pinia";
 import { computed, ref, toRaw } from "vue";
-import { defineStore } from "./define-store.ts";
+import { defineStore } from "./index.ts";
+import { injectStoreId } from "./inject-id.ts";
 
 const $counter = defineStore("counter", () => {
   const count = ref(0);
@@ -48,6 +49,18 @@ test("a plain value stays plain, and a ref added after the first call is still a
 
 test("a store with no id throws where the build did not inject one", () => {
   assert.throws(() => defineStore(() => ({})), /takes its id from the build/);
+});
+
+test("the build gives a store the variable name minus the dollar, and leaves explicit ids and other code alone", () => {
+  assert.equal(
+    injectStoreId("export const $deskLayout = defineStore(\n  () => ({}),\n);"),
+    'export const $deskLayout = defineStore("deskLayout", \n  () => ({}),\n);',
+  );
+  const untouched = [
+    'export const $artifact = defineStore("custom", () => ({}));',
+    "const $local = defineStore(() => ({}));\nexport const useThing = defineStore(() => ({}));",
+  ];
+  for (const code of untouched) assert.equal(injectStoreId(code), code);
 });
 
 test("an HMR update neither throws nor cuts a destructured ref off the store", () => {
