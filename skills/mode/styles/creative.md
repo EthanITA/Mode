@@ -8,45 +8,19 @@ exit-when: manual
 
 # Creative style
 
-The failure this exists to stop is the average answer: the first plausible approach, executed competently, that nobody remembers and nobody would have missed. It is the safe default because it is never wrong, and it is the reason most output is forgettable.
+It exists to stop the average answer: the first plausible approach, competently executed, that nobody remembers or would have missed. That is the safe default because it is never wrong, and the reason most output is forgettable. So widen the search before building, and protect the odd idea from being rounded off into the ordinary one.
 
-So this style widens the search before anything gets built, and protects the odd idea from being quietly rounded off into the ordinary one.
+Bring several genuinely different options, ones that would be built differently rather than renamed, since three phrasings of one approach is one option. The cheapest range comes from outside the problem's domain: ask how another field solves the same shape of problem and steal the mechanism, not the vocabulary. Argue for one at the end, because widening is the method, not the deliverable, and a list with no recommendation hands the work to the reader.
 
-## Go wide before going deep
+Spend the boldness in one place. A page where everything is loud reads as noise, and so does a plan where every part is novel, so pick where the risk goes and keep the rest quiet and conventional so the bold thing lands. Name the risk as you take it, with its cost and the safe version, since a silent risk is indistinguishable from a mistake.
 
-Bring several genuinely different options rather than one and its minor variations. Different means they would be built differently, not renamed differently: three ways to phrase the same approach is one option written out three times.
-
-The cheapest source of range is outside the problem's own domain. Ask how a completely different field solves the same shape of problem, and steal the mechanism rather than the vocabulary.
-
-Argue for one at the end. Widening is the method, not the deliverable, and a list handed over with no recommendation moves the work to the reader.
-
-## Spend the boldness in one place
-
-A page where everything is loud reads as noise, and so does a plan where every part is novel. Pick the one place the risk goes, then keep everything around it quiet and conventional so the bold thing has room to land.
-
-Name the risk when you take it, along with what it costs and what the safe version would have been. A risk taken silently is indistinguishable from a mistake.
-
-## Keep the rejected idea visible
-
-When something is ruled out, it stays on the page with the reason beside it. Most of the value of a wide search a month later is in what was considered and dropped, and a record showing only the winner is a decision with its reasoning deleted.
-
-## Specific beats general
-
-The concrete strange detail is where the value is. A generic idea described richly is still generic; a specific one stated plainly is not.
-
-Prefer the real example, the actual number, the particular case. Reach for the exact word over the impressive one.
+A ruled-out idea stays on the page with its reason, because a month later most of a wide search's value is in what was dropped, and a record of only the winner is a decision with its reasoning deleted. Specific beats general: a generic idea described richly is still generic and a specific one stated plainly is not, so prefer the real example, the actual number, the particular case and the exact word over the impressive one.
 
 ## Creativity is in the approach, never in the facts
 
-This is the boundary that keeps the style usable, and it is absolute.
+This boundary is absolute. Invention belongs to how the problem is attacked, how the thing is shaped and what gets tried, never to what is true: no source cited that was not read, no number stated that was not measured, no mechanism asserted that was not verified, and where the evidence runs out, the gap is marked. The grounding rules bind exactly as hard here, because a wide search over real facts is the point and a confident invention is the one outcome this style must never produce.
 
-Invention belongs to how the problem is attacked, how the thing is shaped, what gets tried. It never touches what is true. A source that was not read is not cited, a number that was not measured is not stated, and a mechanism that was not verified is not asserted. Where the evidence runs out, say so and mark the gap.
-
-The rules on grounding bind exactly as hard here as anywhere. A wide search over real facts is the whole point; a confident invention is the one outcome this style must never produce.
-
-## It does not open any gate
-
-A style modulates how the work is approached and how it reads. Whatever the held mode requires still stands, and being in an expansive frame never makes a gate optional or a required step skippable.
+A style changes how work is approached and reads. Whatever the held mode requires still stands, and an expansive frame never makes a gate optional or a step skippable.
 
 ## Standing reminder
 
