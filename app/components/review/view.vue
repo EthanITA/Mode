@@ -218,18 +218,15 @@ function rejectFile(event: MouseEvent): void {
                 tip="Draw both sides rendered · off shows the diff"
                 @click="preview.inReview = !preview.inReview"
               />
-              <template v-if="isPreviewing">
-                <PreviewZoom v-if="kind && Preview.isZoomable(kind)" v-model="zoom" />
-                <ChromeAction
-                  v-if="kind && Preview.isZoomable(kind)"
-                  :icon="Link2"
-                  :is-on="preview.isSynced"
-                  shape="pill"
-                  tip="Scroll both sides together"
-                  @click="preview.isSynced = !preview.isSynced"
-                />
-              </template>
-              <template v-else>
+              <ChromeAction
+                v-if="isPreviewing && kind && Preview.isZoomable(kind)"
+                :icon="Link2"
+                :is-on="preview.isSynced"
+                shape="pill"
+                tip="Scroll both sides together · pinch zooms both"
+                @click="preview.isSynced = !preview.isSynced"
+              />
+              <template v-if="!isPreviewing">
                 <ChromeAction
                   :icon="FoldVertical"
                   :is-on="review.isCompact.value"
