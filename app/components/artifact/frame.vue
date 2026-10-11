@@ -1,9 +1,18 @@
 <script lang="ts" setup>
 import type { FrameAnchor, FrameHit, FrameMark, FramePending, ViewBox } from "~/types/frame";
 
-const { edition, html, slug, src, version } = defineProps<{
+const {
+  edition,
+  html,
+  inset = 0,
+  slug,
+  src,
+  version,
+} = defineProps<{
   edition?: number;
   html?: string;
+  /** Pixels at the page's inline end that something laid over it holds, which the page's content leaves clear. */
+  inset?: number;
   slug: string;
   src?: string;
   version?: number;
@@ -259,6 +268,7 @@ function onLoad(): void {
   syncTheme(doc);
   suppressPageChrome(doc);
   injectEditStyle(doc);
+  applyInset(doc);
   remeasure();
   loaded.value = true;
 
@@ -410,6 +420,12 @@ function suppressPageChrome(doc: Document): void {
   doc.head?.append(style);
 }
 
+// Padding on the root narrows everything in flow while the root's and body's grounds still paint the full width.
+function applyInset(doc: Document): void {
+  if (inset) doc.documentElement.style.setProperty("padding-inline-end", `${inset}px`, "important");
+  else doc.documentElement.style.removeProperty("padding-inline-end");
+}
+
 function injectEditStyle(doc: Document): void {
   if (doc.getElementById(EDIT_ID)) return;
   const style = doc.createElement("style");
@@ -445,6 +461,14 @@ watch(look.theme, () => {
   const doc = frame.value?.contentDocument;
   if (doc) syncTheme(doc);
 });
+
+watch(
+  () => inset,
+  () => {
+    const doc = frame.value?.contentDocument;
+    if (doc) applyInset(doc);
+  },
+);
 
 watch(() => [edition, html, slug, version], reset);
 

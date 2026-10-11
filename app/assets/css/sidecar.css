@@ -4,6 +4,7 @@
 :root {
   --gutter-w: 44px;
   --notes-w: 300px;
+  --notes-gap: 12px;
   --page-w: 880px;
   --step: 8px;
 

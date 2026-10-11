@@ -128,15 +128,17 @@ watchEffect(() => emit("notes", pageCards.value.length + placedNotes.value.lengt
 </template>
 
 <style scoped>
-/* A column of its own, never an overlay: a note pushes the page narrower instead of covering it. */
+/* Laid over the page's inline end, whose content the frame pads clear, so between notes the page stays reachable. */
 .gutter {
   height: 100%;
   overflow: visible;
+  pointer-events: none;
   position: relative;
 }
 
 .perch {
   left: 0;
+  pointer-events: auto;
   position: absolute;
   right: 0;
 }

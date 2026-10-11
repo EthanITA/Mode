@@ -71,6 +71,17 @@ const gap = computed(() => {
   return got && !got.found ? GAP[got.reason] : "";
 });
 
+const hasNotes = computed(() => roomy.value && noteCount.value > 0);
+
+function tokenPx(name: string): number {
+  return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)) || 0;
+}
+
+// The frame's document cannot read the app's tokens, so the room the notes hold reaches it in pixels.
+const notesRoom = computed(() =>
+  hasNotes.value ? tokenPx("--notes-w") + tokenPx("--notes-gap") + tokenPx("--gutter") : 0,
+);
+
 function onMarks(next: FrameMark[]): void {
   marks.value = next;
   measured.value = true;
@@ -245,7 +256,7 @@ onScopeDispose(() => {
       :unreachable="versions.unreachable.value"
     />
 
-    <div v-if="sc.artifact.value?.slug === slug" class="stack" :data-notes="roomy && noteCount > 0">
+    <div v-if="sc.artifact.value?.slug === slug" class="stack">
       <ArtifactDiff
         v-if="showDiff && stage === 'version'"
         class="sheet-cell"
@@ -261,6 +272,7 @@ onScopeDispose(() => {
         data-region="artifact-page"
         :edition="edition"
         :html="markdown ? undefined : html"
+        :inset="notesRoom"
         :slug="slug"
         :src="versionSrc"
         :version="versions.at.value"
@@ -344,17 +356,10 @@ onScopeDispose(() => {
   width: 100%;
 }
 
-/* Two columns: a note narrows the artifact rather than covering it. */
 .stack {
-  column-gap: 12px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 0;
+  grid-template-columns: minmax(0, 1fr);
   position: relative;
-}
-
-.stack[data-notes="true"] {
-  grid-template-columns: minmax(0, 1fr) var(--notes-w);
-  padding-right: var(--gutter);
 }
 
 /* Named rather than left to source order: the overlays between them are out of flow. */
@@ -363,8 +368,18 @@ onScopeDispose(() => {
   grid-column: 1;
 }
 
+/* The notes share the page's cell and sit over its inline end, so the page's own ground runs under
+   them and the frame pads its content clear of them instead of the whole page narrowing. */
+.sheet-cell,
 .notes-cell {
-  grid-column: 2;
+  grid-row: 1;
+}
+
+.notes-cell {
+  grid-column: 1;
+  justify-self: end;
+  margin-inline-end: var(--gutter);
+  width: var(--notes-w);
 }
 
 /* Only the artifact runs to the edges; its chrome insets itself. */
