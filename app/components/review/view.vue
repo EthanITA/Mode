@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { FoldVertical, Redo2, TextWrap, Undo2 } from "@lucide/vue";
+import { Eye, FoldVertical, Link2, Redo2, TextWrap, Undo2 } from "@lucide/vue";
 import { useEventListener } from "@vueuse/core";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { ReviewPicks, ReviewRowRejected } from "~/utils/review";
@@ -15,6 +15,31 @@ const files = computed(() => review.snapshot.value?.files ?? []);
 const file = computed(() => review.file.value);
 const isLive = computed(() => !!review.snapshot.value?.live);
 const churn = computed(() => (file.value ? Review.counts(file.value) : undefined));
+const preview = $preview();
+const zoom = ref(1);
+const kind = computed(() => (file.value ? Preview.kindOf(file.value.path) : undefined));
+const isPreviewing = computed(() => !!kind.value && preview.inReview);
+// Each side's address carries its content id, so a frame reloads only when that side really changed.
+const sides = computed(() => {
+  const here = file.value;
+  const conversation = sc.sessionKey.value;
+  if (!here || !conversation) return undefined;
+  return {
+    before: here.isNew
+      ? { empty: "Nothing to draw, the file did not exist yet." }
+      : { src: Preview.srcOf({ conversation, isOriginal: true, path: here.path, version: here.blob }) },
+    after: here.isDeleted
+      ? { empty: "Nothing to draw, the file is gone from disk." }
+      : { src: Preview.srcOf({ conversation, path: here.path, version: here.hash }) },
+  };
+});
+
+watch(
+  () => file.value?.path,
+  () => {
+    zoom.value = 1;
+  },
+);
 
 const empty = computed(() => {
   if (!sc.sessionKey.value) return "No conversation is selected.";
@@ -184,19 +209,42 @@ function rejectFile(event: MouseEvent): void {
           <div class="line" data-split>
             <span class="group">
               <ChromeAction
-                :icon="FoldVertical"
-                :is-on="review.isCompact.value"
+                v-if="kind"
+                data-region="review-preview"
+                :icon="Eye"
+                :is-on="preview.inReview"
+                label="Preview"
                 shape="pill"
-                tip="Hide unchanged lines"
-                @click="review.isCompact.value = !review.isCompact.value"
+                tip="Draw both sides rendered · off shows the diff"
+                @click="preview.inReview = !preview.inReview"
               />
-              <ChromeAction
-                :icon="TextWrap"
-                :is-on="review.isWrapped.value"
-                shape="pill"
-                tip="Wrap long lines"
-                @click="review.isWrapped.value = !review.isWrapped.value"
-              />
+              <template v-if="isPreviewing">
+                <PreviewZoom v-if="kind && Preview.isZoomable(kind)" v-model="zoom" />
+                <ChromeAction
+                  v-if="kind && Preview.isZoomable(kind)"
+                  :icon="Link2"
+                  :is-on="preview.isSynced"
+                  shape="pill"
+                  tip="Scroll both sides together"
+                  @click="preview.isSynced = !preview.isSynced"
+                />
+              </template>
+              <template v-else>
+                <ChromeAction
+                  :icon="FoldVertical"
+                  :is-on="review.isCompact.value"
+                  shape="pill"
+                  tip="Hide unchanged lines"
+                  @click="review.isCompact.value = !review.isCompact.value"
+                />
+                <ChromeAction
+                  :icon="TextWrap"
+                  :is-on="review.isWrapped.value"
+                  shape="pill"
+                  tip="Wrap long lines"
+                  @click="review.isWrapped.value = !review.isWrapped.value"
+                />
+              </template>
             </span>
             <span class="group">
               <button v-press class="action focusable" type="button" @click="comment($event)">Comment</button>
@@ -228,13 +276,23 @@ function rejectFile(event: MouseEvent): void {
           This conversation isn't running, so nothing here can be applied. Resume it to act on the review.
         </p>
 
-        <div class="heads mono-meta" :style="OneDarkVivid.cssVars">
+        <div class="heads mono-meta" :data-preview="isPreviewing" :style="OneDarkVivid.cssVars">
           <span>{{ file.isNew ? "Did not exist" : "Original, as last approved" }}</span>
           <span>{{ file.isDeleted ? "Deleted on disk" : "Now on disk" }}</span>
         </div>
 
         <div class="diff">
+          <PreviewPair
+            v-if="isPreviewing && kind && sides"
+            :key="file.path"
+            v-model:zoom="zoom"
+            :after="sides.after"
+            :before="sides.before"
+            :is-synced="preview.isSynced"
+            :kind="kind"
+          />
           <DiffSideBySide
+            v-else
             :key="file.path"
             :file="file"
             is-fill
@@ -363,6 +421,16 @@ function rejectFile(event: MouseEvent): void {
   grid-template-columns: 1fr 1fr;
   padding: 5px 0 5px 54px;
   text-transform: none;
+}
+
+/* The rendered sides have no line-number gutter, so each label starts at its own half. */
+.heads[data-preview="true"] {
+  column-gap: 1px;
+  padding-left: 0;
+}
+
+.heads[data-preview="true"] span {
+  padding-left: 14px;
 }
 
 .all {

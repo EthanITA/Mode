@@ -7,7 +7,7 @@ const unsaved = new Set<string>();
 </script>
 
 <script lang="ts" setup>
-import { MessageSquarePlus } from "@lucide/vue";
+import { Eye, MessageSquarePlus } from "@lucide/vue";
 import type * as MonacoApi from "monaco-editor";
 import { EditorNotes, type NoteAt, type Notes } from "~/utils/monaco/notes";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
@@ -34,6 +34,10 @@ const content = ref<FileContent>();
 const isDirty = ref(false);
 const isStale = ref(false);
 const isSaving = ref(false);
+const preview = $preview();
+const zoom = ref(1);
+// Bumped on every read and save, so the rendering reloads whenever the disk may have moved.
+const version = ref(0);
 
 let editor: MonacoApi.editor.IStandaloneCodeEditor | undefined;
 let api: typeof MonacoApi | undefined;
@@ -42,6 +46,15 @@ let ticket = 0;
 
 const file = computed(() => homePath(path));
 const noted = computed(() => tray.items.value.filter((item) => item.file === file.value && !!item.path));
+const kind = computed(() => Preview.kindOf(path));
+const canToggle = computed(() => !!kind.value && Preview.isText(path) && !!content.value && "text" in content.value);
+// A binary or oversized file has no code to show, so it always renders; text renders while the toggle is on.
+const isPreviewing = computed(() => {
+  const got = content.value;
+  if (!kind.value || !got) return false;
+  return "text" in got ? preview.inFiles : got.reason === "binary" || got.reason === "too-large";
+});
+const src = computed(() => Preview.srcOf({ conversation, path, version: String(version.value) }));
 
 function markDirty(): void {
   const model = editor?.getModel();
@@ -79,6 +92,7 @@ async function pull(): Promise<void> {
   }).catch((): FileContent => ({ path, reason: "missing" }));
   if (mine !== ticket) return;
   content.value = got;
+  version.value++;
   if ("text" in got) show(got);
 }
 
@@ -98,6 +112,7 @@ async function save(): Promise<void> {
       disk.set(at, { hash: reply.hash, text });
       if (at === path) {
         isStale.value = false;
+        version.value++;
         markDirty();
       }
       chrome.toast(`Saved ${basename(at)}`);
@@ -186,6 +201,7 @@ watch(
   () => [conversation, path] as const,
   () => {
     content.value = undefined;
+    zoom.value = 1;
     void pull();
   },
 );
@@ -211,32 +227,50 @@ onBeforeUnmount(() => {
   <div class="editor" data-region="files-editor" :style="OneDarkVivid.cssVars">
     <header class="bar">
       <span class="path">{{ file }}</span>
-      <span v-if="isStale" class="state warn mono-meta" title="A turn changed this file while you were editing">
-        changed on disk
-      </span>
-      <span v-else-if="isDirty" class="state mono-meta">unsaved</span>
+      <template v-if="!isPreviewing">
+        <span v-if="isStale" class="state warn mono-meta" title="A turn changed this file while you were editing">
+          changed on disk
+        </span>
+        <span v-else-if="isDirty" class="state mono-meta">unsaved</span>
+      </template>
+      <PreviewZoom v-else-if="kind && Preview.isZoomable(kind)" v-model="zoom" />
+      <ChromeAction
+        v-if="canToggle"
+        data-region="files-preview"
+        :icon="Eye"
+        :is-on="preview.inFiles"
+        label="Preview"
+        shape="pill"
+        tip="Show the file rendered · off shows its code"
+        @click="preview.inFiles = !preview.inFiles"
+      />
       <ChromeAction
         :icon="MessageSquarePlus"
         label="Note"
         shape="pill"
-        tip="Note the whole file · ⌘K notes the selected lines"
+        :tip="isPreviewing ? 'Note the whole file' : 'Note the whole file · ⌘K notes the selected lines'"
         @click="noteFile"
       />
-      <button v-if="isDirty || isStale" v-press class="ghost focusable" type="button" @click="discard">Discard</button>
-      <button
-        v-press
-        class="save focusable"
-        type="button"
-        data-tip="Save · ⌘S"
-        :disabled="!isDirty || isSaving"
-        @click="save"
-      >
-        {{ isSaving ? "Saving…" : "Save" }}
-      </button>
+      <template v-if="!isPreviewing">
+        <button v-if="isDirty || isStale" v-press class="ghost focusable" type="button" @click="discard">
+          Discard
+        </button>
+        <button
+          v-press
+          class="save focusable"
+          type="button"
+          data-tip="Save · ⌘S"
+          :disabled="!isDirty || isSaving"
+          @click="save"
+        >
+          {{ isSaving ? "Saving…" : "Save" }}
+        </button>
+      </template>
     </header>
     <div class="body">
-      <div v-show="content && 'text' in content" ref="host" class="host" data-region="files-viewer" />
-      <UiStateMessage v-if="content && 'reason' in content" align="center" class="empty">
+      <div v-show="content && 'text' in content && !isPreviewing" ref="host" class="host" data-region="files-viewer" />
+      <PreviewStage v-if="isPreviewing && kind" v-model:zoom="zoom" :kind="kind" :src="src" />
+      <UiStateMessage v-else-if="content && 'reason' in content" align="center" class="empty">
         {{ UNSHOWN[content.reason] }}
       </UiStateMessage>
       <UiStateMessage v-else-if="!content" align="center" class="empty" kind="loading"
