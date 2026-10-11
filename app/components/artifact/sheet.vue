@@ -12,7 +12,7 @@ type Box = { height: number; left: number; top: number; width: number };
 const GROW = { duration: MOTION_DURATION.slow, easing: EASE_CSS.drawer } satisfies KeyframeAnimationOptions;
 const SHRINK = { duration: MOTION_DURATION.base, easing: EASE_CSS.drawer } satisfies KeyframeAnimationOptions;
 
-const { isFull } = $artifact();
+const artifact = $artifact();
 const isExpanded = ref(false);
 const slot = useTemplateRef<HTMLElement>("slot");
 const preview = useTemplateRef<ComponentPublicInstance>("preview");
@@ -89,15 +89,18 @@ async function collapse(): Promise<void> {
   settle?.cancel();
 }
 
-watch(isFull, (full) => void (full ? expand() : collapse()));
+watch(
+  () => artifact.isFull,
+  (full) => void (full ? expand() : collapse()),
+);
 watch([() => path, () => conversation], () => {
-  isFull.value = false;
+  artifact.isFull = false;
 });
 useEventListener(window, "keydown", (event: KeyboardEvent) => {
-  if (event.key === "Escape" && !event.defaultPrevented && isFull.value) isFull.value = false;
+  if (event.key === "Escape" && !event.defaultPrevented && artifact.isFull) artifact.isFull = false;
 });
 onBeforeUnmount(() => {
-  isFull.value = false;
+  artifact.isFull = false;
 });
 </script>
 
@@ -121,7 +124,7 @@ onBeforeUnmount(() => {
             label="Fullscreen"
             shape="pill"
             tip="Grow the page over everything · esc shrinks it back"
-            @click="isFull = true"
+            @click="artifact.isFull = true"
           />
         </header>
         <div ref="read" class="read">

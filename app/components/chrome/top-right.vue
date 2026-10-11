@@ -6,11 +6,11 @@ const chrome = useChrome();
 
 const LABELS: Record<Face, string> = { artifacts: "Artifacts", files: "Files", history: "History", review: "Review" };
 
-const { isFull } = $artifact();
+const artifact = $artifact();
 
 const inSession = computed(() => route.path.startsWith("/c/"));
 // The faces belong to the conversation; an artifact on its own, routed or grown over the face, has nothing to switch.
-const onArtifact = computed(() => inSession.value && (!!route.params.slug || isFull.value));
+const onArtifact = computed(() => inSession.value && (!!route.params.slug || artifact.isFull));
 const onFaces = computed(() => inSession.value && !onArtifact.value);
 
 const faces = computed(() => chrome.view.faces.value.map((face) => ({ label: LABELS[face], value: face })));
@@ -22,7 +22,7 @@ const face = computed({
 
 // A routed page is replaced on close so Back never walks through it; a grown one just shrinks back.
 function closePage(): void {
-  if (isFull.value) isFull.value = false;
+  if (artifact.isFull) artifact.isFull = false;
   else void navigateTo(`/c/${String(route.params.key ?? "")}`, { replace: true });
 }
 </script>
