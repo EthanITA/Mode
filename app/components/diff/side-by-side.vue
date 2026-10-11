@@ -126,7 +126,7 @@ function followDisk(modified: MonacoApi.editor.ITextModel): void {
   const mine = modified.getValue();
   if (mine === base.text || mine === next) {
     base = { hash: file.hash, text: next };
-    if (mine !== next) Monaco.patch(modified, next);
+    if (mine !== next) modified.setValue(next);
   }
   markDirty();
 }
@@ -162,7 +162,7 @@ function setModels(): void {
   if (!api || !diff) return;
   const [original, modified] = models;
   if (original && modified) {
-    if (original.getValue() !== textOf(file.original)) Monaco.patch(original, textOf(file.original));
+    if (original.getValue() !== textOf(file.original)) original.setValue(textOf(file.original));
     followDisk(modified);
     return;
   }

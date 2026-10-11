@@ -81,29 +81,4 @@ function languageOf(path: string): string | undefined {
   );
 }
 
-// Line edits instead of setValue, so a diff editor's folded regions, tracked as decorations, ride along them.
-function patch(model: MonacoApi.editor.ITextModel, next: string): void {
-  const before = model.getValue().split("\n");
-  const after = next.split("\n");
-  for (const change of Lines.changes(before, after).reverse()) {
-    let { oldStart: from, oldEnd: to, newStart: start, newEnd: end } = change;
-    // A pure insert or delete has no range to replace, so it takes an unchanged neighbour along.
-    if (from === to || start === end) {
-      if (from > 0) {
-        from--;
-        start--;
-      } else {
-        to++;
-        end++;
-      }
-    }
-    model.applyEdits([
-      {
-        range: { endColumn: before[to - 1]!.length + 1, endLineNumber: to, startColumn: 1, startLineNumber: from + 1 },
-        text: after.slice(start, end).join("\n"),
-      },
-    ]);
-  }
-}
-
-export const Monaco = { languageOf, load, patch };
+export const Monaco = { languageOf, load };
