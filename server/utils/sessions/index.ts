@@ -47,6 +47,7 @@ function build(key: string, { entry, job, ref }: Sources): LiveSession | undefin
     gitBranch: identity.gitBranch,
     lastActive: Math.round(Math.max(entry?.updatedAt || 0, ref?.mtimeMs || 0, job?.startedAt || 0)) || undefined,
     lane: job?.lane,
+    detail: job?.detail,
     archived: job ? undefined : true,
     startedAt: job?.startedAt,
     preview: previewOf(key),

@@ -26,10 +26,11 @@ test("a session keyed by its artifact list is skipped when nothing on disk can i
   );
 });
 
-test("a job identifies a session its artifact list alone could not, and supplies the name and cwd", () => {
+test("a job identifies a session its artifact list alone could not, and supplies the name, cwd and detail", () => {
   const gamma = find(liveSessions(), "cccccccc");
   assert.equal(gamma.name, "Gamma, as the job knows it");
   assert.equal(gamma.cwd, "/tmp/gamma");
+  assert.equal(gamma.detail, "retrying the gamma import");
   assert.equal(gamma.lane?.name, "working");
   assert.equal(gamma.archived, undefined);
 });

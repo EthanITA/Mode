@@ -38,6 +38,7 @@ export interface LiveSession {
   gitBranch?: string;
   lastActive?: number;
   lane?: SessionLane;
+  detail?: string;
   // No background job owns this key: history the sidecar kept, not a conversation `claude agents` lists.
   archived?: boolean;
   startedAt?: number;

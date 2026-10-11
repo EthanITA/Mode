@@ -13,6 +13,7 @@ export interface JobEntry {
   id: string;
   cwd?: string;
   name?: string;
+  detail?: string;
   lane: SessionLane;
   pid?: number;
   status?: SessionStatus;
@@ -41,6 +42,23 @@ function status(value: unknown): SessionStatus | undefined {
 
 function lane(value: unknown): SessionLane["name"] {
   return LANES.find((one) => one === value) || "done";
+}
+
+function stateOf(key: string): Record<string, unknown> | undefined {
+  const raw = readTextSafe(join(jobsHome(), key, "state.json"));
+  if (!raw) return undefined;
+  try {
+    const value: unknown = JSON.parse(raw);
+    return typeof value === "object" && value ? (value as Record<string, unknown>) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+// A stopped job's line is just the word "stopped", which says nothing the lane does not.
+function detailOf(record: Record<string, unknown> | undefined): string | undefined {
+  const line = text(record?.detail);
+  return line === record?.state ? undefined : line;
 }
 
 // The installer keeps this symlink current; a Nitro process may not inherit a login shell's PATH.
@@ -77,6 +95,8 @@ function fromCli(): JobEntry[] | undefined {
       id,
       cwd: text(record.cwd),
       name: text(record.name),
+      // The CLI's JSON leaves out the job list's one-line status, so it comes off the state file.
+      detail: detailOf(stateOf(key)),
       lane: { name: lane(record.state) },
       pid: num(record.pid),
       status: status(record.status),
@@ -124,16 +144,8 @@ function fromDisk(): JobEntry[] {
   const out: JobEntry[] = [];
   for (const name of names) {
     if (!isKey(name)) continue;
-    const raw = readTextSafe(join(jobsHome(), name, "state.json"));
-    if (!raw) continue;
-    let value: unknown;
-    try {
-      value = JSON.parse(raw);
-    } catch {
-      continue;
-    }
-    if (typeof value !== "object" || !value) continue;
-    const record = value as Record<string, unknown>;
+    const record = stateOf(name);
+    if (!record) continue;
     const id = text(record.sessionId);
     if (!id || !isSessionId(id) || keyOf(id) !== name) continue;
     const held = live.get(id);
@@ -143,6 +155,7 @@ function fromDisk(): JobEntry[] {
       id,
       cwd: text(record.cwd),
       name: text(record.name),
+      detail: detailOf(record),
       lane: { name: lane(record.state), derived: true },
       pid: pid && isAlive(pid) ? pid : undefined,
       status: pid && isAlive(pid) ? status(held?.status) : undefined,
