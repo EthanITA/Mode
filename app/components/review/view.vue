@@ -1,15 +1,13 @@
 <script lang="ts" setup>
 import { Redo2, Undo2 } from "@lucide/vue";
-import { useEventListener, useLocalStorage } from "@vueuse/core";
+import { useEventListener } from "@vueuse/core";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { ReviewPicks, ReviewRowRejected } from "~/utils/review";
-
-const SIDE = 300;
 
 const sc = useSidecar();
 const chrome = useChrome();
 const review = useReview();
-const side = useLocalStorage("sc:pane:review", SIDE);
+const side = usePaneWidth();
 
 review.listen();
 
@@ -169,7 +167,7 @@ function rejectFile(event: MouseEvent): void {
       </footer>
     </UiSurface>
 
-    <PaneResizer v-model="side" :initial="SIDE" label="Resize the file list" />
+    <PaneResizer v-model="side" :initial="PANE_WIDTH" label="Resize the file list" />
 
     <UiSurface class="pane" data-region="review-changes" pad="none" variant="raised">
       <template v-if="file">

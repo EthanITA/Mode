@@ -1,12 +1,8 @@
 <script lang="ts" setup>
-import { useLocalStorage } from "@vueuse/core";
-
-const SIDE = 340;
-
 const sc = useSidecar();
 const history = useHistory();
 const restoring = ref<string>();
-const side = useLocalStorage("sc:pane:history", SIDE);
+const side = usePaneWidth();
 
 const firstFresh = computed(() => history.turns.value.find((one) => one.fresh)?.receipt.turn);
 
@@ -77,7 +73,7 @@ const restoreMessage = computed(() => {
       </div>
     </UiSurface>
 
-    <PaneResizer v-model="side" :initial="SIDE" label="Resize the turns pane" />
+    <PaneResizer v-model="side" :initial="PANE_WIDTH" label="Resize the turns pane" />
 
     <UiSurface class="pane" data-region="history-changes" pad="none" variant="raised">
       <header class="bar">

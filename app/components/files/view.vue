@@ -1,14 +1,12 @@
 <script lang="ts" setup>
 import { FilePen, FilePlus2, FolderTree } from "@lucide/vue";
-import { useLocalStorage } from "@vueuse/core";
 import type { Component } from "vue";
 import type { FileGroup, SessionFile } from "~~/shared/types/files";
 import type { TreeEntry } from "~~/shared/types/tree";
 
 type Scope = "all" | FileGroup;
 
-const SIDE = 340;
-const side = useLocalStorage("sc:pane:files", SIDE);
+const side = usePaneWidth();
 
 const sc = useSidecar();
 const files = useFiles(() => sc.sessionKey.value);
@@ -90,7 +88,7 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
       </div>
     </UiSurface>
 
-    <PaneResizer v-model="side" :initial="SIDE" label="Resize the file tree" />
+    <PaneResizer v-model="side" :initial="PANE_WIDTH" label="Resize the file tree" />
 
     <ArtifactSheet :conversation="sc.sessionKey.value" :path="selected" :slug="pageOf">
       <FilesEditor
