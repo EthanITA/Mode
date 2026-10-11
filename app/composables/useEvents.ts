@@ -2,6 +2,8 @@ import type { SidecarEvent, Topic } from "~~/shared/types/events";
 
 export interface Events {
   on: <T extends Topic>(topic: T, handler: (event: SidecarEvent<T>) => void) => void;
+  /** Runs each time the stream drops, which is the first sign of the server going away. */
+  onLost: (handler: () => void) => void;
 }
 
 type Handler = (event: SidecarEvent) => void;
@@ -10,6 +12,7 @@ const RETRY_MS = 2000;
 
 // One stream for the whole app, open while any handler listens.
 const handlers = new Map<Topic, Set<Handler>>();
+const lost = new Set<() => void>();
 let source: EventSource | undefined;
 let since: string | undefined;
 let retry = 0;
@@ -26,6 +29,7 @@ function connect(): void {
   for (const topic of handlers.keys()) source.addEventListener(topic, deliver);
   // A restarting server can answer with its loading page, which closes an EventSource for good.
   source.addEventListener("error", () => {
+    for (const handler of lost) handler();
     if (source?.readyState === EventSource.CLOSED) retry = window.setTimeout(connect, RETRY_MS);
   });
 }
@@ -52,6 +56,10 @@ export function useEvents(): Events {
       if (!source) connect();
       else if (isFirst) source.addEventListener(topic, deliver);
       onScopeDispose(() => off(topic, own));
+    },
+    onLost: (handler) => {
+      lost.add(handler);
+      onScopeDispose(() => lost.delete(handler));
     },
   };
 }

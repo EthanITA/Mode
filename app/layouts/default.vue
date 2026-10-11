@@ -3,11 +3,19 @@ import { useResizeObserver } from "@vueuse/core";
 
 const sc = useSidecar();
 const chrome = useChrome();
+const route = useRoute();
 
 const dockEl = useTemplateRef<HTMLElement>("dockEl");
 const boardEl = useTemplateRef<HTMLElement>("boardEl");
 const dockHeight = ref(0);
 const isDown = computed(() => !!sc.failure.value);
+
+// A restarted server has forgotten what it followed, so the page waits on Listening for whatever is in front.
+watch(isDown, (down) => {
+  if (down && route.path !== "/") void navigateTo("/", { replace: true });
+});
+// Fetched while the server still answers, since a lazy page cannot load once it is down.
+onMounted(() => void preloadRouteComponents("/"));
 
 let queued = 0;
 let sent = { dock: -1, board: -1 };
@@ -38,7 +46,7 @@ useResizeObserver(boardEl, ([entry]) => {
   <!-- Unset until measured, so the first frame takes the CSS fallback rather than
        reserving nothing and shifting the reading surface once the observer reports. -->
   <div class="shell" :style="dockHeight ? { '--dock-h': `${dockHeight}px` } : undefined">
-    <!-- Covered rather than unmounted, so a tray or a draft survives the server restarting. -->
+    <!-- Covered rather than unmounted, so Listening keeps its stream and opens what is in front once the server is back. -->
     <div class="page" :inert="isDown">
       <slot />
     </div>

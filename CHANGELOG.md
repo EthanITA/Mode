@@ -359,6 +359,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **A restarted sidecar opens a conversation only when one is in front in Terminal.** When the server
+  goes down the page now leaves for Listening and shows Reconnecting there, so once the server is back
+  it opens whatever conversation is in front and otherwise stays on Listening. Before, the page waited
+  under the Reconnecting cover and came back on the conversation it was showing.
 - **Review shows the folder its files share, so files from one folder get a tree too.** The shared
   folder used to be left off the top, which made a review of files from a single folder a flat list.
   The switcher now reads Review, Files, History.

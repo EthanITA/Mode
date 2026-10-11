@@ -93,12 +93,15 @@ export function loadSidecar(): void {
     }
   }
 
+  const events = useEvents();
   // The catalogue is read once, so a page made after that would never list without this.
-  useEvents().on("artifact.created", () => {
+  events.on("artifact.created", () => {
     void $fetch<ArtifactMeta[]>("/api/artifacts")
       .then((catalogue) => (sc.catalogue.value = catalogue))
       .catch(() => {});
   });
+  // A restart can be over before the next poll, so a dropped stream checks at once.
+  events.onLost(() => void poll());
 
   onMounted(() => {
     void pullOnce();
