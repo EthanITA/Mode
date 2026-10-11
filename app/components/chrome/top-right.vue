@@ -6,7 +6,7 @@ const chrome = useChrome();
 
 const LABELS: Record<Face, string> = { artifacts: "Artifacts", files: "Files", history: "History", review: "Review" };
 
-const { isFull } = storeToRefs($artifact());
+const { isFull } = $artifact();
 
 const inSession = computed(() => route.path.startsWith("/c/"));
 // The faces belong to the conversation; an artifact on its own, routed or grown over the face, has nothing to switch.

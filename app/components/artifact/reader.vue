@@ -18,7 +18,7 @@ const GAP: Record<DiffGap, string> = {
 const sc = useSidecar();
 const chrome = useChrome();
 const route = useRoute();
-const { isFull } = storeToRefs($artifact());
+const { isFull } = $artifact();
 
 // The sheet on a face is too narrow for a second column; a routed page or a grown sheet has the room.
 const roomy = computed(() => isFull.value || !!route.params.slug);
