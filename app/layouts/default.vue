@@ -7,6 +7,7 @@ const chrome = useChrome();
 const dockEl = useTemplateRef<HTMLElement>("dockEl");
 const boardEl = useTemplateRef<HTMLElement>("boardEl");
 const dockHeight = ref(0);
+const isDown = computed(() => !!sc.failure.value);
 
 let queued = 0;
 let sent = { dock: -1, board: -1 };
@@ -37,12 +38,17 @@ useResizeObserver(boardEl, ([entry]) => {
   <!-- Unset until measured, so the first frame takes the CSS fallback rather than
        reserving nothing and shifting the reading surface once the observer reports. -->
   <div class="shell" :style="dockHeight ? { '--dock-h': `${dockHeight}px` } : undefined">
-    <slot />
+    <!-- Covered rather than unmounted, so a tray or a draft survives the server restarting. -->
+    <div class="page" :inert="isDown">
+      <slot />
+    </div>
+
+    <ListeningScreen v-if="isDown" class="down" state="reconnecting" />
 
     <!-- One row, and every cell is a flex sibling in it. Two independently anchored
          layers on the same edge is what let the title run under the switcher. -->
     <div class="row" data-region="island-row">
-      <slot name="lead" />
+      <slot v-if="!isDown" name="lead" />
       <span class="spacer" />
       <ChromeTopRight />
     </div>
@@ -55,10 +61,6 @@ useResizeObserver(boardEl, ([entry]) => {
       </div>
 
       <div ref="dockEl" class="foot-dock" data-region="dock-corner">
-        <p v-if="sc.failure.value" class="failure" role="alert" :title="sc.failure.value">
-          Can't reach the sidecar server, retrying every few seconds.
-        </p>
-
         <slot name="dock" />
       </div>
     </div>
@@ -130,13 +132,13 @@ useResizeObserver(boardEl, ([entry]) => {
   pointer-events: none;
 }
 
-.failure {
-  background: var(--error-soft);
-  border: 1px solid var(--error);
-  border-radius: var(--radius-field);
-  color: var(--error);
-  font-size: 13px;
-  margin: 0;
-  padding: 9px 13px;
+.page {
+  display: contents;
+}
+
+/* Over the page and the dock, under the island row so the theme toggle stays. */
+.down {
+  background: var(--canvas);
+  z-index: 25;
 }
 </style>

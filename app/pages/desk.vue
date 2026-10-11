@@ -1,8 +1,10 @@
 <script lang="ts" setup>
-import type { DeskCard } from "~/composables/useDesk";
+import { ArrowLeft } from "@lucide/vue";
+import type { DeskRow } from "~/composables/useDesk";
 
 const sc = useSidecar();
 const chrome = useChrome();
+const router = useRouter();
 
 loadSidecar();
 
@@ -11,15 +13,21 @@ function open(key: string): void {
   navigateTo(`/c/${key}`);
 }
 
-async function remove(card: DeskCard): Promise<void> {
+// A desk opened cold has nothing behind it, so Back lands on Listening instead of leaving the app.
+function back(): void {
+  if (window.history.state?.back) router.back();
+  else void navigateTo("/", { replace: true });
+}
+
+async function remove(row: DeskRow): Promise<void> {
   try {
-    await $fetch(`/api/sessions/${card.key}`, { method: "DELETE" });
-    // Drop it here rather than waiting for the poll, so the card does not linger for five seconds.
-    sc.sessions.value = sc.sessions.value.filter((session) => session.key !== card.key);
-    chrome.toast(`Deleted ${card.title}. Its transcript stays on disk.`, "success");
+    await $fetch(`/api/sessions/${row.key}`, { method: "DELETE" });
+    // Drop it here rather than waiting for the poll, so the row does not linger for five seconds.
+    sc.sessions.value = sc.sessions.value.filter((session) => session.key !== row.key);
+    chrome.toast(`Deleted ${row.title}. Its transcript stays on disk.`, "success");
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    chrome.toast(`Could not delete ${card.title}. ${reason}`, "destructive");
+    chrome.toast(`Could not delete ${row.title}. ${reason}`, "destructive");
   }
 }
 </script>
@@ -27,9 +35,9 @@ async function remove(card: DeskCard): Promise<void> {
 <template>
   <NuxtLayout>
     <template #lead>
-      <DeskHead />
+      <ChromeAction data-region="desk-back" :icon="ArrowLeft" shape="island" tip="Back · esc" @click="back" />
     </template>
 
-    <DeskGrid @open="open" @remove="remove" />
+    <DeskTriage @back="back" @open="open" @remove="remove" />
   </NuxtLayout>
 </template>

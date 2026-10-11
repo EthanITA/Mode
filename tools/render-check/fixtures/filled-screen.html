@@ -13,7 +13,7 @@
   <!--
     Every v6 region filled, used as the check's own positive control:
     `npm run check:render -- --url <this file>` must pass on it and reach all six
-    screens. It answers the same affordances the real app does — a desk card that
+    screens. It answers the same affordances the real app does — a desk row that
     opens a conversation, a switcher whose options carry data-value the way
     UiSegmented renders them, command-K on window, and comment mode armed by C then
     a mousedown on a data-cmt element — so the driver needs no fixture-only hook. The artifact frame uses srcdoc so the inner document
@@ -33,10 +33,10 @@
   </div>
 
   <div id="desk" data-region="desk">
-    <div data-region="desk-head">3 conversations · 1 waiting</div>
-    <button data-region="desk-card">parser-fix ~/src/parser · autopilot · edu · 4 tasks</button>
-    <button data-region="desk-card">billing-v2 ~/src/billing · copilot · native · 9 tasks</button>
-    <button data-region="desk-card">docs-site ~/src/docs · goal · edu · 2 tasks</button>
+    <button data-region="desk-back">Back</button>
+    <div data-region="desk-row">parser-fix · just now · Retry failed parser requests with backoff.</div>
+    <div data-region="desk-row">billing-v2 · 4 min · Invoices carry the VAT line.</div>
+    <div data-region="desk-row">docs-site · 6 min · A guide to the search index.</div>
   </div>
 
   <div id="conv" hidden>
@@ -106,8 +106,8 @@
   <script>
     const show = (id, on) => document.getElementById(id).hidden = !on
 
-    for (const card of document.querySelectorAll('[data-region="desk-card"]')) {
-      card.addEventListener('click', () => {
+    for (const row of document.querySelectorAll('[data-region="desk-row"]')) {
+      row.addEventListener('click', () => {
         show('desk', false)
         show('conv', true)
         show('conv-chrome', true)

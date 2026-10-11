@@ -192,7 +192,7 @@ export function probeScreen(input: ProbeInput): ProbeResult {
   const stage = onScreen('[data-region="conversation-stage"]')[0];
   const screen: ScreenReading = {
     commentTargets: onScreen("[data-cmt]").length,
-    deskCards: onScreen('[data-region="desk-card"]').length,
+    deskRows: onScreen('[data-region="desk-row"]').length,
     face: stage ? stage.getAttribute("data-face") || undefined : undefined,
     faces: onScreen('[data-region="view-switcher"] [data-value]')
       .map((el) => el.getAttribute("data-value") || "")

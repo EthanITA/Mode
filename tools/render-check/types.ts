@@ -89,7 +89,7 @@ export interface ProbeResult {
 
 export interface ScreenReading {
   commentTargets: number;
-  deskCards: number;
+  deskRows: number;
   /** The face the conversation stage is showing, absent when no conversation is mounted. */
   face?: string;
   /** What the switcher offers, empty when fewer than two domains are built. */

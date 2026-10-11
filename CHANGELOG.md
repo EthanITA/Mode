@@ -222,6 +222,16 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **Listening and the Desk follow the Sidecar design.** Home waits for Claude Code under a breathing
+  Listening tag, offers to resume the last conversation, lists the three ways to point the sidecar and
+  links to the Desk, a link that goes quiet with a tooltip when no other conversation exists. The Desk at
+  `/desk` is a centred list instead of a canvas of cards: the conversations `claude agents` lists, the
+  ones ready for review or needing input first, each with its tint, its age and the job's one-line status
+  (`detail` on `/api/sessions`, read off the job's state file). ↑↓ and ↵ open one, esc or the Back island
+  returns, and right-click still deletes. The archive toggle, card previews, badges and Tidy up are gone,
+  so a conversation `claude agents` no longer lists is reached through the jump palette. When the server
+  stops answering, every route shows the Reconnecting screen over a page that stays mounted underneath,
+  in place of the banner by the composer.
 - **Every mode and style contract keeps every rule in about two thirds of the words.** The eleven modes
   went from 113k to 75k characters and the six styles from 33k to 25k, each body small enough to share
   one hook with a switch line, the pipeline position, the deliverable and an outranking reminder, which

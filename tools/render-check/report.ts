@@ -198,7 +198,7 @@ function judgeState(state: ScreenState, probe: ProbeResult): Finding[] {
     findings.push({
       severity: "warn",
       state,
-      region: "desk-card",
+      region: "desk-row",
       code: "name-absent",
       detail: `live sessions whose real name appears nowhere on screen: ${probe.namesMissing.map((n) => JSON.stringify(n)).join(", ")}`,
     });
@@ -301,7 +301,7 @@ function padStart(value: string, width: number): string {
 const TITLES: Record<ScreenState, string> = {
   canvas: "CANVAS · artifacts where they were made",
   comment: "COMMENT · the page armed, one element picked",
-  desk: "DESK · every conversation as a card",
+  desk: "DESK · every conversation, the ones that need you first",
   files: "FILES · what the conversation produced and what it read or changed",
   history: "HISTORY · turns, and what each one changed",
   jump: "JUMP · the command-K palette",

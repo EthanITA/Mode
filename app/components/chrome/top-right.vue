@@ -3,12 +3,14 @@ import { X } from "@lucide/vue";
 
 const route = useRoute();
 const chrome = useChrome();
+const sc = useSidecar();
 
 const LABELS: Record<Face, string> = { artifacts: "Artifacts", files: "Files", history: "History", review: "Review" };
 
 const artifact = $artifact();
 
-const inSession = computed(() => route.path.startsWith("/c/"));
+// With the server down every route shows the reconnecting screen, which has nothing to switch.
+const inSession = computed(() => !sc.failure.value && route.path.startsWith("/c/"));
 // The faces belong to the conversation; an artifact on its own, routed or grown over the face, has nothing to switch.
 const onArtifact = computed(() => inSession.value && (!!route.params.slug || artifact.isFull));
 const onFaces = computed(() => inSession.value && !onArtifact.value);

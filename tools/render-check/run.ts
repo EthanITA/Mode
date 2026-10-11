@@ -335,9 +335,9 @@ async function main(): Promise<void> {
     if (seen.screen.onDesk) keep("desk", seen);
     else skip("desk", `${options.url} does not render the desk, so that screen was never on show`);
 
-    // Clicking a card is how a person opens a conversation, so it is how the check does.
-    if (!seen.screen.face && seen.screen.deskCards > 0) {
-      if (await click(cdp, sessionId, '[data-region="desk-card"]')) seen = await look();
+    // Clicking a row is how a person opens a conversation, so it is how the check does.
+    if (!seen.screen.face && seen.screen.deskRows > 0) {
+      if (await click(cdp, sessionId, '[data-region="desk-row"]')) seen = await look();
     }
     // Artifacts first: the read face has nothing to render without one, and a run that
     // opened the wrong conversation would report that as a broken artifact frame.
@@ -359,7 +359,7 @@ async function main(): Promise<void> {
 
     for (const face of FACES) {
       if (!inConversation) {
-        skip(face, "no conversation could be opened: no desk card to click and no session key to navigate to");
+        skip(face, "no conversation could be opened: no desk row to click and no session key to navigate to");
         continue;
       }
       if (!offered.includes(face)) {
