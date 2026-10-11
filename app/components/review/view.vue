@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Redo2, Undo2 } from "@lucide/vue";
+import { Check, FoldVertical, MessageSquarePlus, Redo2, TextWrap, Undo2, X } from "@lucide/vue";
 import { useEventListener } from "@vueuse/core";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { ReviewPicks, ReviewRowRejected } from "~/utils/review";
@@ -181,44 +181,43 @@ function rejectFile(event: MouseEvent): void {
               <span data-mark="remove">−{{ churn.removed }}</span>
             </span>
           </div>
-          <div class="line" data-end>
-            <span class="toggle">
-              <UiChip
-                :selected="review.isCompact.value"
-                size="xs"
+          <div class="line" data-split>
+            <span class="group">
+              <ChromeAction
+                :icon="FoldVertical"
+                :is-on="review.isCompact.value"
+                shape="pill"
+                tip="Hide unchanged lines"
                 @click="review.isCompact.value = !review.isCompact.value"
-              >
-                Compact
-              </UiChip>
-              <UiChip
-                :selected="review.isWrapped.value"
-                size="xs"
+              />
+              <ChromeAction
+                :icon="TextWrap"
+                :is-on="review.isWrapped.value"
+                shape="pill"
+                tip="Wrap long lines"
                 @click="review.isWrapped.value = !review.isWrapped.value"
-              >
-                Wrap
-              </UiChip>
+              />
             </span>
-            <button v-press class="action focusable" type="button" @click="comment($event)">Comment</button>
-            <button
-              v-press
-              class="action focusable"
-              type="button"
-              data-tone="danger"
-              :disabled="!isLive || review.busy.value"
-              @click="rejectFile"
-            >
-              {{ review.confirming.value === file.path ? "Reject? Press again" : "Reject file" }}
-            </button>
-            <button
-              v-press
-              class="action focusable"
-              type="button"
-              data-tone="primary"
-              :disabled="!isLive || review.busy.value"
-              @click="review.decideFile(true)"
-            >
-              Approve file
-            </button>
+            <span class="group">
+              <ChromeAction :icon="MessageSquarePlus" shape="pill" tip="Comment on the file" @click="comment($event)" />
+              <ChromeAction
+                :icon="X"
+                :is-disabled="!isLive || review.busy.value"
+                :is-on="review.confirming.value === file.path"
+                shape="pill"
+                :tip="review.confirming.value === file.path ? 'Press again to reject the file' : 'Reject the file'"
+                tone="danger"
+                @click="rejectFile"
+              />
+              <ChromeAction
+                :icon="Check"
+                :is-disabled="!isLive || review.busy.value"
+                shape="pill"
+                tip="Approve the file"
+                tone="primary"
+                @click="review.decideFile(true)"
+              />
+            </span>
           </div>
         </header>
 
@@ -294,9 +293,8 @@ function rejectFile(event: MouseEvent): void {
   min-width: 0;
 }
 
-.line[data-end] {
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.line[data-split] {
+  justify-content: space-between;
 }
 
 /* One line however long the path, so the row of buttons under it never moves. */
@@ -317,7 +315,7 @@ function rejectFile(event: MouseEvent): void {
   flex: 1;
 }
 
-.toggle {
+.group {
   display: inline-flex;
   flex: none;
   gap: 4px;

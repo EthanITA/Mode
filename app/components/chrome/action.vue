@@ -2,13 +2,16 @@
 import type { Component } from "vue";
 
 export type ActionShape = "island" | "pill";
+export type ActionTone = "danger" | "primary";
 
-const { icon, isOn, label, shape, tip } = defineProps<{
+const { icon, isDisabled, isOn, label, shape, tip, tone } = defineProps<{
   icon: Component;
+  isDisabled?: boolean;
   isOn?: boolean;
   label?: string;
   shape: ActionShape;
   tip: string;
+  tone?: ActionTone;
 }>();
 
 const emit = defineEmits<{ click: [event: MouseEvent] }>();
@@ -49,6 +52,8 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
     :data-labelled="!!label"
     :data-on="isOn"
     :data-tip="tip"
+    :data-tone="tone"
+    :disabled="isDisabled"
     @click="emit('click', $event)"
   >
     <UiIcon :icon="icon" size="xs" />
@@ -104,6 +109,21 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
   width: 26px;
 }
 
+.pill[data-tone="danger"] {
+  color: var(--error);
+}
+
+.pill[data-tone="primary"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-content);
+}
+
+.pill:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .pill:hover {
     border-color: var(--action-ink, var(--ink));
@@ -119,5 +139,12 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
   background: var(--primary);
   border-color: var(--primary);
   color: var(--primary-content);
+}
+
+/* An armed reject, waiting for the second press. */
+.pill[data-tone="danger"][data-on="true"] {
+  background: var(--error);
+  border-color: var(--error);
+  color: var(--error-content);
 }
 </style>
