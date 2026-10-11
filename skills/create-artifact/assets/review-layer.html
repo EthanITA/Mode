@@ -34,9 +34,8 @@
 
 /* Published so an artifact's own fixed chrome can step aside: inset:0 var(--rv-inset,0) auto 0. */
 :root[data-rv-panel="open"]{--rv-inset:var(--rv-panel-w)}
-/* Padding on the root, not a margin on body, so the page's own ground keeps running under the panel and only the content moves. */
-:root[data-rv-panel="open"]{padding-inline-end:var(--rv-panel-w)}
-:root{transition:padding var(--rv-dur) var(--rv-ease)}
+:root[data-rv-panel="open"] body{margin-inline-end:var(--rv-panel-w);
+  transition:margin var(--rv-dur) var(--rv-ease)}
 /* Only over a block that would actually take a comment, so the cursor is the affordance. */
 .rv-hot, .rv-hot *{cursor:var(--rv-cursor) !important}
 
@@ -75,7 +74,7 @@
   transition:transform var(--rv-dur) var(--rv-ease)}
 .rv-root[data-panel="open"] .rv-panel{transform:none}
 @media (prefers-reduced-motion:reduce){
-  .rv-panel,.rv-fab,:root{transition:none}
+  .rv-panel,.rv-fab,:root[data-rv-panel="open"] body{transition:none}
 }
 
 /* The three chrome rows keep their height and the list is the only thing that gives. A flex child
