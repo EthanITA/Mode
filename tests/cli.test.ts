@@ -611,16 +611,17 @@ describe("list and show", () => {
   });
 });
 
-describe("announce, the whole contract once, then the reminder", () => {
-  test("the turn a contract is entered carries all of it, later turns its reminder, and a switch earns it again", () => {
+describe("announce, the whole contract once, then only what changed", () => {
+  test("the turn a contract is entered carries all of it, later turns nothing of it, and a switch names the old one", () => {
     const session = sid();
     set("mode", session, "lead");
     const first = announce({ session });
     assert.ok(first.includes("Decompose the topic") && first.includes("After the reminder"));
     const second = announce({ session });
-    assert.ok(!second.includes("Decompose the topic") && second.includes("You lead."));
+    assert.ok(!second.includes("Decompose the topic") && !second.includes("You lead."), second);
     set("mode", session, "maker");
-    assert.ok(announce({ session }).includes("Build it."));
+    const swapped = announce({ session });
+    assert.ok(swapped.includes("Build it.") && swapped.includes("switched from lead to maker"), swapped);
   });
 
   test("clear --announced re-arms it and leaves both slots alone", () => {
@@ -930,18 +931,14 @@ describe("a ground rule that outranks the contracts", () => {
     "---\nname: voice\nsummary: outranks\noutranks: contracts\n---\n\nTalk like a person.\n\n## Standing reminder\n\n- Say it like a person would.\n";
   within({ plugin: fixtureRoot(join(tmp, "overroot"), { modes: CLEAN, rules: { law: LAW, voice: VOICE } }) });
 
-  test("is restated by announce every turn, after the contract's reminder, while a plain rule never is", () => {
+  test("is restated by announce every turn, after any contract, while a plain rule never is", () => {
     assert.match(announce({ session: sid() }), /Ground rule voice[\s\S]*like a person would/);
     const session = sid();
     set("mode", session, "maker");
-    announce({ session });
+    const entered = announce({ session });
+    assert.ok(entered.indexOf("Ground rule voice") > entered.indexOf("Active mode: maker"), entered);
     const later = announce({ session });
-    assert.ok(
-      later.indexOf("Active mode: maker") >= 0 &&
-        later.indexOf("Ground rule voice") > later.indexOf("Active mode: maker"),
-      later,
-    );
-    assert.ok(!later.includes("receipt"));
+    assert.ok(later.includes("Ground rule voice") && !later.includes("receipt"), later);
   });
 });
 

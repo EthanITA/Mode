@@ -108,6 +108,39 @@ describe("inject, on every prompt", () => {
     assert.ok(contextOf(done) && !contextOf(done).includes("{{"));
   });
 
+  test("a held contract goes out once, a switch names the one it replaced, and off is said out loud", () => {
+    const session = sid();
+    setSlot({ axis: "mode", session, name: "copilot" });
+    assert.match(contextOf(prompt(session, "one")), /Active mode: copilot[\s\S]*Standing reminder/);
+    const held = contextOf(prompt(session, "two"));
+    assert.ok(!held.includes("Standing reminder") && held.includes("Ground rule prose, which outranks"), held);
+    setSlot({ axis: "mode", session, name: "tdd" });
+    const swapped = contextOf(prompt(session, "three"));
+    assert.ok(
+      swapped.includes("The mode switched from copilot to tdd") && swapped.includes("Standing reminder"),
+      swapped,
+    );
+    setSlot({ axis: "mode", session, name: "off" });
+    assert.ok(contextOf(prompt(session, "four")).includes("The mode tdd is off now"));
+    assert.ok(!contextOf(prompt(session, "five")).includes("off now"));
+  });
+
+  test("a rule the user loads as memory is never injected again, and its reminder still comes every turn", () => {
+    const session = sid();
+    const settings = write(join(config, "mode", "config.json"), JSON.stringify({ memory: ["prose"] }));
+    try {
+      const first = contextOf(prompt(session, "carry on"));
+      assert.ok(
+        /Ground rules/.test(first) &&
+          !first.includes("## Prose") &&
+          first.includes("Ground rule prose, which outranks"),
+        first,
+      );
+    } finally {
+      write(settings, "{}");
+    }
+  });
+
   test("the turn a mode is entered on carries more than the turn after it, and a resume earns the whole contract again", () => {
     const session = sid();
     prompt(session, "one");

@@ -25,6 +25,7 @@ import {
   declared,
   deliverable,
   dropSlot,
+  forgetAnnounced,
   held,
   readState,
   redStanding,
@@ -191,6 +192,8 @@ export function exitSlot({ axis, session }: SlotArgs): string | undefined {
   if (!name || name === AUTO) return undefined;
   const back = sourceOf(axis, session) === "chosen" ? AUTO : OFF;
   dropSlot(axis, session);
+  // The ended line the hook prints already told the model, so nothing is left to announce.
+  forgetAnnounced(axis, session);
   if (back === AUTO) writeState(require(statePath(session, `.${axis}`)), AUTO);
   return `${axis} set to ${back}`;
 }
@@ -218,7 +221,7 @@ export function red(session?: string): string | undefined {
 
 export function clear({ session, announced = false }: { session?: string; announced?: boolean }): void {
   if (announced) {
-    for (const axis of AXES) removeState(statePath(session, `.${axis}.announced`));
+    for (const axis of AXES) forgetAnnounced(axis, session);
     // A resume or a compact drops the injected ground rules exactly as it drops a contract.
     const rules = statePath(session, ".rules");
     if (!rules) return;
@@ -231,6 +234,7 @@ export function clear({ session, announced = false }: { session?: string; announ
   }
   for (const axis of AXES) {
     dropSlot(axis, session);
+    forgetAnnounced(axis, session);
     // The settled mark goes too, so a cleared conversation is one a pin may fill again.
     removeState(settled(axis, session));
   }

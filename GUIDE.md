@@ -40,13 +40,13 @@ A `UserPromptSubmit` hook runs _before_ Claude reads your message. It performs a
 
 What gets injected depends on whether this is the first prompt or a later one:
 
-<p align="center"><img src="assets/injection.svg" alt="On the first prompt of a conversation Claude receives the ground rules once, the whole contract of any slot just set, and the message. On every later turn it receives only each held contract's four-line standing reminder and the message." width="900"></p>
+<p align="center"><img src="assets/injection.svg" alt="On the first prompt of a conversation Claude receives the ground rules once, the whole contract of any slot just set, and the message. On every later turn it receives only what moved, such as a pipeline step, the four-line prose reminder and the message, and a contract comes again only when it is switched." width="900"></p>
 
-So Claude is never remembering which mode it is in. **Every single turn, it gets told again.**
+So Claude is told a contract once, whole, and **told again the moment it changes**: a switch arrives as a line naming the contract it replaced followed by the new one, and a slot turned off arrives as a line saying its contract no longer applies. A resume or a compact drops the injected text, so the next prompt gets the whole contract again.
 
 ### The pipeline is told again too
 
-Every mode declares its steps in front matter, `steps: read, fork?@question, ground, …`, and that pipeline is what the status line draws. It is also state. `mode mode step` answers where you stand, and the same answer is injected under the standing reminder on every turn:
+Every mode declares its steps in front matter, `steps: read, fork?@question, ground, …`, and that pipeline is what the status line draws. It is also state. `mode mode step` answers where you stand, and the same answer is injected on the turn it moves:
 
 ```text
 Pipeline, step 3 of 7: ground.
@@ -56,7 +56,7 @@ Record with `mode mode done ground`, or say which step you are on.
 
 A step advances two ways. The `@event` suffix names the moment that closes it, and most of those are observable, so a hook records them from the tool call itself: asking you a question, spawning an agent, writing an artifact, running a test, going red, committing. Nobody has to remember. Steps with no event are the thinking ones, and those are declared, which is what the injected line asks for. A diagram that stops moving is therefore either work that stalled or a step nobody recorded, and the line above tells you which.
 
-That is why a standing reminder is capped at four lines. Two slots held at once give eight injected lines per turn, which is roughly the ceiling before a standing block reads as background noise and stops being seen. A contract body can run to any length, because it is read once. Only the block that repeats is rationed.
+A contract body can run to any length, because it is read once and comes again only on a switch, a resume or a compact. A standing reminder is still capped at four lines, because it is what the hook's preview carries when an injection runs over Claude Code's 10,000-character cap, and the one block that does repeat, the outranking rule's, is rationed the same way.
 
 ### A switch on its own never reaches Claude
 
@@ -92,7 +92,7 @@ Seven ship with the plugin:
 
 A rules file needs only `name` and `summary` in its front matter. Drop a file with the same name into your own rules directory to replace a shipped one, or one with an empty body to silence it.
 
-**One rule outranks every contract.** A contract's four-line reminder comes back every turn while a ground rule is told once, so over a long conversation the contract wins by repetition, which is how a teaching style once talked Claude into glossaries and recaps the prose rule forbids. A rules file carrying `outranks: contracts` closes that gap: its own `## Standing reminder` is restated on every turn, after the mode's and the style's, under a line saying it wins wherever they disagree. `prose` is the one that ships with it, so human prose holds in every mode, style and skill.
+**One rule outranks every contract.** A teaching style once talked Claude into glossaries and recaps the prose rule forbids, because the contract's voice outlasted a rule told once. A rules file carrying `outranks: contracts` closes that gap: its own `## Standing reminder` is restated on every turn, after anything the mode and the style sent, under a line saying it wins wherever they disagree. `prose` is the one that ships with it, so human prose holds in every mode, style and skill.
 
 ---
 
@@ -309,21 +309,9 @@ Say you want a careful debugging session, explained as you go, because you are l
 /mode:debug /style:edu
 ```
 
-Both land in one message. On that prompt Claude receives the ground rules whole, the entire `debug` contract, the entire `edu` contract, and your message. On every turn after, it receives only this:
+Both land in one message. On that prompt Claude receives the ground rules whole, the entire `debug` contract, the entire `edu` contract, and your message. On a turn where nothing moved, it receives only this:
 
 ```text
-Active mode: debug
-- Instrument before guessing. The first move is visibility, not a fix.
-- Nothing is found until it reproduces on demand, by script or by your own hand.
-- Correct fix by default; workaround only when it is burning, and say which.
-- Branch, explain why in an artifact, open the MR on the yes, then leave.
-
-Active style: edu
-- The user asked to understand, so explain it the way a friend who knows it would tell you, and never dress a status update as a lesson.
-- Top down: the thing itself, one everyday comparison said in passing, then the detail, with a new term explained where it first comes up.
-- Draw what has parts or flow, and talk through the rest in connected sentences with no labelled scaffolding like Big picture or Takeaway.
-- End on the one thing to keep, said once, never a recap of what you just explained.
-
 Ground rule prose, which outranks any mode, style or skill that says otherwise.
 - Write every sentence like a colleague typing to one they like: the settling fact first, then stop, with no recap and no offer to do more.
 - Join related facts with because, so and which instead of chopping them into verdict lines, and never announce what comes next.
@@ -331,7 +319,7 @@ Ground rule prose, which outranks any mode, style or skill that says otherwise.
 - No em dash or spaced dash between clauses, no symbols in prose, sureness said through the verb, and nothing casual added to sound human.
 ```
 
-Twelve lines, the prose reminder last so it has the final word. That is the whole ongoing cost, and it is why the cap matters.
+Five lines, the prose reminder, so it has the final word. That is the whole ongoing cost. A turn where the pipeline moves adds its position line under `Active mode: debug`, and a switch to another mode adds a line naming `debug` as the contract it replaced, then the whole new one.
 
 When you eventually type `/approve <slug>` on the explainer, `debug` reaches its exit condition and clears itself. The `edu` style is untouched, because the axes never read each other.
 
@@ -375,7 +363,7 @@ The diagrams in this guide are generated by `node scripts/draw-contracts.ts`, so
 ## In short
 
 - **Two slots**, one for how the work runs and one for how it sounds, independent in both directions.
-- **A hook, not memory.** The contract is injected into every prompt: whole on the turn you switch, then four standing lines forever after.
+- **A hook, not memory.** The contract is injected whole on the turn you switch, and again only when it changes, so a held contract costs nothing per turn.
 - **A third tier**, ground rules, always on and injected once per conversation.
 - **`auto`** lets contracts be chosen from what you write, with a tilde marking anything you did not type yourself.
 - **A pin** is the answer that never changes, held by a directory rather than by a conversation, marked with an equals sign.

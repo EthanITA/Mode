@@ -363,7 +363,7 @@ The full contract, at whatever length it needs. Read once, at the switch.
 
 The last two are the flags with mechanisms behind them, and any contract may declare either. A flag is **on** whenever the key is present and does not explicitly say no.
 
-The four-line cap on `## Standing reminder` is real: it is the only part that repeats, on every prompt, for as long as the slot is held. A file of yours named the same as a shipped contract wins.
+The four-line cap on `## Standing reminder` is real: it is what the hook's preview carries when an injection runs over Claude Code's 10,000-character cap. The contract itself goes out whole once and again only on a switch, a resume or a compact. A file of yours named the same as a shipped contract wins.
 
 There is a third kind of file too, `~/.claude/mode/rules/`, holding **ground rules** that are always on and injected once per conversation rather than switched. The [guide](GUIDE.md#ground-rules-the-third-kind-of-file) covers those.
 

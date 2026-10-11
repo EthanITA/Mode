@@ -50,7 +50,7 @@ Every spelling reaches the same slot, because the hook reads the raw prompt befo
 
 Every contract also has a command file of its own, written by `mode sync` from the folders, so the palette hints the names rather than asking anyone to recall them. A mode ships inside the plugin's `commands/` and arrives as `/mode:tdd`. A style cannot: the plugin namespace would offer it as `/mode:style:ship`, which is exactly the palette noise this layout removes, so sync writes styles into the user commands directory as `style:<name>.md` and they arrive bare, as `/style:ship`.
 
-Read the contract once, at the moment of the switch. It runs to whatever length it needs. From then on the standing reminder carries it.
+Read the contract once, at the moment of the switch. It runs to whatever length it needs. From then on nothing repeats it, so keep working under it until a line says the slot switched or went off.
 
 **There is one case where you write the approval record yourself, and it is not a loophole.** A mode may ask for the yes through `AskUserQuestion` instead, which is what `copilot` does at its Approval gate. No hook can see a click, so the mode that asked runs `mode approve <slug>` once approve is picked, and says that it did. That is the weaker of the two records. The slash command comes from a human message and no agent can produce one, while this one rests on your good faith. What is banned is writing an approval that was never given. Never reach for `mode approve` to unblock yourself, to retry a dispatch a gate refused, or because the gate is in your way.
 
@@ -114,21 +114,21 @@ When a contract clears itself, say so in that turn. One that ends in silence is 
 
 ## It sticks by mechanism, not by memory
 
-The same `UserPromptSubmit` hook injects what is held into every prompt. On the turn a contract is entered you get the whole file. On every turn after that you get its `## Standing reminder` block and nothing more. You are not remembering the contract. Each turn, you are told it again.
+The same `UserPromptSubmit` hook injects what is held. On the turn a contract is entered you get the whole file, and after that nothing of it until it changes, except a pipeline position or a deliverable that moved. A switch arrives as a line naming the contract it replaced, then the whole new one, and a slot turned off arrives as a line saying its contract no longer applies. A resume or a compact drops the injected text, so the resume hook re-arms the whole contract for the next prompt.
 
-That is why a standing block is capped at four lines. Two slots means up to eight injected lines per turn, which is the ceiling before a standing block reads as background and stops being seen. One rule per symptom, because a wall of doctrine is a wall.
+A standing block is still capped at four lines, because it is what the hook's preview carries when an injection runs over Claude Code's 10,000-character cap, and what an outranking ground rule restates every turn. One rule per symptom, because a wall of doctrine is a wall.
 
 ## The ground rules, a third kind of file
 
 Beside the two slots sits a set that is not switched at all. `skills/mode/rules/*.md`, layered under `~/.claude/mode/rules/` exactly as contracts are, is injected whole on the first prompt of every conversation, ahead of any contract, and then never again. The injected block says so itself, so keep applying those rules without being reminded. A resume or a compact drops the injected text, and the same `clear --announced` the resume hook already runs re-arms it.
 
-Ground rules have no slot, no chip and no palette entry, because there is nothing to choose: they are always on. A rules file carries front matter with only `name` and `summary`. A user file sharing a shipped stem replaces that rule, and one with an empty body silences it, which is the supported way to opt out of a shipped rule without touching the plugin.
+Ground rules have no slot, no chip and no palette entry, because there is nothing to choose: they are always on. A rules file carries front matter with only `name` and `summary`. A user file sharing a shipped stem replaces that rule, and one with an empty body silences it, which is the supported way to opt out of a shipped rule without touching the plugin. A rule someone already loads as memory, through an `@` import in a CLAUDE.md, goes in the `memory` list of `~/.claude/mode/config.json`, so its body is never injected a second time while its `outranks` reminder still comes from the file.
 
 The point of the tier is migration. Standing text that lives in a CLAUDE.md is paid for on every request of every session; a ground rule costs one injection per conversation. Anything in a personal rule file that is not machine-specific belongs here eventually.
 
 A rules file may also carry a `when:` pattern, alternatives split on a vertical bar exactly as `enter-when` is. Such a scoped rule stays out of the first prompt and injects once, in the same conversation-long voice, on the first prompt that matches it. The shipped `artifact` rule works this way: the HTML theming contract arrives the first time a page is asked for, and never costs a token in a conversation that builds none.
 
-A rules file carrying `outranks: contracts` is told whole like any other, and then its own `## Standing reminder`, capped at four lines, is restated on every turn after the mode's and the style's, under a line saying it wins wherever they disagree. That exists because a contract's reminder repeats every turn while a ground rule is told once, so without it the contract wins by repetition. The shipped `prose` rule carries the flag, which is what keeps human prose in force under every mode, style and skill.
+A rules file carrying `outranks: contracts` is told whole like any other, and then its own `## Standing reminder`, capped at four lines, is restated on every turn after anything the mode and the style sent, under a line saying it wins wherever they disagree. That exists so the rule that outranks the contracts is the last word before every reply, however long ago the contract was told. The shipped `prose` rule carries the flag, which is what keeps human prose in force under every mode, style and skill.
 
 ## The guards
 

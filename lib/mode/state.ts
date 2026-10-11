@@ -57,10 +57,14 @@ export function settled(axis: Axis, sid?: string): string | undefined {
 }
 
 export function dropSlot(axis: Axis, sid?: string): void {
-  for (const suffix of ["", ".chosen", ".pinned", ".announced", ".done"])
-    removeState(statePath(sid, `.${axis}${suffix}`));
+  // .announced stays, so the next prompt can tell the model the contract it worked under is gone.
+  for (const suffix of ["", ".chosen", ".pinned", ".done"]) removeState(statePath(sid, `.${axis}${suffix}`));
   // An approval outlives its mode only as a gate nobody meant to leave open, and so does a north star.
   if (axis === "mode") for (const suffix of [".approved", ".deliverable"]) removeState(statePath(sid, suffix));
+}
+
+export function forgetAnnounced(axis: Axis, sid?: string): void {
+  for (const suffix of [".announced", ".said"]) removeState(statePath(sid, `.${axis}${suffix}`));
 }
 
 export function deliverable(sid?: string): Deliverable {

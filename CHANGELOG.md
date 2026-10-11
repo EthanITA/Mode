@@ -222,6 +222,15 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **A held contract goes out once, and again only when it changes.** The prompt hook no longer restates a
+  mode's or a style's standing reminder every turn: an unchanged turn carries only a pipeline position or
+  deliverable that moved, plus the outranking rule's reminder. A switch arrives as "The mode switched from X
+  to Y. The X contract no longer applies", then the whole new contract, and a slot turned off arrives as a
+  line saying so. A resume or a compact still re-arms the whole contract. In measured sessions the
+  per-prompt repeat was about 800 tokens, and every copy stayed in context until the next compaction.
+- **A ground rule already loaded as memory is not injected again.** List its stem under `memory` in
+  `~/.claude/mode/config.json`, such as `"memory": ["prose"]` for a prose rule a CLAUDE.md imports, and the
+  first prompt skips its body while its `outranks` reminder still comes from the file every turn.
 - **The notes column shows only on a routed page or a fullscreen sheet, and ⌘↵ sends the notes.** On a face
   the sheet is too narrow for it, so notes stay in the tray until the page grows. ⌘↵ does what Send notes to
   Claude does, unless a note box already took the keystroke to save.
