@@ -12,120 +12,49 @@ loops: refactor>red
 
 # TDD mode
 
-One rule holds the whole mode up. No implementation line exists before a test that failed for the right reason.
+One rule holds the mode up: no implementation line exists before a test that failed for the right reason. Written loosely it degrades into writing a test at some point, which needs no mode; written tightly it forces three decisions before the first assertion and one discipline inside every lap.
 
-Everything below exists to make that rule mean something. Written loosely it degrades into writing a test at some point, which is ordinary practice and needs no mode. Written tightly it forces three decisions before the first assertion and one discipline inside every lap.
+`enter-when` matches somebody asking for the discipline by name, the term of art and the phrases people type, and none is a bare `test` or `tests` on purpose: "the tests fail" is a symptom for debugging, and "add tests for the parser" may be a backfill over working code, useful but not this. `exit-when: manual`: only `/mode off` ends it, because a session carries several behaviours and clearing on the first green would leave every later lap unprotected.
 
-## When it starts and when it ends
+For each behaviour, enumerate cases from structure rather than memory, reduce to the minimum set and pick a direction by grepping for an existing caller, once and in that order, before any test is written. Then lap: red (watch the assertion fail, and fix a test that died on an import or a typo), green with the least code, refactor with the suite green, and the next behaviour starts a new red, until the minimum set is green and nothing is left to redden.
 
-`enter-when` matches somebody asking for the discipline by name. The alternatives are the term of art and the phrases people actually type, and none of them is a bare `test` or `tests`. That omission is deliberate twice over. "The tests fail" is a symptom report, which is debugging work rather than this. "Add tests for the parser" may be a backfill over code that already works, which is useful but is not this either.
+## 1. Enumerate
 
-`exit-when: manual`, so only `/mode off` ends it. One session usually carries several behaviours, and a contract that cleared itself on the first green would leave every later lap unprotected.
+Never list cases from memory. Induct on the behaviour's structure along five axes:
 
-## The shape of it
+- **What grows**: the quantity that gets larger each step (items in a list, tree depth, retries, bytes buffered), with the base case at zero and the step from n to n plus one.
+- **Degenerate cases**: empty, exactly one, absent, the maximum, one past it, anything a loop can run zero times.
+- **Preconditions of each transition**: every edge of anything with states has something that must hold before it is legal, earning two cases, taken when it should be and refused when it should not.
+- **Termination**: what stops the loop, and what happens when that never arrives.
+- **Out-of-domain events**: the unplanned input in the unplanned state, a cancel during a retry, a second call before the first returned.
 
-```mermaid
-flowchart TD
-    S([A behaviour to build]) --> E[Enumerate: cases from structure, not memory]
-    E --> Rd[Reduce to the minimum set]
-    Rd --> Di[Direction: grep for an existing caller]
-    Di --> R[Red: watch the assertion fail]
-    R -- import error or typo, a broken test --> R
-    R -- failed on the assertion --> G[Green: the least code]
-    G --> F[Refactor, suite staying green]
-    F -- next behaviour --> R
-    F -- the minimum set is green --> D([Done, nothing left to redden])
-```
+The edge-induction skill ships with this plugin, and this is the gate that loads it.
 
-The three gates run once per behaviour; the lap at the bottom runs until the behaviours run out.
+## 2. Reduce
 
-## The three gates, then the cycle
+Two cases driving the same branch to the same observable outcome collapse into one test. Observable means what a caller can see: a return value, a raised error, a recorded side effect. Internal state no caller can reach deserves no test. A suite hitting one branch nine ways costs nine times the maintenance and catches the same one bug, so keep the clearest case, drop the rest, and note in one line what collapsed into what, keeping the coverage claim honest. Exhaustive was the input; the minimum set is the target.
 
-Enumerate, Reduce and Direction happen once per behaviour, in that order, before a single test is written. Then the cycle runs.
+## 3. Direction
 
-### 1. Enumerate
+Outside-in or inside-out turns on whether the contract is already frozen, and one grep for an existing caller of the identifier answers it. Nothing found means it is not fixed yet, so go outside-in: the test names the interface before it exists, putting design pressure on the signature while moving it is free. A caller found means it is frozen, so go inside-out with real objects, because a mock of a frozen contract only re-asserts what you believe. Say which you took and what the grep found, so the choice can be argued with later.
 
-Do not list cases from memory. Induct on the structure of the behaviour, along these five axes.
+## 4. Red, green, refactor
 
-- **What grows.** Name the quantity that gets larger with each step: items in the list, depth of the tree, number of retries, bytes buffered. Then write the base case where it is zero and the step that takes n to n plus one.
-- **Degenerate cases.** Empty, exactly one, absent, the maximum, and the value one past the maximum. Anything a loop can run zero times.
-- **Preconditions of each transition.** For anything with states, every edge has something that must be true before taking it is legal. Each edge earns two cases: taken when it should be, refused when it should not.
-- **Termination.** What stops the loop, and what happens when the stopping condition never arrives.
-- **Out-of-domain events.** The input nobody planned for, arriving in the state nobody planned for. A cancel during a retry. A second call before the first one returned.
+One behaviour per lap, since a lap covering three has three chances to go green for the wrong reason. **Red**: write the test, run it, read the failure, which must be on the assertion. **Green**: the least code that passes, not the general or elegant version, because generality before a second case is a guess wearing a pattern's name. **Refactor**: clean up with the suite green, adding no behaviour, since new behaviour needs a new red.
 
-The edge-induction skill ships with this plugin; this is the gate that loads it.
+**Red means the assertion fired.** A test dying on an import error, a missing fixture, a syntax error or a typo in a name is broken, not red, proving only that the file does not run. Read the failure text before writing implementation: a `ModuleNotFoundError`, a `NameError` in the test's own scaffolding or a collection error means fix the test and run again, and only an assertion message describing the behaviour you meant to pin passes the gate. A test passing on its first run is not red either: the behaviour already exists, so find out what it really asserts, or the assertion is vacuous. The failure message is part of the test, so a stranger reading that line alone learns what broke, and `assert result == 3` is worse than one naming the behaviour.
 
-### 2. Reduce
-
-An exhaustive list is not yet the list you write. Two cases that drive the same branch to the same observable outcome collapse into one test.
-
-Observable outcome means what a caller can see: the return value, the error raised, or a side effect that got recorded. Internal state no caller can reach does not count and does not deserve a test.
-
-The reason is cost. A suite hitting one branch nine different ways costs nine times the maintenance and catches the same single bug. Keep the case that reads clearest, drop the rest, and note in one line what collapsed into what, so the coverage claim stays honest.
-
-The list you finish with is the minimum set. Exhaustive was the input, not the target.
-
-### 3. Direction
-
-Outside-in or inside-out, and the deciding question is whether the contract is already frozen. One grep for an existing caller of the identifier answers it.
-
-| The grep finds | The contract is | Go         | Because                                                                                                                                   |
-| -------------- | --------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Nothing        | Not fixed yet   | Outside-in | The test names the interface before it exists, so the design pressure lands on the signature while moving it is still free.               |
-| A caller       | Frozen          | Inside-out | Somebody already depends on this shape, so real objects beat mocks. A mock of a frozen contract only re-asserts what you already believe. |
-
-Say which direction you took and what the grep found. That one sentence is what lets the choice be argued with later.
-
-### 4. Red, Green, Refactor
-
-One behaviour per lap. A lap covering three behaviours has three chances to go green for the wrong reason.
-
-- **Red.** Write the test, run it, and read the failure. It has to fail on the assertion.
-- **Green.** The least code that turns it green. Not the general version and not the elegant one. Generality that arrives before a second case is a guess wearing a pattern's name.
-- **Refactor.** With the suite green, clean up. No new behaviour arrives in this step. A new behaviour needs a new red first.
-
-## What red actually means
-
-This is the sentence the mode lives or dies on, so it gets its own section.
-
-**Red means the assertion fired.** A test that dies on an import error, a missing fixture, a syntax error or a typo in a name is broken rather than red. It proves the file does not run, which was never in question.
-
-Read the failure text before writing a line of implementation. A `ModuleNotFoundError`, a `NameError` on the test's own scaffolding, or a collection error means you have a broken test. Fix it and run again. Only an assertion message describing the behaviour you meant to pin counts as the gate being passed.
-
-A test that passes on its very first run is also not red. Either the behaviour already exists, in which case find out what the test is really asserting, or the assertion is vacuous and pins nothing at all.
-
-The failure message is part of the test. A stranger reading only that line should learn what broke, so `assert result == 3` is worse than a message naming the behaviour.
-
-## What changes, turn to turn
-
-| Ordinarily                                     | In this mode                                                           |
-| ---------------------------------------------- | ---------------------------------------------------------------------- |
-| A test is written once the code works          | No implementation line exists before a test that was watched failing   |
-| Cases come to mind while writing               | Cases come from a structured pass, then get reduced to the minimum set |
-| Mocks stand in for whatever is inconvenient    | Direction is decided first, and a frozen contract gets real objects    |
-| "The tests pass"                               | "It failed on the assertion with this message, then passed"            |
-| Refactoring and new behaviour ride in together | Refactoring happens green, and new behaviour needs a new red           |
+So a test is never written after the code works, cases come from a structured pass then a reduction, a frozen contract gets real objects rather than convenient mocks, and the report is "it failed on the assertion with this message, then passed", never just "the tests pass". Refactoring happens green and never rides with new behaviour.
 
 ## A hook enforces this
 
-The `no-code-without-red` flag in the front matter above arms a guard, and the guard refuses the edit rather than reminding you about it. Writing the implementation first is not discouraged here. It is denied.
+`no-code-without-red` arms a guard that refuses the edit rather than reminding you: writing the implementation first is denied, not discouraged. It judges only a file whose extension carries behaviour, outside a test directory, with a name that is not test shaped. It never judges Markdown, JSON, YAML, CSS, fixtures or any test file wherever it lives, so the test is always writable. It opens on one condition, a suite the recorder watched exit non-zero with no passing run after it, the red read off the run rather than a claim. A green closes the lap, and the next implementation edit waits for a new red.
 
-What the guard watches is narrow and worth knowing exactly.
+- **The guard cannot see why a run failed.** An import error exits non-zero and opens it, so keeping red meaning the assertion is still yours. It stops the common failure, skipping the test entirely, without certifying the assertion fired.
+- **The test file is never refused**, since writing, fixing and rerunning it is the only way to reach a red.
+- **It can be switched off.** `"guards": "off"` in `~/.claude/mode/config.json` disarms every guard and `/mode off` ends the mode, neither a loophole to reach for mid lap, but a way to drop out loud a rule that is wrong for this repo rather than work around it.
 
-| It judges                                                                       | It never judges                                                        |
-| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| A file whose extension carries behaviour, in a directory that is not a test one | Markdown, JSON, YAML, CSS, fixtures, anything the rule was never about |
-| A file whose name is not test shaped                                            | A test file, wherever it lives, so the test is always writable         |
-
-It opens on one condition: a suite the recorder watched exit non-zero, with no passing run recorded after it. That is the red the mode already asks for, read off the run rather than off a claim. A green closes the lap, and the next implementation edit waits for a new red.
-
-Three things follow, and each is deliberate.
-
-- **The guard cannot see why a run failed.** An import error exits non-zero and opens the gate, so the sentence below about what red means is still yours to keep. The mechanism stops the common failure, which is skipping the test entirely; it does not certify the assertion fired.
-- **The test file is never refused.** You can always write, fix and rerun the test, which is the only way to reach a red in the first place.
-- **It can be switched off.** `"guards": "off"` in `~/.claude/mode/config.json` disarms every guard at once, and `/mode off` ends the mode. Neither is a loophole to reach for mid lap. Both exist so a rule that is wrong for this repo can be dropped out loud rather than worked around.
-
-`mode why` prints whether the gate is open right now and what would open it.
+`mode why` prints whether the gate is open now and what would open it.
 
 ## Standing reminder
 
