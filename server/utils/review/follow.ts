@@ -16,7 +16,7 @@ const SCRIPT = `if application "Terminal" is running then
   tell application "Terminal"
     repeat with w in windows
       try
-        return custom title of selected tab of w
+        return (tty of selected tab of w) & linefeed & (custom title of selected tab of w)
       end try
     end repeat
   end tell
@@ -66,12 +66,25 @@ export function onFollow(listener: Listener): () => void {
   };
 }
 
-function frontTitle(): Promise<string> {
+function run(file: string, args: string[]): Promise<string> {
   return new Promise((resolve) => {
-    execFile("osascript", ["-e", SCRIPT], { timeout: 2000 }, (error, stdout) =>
-      resolve(error ? "" : String(stdout).trim()),
-    );
+    execFile(file, args, { timeout: 2000 }, (error, stdout) => resolve(error ? "" : String(stdout)));
   });
+}
+
+// A tab keeps its title after claude exits, so only a claude holding the tab's terminal makes the title mean a conversation.
+export function hasForegroundClaude(psOutput: string): boolean {
+  return psOutput.split("\n").some((line) => {
+    const [stat = "", command = ""] = line.trim().split(/\s+/);
+    return stat.includes("+") && command.split("/").pop() === "claude";
+  });
+}
+
+async function frontTitle(): Promise<string> {
+  const [tty = "", ...title] = (await run("osascript", ["-e", SCRIPT])).trim().split("\n");
+  if (!tty) return "";
+  const processes = await run("ps", ["-t", tty.replace("/dev/", ""), "-o", "stat=,command="]);
+  return hasForegroundClaude(processes) ? title.join("\n").trim() : "";
 }
 
 // Claude Code prefixes a busy session's title with a spinner glyph that changes on every read.
