@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import { test } from "node:test"
 import { argOf, noteOf, readOut, withoutReminders } from "./speaker.ts"
 
-test("a task notification is a system note, not something Marco typed", () => {
+test("a task notification is a system note, not something the user typed", () => {
   const raw = "<task-notification>\n<task-id>bosn7ubs9</task-id>\n<status>completed</status>\n</task-notification>"
   assert.deepEqual(noteOf(raw), { label: "Task(bosn7ubs9)" })
 })

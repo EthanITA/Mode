@@ -90,7 +90,7 @@ export function boardOf(key: string): BoardSummary {
   try {
     files = readdirSync(dir);
   } catch {
-    return { tasks: [], count: 0, waitingOnMarco: 0, order: [] };
+    return { tasks: [], count: 0, waitingOnUser: 0, order: [] };
   }
   const unranked = files
     .filter((file) => file.endsWith(".json"))
@@ -100,7 +100,7 @@ export function boardOf(key: string): BoardSummary {
   return {
     tasks,
     count: tasks.filter((task) => !task.done).length,
-    waitingOnMarco: tasks.filter((task) => task.category === "USER" && !task.done).length,
+    waitingOnUser: tasks.filter((task) => task.category === "USER" && !task.done).length,
     order: sideOf(key).order.filter((id) => tasks.some((task) => task.id === id)),
   };
 }

@@ -43,7 +43,7 @@ const doneTasks = computed(() => {
     .sort((a, b) => Number(a.id) - Number(b.id));
 });
 const count = computed(() => board.summary.value?.count ?? 0);
-const waiting = computed(() => board.summary.value?.waitingOnMarco ?? 0);
+const waiting = computed(() => board.summary.value?.waitingOnUser ?? 0);
 const pct = computed(() => {
   const total = tasks.value.length;
   return total ? Math.round(((total - count.value) / total) * 100) : 0;
@@ -179,7 +179,7 @@ function onEnter(event: KeyboardEvent): void {
         Board
         <span class="bar"><i class="fill" :style="{ width: `${pct}%` }" /></span>
         <span class="count mono-meta">{{ count }}</span>
-        <span v-if="waiting" class="waiting mono-meta"> <i class="dot" />{{ waiting }} on Marco </span>
+        <span v-if="waiting" class="waiting mono-meta"> <i class="dot" />{{ waiting }} on you </span>
         <span class="chevron"><UiIcon :icon="ChevronUp" size="xs" /></span>
       </button>
     </template>

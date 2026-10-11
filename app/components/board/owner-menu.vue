@@ -17,7 +17,8 @@ function choose(owner: string, close: () => void): void {
     </template>
     <template #default="{ close }">
       <div class="menu">
-        <UiMenuItem @click="choose('Marco', close)">Marco</UiMenuItem>
+        <!-- Stored as "user" because the board note to Claude would read "You" as Claude itself. -->
+        <UiMenuItem @click="choose('user', close)">You</UiMenuItem>
         <UiMenuItem @click="choose('Claude', close)">Claude</UiMenuItem>
         <UiMenuItem v-for="agent in agents" :key="agent.name" @click="choose(agent.name, close)">
           {{ agent.name }}

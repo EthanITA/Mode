@@ -15,7 +15,7 @@ export interface BoardTask {
 export interface BoardSummary {
   tasks: BoardTask[];
   count: number;
-  waitingOnMarco: number;
+  waitingOnUser: number;
   order: string[];
 }
 

@@ -29,7 +29,7 @@ const ownerAgent = computed<SessionAgent | undefined>(() =>
   task.category === "USER" ? undefined : agents.find((agent) => agent.name === task.owner),
 );
 // UiPerson's "no hue" rule isn't reachable through plain UiAvatar's variant set, so initials
-// carry the distinction between agents; only self (Marco) gets the ink-fill "secondary" variant.
+// carry the distinction between agents; only the user gets the ink-fill "secondary" variant.
 const ownerInitials = computed(() => {
   if (task.category === "USER") return "ME";
   return (ownerAgent.value?.name ?? "")
@@ -40,7 +40,7 @@ const ownerInitials = computed(() => {
     .slice(0, 2);
 });
 const ownerLabel = computed(() => {
-  if (task.category === "USER") return "Marco";
+  if (task.category === "USER") return "You";
   return ownerAgent.value?.name ?? "Claude";
 });
 const taskId = computed(() => (task.id.startsWith("#") ? task.id : `#${task.id}`));

@@ -43,7 +43,7 @@ export function relativeAge(stamp?: string, now: number = Date.now()): string {
   return days === 1 ? "1 day" : `${days} days`;
 }
 
-/** "user" is the seed's own word for Marco; the design shows the author as YOU. */
+/** "user" is the seed's own word for the person at the keyboard; the design shows the author as YOU. */
 export function authorOf(by: string): string {
   return by === "user" ? "you" : by;
 }
