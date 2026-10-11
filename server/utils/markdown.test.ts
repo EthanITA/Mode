@@ -26,6 +26,13 @@ test("a mermaid fence is drawn as an svg whose block holds labels, with its CSS 
   assert.doesNotMatch(html, /googleapis/);
 });
 
+test("front matter that is not valid YAML is dropped and the body still draws", async () => {
+  const html = await Markdown.body("---\ndescription: A mode: a thing\n---\n\n# Title\n\nBody text.");
+  assert.match(html, /<h1[^>]*>Title<\/h1>/);
+  assert.match(html, /Body text\./);
+  assert.doesNotMatch(html, /A mode/);
+});
+
 test("a mermaid type the renderer cannot draw keeps its fenced source", async () => {
   const html = await Markdown.body('```mermaid\npie title Pets\n  "Dogs" : 386\n```');
   assert.match(html, /<code class="language-mermaid">/);

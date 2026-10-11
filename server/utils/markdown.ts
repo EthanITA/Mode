@@ -27,6 +27,7 @@ const DIAGRAM_CSS = `.diagram{--page-bg:var(--bg);overflow-x:auto}
 // The svg sets its own --bg, so the page's arrives through a bridge; --muted, --accent, --surface and --border inherit by name.
 const DIAGRAM = { bg: "var(--page-bg)", fg: "var(--ink)", transparent: true };
 const SVG_STYLE = /<style>([\s\S]*?)<\/style>/g;
+const FRONT_MATTER = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
 
 let houseCss: string | undefined;
 
@@ -105,6 +106,15 @@ async function sectionsOf(nodes: MdNode[]): Promise<string> {
   return css.size ? `${html}\n<style>${[...css].join("\n")}</style>` : html;
 }
 
+// A review's original is frozen, so front matter that is not valid YAML must still draw the body.
+async function nodesOf(markdown: string): Promise<MdNode[]> {
+  try {
+    return (await parse(markdown)).nodes;
+  } catch {
+    return (await parse(markdown.replace(FRONT_MATTER, ""))).nodes;
+  }
+}
+
 function readStyle(name: string): string {
   try {
     return readFileSync(join(pluginRoot(), "skills", "create-artifact", "assets", name), "utf8");
@@ -115,7 +125,7 @@ function readStyle(name: string): string {
 
 export const Markdown = {
   async body(markdown: string): Promise<string> {
-    return sectionsOf((await parse(markdown)).nodes);
+    return sectionsOf(await nodesOf(markdown));
   },
 
   async page({ ds, markdown, title }: Markdown.Page): Promise<string> {
