@@ -49,7 +49,7 @@ export function hashOf(text: string): string {
 }
 
 // What the conversation touched or what sits under its working directory, never an arbitrary file.
-function isReachable({ key, path }: { key: string; path: string }): boolean {
+export function isReachable({ key, path }: { key: string; path: string }): boolean {
   const root = cwdOf(key);
   return (!!root && isInside(root, path)) || filesOf({ key }).files.some((file) => file.path === path);
 }

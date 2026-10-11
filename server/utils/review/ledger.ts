@@ -18,6 +18,8 @@ interface Step {
   label: string;
 }
 
+export type ReviewOriginal = { kind: "blob"; file: string } | { kind: "created" } | { kind: "untracked" };
+
 interface Ledger {
   turn: number;
   files: Record<string, Tracked>;
@@ -81,9 +83,17 @@ function fileOf(dir: string, path: string, tracked: Tracked): ReviewFile | undef
     original,
     current,
     changes: Lines.changes(original, current),
-    ...(tracked.blob ? {} : { isNew: true as const }),
+    ...(tracked.blob ? { blob: tracked.blob } : { isNew: true as const }),
     ...(after ? { hash: hashOf(after.text) } : { isDeleted: true as const }),
   };
+}
+
+// Where a reviewed file's original is kept; a file the review does not track has none, and one it saw created never had one.
+export function originalOf({ key, path }: { key: string; path: string }): ReviewOriginal {
+  const dir = ledgerDirOf(key);
+  const tracked = dir ? ledgerOf(dir)?.files[path] : undefined;
+  if (!dir || !tracked) return { kind: "untracked" };
+  return tracked.blob ? { kind: "blob", file: join(dir, "blobs", tracked.blob) } : { kind: "created" };
 }
 
 export function snapshotOf({ key, live }: { key: string; live: boolean }): ReviewSnapshot {

@@ -6,6 +6,8 @@ export interface ReviewFile {
   changes: ReviewChange[];
   /** What a save names as its base, so an edit never lands over text a turn changed since. */
   hash?: string;
+  /** The original's id in the mod's store, which moves whenever accepting lines moves the original forward. */
+  blob?: string;
   isNew?: true;
   isDeleted?: true;
 }
