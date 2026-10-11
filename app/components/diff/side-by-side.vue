@@ -1,9 +1,17 @@
+<script lang="ts">
+type Base = { hash?: string; text: string };
+
+// Module-wide, so an unsaved edit outlives switching files.
+const drafts = new Map<string, { base: Base; text: string }>();
+</script>
+
 <script lang="ts" setup>
 import { Check, X } from "@lucide/vue";
 import { useIntersectionObserver } from "@vueuse/core";
 import type * as MonacoApi from "monaco-editor";
 import { EditorNotes, type LineSpan, type NoteAt, type Notes } from "~/utils/monaco/notes";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
+import type { FileSave } from "~~/shared/types/files";
 import type { ReviewFile } from "~~/shared/types/review";
 
 type Side = "old" | "new";
@@ -21,7 +29,7 @@ const {
   file: ReviewFile;
   isCompact?: boolean;
   isWrapped?: boolean;
-  /** History only reads; Review also picks lines and takes whole hunks. */
+  /** History only reads; Review also edits the right pane, picks lines and takes whole hunks. */
   isReadonly?: boolean;
   isBusy?: boolean;
   /** Fills a parent with a height of its own; otherwise the diff is as tall as its lines, up to --transcript-max-h. */
@@ -39,7 +47,13 @@ const ESTIMATE_MAX = 480;
 
 const chrome = useChrome();
 const tray = useTray();
+const sc = useSidecar();
+const review = useReview();
 const host = useTemplateRef<HTMLElement>("host");
+const isEditable = computed(() => !isReadonly && !file.isDeleted);
+const isDirty = ref(false);
+const isStale = ref(false);
+const isSaving = ref(false);
 // A turn can touch dozens of files, so a card builds its editor only once it scrolls near the view.
 const isNear = ref(isFill);
 const contentHeight = ref(
@@ -55,6 +69,7 @@ let pens: Notes[] = [];
 let picked: MonacoApi.editor.IEditorDecorationsCollection[] = [];
 let lastPicks = "";
 let modelSeq = 0;
+let base: Base = { hash: file.hash, text: textOf(file.current) };
 
 const shown = computed(() => homePath(file.path));
 // Every changed row once, with the key a pick names it by, whichever side it is read from.
@@ -78,7 +93,7 @@ function editorOf(side: Side): MonacoApi.editor.ICodeEditor | undefined {
 // Selecting lines in either pane is the pick, so line numbers, drags and shift-clicks all work as in any editor.
 function pickFrom(side: Side): void {
   const editor = editorOf(side);
-  if (isReadonly || !editor) return;
+  if (isReadonly || isDirty.value || !editor) return;
   const keys = new Set<string>();
   for (const selection of editor.getSelections() ?? []) {
     if (selection.isEmpty()) continue;
@@ -156,23 +171,78 @@ function paintNotes(): void {
   });
 }
 
+function markDirty(): void {
+  isDirty.value = !!models[1] && models[1].getValue() !== base.text;
+}
+
+// A draft is kept over what the disk now says, and the save that follows is refused until it is discarded.
+function followDisk(modified: MonacoApi.editor.ITextModel): void {
+  const next = textOf(file.current);
+  const mine = modified.getValue();
+  if (mine === base.text || mine === next) {
+    base = { hash: file.hash, text: next };
+    isStale.value = false;
+    if (mine !== next) modified.setValue(next);
+  } else isStale.value = file.hash !== base.hash;
+  markDirty();
+}
+
+async function save(): Promise<void> {
+  const modified = models[1];
+  const conversation = sc.sessionKey.value;
+  if (!modified || !conversation || !base.hash || !isEditable.value || !isDirty.value || isSaving.value) return;
+  const text = modified.getValue();
+  isSaving.value = true;
+  try {
+    const reply = await $fetch<FileSave>(`/api/sessions/${encodeURIComponent(conversation)}/files/content`, {
+      body: { base: base.hash, path: file.path, text },
+      method: "PUT",
+    });
+    if (reply.saved) {
+      base = { hash: reply.hash, text };
+      isStale.value = false;
+      markDirty();
+      chrome.toast(`Saved ${basename(file.path)}`);
+    } else if (reply.reason === "changed-on-disk") {
+      isStale.value = true;
+      chrome.toast("The file changed on disk since this diff loaded. Discard your edit to load it.", "destructive");
+    } else {
+      chrome.toast("That file can't be saved from here.", "destructive");
+    }
+  } catch {
+    chrome.toast("The save never reached the sidecar", "destructive");
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+function discard(): void {
+  base = { hash: file.hash, text: textOf(file.current) };
+  isStale.value = false;
+  models[1]?.setValue(base.text);
+}
+
 function setModels(): void {
   if (!api || !diff) return;
   const [original, modified] = models;
   if (original && modified) {
     if (original.getValue() !== textOf(file.original)) original.setValue(textOf(file.original));
-    if (modified.getValue() !== textOf(file.current)) modified.setValue(textOf(file.current));
+    followDisk(modified);
     return;
   }
   // The URI's extension picks the language, and a sequence keeps two cards of one file apart.
   const seq = ++modelSeq;
   const uriOf = (side: string): MonacoApi.Uri =>
     api!.Uri.from({ path: `/${side}-${seq}/${basename(file.path)}`, scheme: "inmemory" });
+  const draft = drafts.get(file.path);
+  if (draft) base = draft.base;
   models = [
     api.editor.createModel(textOf(file.original), Monaco.languageOf(file.path), uriOf("original")),
-    api.editor.createModel(textOf(file.current), Monaco.languageOf(file.path), uriOf("modified")),
+    api.editor.createModel(draft?.text ?? textOf(file.current), Monaco.languageOf(file.path), uriOf("modified")),
   ];
+  models[1]!.onDidChangeContent(markDirty);
   diff.setModel({ modified: models[1]!, original: models[0]! });
+  followDisk(models[1]!);
 }
 
 async function build(): Promise<void> {
@@ -191,7 +261,7 @@ async function build(): Promise<void> {
     lineNumbersMinChars: 3,
     minimap: { enabled: false },
     originalEditable: false,
-    readOnly: true,
+    readOnly: !isEditable.value,
     renderGutterMenu: false,
     renderMarginRevertIcon: false,
     renderOverviewRuler: false,
@@ -205,6 +275,7 @@ async function build(): Promise<void> {
   });
   setModels();
   const sides = [diff.getOriginalEditor(), diff.getModifiedEditor()];
+  sides[1]!.addCommand(api.KeyMod.CtrlCmd | api.KeyCode.KeyS, () => void save());
   pens = sides.map((editor, index) =>
     EditorNotes.attach({ api: api!, editor, onNote: (at) => openNote(index === 0 ? "old" : "new", at) }),
   );
@@ -253,8 +324,15 @@ watch(
   },
 );
 watch(notes, paintNotes);
+watch(isEditable, (editable) => diff?.updateOptions({ readOnly: !editable }));
+watch(isDirty, (dirty) => {
+  if (!isReadonly) review.isDirty.value = dirty;
+});
 
 onBeforeUnmount(() => {
+  if (!isReadonly) review.isDirty.value = false;
+  if (isDirty.value && models[1]) drafts.set(file.path, { base, text: models[1].getValue() });
+  else drafts.delete(file.path);
   for (const pen of pens) pen.dispose();
   diff?.dispose();
   for (const model of models) model.dispose();
@@ -282,7 +360,7 @@ onBeforeUnmount(() => {
           type="button"
           data-tip="Accept the hunk"
           data-tone="accept"
-          :disabled="isBusy"
+          :disabled="isBusy || isDirty"
           @click="emit('hunk', hunk.change, true, $event)"
         >
           <UiIcon :icon="Check" size="xs" />
@@ -292,12 +370,17 @@ onBeforeUnmount(() => {
           type="button"
           data-tip="Reject the hunk, then say why"
           data-tone="reject"
-          :disabled="isBusy"
+          :disabled="isBusy || isDirty"
           @click="emit('hunk', hunk.change, false, $event)"
         >
           <UiIcon :icon="X" size="xs" />
         </button>
       </div>
+    </div>
+    <div v-if="isDirty" class="draft" :data-stale="isStale">
+      <span class="mono-meta">{{ isStale ? "changed on disk" : "unsaved" }}</span>
+      <button class="chip focusable" type="button" @click="discard">Discard</button>
+      <button v-if="!isStale" class="chip focusable" type="button" :disabled="isSaving" @click="save">Save ⌘S</button>
     </div>
   </div>
 </template>
@@ -339,6 +422,40 @@ onBeforeUnmount(() => {
   position: absolute;
   right: 4px;
   z-index: 5;
+}
+
+.draft {
+  align-items: center;
+  background: var(--ed-bar);
+  border: 1px solid var(--ed-button);
+  border-radius: 999px;
+  bottom: 8px;
+  color: var(--ed-muted);
+  display: flex;
+  gap: 4px;
+  padding: 2px 4px 2px 10px;
+  position: absolute;
+  right: 14px;
+  z-index: 5;
+}
+
+.draft[data-stale="true"] {
+  color: var(--ed-remove);
+}
+
+.chip {
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 2px 8px;
+}
+
+.chip:disabled {
+  cursor: progress;
+  opacity: 0.5;
 }
 
 .arrow {

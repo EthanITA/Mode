@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { statSync, writeFileSync } from "node:fs";
 import type { FileAction, FileContent, FileSave, SessionFile, SessionFiles } from "../../../shared/types/files.ts";
 import { readTextSafe } from "../../../lib/files.ts";
+import { reviewEdited } from "../review/edited.ts";
 import { cwdOf, isInside } from "../tree/index.ts";
 import { turnsOf } from "./receipts.ts";
 
@@ -43,7 +44,7 @@ export function filesOf({ key }: { key: string }): SessionFiles {
   return { key, files };
 }
 
-function hashOf(text: string): string {
+export function hashOf(text: string): string {
   return createHash("sha1").update(text).digest("hex");
 }
 
@@ -89,5 +90,8 @@ export function saveContent({
   text: string;
   base: string;
 }): FileSave {
-  return isReachable({ key, path }) ? writeOver({ path, text, base }) : { saved: false, reason: "not-touched" };
+  if (!isReachable({ key, path })) return { saved: false, reason: "not-touched" };
+  const reply = writeOver({ path, text, base });
+  if (reply.saved) reviewEdited.emit(key);
+  return reply;
 }

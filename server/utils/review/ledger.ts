@@ -4,6 +4,7 @@ import type { ReviewFile, ReviewSnapshot } from "../../../shared/types/review.ts
 import { readTextSafe } from "../../../lib/files.ts";
 import { configRoot, sidecarHome } from "../../../lib/mode/paths.ts";
 import { Lines } from "../../../shared/utils/lines.ts";
+import { hashOf } from "../sessions/files.ts";
 
 // The sidecar mod's own limit: past it, or holding a NUL byte, a file is not reviewable.
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -81,7 +82,7 @@ function fileOf(dir: string, path: string, tracked: Tracked): ReviewFile | undef
     current,
     changes: Lines.changes(original, current),
     ...(tracked.blob ? {} : { isNew: true as const }),
-    ...(after ? {} : { isDeleted: true as const }),
+    ...(after ? { hash: hashOf(after.text) } : { isDeleted: true as const }),
   };
 }
 

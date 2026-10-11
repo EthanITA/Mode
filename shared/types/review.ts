@@ -4,6 +4,8 @@ export interface ReviewFile {
   original: string[];
   current: string[];
   changes: ReviewChange[];
+  /** What a save names as its base, so an edit never lands over text a turn changed since. */
+  hash?: string;
   isNew?: true;
   isDeleted?: true;
 }

@@ -13,6 +13,7 @@ export interface ReviewFace {
   decideUnder: (path: string, isAccept: boolean) => Promise<void>;
   file: MaybeComputed<ReviewFile>;
   isCompact: Ref<boolean>;
+  isDirty: Ref<boolean>;
   isWrapped: Ref<boolean>;
   listen: () => void;
   picks: Ref<string[]>;
@@ -34,6 +35,7 @@ export function useReview(): ReviewFace {
   const selected = useState<string | undefined>("rv:selected");
   const isCompact = useState("rv:compact", () => true);
   const isWrapped = useState("rv:wrapped", () => true);
+  const isDirty = useState("rv:dirty", () => false);
   const picks = useState<string[]>("rv:picks", () => []);
   const confirming = useState<string | undefined>("rv:confirming");
   const busy = useState("rv:busy", () => false);
@@ -172,6 +174,7 @@ export function useReview(): ReviewFace {
     decideUnder,
     file,
     isCompact,
+    isDirty,
     isWrapped,
     listen,
     picks,

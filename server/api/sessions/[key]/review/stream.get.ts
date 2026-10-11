@@ -1,5 +1,6 @@
 import { mkdirSync, watch, type FSWatcher } from "node:fs";
 import { basename } from "node:path";
+import { reviewEdited } from "~~/server/utils/review/edited";
 import { ledgerDirOf, legacyReviewHome, reviewHome, snapshotOf } from "~~/server/utils/review/ledger";
 import { keyOf } from "~~/server/utils/sessions/paths";
 import { liveEntries } from "~~/server/utils/sessions/registry";
@@ -35,7 +36,14 @@ export default defineEventHandler((event): Promise<void> => {
     }
   }
 
+  const settle = (): void => {
+    clearTimeout(timer);
+    timer = setTimeout(push, SETTLE_MS);
+  };
+  reviewEdited.on(key, settle);
+
   stream.onClosed(() => {
+    reviewEdited.off(key, settle);
     clearTimeout(timer);
     for (const watcher of watchers) watcher.close();
   });

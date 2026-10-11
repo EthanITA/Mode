@@ -79,6 +79,8 @@ useEventListener(
       return;
     }
     if (!(event.metaKey || event.ctrlKey) || event.altKey || event.key.toLowerCase() !== "z") return;
+    // An unsaved edit keeps ⌘Z for the editor's own undo.
+    if (review.isDirty.value) return;
     const target = event.target instanceof Element ? event.target : undefined;
     if (target?.closest("input, textarea, [contenteditable]") && !target.closest(".monaco-editor")) return;
     event.preventDefault();

@@ -79,6 +79,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   arrow keys, and double-click to reset. Every face shares one width (340 by default), so resizing it in
   Files carries over to Review, History and Artifacts, capped at half the face so a width kept from a
   wider window never squeezes the other pane.
+- **Review's right pane is editable, and the left stays read-only.** ⌘S saves through the same hash-guarded
+  endpoint as Files, so a turn that changed the file in the meantime is never overwritten; the diff
+  refreshes after a save, an unsaved edit survives switching files, and while one is open ⌘Z undoes
+  the edit and the hunk arrows and line picks wait. A deleted file and History stay read-only.
 - **History diffs between turns, side by side.** Pick a turn to see what it did, shift-click another
   to see what the turns between did together, or read through to the newest version. Each file draws
   in `<DiffSideBySide>`, the same Monaco diff Review uses, read-only here, as tall as its lines up to a
