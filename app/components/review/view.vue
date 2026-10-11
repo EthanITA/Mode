@@ -168,54 +168,58 @@ function rejectFile(event: MouseEvent): void {
       <template v-if="file">
         <header
           class="bar"
+          data-layout="stacked"
           data-cmt="file"
           :data-cmt-label="basename(file.path)"
           :data-cmt-tell="`About ${homePath(file.path)}:`"
           :data-cmt-excerpt="homePath(file.path)"
         >
-          <span class="title path">{{ homePath(file.path) }}</span>
-          <span v-if="churn" class="churn mono-meta">
-            <span data-mark="add">+{{ churn.added }}</span>
-            <span data-mark="remove">−{{ churn.removed }}</span>
-          </span>
-          <span class="spacer" />
-          <span class="toggle">
-            <UiChip
-              :selected="review.isCompact.value"
-              size="xs"
-              @click="review.isCompact.value = !review.isCompact.value"
+          <div class="line">
+            <span class="title path" :title="homePath(file.path)">{{ homePath(file.path) }}</span>
+            <span v-if="churn" class="churn mono-meta">
+              <span data-mark="add">+{{ churn.added }}</span>
+              <span data-mark="remove">−{{ churn.removed }}</span>
+            </span>
+          </div>
+          <div class="line" data-end>
+            <span class="toggle">
+              <UiChip
+                :selected="review.isCompact.value"
+                size="xs"
+                @click="review.isCompact.value = !review.isCompact.value"
+              >
+                Compact
+              </UiChip>
+              <UiChip
+                :selected="review.isWrapped.value"
+                size="xs"
+                @click="review.isWrapped.value = !review.isWrapped.value"
+              >
+                Wrap
+              </UiChip>
+            </span>
+            <button v-press class="action focusable" type="button" @click="comment($event)">Comment</button>
+            <button
+              v-press
+              class="action focusable"
+              type="button"
+              data-tone="danger"
+              :disabled="!isLive || review.busy.value"
+              @click="rejectFile"
             >
-              Compact
-            </UiChip>
-            <UiChip
-              :selected="review.isWrapped.value"
-              size="xs"
-              @click="review.isWrapped.value = !review.isWrapped.value"
+              {{ review.confirming.value === file.path ? "Reject? Press again" : "Reject file" }}
+            </button>
+            <button
+              v-press
+              class="action focusable"
+              type="button"
+              data-tone="primary"
+              :disabled="!isLive || review.busy.value"
+              @click="review.decideFile(true)"
             >
-              Wrap
-            </UiChip>
-          </span>
-          <button v-press class="action focusable" type="button" @click="comment($event)">Comment</button>
-          <button
-            v-press
-            class="action focusable"
-            type="button"
-            data-tone="danger"
-            :disabled="!isLive || review.busy.value"
-            @click="rejectFile"
-          >
-            {{ review.confirming.value === file.path ? "Reject? Press again" : "Reject file" }}
-          </button>
-          <button
-            v-press
-            class="action focusable"
-            type="button"
-            data-tone="primary"
-            :disabled="!isLive || review.busy.value"
-            @click="review.decideFile(true)"
-          >
-            Approve file
-          </button>
+              Approve file
+            </button>
+          </div>
         </header>
 
         <p v-if="!isLive" class="notice" role="status">
@@ -277,9 +281,31 @@ function rejectFile(event: MouseEvent): void {
   font-weight: 700;
 }
 
+.bar[data-layout="stacked"] {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.line {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.line[data-end] {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* One line however long the path, so the row of buttons under it never moves. */
 .path {
   font-family: var(--mono);
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .meta {
