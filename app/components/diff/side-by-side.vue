@@ -52,7 +52,6 @@ const review = useReview();
 const host = useTemplateRef<HTMLElement>("host");
 const isEditable = computed(() => !isReadonly && !file.isDeleted);
 const isDirty = ref(false);
-const isStale = ref(false);
 const isSaving = ref(false);
 // A turn can touch dozens of files, so a card builds its editor only once it scrolls near the view.
 const isNear = ref(isFill);
@@ -175,15 +174,14 @@ function markDirty(): void {
   isDirty.value = !!models[1] && models[1].getValue() !== base.text;
 }
 
-// A draft is kept over what the disk now says, and the save that follows is refused until it is discarded.
+// A draft is kept over what the disk now says, and the save that follows is refused until the edit is undone.
 function followDisk(modified: MonacoApi.editor.ITextModel): void {
   const next = textOf(file.current);
   const mine = modified.getValue();
   if (mine === base.text || mine === next) {
     base = { hash: file.hash, text: next };
-    isStale.value = false;
     if (mine !== next) modified.setValue(next);
-  } else isStale.value = file.hash !== base.hash;
+  }
   markDirty();
 }
 
@@ -200,12 +198,10 @@ async function save(): Promise<void> {
     });
     if (reply.saved) {
       base = { hash: reply.hash, text };
-      isStale.value = false;
       markDirty();
       chrome.toast(`Saved ${basename(file.path)}`);
     } else if (reply.reason === "changed-on-disk") {
-      isStale.value = true;
-      chrome.toast("The file changed on disk since this diff loaded. Discard your edit to load it.", "destructive");
+      chrome.toast("The file changed on disk since this diff loaded. Undo your edit to load it.", "destructive");
     } else {
       chrome.toast("That file can't be saved from here.", "destructive");
     }
@@ -214,12 +210,6 @@ async function save(): Promise<void> {
   } finally {
     isSaving.value = false;
   }
-}
-
-function discard(): void {
-  base = { hash: file.hash, text: textOf(file.current) };
-  isStale.value = false;
-  models[1]?.setValue(base.text);
 }
 
 function setModels(): void {
@@ -378,11 +368,6 @@ onBeforeUnmount(() => {
         </button>
       </div>
     </div>
-    <div v-if="isDirty" class="draft" :data-stale="isStale">
-      <span class="mono-meta">{{ isStale ? "changed on disk" : "unsaved" }}</span>
-      <button class="chip focusable" type="button" @click="discard">Discard</button>
-      <button v-if="!isStale" class="chip focusable" type="button" :disabled="isSaving" @click="save">Save ⌘S</button>
-    </div>
   </div>
 </template>
 
@@ -423,40 +408,6 @@ onBeforeUnmount(() => {
   position: absolute;
   right: 4px;
   z-index: 5;
-}
-
-.draft {
-  align-items: center;
-  background: var(--ed-bar);
-  border: 1px solid var(--ed-button);
-  border-radius: 999px;
-  bottom: 8px;
-  color: var(--ed-muted);
-  display: flex;
-  gap: 4px;
-  padding: 2px 4px 2px 10px;
-  position: absolute;
-  right: 14px;
-  z-index: 5;
-}
-
-.draft[data-stale="true"] {
-  color: var(--ed-remove);
-}
-
-.chip {
-  background: none;
-  border: 0;
-  border-radius: 999px;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  padding: 2px 8px;
-}
-
-.chip:disabled {
-  cursor: progress;
-  opacity: 0.5;
 }
 
 .arrow {
