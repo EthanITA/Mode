@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Check, FoldVertical, MessageSquarePlus, Redo2, TextWrap, Undo2, X } from "@lucide/vue";
+import { FoldVertical, Redo2, TextWrap, Undo2 } from "@lucide/vue";
 import { useEventListener } from "@vueuse/core";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { ReviewPicks, ReviewRowRejected } from "~/utils/review";
@@ -199,24 +199,27 @@ function rejectFile(event: MouseEvent): void {
               />
             </span>
             <span class="group">
-              <ChromeAction :icon="MessageSquarePlus" shape="pill" tip="Comment on the file" @click="comment($event)" />
-              <ChromeAction
-                :icon="X"
-                :is-disabled="!isLive || review.busy.value"
-                :is-on="review.confirming.value === file.path"
-                shape="pill"
-                :tip="review.confirming.value === file.path ? 'Press again to reject the file' : 'Reject the file'"
-                tone="danger"
+              <button v-press class="action focusable" type="button" @click="comment($event)">Comment</button>
+              <button
+                v-press
+                class="action focusable"
+                type="button"
+                data-tone="danger"
+                :disabled="!isLive || review.busy.value"
                 @click="rejectFile"
-              />
-              <ChromeAction
-                :icon="Check"
-                :is-disabled="!isLive || review.busy.value"
-                shape="pill"
-                tip="Approve the file"
-                tone="primary"
+              >
+                {{ review.confirming.value === file.path ? "Reject? Press again" : "Reject file" }}
+              </button>
+              <button
+                v-press
+                class="action focusable"
+                type="button"
+                data-tone="primary"
+                :disabled="!isLive || review.busy.value"
                 @click="review.decideFile(true)"
-              />
+              >
+                Approve file
+              </button>
             </span>
           </div>
         </header>
