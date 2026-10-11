@@ -232,7 +232,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   so a conversation `claude agents` no longer lists is reached through the jump palette, and
   `/api/sessions` no longer carries the `preview` the cards drew. When the server
   stops answering, every route shows the Reconnecting screen over a page that stays mounted underneath,
-  in place of the banner by the composer.
+  in place of the banner by the composer, and it offers no conversation, Desk link or way to point it,
+  since none of them work without the server.
 - **Every mode and style contract keeps every rule in about two thirds of the words.** The eleven modes
   went from 113k to 75k characters and the six styles from 33k to 25k, each body small enough to share
   one hook with a switch line, the pipeline position, the deliverable and an outranking reminder, which

@@ -23,12 +23,8 @@ function resume(key: string): void {
 <template>
   <main class="stage" data-region="listening-stage">
     <div class="column">
-      <div v-if="state === 'listening'" class="lead">
-        <ListeningTag />
-        <h1 class="title">Waiting for Claude Code</h1>
-        <p class="hint">The sidecar follows whichever conversation Claude Code points it at.</p>
-      </div>
-      <div v-else class="lead" role="alert">
+      <!-- Down, nothing on offer works without the server, so the screen says only that. -->
+      <div v-if="state === 'reconnecting'" class="lead" role="alert">
         <ListeningTag state="reconnecting" />
         <h1 class="title">Reconnecting…</h1>
         <p class="hint">
@@ -37,53 +33,61 @@ function resume(key: string): void {
         </p>
       </div>
 
-      <UiSurface v-if="last" class="last" data-region="listening-last" pad="none" variant="raised">
-        <div class="last-text">
-          <span class="eyebrow mono-meta">{{ lastLabel }}</span>
-          <span class="last-name">{{ nameOf(last) }}</span>
-          <span class="last-place mono-meta">{{ placeOf(last) }}</span>
+      <template v-else>
+        <div class="lead">
+          <ListeningTag />
+          <h1 class="title">Waiting for Claude Code</h1>
+          <p class="hint">The sidecar follows whichever conversation Claude Code points it at.</p>
         </div>
-        <button v-press class="resume focusable" type="button" @click="resume(last.key)">
-          Resume
-          <UiIcon :icon="ArrowRight" size="xs" />
-        </button>
-      </UiSurface>
 
-      <div class="ways">
-        <span v-if="sc.ready.value" class="eyebrow mono-meta">
-          {{ last ? "Or point it from Claude Code" : "Point it from Claude Code" }}
-        </span>
-        <div class="way">
-          <span class="way-icon"><UiIcon :icon="Terminal" size="xs" /></span>
-          <span>Run <code>/sidecar</code> in a conversation</span>
-        </div>
-        <div class="way">
-          <span class="way-icon"><UiIcon :icon="Keyboard" size="xs" /></span>
-          <span>Type in a conversation's prompt</span>
-        </div>
-        <div class="way">
-          <span class="way-icon"><UiIcon :icon="AppWindow" size="xs" /></span>
-          <span>Bring a conversation to the front in Terminal</span>
-        </div>
-      </div>
+        <UiSurface v-if="last" class="last" data-region="listening-last" pad="none" variant="raised">
+          <div class="last-text">
+            <span class="eyebrow mono-meta">{{ lastLabel }}</span>
+            <span class="last-name">{{ nameOf(last) }}</span>
+            <span class="last-place mono-meta">{{ placeOf(last) }}</span>
+          </div>
+          <button v-press class="resume focusable" type="button" @click="resume(last.key)">
+            Resume
+            <UiIcon :icon="ArrowRight" size="xs" />
+          </button>
+        </UiSurface>
 
-      <template v-if="last">
-        <NuxtLink v-if="hasOthers" class="desk-link focusable" data-region="listening-desk" to="/desk">
-          Pick another conversation on the Desk
-        </NuxtLink>
-        <span
-          v-else
-          aria-disabled="true"
-          class="desk-link focusable"
-          data-region="listening-desk"
-          data-tip="No other conversations yet. Start one in Claude Code and it shows up here."
-          data-tip-align="start"
-          data-tip-side="top"
-          role="link"
-          tabindex="0"
-        >
-          Pick another conversation on the Desk
-        </span>
+        <div class="ways">
+          <span v-if="sc.ready.value" class="eyebrow mono-meta">
+            {{ last ? "Or point it from Claude Code" : "Point it from Claude Code" }}
+          </span>
+          <div class="way">
+            <span class="way-icon"><UiIcon :icon="Terminal" size="xs" /></span>
+            <span>Run <code>/sidecar</code> in a conversation</span>
+          </div>
+          <div class="way">
+            <span class="way-icon"><UiIcon :icon="Keyboard" size="xs" /></span>
+            <span>Type in a conversation's prompt</span>
+          </div>
+          <div class="way">
+            <span class="way-icon"><UiIcon :icon="AppWindow" size="xs" /></span>
+            <span>Bring a conversation to the front in Terminal</span>
+          </div>
+        </div>
+
+        <template v-if="last">
+          <NuxtLink v-if="hasOthers" class="desk-link focusable" data-region="listening-desk" to="/desk">
+            Pick another conversation on the Desk
+          </NuxtLink>
+          <span
+            v-else
+            aria-disabled="true"
+            class="desk-link focusable"
+            data-region="listening-desk"
+            data-tip="No other conversations yet. Start one in Claude Code and it shows up here."
+            data-tip-align="start"
+            data-tip-side="top"
+            role="link"
+            tabindex="0"
+          >
+            Pick another conversation on the Desk
+          </span>
+        </template>
       </template>
     </div>
   </main>
