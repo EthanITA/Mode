@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { isFile, listMd, readTextSafe } from "../files.ts";
 import { strip } from "../text.ts";
+import { modeConfig } from "./config.ts";
 import { STANDING_LINES } from "./constants.ts";
 import { alternatives, hits, substitute, truthy } from "./contracts.ts";
 import { splitFrontMatter, standingBlock, type Meta } from "./frontmatter.ts";
@@ -21,6 +22,12 @@ function groundRules(): Rule[] {
   return [...picked.keys()].sort().map((stem) => ({ stem, ...splitFrontMatter(readTextSafe(picked.get(stem)) ?? "") }));
 }
 
+// A rule the user already loads as memory would arrive twice, so only its standing reminder comes from here.
+function inMemory(): Set<string> {
+  const listed = modeConfig().memory;
+  return new Set(Array.isArray(listed) ? listed.filter((stem): stem is string => typeof stem === "string") : []);
+}
+
 // Each rule declaring `outranks`, with its standing reminder, which announce repeats every turn.
 export function outranking(): { stem: string; reminder: string }[] {
   return groundRules().flatMap(({ stem, meta, body }) => {
@@ -38,10 +45,11 @@ export function rulesDue({ session, message = "" }: { session?: string; message?
   if (!base) return undefined;
   const lowered = message.toLowerCase();
   const baseDue = !isFile(base);
+  const remembered = inMemory();
   const bodies: string[] = [];
   let toldBase = false;
   for (const { stem, meta, body } of groundRules()) {
-    if (!strip(body)) continue;
+    if (!strip(body) || remembered.has(stem)) continue;
     const when = alternatives(meta, "when");
     if (when.length) {
       const marker = statePath(session, `.rule-${stem}`) ?? "";
@@ -61,8 +69,13 @@ export function ruleState(sid?: string): { told: string[]; waiting: { name: stri
   const baseTold = isFile(statePath(sid, ".rules"));
   const told: string[] = [];
   const waiting: { name: string; until?: string }[] = [];
+  const remembered = inMemory();
   for (const { stem, meta, body } of groundRules()) {
     if (!strip(body)) continue;
+    if (remembered.has(stem)) {
+      told.push(`${stem} (memory)`);
+      continue;
+    }
     const when = alternatives(meta, "when");
     if (!when.length) {
       if (baseTold) told.push(stem);
