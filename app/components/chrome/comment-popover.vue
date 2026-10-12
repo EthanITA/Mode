@@ -70,7 +70,10 @@ function onEdit(): void {
     </div>
 
     <p class="foot">
-      <span class="hint mono-meta">↵ to tray · esc cancel</span>
+      <span class="hint">
+        <UiKbd keys="enter" label="to tray" />
+        <UiKbd keys="esc" label="cancel" />
+      </span>
       <button v-if="spot.kind === 'block' && editable" v-press class="cancel focusable" type="button" @click="onEdit">
         Edit
       </button>
@@ -178,9 +181,9 @@ function onEdit(): void {
 }
 
 .hint {
-  color: var(--subtle);
+  display: flex;
   flex: 1;
-  text-transform: none;
+  gap: 12px;
 }
 
 .cancel,

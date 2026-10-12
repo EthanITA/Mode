@@ -154,7 +154,11 @@ onMounted(() => {
         @keydown="onFieldKey"
       />
       <footer>
-        <span class="hint mono-meta" :data-pending="pending">{{ pending ? "working…" : "↵ edit · esc close" }}</span>
+        <span v-if="pending" class="hint working mono-meta">working…</span>
+        <span v-else class="hint keys">
+          <UiKbd keys="enter" label="edit" />
+          <UiKbd keys="esc" label="close" />
+        </span>
       </footer>
     </UiSurface>
   </div>
@@ -186,12 +190,17 @@ footer {
 }
 
 .hint {
-  color: var(--subtle);
   margin-left: auto;
 }
 
-.hint[data-pending="true"] {
+.working {
   @apply shimmer;
+  color: var(--subtle);
+}
+
+.keys {
+  display: flex;
+  gap: 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -248,7 +248,7 @@ onBeforeUnmount(() => {
         :icon="MessageSquarePlus"
         label="Note"
         shape="pill"
-        :tip="isPreviewing ? 'Note the whole file' : 'Note the whole file · ⌘K notes the selected lines'"
+        :tip="isPreviewing ? 'Note the whole file' : 'Note the whole file · {cmd K} notes the selected lines'"
         @click="noteFile"
       />
       <template v-if="!isPreviewing">
@@ -259,7 +259,7 @@ onBeforeUnmount(() => {
           v-press
           class="save focusable"
           type="button"
-          data-tip="Save · ⌘S"
+          data-tip="Save · {cmd S}"
           :disabled="!isDirty || isSaving"
           @click="save"
         >

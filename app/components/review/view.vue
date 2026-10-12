@@ -150,7 +150,7 @@ function rejectFile(event: MouseEvent): void {
           data-region="review-undo"
           :icon="Undo2"
           shape="pill"
-          :tip="`Undo ${review.snapshot.value.undo} · ⌘Z`"
+          :tip="`Undo ${review.snapshot.value.undo} · {cmd Z}`"
           @click="review.travel('undo')"
         />
         <ChromeAction
@@ -158,7 +158,7 @@ function rejectFile(event: MouseEvent): void {
           data-region="review-redo"
           :icon="Redo2"
           shape="pill"
-          :tip="`Redo ${review.snapshot.value.redo} · ⌘⇧Z`"
+          :tip="`Redo ${review.snapshot.value.redo} · {cmd shift Z}`"
           @click="review.travel('redo')"
         />
         <span class="spacer" />

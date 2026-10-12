@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { tipText } from "@cela/design";
 import type { Component } from "vue";
 
 export type ActionShape = "island" | "pill";
@@ -27,7 +28,7 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
       v-press
       class="action focusable"
       type="button"
-      :aria-label="label ? undefined : tip"
+      :aria-label="label ? undefined : tipText(tip)"
       :aria-pressed="isOn"
       :data-labelled="!!label"
       :data-on="isOn"
@@ -44,7 +45,7 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
     v-press
     class="action pill focusable"
     type="button"
-    :aria-label="label ? undefined : tip"
+    :aria-label="label ? undefined : tipText(tip)"
     :aria-pressed="isOn"
     :data-labelled="!!label"
     :data-on="isOn"

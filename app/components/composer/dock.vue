@@ -145,7 +145,7 @@ onMounted(() => {
 
           <button v-press class="send focusable" type="button" :disabled="!ready" @click="send">
             {{ load ? `Send ${load}` : "Send" }}
-            <span class="key mono-meta">↵</span>
+            <UiKbd keys="enter" tone="inverse" />
           </button>
         </div>
 
@@ -262,10 +262,6 @@ onMounted(() => {
 .send:disabled {
   cursor: not-allowed;
   opacity: 0.45;
-}
-
-.key {
-  opacity: 0.7;
 }
 
 .slots {

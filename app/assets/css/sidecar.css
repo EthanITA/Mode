@@ -1,5 +1,6 @@
 /* Screen-wide tokens for the sidecar shell. Everything here resolves out of the
    vendored Cela tokens in cela.css — no literal colour, no literal duration. */
+@reference "./main.css";
 
 :root {
   --gutter-w: 44px;
@@ -199,6 +200,12 @@ body {
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z'/%3E%3Cpath d='M12 8v6'/%3E%3Cpath d='M9 11h6'/%3E%3C/svg%3E")
     center / contain no-repeat;
   width: 15px;
+}
+
+/* Monaco's hover keeps a bare <kbd> but strips its class, so the cap is styled from here. */
+.monaco-hover kbd {
+  @apply kbd-cap;
+  vertical-align: middle;
 }
 
 .monaco-noted {

@@ -121,7 +121,10 @@ function onKey(event: KeyboardEvent): void {
     <UiTextarea v-model="draft" auto-fit placeholder="Reply to Claude…" :rows="2" @keydown="onKey" />
 
     <footer>
-      <span class="hint mono-meta">↵ adds to the tray · esc close</span>
+      <span class="hint">
+        <UiKbd keys="enter" label="adds to the tray" />
+        <UiKbd keys="esc" label="close" />
+      </span>
       <button v-press class="ghost focusable" type="button" @click="emit('close')">Close</button>
       <button v-press class="solid focusable" type="button" :disabled="!draft.trim()" @click="reply">Reply</button>
     </footer>
@@ -266,7 +269,8 @@ footer {
 }
 
 .hint {
-  color: var(--subtle);
+  display: flex;
+  gap: 12px;
   margin-right: auto;
 }
 

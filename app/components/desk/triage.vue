@@ -118,7 +118,11 @@ useShortcuts(
         </div>
       </div>
 
-      <p v-if="rows.length" class="legend mono-meta">↑↓ move · ↵ open · esc back</p>
+      <p v-if="rows.length" class="legend">
+        <UiKbd keys="up down" label="move" />
+        <UiKbd keys="enter" label="open" />
+        <UiKbd keys="esc" label="back" />
+      </p>
     </div>
 
     <UiContextMenu ref="menuEl" data-region="desk-menu" label="Conversation" width="w-64">
@@ -251,9 +255,9 @@ useShortcuts(
 }
 
 .legend {
-  color: var(--subtle);
+  display: flex;
+  gap: 12px;
   margin: 0;
-  text-transform: none;
 }
 
 .menu-head {

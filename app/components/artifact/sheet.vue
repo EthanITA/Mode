@@ -123,7 +123,7 @@ onBeforeUnmount(() => {
             :icon="Maximize2"
             label="Fullscreen"
             shape="pill"
-            tip="Grow the page over everything · esc shrinks it back"
+            tip="Grow the page over everything · {esc} shrinks it back"
             @click="artifact.isFull = true"
           />
         </header>

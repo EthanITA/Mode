@@ -118,7 +118,7 @@ onMounted(() => {
   <div v-if="chrome.comment.armed.value || chrome.comment.hover.value" class="armed" data-region="comment-mode">
     <p v-if="chrome.comment.armed.value" class="banner" data-region="comment-banner">
       Pick anything to comment on
-      <span class="hint mono-meta">esc cancel</span>
+      <UiKbd keys="esc" label="cancel" tone="inverse" />
     </p>
 
     <template v-if="chrome.comment.hover.value">
@@ -168,11 +168,6 @@ onMounted(() => {
   position: absolute;
   top: 64px;
   transform: translateX(-50%);
-}
-
-.hint {
-  opacity: 0.75;
-  text-transform: none;
 }
 
 /* Drawn beside the element rather than on it: chrome never writes into a view's DOM. */

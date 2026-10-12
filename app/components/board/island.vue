@@ -137,10 +137,11 @@ function onEnter(event: KeyboardEvent): void {
             <UiTextInput
               v-model="newTask"
               class="add-input"
-              placeholder="Add a task&hellip; &#8629;"
+              placeholder="Add a task&hellip;"
               variant="bare"
               @keydown="onEnter"
             />
+            <UiKbd v-if="!newTask" keys="enter" />
           </div>
 
           <div v-if="doneTasks.length" class="done-section">

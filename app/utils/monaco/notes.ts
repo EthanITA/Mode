@@ -1,3 +1,4 @@
+import { keycaps } from "@cela/design";
 import type * as MonacoApi from "monaco-editor";
 
 export type LineSpan = [first: number, last: number];
@@ -24,7 +25,12 @@ export interface Notes {
 
 // The popover is 420 wide and about 300 tall, and stays inside the window.
 const POPOVER = { height: 312, width: 432 };
-const HINT = "Note for Claude · ⌘K";
+const HINT: MonacoApi.IMarkdownString = {
+  supportHtml: true,
+  value: `Note for Claude ${keycaps("cmd K")
+    .map((key) => `<kbd>${key}</kbd>`)
+    .join(" ")}`,
+};
 
 function linesOf(editor: MonacoApi.editor.ICodeEditor, line?: number): LineSpan {
   const selection = editor.getSelection();
@@ -62,7 +68,7 @@ function attach({ api, editor, onNote }: NotesOptions): Notes {
   const listeners = [
     editor.onMouseMove((event) => {
       const line = event.target.position?.lineNumber;
-      const options = { glyphMarginClassName: "monaco-note-add", glyphMarginHoverMessage: { value: HINT } };
+      const options = { glyphMarginClassName: "monaco-note-add", glyphMarginHoverMessage: HINT };
       hovered.set(line ? [{ options, range: new api.Range(line, 1, line, 1) }] : []);
     }),
     editor.onMouseLeave(() => hovered.clear()),

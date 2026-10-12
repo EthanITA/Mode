@@ -222,6 +222,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **Every key the sidecar shows is a keycap.** Legends, footers, the comment banner, both Send buttons,
+  the board's add field and the Monaco note hover draw their keys with `@cela/design`'s `Kbd`, and a
+  tooltip writes its shortcut as `{cmd K}` so the tip shows inverse caps too, as in "Comment on anything
+  · ⌘K or hold C". The ↵ leaves the board's placeholder for a cap beside the field.
 - **Listening and the Desk follow the Sidecar design.** Home waits for Claude Code under a breathing
   Listening tag, offers to resume the last conversation, lists the three ways to point the sidecar and
   links to the Desk, a link that goes quiet with a tooltip when no other conversation exists. The Desk at

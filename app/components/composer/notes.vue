@@ -61,7 +61,7 @@ onMounted(() => {
       <button v-press class="send focusable" type="button" :disabled="sending" @click="send">
         <UiIcon :icon="Send" size="sm" />
         {{ sending ? "Sending…" : `Send ${plural(tray.count.value, "note")} to Claude` }}
-        <span class="key mono-meta">⌘↵</span>
+        <UiKbd keys="cmd enter" tone="inverse" />
       </button>
     </UiSurface>
   </div>
@@ -100,10 +100,6 @@ onMounted(() => {
 
 .send:disabled {
   cursor: progress;
-  opacity: 0.7;
-}
-
-.key {
   opacity: 0.7;
 }
 </style>

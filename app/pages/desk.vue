@@ -35,7 +35,7 @@ async function remove(row: DeskRow): Promise<void> {
 <template>
   <NuxtLayout>
     <template #lead>
-      <ChromeAction data-region="desk-back" :icon="ArrowLeft" shape="island" tip="Back · esc" @click="back" />
+      <ChromeAction data-region="desk-back" :icon="ArrowLeft" shape="island" tip="Back · {esc}" @click="back" />
     </template>
 
     <DeskTriage @back="back" @open="open" @remove="remove" />

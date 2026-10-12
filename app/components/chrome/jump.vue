@@ -123,7 +123,11 @@ function onKey(event: KeyboardEvent): void {
           </p>
         </div>
 
-        <p class="legend mono-meta">↑↓ move · ↵ open · esc close</p>
+        <p class="legend">
+          <UiKbd keys="up down" label="move" />
+          <UiKbd keys="enter" label="open" />
+          <UiKbd keys="esc" label="close" />
+        </p>
       </UiSurface>
     </div>
   </div>
@@ -221,9 +225,9 @@ function onKey(event: KeyboardEvent): void {
 
 .legend {
   border-top: 1px solid var(--border);
-  color: var(--subtle);
+  display: flex;
+  gap: 12px;
   margin: 0;
   padding: 8px 14px;
-  text-transform: none;
 }
 </style>
