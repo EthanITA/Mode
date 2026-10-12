@@ -98,6 +98,38 @@ function latestNames(path: string): string[] {
   return [custom, agent, ai].filter((name): name is string => !!name);
 }
 
+export interface Forkable {
+  text: string;
+  model?: string;
+  version?: string;
+}
+
+function modelOf(entry: Record<string, unknown>): string | undefined {
+  const message = entry.message as Record<string, unknown> | undefined;
+  const model = text(message?.model);
+  return model === "<synthetic>" ? undefined : model;
+}
+
+// Resume opens at the newest last-prompt record, which lags a running turn, so the copy repoints it at the newest entry.
+export function forkable(transcript: string): Forkable | undefined {
+  const whole = transcript.slice(0, transcript.lastIndexOf("\n") + 1);
+  const rows = splitLines(whole);
+  let leaf: Record<string, unknown> | undefined;
+  let pointer: Record<string, unknown> | undefined;
+  let model: string | undefined;
+  for (let at = rows.length - 1; at >= 0 && !(leaf && pointer && model); at -= 1) {
+    const entry = record(rows[at] ?? "");
+    if (!entry) continue;
+    if (entry.type === "last-prompt") pointer ??= entry;
+    if (typeof entry.uuid !== "string" || entry.isSidechain !== false) continue;
+    leaf ??= entry;
+    if (entry.type === "assistant") model ??= modelOf(entry);
+  }
+  if (!leaf) return undefined;
+  const repointed = { type: "last-prompt", lastPrompt: "", sessionId: leaf.sessionId, ...pointer, leafUuid: leaf.uuid };
+  return { text: `${whole}${JSON.stringify(repointed)}\n`, model, version: text(leaf.version) };
+}
+
 const cache = new Map<string, { size: number; mtimeMs: number; value: TranscriptIdentity }>();
 
 export function identityOf(ref: TranscriptRef): TranscriptIdentity {

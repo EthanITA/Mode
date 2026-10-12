@@ -58,7 +58,7 @@ function detailOf(record: Record<string, unknown> | undefined): string | undefin
 }
 
 // The installer keeps this symlink current; a Nitro process may not inherit a login shell's PATH.
-function binary(): string {
+export function claudeBinary(): string {
   const set = process.env.CLAUDE_BIN;
   if (set) return set;
   const installed = join(homedir(), ".local", "bin", "claude");
@@ -68,7 +68,7 @@ function binary(): string {
 function fromCli(): JobEntry[] | undefined {
   let raw: string;
   try {
-    raw = execFileSync(binary(), ["agents", "--json", "--all"], { encoding: "utf8", timeout: CLI_TIMEOUT_MS });
+    raw = execFileSync(claudeBinary(), ["agents", "--json", "--all"], { encoding: "utf8", timeout: CLI_TIMEOUT_MS });
   } catch {
     return undefined;
   }
