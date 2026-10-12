@@ -273,6 +273,15 @@ component's scope. Outside the app, `/api/events/stream` is plain server-sent ev
 named after its topic and its id is the offset to resume from, `?topic=` narrows it, and `?since=` or a
 `Last-Event-ID` header replays from an offset where a new connection starts at the end.
 
+Ask Claude is `/btw` from the sidecar: ⌥↵, or the Ask Claude pill beside the notes, asks a side question
+with the whole conversation as context, and nothing reaches the transcript or interrupts the turn.
+`POST /api/sessions/<key>/ask` copies the transcript to the OS temp dir with its `last-prompt` record
+pointed at the newest entry, so the running turn is included, then runs the session's own build from
+`~/.local/share/claude/versions` with `--resume <copy> --fork-session --no-session-persistence` and hooks
+off, and sends the undocumented `side_question` control request over stream-json. It works on a finished
+conversation too, and since that request is internal, a Claude Code upgrade can break it, which shows as
+a failed answer.
+
 ---
 
 ## Pinning a pair to a directory

@@ -11,6 +11,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **Ask Claude, `/btw` from the sidecar.** ⌥↵ or the Ask Claude pill asks a side question with the
+  whole conversation as context, the running turn included, and nothing reaches the transcript. The
+  session's status and the side chat's state show apart, asking works on a finished conversation, and
+  Send to session turns an answer into a real turn. `POST /api/sessions/<key>/ask` serves it.
+
 - **Claude reaches the sidecar through events, and a new artifact raises a notification.** Producers
   append typed events to `~/.claude/sidecar/events.jsonl`, and `/api/events/stream` streams them to every
   open sidecar with Kafka's offsets, so a consumer resumes where it stopped. The first topic,
