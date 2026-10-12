@@ -22,8 +22,9 @@ function num(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-function status(value: unknown): SessionStatus | undefined {
-  return value === "busy" || value === "idle" ? value : undefined;
+// Waiting is a permission prompt or a question on screen, so the turn is paused on the person.
+export function statusOf(value: unknown): SessionStatus | undefined {
+  return value === "busy" || value === "idle" || value === "waiting" ? value : undefined;
 }
 
 // Signal 0 tests for the process without touching it; EPERM means alive but owned by someone else.
@@ -56,7 +57,7 @@ function parse(path: string): RegistryEntry | undefined {
     id,
     cwd: text(record.cwd),
     name: text(record.name),
-    status: status(record.status),
+    status: statusOf(record.status),
     updatedAt: num(record.updatedAt) || num(record.startedAt),
     messagingSocketPath: text(record.messagingSocketPath),
   };

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import type { SessionLane, SessionStatus } from "../../../shared/types/session.ts";
 import { readTextSafe } from "../../../lib/files.ts";
 import { configRoot } from "../../../lib/mode/paths.ts";
-import { isAlive } from "./registry.ts";
+import { isAlive, statusOf } from "./registry.ts";
 import { isKey, isSessionId, jobsHome, keyOf, registryHome } from "./paths.ts";
 
 export interface JobEntry {
@@ -34,10 +34,6 @@ function text(value: unknown): string | undefined {
 
 function num(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-function status(value: unknown): SessionStatus | undefined {
-  return value === "busy" || value === "idle" ? value : undefined;
 }
 
 function lane(value: unknown): SessionLane["name"] {
@@ -99,7 +95,7 @@ function fromCli(): JobEntry[] | undefined {
       detail: detailOf(stateOf(key)),
       lane: { name: lane(record.state) },
       pid: num(record.pid),
-      status: status(record.status),
+      status: statusOf(record.status),
       startedAt: num(record.startedAt),
     });
   }
@@ -158,7 +154,7 @@ function fromDisk(): JobEntry[] {
       detail: detailOf(record),
       lane: { name: lane(record.state), derived: true },
       pid: pid && isAlive(pid) ? pid : undefined,
-      status: pid && isAlive(pid) ? status(held?.status) : undefined,
+      status: pid && isAlive(pid) ? statusOf(held?.status) : undefined,
       startedAt: num(held?.startedAt),
     });
   }

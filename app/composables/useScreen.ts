@@ -2,7 +2,7 @@ import type { ComputedRef } from "vue";
 import type { MaybeComputed } from "~/composables/useSidecar";
 import type { ReviewThread } from "~~/shared/types/artifact";
 import type { How, Slot, Why } from "~~/shared/types/mode";
-import type { LiveSession } from "~~/shared/types/session";
+import type { LiveSession, SessionState } from "~~/shared/types/session";
 import type { Tint } from "~/utils/tint";
 
 export interface StepView {
@@ -44,6 +44,7 @@ export interface Screen {
   openNotes: ComputedRef<number>;
   position: ComputedRef<{ index: number; count: number }>;
   session: MaybeComputed<LiveSession>;
+  sessionState: ComputedRef<SessionState>;
   slots: ComputedRef<SlotView[]>;
   steps: ComputedRef<StepView[]>;
   tabs: ComputedRef<TabView[]>;
@@ -106,6 +107,13 @@ export function useScreen(): Screen {
     if (!here?.live) return { label: "not running", running: false };
     const label = here.status === "busy" ? "working" : here.status === "idle" ? "idle" : "live";
     return { label, running: true };
+  });
+
+  // A live process that has not reported a status yet is treated as idle rather than guessed busy.
+  const sessionState = computed<SessionState>(() => {
+    const here = session.value;
+    if (!here?.live) return "gone";
+    return here.status ?? "idle";
   });
 
   const titles = computed(() => new Map(sc.catalogue.value.map((meta) => [meta.slug, meta.title])));
@@ -185,6 +193,7 @@ export function useScreen(): Screen {
     openNotes,
     position,
     session,
+    sessionState,
     slots,
     steps,
     tabs,

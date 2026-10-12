@@ -2,7 +2,10 @@ import type { Pipeline, Slot } from "./mode.ts";
 
 export type SessionAgent = { name: string; color: string };
 
-export type SessionStatus = "busy" | "idle";
+export type SessionStatus = "busy" | "idle" | "waiting";
+
+// What the sidecar shows of a conversation: the registry's status, or gone once no process holds it.
+export type SessionState = SessionStatus | "gone";
 
 export interface SessionLane {
   name: "review" | "blocked" | "working" | "done";
