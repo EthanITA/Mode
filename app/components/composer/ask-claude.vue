@@ -134,7 +134,7 @@ defineExpose({ focus });
           <template v-if="view.state === 'answered'">
             <UiIconButton
               :icon="ChevronLeft"
-              label="Earlier answer · ‹"
+              label="Earlier answer"
               size="xs"
               :disabled="view.position <= 1"
               @click="askClaude.step(sc.sessionKey.value ?? '', -1)"
@@ -142,7 +142,7 @@ defineExpose({ focus });
             <span class="count mono-meta">{{ view.position }} / {{ view.count }}</span>
             <UiIconButton
               :icon="ChevronRight"
-              label="Later answer · ›"
+              label="Later answer"
               size="xs"
               :disabled="view.position >= view.count"
               @click="askClaude.step(sc.sessionKey.value ?? '', 1)"
