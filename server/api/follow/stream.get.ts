@@ -6,6 +6,7 @@ export default defineEventHandler((event): Promise<void> => {
   const push = (target: unknown): void => void stream.push({ event: "follow", data: JSON.stringify(target) });
   const stop = onFollow(push);
   stream.onClosed(stop);
-  push(followTarget());
+  const now = followTarget();
+  if (now) push(now);
   return stream.send();
 });

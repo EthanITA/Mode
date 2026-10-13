@@ -5,13 +5,12 @@ import { liveEntries, type RegistryEntry } from "../sessions/registry.ts";
 
 type Listener = (target: FollowTarget) => void;
 
-// No key when the front tab runs no conversation.
 type Front = { key?: string };
 
 type Watch = {
   timer: ReturnType<typeof setInterval>;
-  seen?: string;
-  isBaseline: boolean;
+  seen?: Front;
+  holdsPoint: boolean;
 };
 
 // Guarded on `is running` so asking never launches Terminal; a tabless ghost window can sit at index 1, so it is skipped.
@@ -27,34 +26,42 @@ end if
 return ""`;
 
 const TERMINAL_EVERY_MS = 1000;
+// Long enough for `/sidecar` to launch the app and have its first page read the point.
+const FRESH_MS = 15_000;
 
 let target: FollowTarget = { source: "none" };
+let pointedAt = 0;
 const listeners = new Set<Listener>();
 let watch: Watch | undefined;
 
-export function followTarget(): FollowTarget {
-  return target;
+export type Point = { face?: string; key: string; slug?: string; source: Exclude<FollowSource, "none"> };
+
+function isFresh(): boolean {
+  return Date.now() - pointedAt < FRESH_MS;
+}
+
+function targetAt({ face, key, slug, source }: Point): FollowTarget {
+  const entry = liveEntries().find((one) => keyOf(one.id) === key);
+  return { face, key, name: entry?.name, slug, source };
+}
+
+// What a page opening now should show: a point just made, else the conversation in front, else nothing until Terminal is read.
+export function followTarget(): FollowTarget | undefined {
+  if (isFresh()) return target;
+  const front = watch?.seen;
+  if (!front) return undefined;
+  return front.key ? targetAt({ key: front.key, source: "terminal" }) : { source: "terminal" };
 }
 
 function publish(next: FollowTarget): number {
   target = next;
+  pointedAt = Date.now();
   for (const listener of listeners) listener(target);
   return listeners.size;
 }
 
-export function pointAt({
-  face,
-  key,
-  slug,
-  source,
-}: {
-  face?: string;
-  key: string;
-  slug?: string;
-  source: Exclude<FollowSource, "none">;
-}): number {
-  const entry = liveEntries().find((one) => keyOf(one.id) === key);
-  return publish({ face, key, name: entry?.name, slug, source });
+export function pointAt(point: Point): number {
+  return publish(targetAt(point));
 }
 
 export function onFollow(listener: Listener): () => void {
@@ -94,23 +101,21 @@ async function frontKey(): Promise<Front | undefined> {
   return { key: entry && keyOf(entry.id) };
 }
 
-// Points only when the front tab switches, so a `/sidecar` point already standing holds until then.
+// The first read shows what is in front unless a point was just made; after that only a switch points.
 async function tick(current: Watch): Promise<void> {
   const front = await frontKey();
   if (watch !== current || !front) return;
-  const isBaseline = current.isBaseline;
-  current.isBaseline = false;
-  if (front.key === current.seen) return;
-  current.seen = front.key;
-  if (isBaseline) return;
-  // A keyless point sends every page to Listening, so coming back to the same conversation points at it again.
+  const before = current.seen;
+  current.seen = front;
+  if (before ? before.key === front.key : current.holdsPoint) return;
   if (!front.key) publish({ source: "terminal" });
-  else if (front.key !== target.key) pointAt({ key: front.key, source: "terminal" });
+  else if (!before || front.key !== target.key) pointAt({ key: front.key, source: "terminal" });
 }
 
 // Polls only while a page listens, because one osascript call takes about a tenth of a second.
 function watchTerminal(): void {
-  const current: Watch = { timer: setInterval(() => void tick(current), TERMINAL_EVERY_MS), isBaseline: !!target.key };
+  const holdsPoint = isFresh() && !!target.key;
+  const current: Watch = { timer: setInterval(() => void tick(current), TERMINAL_EVERY_MS), holdsPoint };
   watch = current;
   void tick(current);
 }

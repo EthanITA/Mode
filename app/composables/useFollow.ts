@@ -9,6 +9,10 @@ export interface FollowOptions {
 
 export type FollowPlace = Pick<FollowTarget, "face" | "key" | "slug">;
 
+// The page the app opened on, typed or restored, reads the conversation active now instead of staying put.
+const LANDING = window.location.pathname;
+let hasLanded = false;
+
 export interface Follow {
   listen: (options?: FollowOptions) => void;
   /** The artifact Claude Code asked to show, held until Artifacts mounts and opens it. */
@@ -39,7 +43,6 @@ export function useFollow(): Follow {
   function go(next: FollowTarget): void {
     if (pinned.value) return;
     if (next.key) show(next);
-    // Terminal's front tab left every conversation, so the page waits on Listening for the next one.
     else if (next.source === "terminal" && route.path !== "/") void navigateTo("/", { replace: true });
   }
 
@@ -47,7 +50,9 @@ export function useFollow(): Follow {
   function listen({ isEager = false }: FollowOptions = {}): void {
     let source: EventSource | undefined;
     let retry = 0;
-    let isBaseline = !isEager;
+    const isLanding = !hasLanded && route.path === LANDING;
+    hasLanded = true;
+    let isBaseline = !isEager && !isLanding;
     const connect = (): void => {
       source = new EventSource("/api/follow/stream");
       source.addEventListener("follow", (event: MessageEvent<string>) => {
