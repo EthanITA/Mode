@@ -10,7 +10,7 @@ const { initial: sideInitial, width: side } = usePaneWidth();
 
 const sc = useSidecar();
 const files = useFiles(() => sc.sessionKey.value);
-const selected = useState<string | undefined>("fl:selected");
+const selected = useConversationPick("fl:picks");
 const scope = useState<Scope>("fl:scope", () => "produced");
 const showIgnored = useState("fl:ignored", () => false);
 

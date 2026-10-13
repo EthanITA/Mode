@@ -1,4 +1,4 @@
-import type { ComputedRef, Ref } from "vue";
+import type { ComputedRef, Ref, WritableComputedRef } from "vue";
 import type { ArtifactDetail, ArtifactMeta } from "~~/shared/types/artifact";
 import type { Contracts, Why } from "~~/shared/types/mode";
 import type { LiveSession } from "~~/shared/types/session";
@@ -37,6 +37,18 @@ export function useSidecar(): Sidecar {
     slug: maybeState<string>("sc:slug"),
     whys: useState<Record<string, Why>>("sc:whys", () => ({})),
   };
+}
+
+// Kept per conversation, so a page or file picked in one never stays open in the next.
+export function useConversationPick(name: string): WritableComputedRef<string | undefined> {
+  const sc = useSidecar();
+  const picks = useState<Partial<Record<string, string>>>(name, () => ({}));
+  return computed({
+    get: () => (sc.sessionKey.value ? picks.value[sc.sessionKey.value] : undefined),
+    set: (pick) => {
+      if (sc.sessionKey.value) picks.value = { ...picks.value, [sc.sessionKey.value]: pick };
+    },
+  });
 }
 
 async function readWhys(sessions: LiveSession[]): Promise<Record<string, Why>> {

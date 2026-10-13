@@ -371,6 +371,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **Artifacts and Files open what this conversation picked, not the last page opened anywhere.** Each
+  conversation keeps its own pick, so switching to one that never made a page opens its own first page
+  or nothing. Before, the page last opened in any conversation stayed open in every other one.
 - **A restarted sidecar opens a conversation only when one is in front in Terminal.** When the server
   goes down the page now leaves for Listening and shows Reconnecting there, so once the server is back
   it opens whatever conversation is in front and otherwise stays on Listening. Before, the page waited
