@@ -10,7 +10,6 @@ type Front = { key?: string };
 type Watch = {
   timer: ReturnType<typeof setInterval>;
   seen?: Front;
-  holdsPoint: boolean;
 };
 
 // Guarded on `is running` so asking never launches Terminal; a tabless ghost window has no id, so it is skipped.
@@ -26,18 +25,14 @@ end if
 return ""`;
 
 const TERMINAL_EVERY_MS = 1000;
-const FRESH_MS = 15_000;
 
 let target: FollowTarget = { source: "none" };
-let pointedAt = 0;
+// Read when /sidecar points, because no page may be listening to see the front tab switch after it.
+let pointedFrom: Promise<Front | undefined> | undefined;
 const listeners = new Set<Listener>();
 let watch: Watch | undefined;
 
 export type Point = { face?: string; key: string; slug?: string; source: Exclude<FollowSource, "none"> };
-
-function isFresh(): boolean {
-  return Date.now() - pointedAt < FRESH_MS;
-}
 
 function targetAt({ face, key, slug, source }: Point): FollowTarget {
   const entry = liveEntries().find((one) => keyOf(one.id) === key);
@@ -45,20 +40,17 @@ function targetAt({ face, key, slug, source }: Point): FollowTarget {
 }
 
 export function followTarget(): FollowTarget | undefined {
-  if (isFresh()) return target;
-  const front = watch?.seen;
-  if (!front) return undefined;
-  return front.key ? targetAt({ key: front.key, source: "terminal" }) : { source: "terminal" };
+  return watch?.seen ? target : undefined;
 }
 
 function publish(next: FollowTarget): number {
   target = next;
-  pointedAt = Date.now();
   for (const listener of listeners) listener(target);
   return listeners.size;
 }
 
 export function pointAt(point: Point): number {
+  pointedFrom = frontKey();
   return publish(targetAt(point));
 }
 
@@ -100,18 +92,23 @@ async function frontKey(): Promise<Front | undefined> {
 
 async function tick(current: Watch): Promise<void> {
   const front = await frontKey();
+  const from = await pointedFrom;
   if (watch !== current || !front) return;
   const before = current.seen;
   current.seen = front;
-  if (before ? before.key === front.key : current.holdsPoint) return;
+  if (before && before.key === front.key) return;
+  if (!before && pointedFrom && (!from || from.key === front.key)) {
+    publish(target);
+    return;
+  }
+  pointedFrom = undefined;
   if (!front.key) publish({ source: "terminal" });
-  else if (!before || front.key !== target.key) pointAt({ key: front.key, source: "terminal" });
+  else if (!before || front.key !== target.key) publish(targetAt({ key: front.key, source: "terminal" }));
 }
 
 // Polls only while a page listens, because one osascript call takes about a tenth of a second.
 function watchTerminal(): void {
-  const holdsPoint = isFresh() && !!target.key;
-  const current: Watch = { timer: setInterval(() => void tick(current), TERMINAL_EVERY_MS), holdsPoint };
+  const current: Watch = { timer: setInterval(() => void tick(current), TERMINAL_EVERY_MS) };
   watch = current;
   void tick(current);
 }

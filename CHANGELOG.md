@@ -238,8 +238,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   until the front tab switches.
 - **A sidecar that opens shows the conversation in front in Terminal.** Opening the app, reloading or
   coming back on a restored page reads Terminal's front tab first, and goes to Listening when no
-  conversation is there. A `/sidecar` point made in the last 15 seconds still wins, so the app it
-  launches opens on what it pointed at. Before, an opening page went to whatever was pointed at last.
+  conversation is there. Whichever came last wins, a `/sidecar` point or the front tab switching after
+  it, so the app `/sidecar` launches opens on what it pointed at, and a switch made while the sidecar
+  was closed still counts because the front tab is read when the point is made. Before, an opening page
+  went to whatever was pointed at last.
 - **A session waiting on a permission prompt or a question reports `waiting`.** `/api/sessions` used to
   drop that status to nothing, so a client reading `status` sees a third value beside `busy` and `idle`.
 - **Every key the sidecar shows is a keycap.** Legends, footers, the comment banner, both Send buttons,
