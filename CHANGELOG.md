@@ -228,6 +228,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **Leaving a conversation in Terminal sends the sidecar to Listening.** When Terminal's front tab
+  switches to one with no conversation in it, or the conversation in it exits, the page goes to
+  Listening, and coming back to the same conversation opens it again. A Terminal that could not be
+  asked counts as no change. A conversation opened by hand or pointed at by `/sidecar` still stays put
+  until the front tab switches.
 - **A session waiting on a permission prompt or a question reports `waiting`.** `/api/sessions` used to
   drop that status to nothing, so a client reading `status` sees a third value beside `busy` and `idle`.
 - **Every key the sidecar shows is a keycap.** Legends, footers, the comment banner, both Send buttons,

@@ -5,6 +5,9 @@ import { liveEntries, type RegistryEntry } from "../sessions/registry.ts";
 
 type Listener = (target: FollowTarget) => void;
 
+// No key when the front tab runs no conversation.
+type Front = { key?: string };
+
 type Watch = {
   timer: ReturnType<typeof setInterval>;
   seen?: string;
@@ -33,6 +36,12 @@ export function followTarget(): FollowTarget {
   return target;
 }
 
+function publish(next: FollowTarget): number {
+  target = next;
+  for (const listener of listeners) listener(target);
+  return listeners.size;
+}
+
 export function pointAt({
   face,
   key,
@@ -45,9 +54,7 @@ export function pointAt({
   source: Exclude<FollowSource, "none">;
 }): number {
   const entry = liveEntries().find((one) => keyOf(one.id) === key);
-  target = { face, key, name: entry?.name, slug, source };
-  for (const listener of listeners) listener(target);
-  return listeners.size;
+  return publish({ face, key, name: entry?.name, slug, source });
 }
 
 export function onFollow(listener: Listener): () => void {
@@ -61,10 +68,11 @@ export function onFollow(listener: Listener): () => void {
   };
 }
 
-function frontTitle(): Promise<string> {
+// Undefined when Terminal could not be asked, so a failed read never counts as leaving a conversation.
+function frontTitle(): Promise<{ title: string } | undefined> {
   return new Promise((resolve) => {
     execFile("osascript", ["-e", SCRIPT], { timeout: 2000 }, (error, stdout) =>
-      resolve(error ? "" : String(stdout).trim()),
+      resolve(error ? undefined : { title: String(stdout).trim() }),
     );
   });
 }
@@ -78,21 +86,26 @@ function newest(entries: RegistryEntry[]): RegistryEntry | undefined {
   return [...entries].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
 }
 
-async function frontKey(): Promise<string | undefined> {
-  const name = nameOf(await frontTitle());
+async function frontKey(): Promise<Front | undefined> {
+  const read = await frontTitle();
+  if (!read) return undefined;
+  const name = nameOf(read.title);
   const entry = name ? newest(liveEntries().filter((one) => one.name === name)) : undefined;
-  return entry && keyOf(entry.id);
+  return { key: entry && keyOf(entry.id) };
 }
 
 // Points only when the front tab switches, so a `/sidecar` point already standing holds until then.
 async function tick(current: Watch): Promise<void> {
-  const key = await frontKey();
-  if (watch !== current) return;
+  const front = await frontKey();
+  if (watch !== current || !front) return;
   const isBaseline = current.isBaseline;
   current.isBaseline = false;
-  if (key === current.seen) return;
-  current.seen = key;
-  if (!isBaseline && key && key !== target.key) pointAt({ key, source: "terminal" });
+  if (front.key === current.seen) return;
+  current.seen = front.key;
+  if (isBaseline) return;
+  // A keyless point sends every page to Listening, so coming back to the same conversation points at it again.
+  if (!front.key) publish({ source: "terminal" });
+  else if (front.key !== target.key) pointAt({ key: front.key, source: "terminal" });
 }
 
 // Polls only while a page listens, because one osascript call takes about a tenth of a second.

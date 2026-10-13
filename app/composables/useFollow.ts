@@ -22,6 +22,7 @@ export interface Follow {
 export function useFollow(): Follow {
   const sc = useSidecar();
   const chrome = useChrome();
+  const route = useRoute();
   const target = useState<FollowTarget>("rv:follow", () => ({ source: "none" }));
   const opening = useState<string | undefined>("rv:opening");
   const pinned = useState("rv:pinned", () => false);
@@ -36,8 +37,10 @@ export function useFollow(): Follow {
   }
 
   function go(next: FollowTarget): void {
-    if (pinned.value || !next.key) return;
-    show(next);
+    if (pinned.value) return;
+    if (next.key) show(next);
+    // Terminal's front tab left every conversation, so the page waits on Listening for the next one.
+    else if (next.source === "terminal" && route.path !== "/") void navigateTo("/", { replace: true });
   }
 
   // Otherwise the first read is a baseline, so a conversation opened by hand stays put until Claude Code points elsewhere.
