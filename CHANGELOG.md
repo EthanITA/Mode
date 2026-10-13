@@ -228,6 +228,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **comment-guard challenges every comment an Edit adds.** Two short notes per edit no longer pass
+  quietly, and a comment the edit only carries over from `old_string` no longer counts, so a short
+  one-liner that restates the code gets flagged the moment it lands.
 - **Leaving a conversation in Terminal sends the sidecar to Listening.** When Terminal's front tab
   switches to one with no conversation in it, or the conversation in it exits, the page goes to
   Listening, and coming back to the same conversation opens it again. A Terminal that could not be

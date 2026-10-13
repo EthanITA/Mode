@@ -11,11 +11,11 @@ function wrote(
   guard: string,
   name: string,
   text: string,
-  { tool = "Write", file = text }: { tool?: string; file?: string } = {},
+  { tool = "Write", file = text, before = "" }: { tool?: string; file?: string; before?: string } = {},
 ): string {
   const path = write(join(tmp, name), file);
   const input =
-    tool === "Write" ? { file_path: path, content: text } : { file_path: path, old_string: "", new_string: text };
+    tool === "Write" ? { file_path: path, content: text } : { file_path: path, old_string: before, new_string: text };
   return contextOf(
     fire(
       `guards/${guard}`,
@@ -28,7 +28,7 @@ function wrote(
 describe("comment-guard", () => {
   const lines = (...rows: string[]): string => rows.join("\n") + "\n";
 
-  test("flags a file header, a comment past two lines or 28 words, and a third comment in one edit", () => {
+  test("flags a file header, a comment past two lines or 28 words, and any comment an edit adds", () => {
     assert.match(
       wrote("comment-guard", "header.ts", lines("// Utilities for orders.", "export const a = 1")),
       /file-header comment/,
@@ -42,14 +42,12 @@ describe("comment-guard", () => {
     const wordy = `// ${"word ".repeat(30).trim()}`;
     assert.match(wrote("comment-guard", "wordy.ts", lines("const a = 1", wordy), { tool: "Edit" }), /30-word comment/);
     assert.match(
-      wrote("comment-guard", "dense.py", lines("a = 1", "# why one", "b = 2", "# why two", "c = 3", "# why three"), {
-        tool: "Edit",
-      }),
-      /3 separate comments/,
+      wrote("comment-guard", "short.py", lines("a = 1", "# the cap the API enforces"), { tool: "Edit" }),
+      /new comment/,
     );
   });
 
-  test("leaves directives, comment markers inside strings, prose files and two short notes alone", () => {
+  test("leaves directives, comment markers inside strings, prose files, carried comments and a Write's notes alone", () => {
     const quiet = [
       wrote(
         "comment-guard",
@@ -71,18 +69,10 @@ describe("comment-guard", () => {
         { tool: "Edit" },
       ),
       wrote("comment-guard", "notes.md", lines("// whatever", "// it is markdown", "// three")),
-      wrote(
-        "comment-guard",
-        "two.ts",
-        lines(
-          "const a = 1",
-          "// the cap the API enforces",
-          "const b = 2",
-          "// retried because the first call races",
-          "const c = 3",
-        ),
-        { tool: "Edit" },
-      ),
+      wrote("comment-guard", "carried.ts", lines("// the cap the API enforces", "const a = 2"), {
+        before: lines("// the cap the API enforces", "const a = 1"),
+        tool: "Edit",
+      }),
       wrote(
         "comment-guard",
         "whole.ts",

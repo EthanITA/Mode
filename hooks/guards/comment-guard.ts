@@ -1,7 +1,7 @@
 import { basename, extname } from "node:path";
 import { armed } from "../../lib/hook/guard.ts";
 import { payload, postContext, record, str } from "../../lib/hook/io.ts";
-import { blocksIn, markerOf, opensWithHeader, verdicts } from "../../lib/style/comments.ts";
+import { addedBlocks, markerOf, opensWithHeader, verdicts } from "../../lib/style/comments.ts";
 import { strip } from "../../lib/text.ts";
 
 function check(): void {
@@ -15,7 +15,7 @@ function check(): void {
   const added = str(input.content) || str(input.new_string);
   if (!strip(added)) return;
 
-  const blocks = blocksIn(added, marker);
+  const blocks = addedBlocks(str(input.old_string), added, marker);
   if (!blocks.length) return;
 
   const wholeFile = data.tool_name === "Write";

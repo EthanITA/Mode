@@ -24,8 +24,6 @@ export const HASH = new Set([".py", ".sh", ".bash", ".zsh", ".rb"]);
 // A WHY that needs more than this has stopped being a note and become prose.
 const MAX_BLOCK_LINES = 2;
 const MAX_WORDS = 28;
-// Two short notes is the WHY exemption; a third is a habit.
-const QUIET_BLOCKS = 2;
 
 // Directives and deprecation markers are not prose.
 export const EXEMPT =
@@ -47,7 +45,7 @@ export function opensWithHeader(text: string, marker: string): boolean {
 }
 
 // Consecutive comment-only lines are one block, because three stacked // lines are one paragraph to a reader.
-export function blocksIn(text: string, marker: string): string[][] {
+function blocksIn(text: string, marker: string): string[][] {
   const found: string[][] = [];
   let current: string[] = [];
   for (const raw of text.split("\n")) {
@@ -73,9 +71,13 @@ export function verdicts(blocks: string[][], header: boolean, wholeFile: boolean
     if (block.length > MAX_BLOCK_LINES)
       out.push(`${block.length}-line comment ${first} — a WHY fits in one line, two at most`);
     else if (count > MAX_WORDS) out.push(`${count}-word comment ${first} — say it shorter or not at all`);
+    else if (!wholeFile)
+      out.push(`new comment ${first} — the default is zero, so it stays only if the code cannot say it`);
   }
-  // Density counts on an Edit, which appends; a Write's total says nothing about restraint.
-  if (!wholeFile && blocks.length > QUIET_BLOCKS)
-    out.push(`${blocks.length} separate comments in one edit — the default is zero`);
   return out;
+}
+
+export function addedBlocks(before: string, after: string, marker: string): string[][] {
+  const kept = new Set(blocksIn(before, marker).flat());
+  return blocksIn(after, marker).filter((block) => block.some((line) => !kept.has(line)));
 }
