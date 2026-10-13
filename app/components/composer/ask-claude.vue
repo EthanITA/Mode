@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { ChevronLeft, ChevronRight, Copy, X } from "@lucide/vue";
 import { useClipboard } from "@vueuse/core";
-import type { SessionState } from "~~/shared/types/session";
 import type { AskClaudeState, AskClaudeTurn } from "~/utils/ask-claude";
 
 const open = defineModel<boolean>("open", { required: true });
@@ -21,13 +20,6 @@ const STATE_LINES: Record<AskClaudeState, string> = {
   asking: "asking · not in the conversation",
   answered: "answered · not in the conversation",
   failed: "failed · no answer",
-};
-
-const SESSION_LINES: Record<SessionState, string> = {
-  busy: "session busy",
-  idle: "session idle",
-  waiting: "session waiting on you",
-  gone: "session gone · asking still works",
 };
 
 const HINTS: Record<AskClaudeState, { keys: string; label: string }[]> = {
@@ -207,6 +199,7 @@ defineExpose({ focus });
       </section>
 
       <div class="row">
+        <ComposerSessionPerch />
         <UiTextarea
           v-model="draft"
           auto-fit
@@ -223,10 +216,6 @@ defineExpose({ focus });
       </div>
 
       <div class="meta">
-        <span class="session mono-meta" data-region="session-state" :data-session="sessionState">
-          <span class="dot" />
-          {{ SESSION_LINES[sessionState] }}
-        </span>
         <span class="legend">
           <UiKbd v-for="hint in HINTS[view.state]" :key="hint.label" :keys="hint.keys" :label="hint.label" />
         </span>
@@ -413,9 +402,9 @@ defineExpose({ focus });
   align-items: flex-end;
   display: flex;
   flex: none;
-  gap: 10px;
+  gap: 8px;
   min-height: 36px;
-  padding: 2px 4px 3px 8px;
+  padding: 2px 4px 3px 2px;
 }
 
 /* auto-fit grows the box and hides its overflow; the cap is this call site's, so scrolling comes back with it. */
@@ -460,45 +449,8 @@ defineExpose({ focus });
   flex: none;
   gap: 6px;
   height: 26px;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 0 4px 0 10px;
-}
-
-.session {
-  align-items: center;
-  color: var(--subtle);
-  display: flex;
-  flex: none;
-  gap: 6px;
-}
-
-.session .dot {
-  --dot-size: 6px;
-
-  background: var(--subtle);
-}
-
-.session[data-session="busy"] {
-  color: var(--success);
-}
-
-.session[data-session="busy"] .dot {
-  animation: breathe calc(var(--duration-spotlight) * 2) var(--ease-in-out) infinite;
-  background: var(--success);
-}
-
-.session[data-session="waiting"] {
-  color: var(--warning);
-}
-
-.session[data-session="waiting"] .dot {
-  background: var(--warning);
-}
-
-.session[data-session="gone"] .dot {
-  background: transparent;
-  border: 1px solid var(--subtle);
-  box-sizing: border-box;
 }
 
 .legend {
@@ -506,17 +458,5 @@ defineExpose({ focus });
   gap: 12px;
   overflow: hidden;
   white-space: nowrap;
-}
-
-@keyframes breathe {
-  50% {
-    opacity: 0.35;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .session[data-session="busy"] .dot {
-    animation: none;
-  }
 }
 </style>

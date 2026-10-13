@@ -13,8 +13,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 - **Ask Claude, `/btw` from the sidecar.** ⌥↵ or the Ask Claude pill asks a side question with the
   whole conversation as context, the running turn included, and nothing reaches the transcript. The
-  session's status and the side chat's state show apart, asking works on a finished conversation, and
-  Send to session turns an answer into a real turn. `POST /api/sessions/<key>/ask` serves it.
+  session's mascot perches by the field and acts out its status, hopping under a "!" while it waits on
+  you and asleep once it's gone, apart from the side chat's state. Asking works on a finished
+  conversation, and Send to session turns an answer into a real turn. `POST /api/sessions/<key>/ask` serves it.
 
 - **Claude reaches the sidecar through events, and a new artifact raises a notification.** Producers
   append typed events to `~/.claude/sidecar/events.jsonl`, and `/api/events/stream` streams them to every

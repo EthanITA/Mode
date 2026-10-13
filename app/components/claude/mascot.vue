@@ -1,5 +1,5 @@
 <script lang="ts">
-export type MascotState = "idle" | "thinking" | "coding" | "investigating" | "running";
+export type MascotState = "idle" | "thinking" | "coding" | "investigating" | "running" | "waiting" | "asleep";
 </script>
 
 <script lang="ts" setup>
@@ -172,6 +172,26 @@ onScopeDispose(() => clearTimeout(timer));
           <circle cx="31" cy="-0.8" r="2.6" />
           <circle class="puff p1" cx="21.6" cy="2.4" r="1.2" />
           <circle class="puff p2" cx="20.2" cy="4.4" r="0.8" />
+        </g>
+
+        <g class="alert">
+          <rect x="11.1" y="-4.6" width="1.8" height="3.8" />
+          <rect x="11.1" y="0.2" width="1.8" height="1.8" />
+        </g>
+
+        <g class="snooze">
+          <g class="z">
+            <rect x="21" y="0.2" width="3.2" height="0.8" />
+            <rect x="22.6" y="1" width="0.8" height="0.8" />
+            <rect x="21.8" y="1.8" width="0.8" height="0.8" />
+            <rect x="21" y="2.6" width="3.2" height="0.8" />
+          </g>
+          <g class="z z2">
+            <rect x="25.6" y="-4" width="2.4" height="0.6" />
+            <rect x="26.8" y="-3.4" width="0.6" height="0.6" />
+            <rect x="26.2" y="-2.8" width="0.6" height="0.6" />
+            <rect x="25.6" y="-2.2" width="2.4" height="0.6" />
+          </g>
         </g>
 
         <!-- Behind the body, so Claude reads as sitting at the desk rather than beside it. -->
@@ -426,6 +446,12 @@ onScopeDispose(() => clearTimeout(timer));
   fill: var(--prop-cloud);
   opacity: 0.9;
 }
+.alert rect {
+  fill: var(--prop-alert);
+}
+.snooze rect {
+  fill: var(--prop-cloud);
+}
 
 .rig,
 .head,
@@ -446,7 +472,9 @@ onScopeDispose(() => clearTimeout(timer));
 .keys,
 .cloud,
 .prompt,
-.rig-desk {
+.rig-desk,
+.alert,
+.snooze {
   opacity: 0;
   pointer-events: none;
   transition: opacity 190ms var(--ease-out, ease-out);
@@ -459,7 +487,9 @@ onScopeDispose(() => clearTimeout(timer));
 .mascot[data-state="coding"] .rig-desk,
 .mascot[data-state="thinking"] .cloud,
 .mascot[data-state="running"] .keys,
-.mascot[data-state="running"] .prompt {
+.mascot[data-state="running"] .prompt,
+.mascot[data-state="waiting"] .alert,
+.mascot[data-state="asleep"] .snooze {
   opacity: 1;
   transition-delay: 150ms;
 }
@@ -543,6 +573,25 @@ onScopeDispose(() => clearTimeout(timer));
 }
 .mascot[data-state="thinking"] .p2 {
   animation-delay: 0.3s;
+}
+
+.mascot[data-state="waiting"] .alert {
+  animation: hop 1.4s ease-in-out infinite;
+}
+
+.mascot[data-state="asleep"] .rig {
+  animation: doze 3.2s ease-in-out infinite;
+  opacity: 0.6;
+}
+.mascot[data-state="asleep"] .eyes {
+  animation-name: none;
+  transform: scaleY(0.12);
+}
+.mascot[data-state="asleep"] .z {
+  animation: snooze 3.2s ease-out infinite;
+}
+.mascot[data-state="asleep"] .z2 {
+  animation-delay: 1.6s;
 }
 
 /* idle: one pre-defined move at a time, legs never moving. */
@@ -673,6 +722,44 @@ onScopeDispose(() => clearTimeout(timer));
   }
   50% {
     opacity: 0.95;
+  }
+}
+
+@keyframes hop {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(-1.2px);
+  }
+  40% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes doze {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(0.25px) scaleY(0.97);
+  }
+}
+
+@keyframes snooze {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(1.4px, -2.6px);
   }
 }
 

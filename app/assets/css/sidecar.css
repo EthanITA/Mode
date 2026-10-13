@@ -50,6 +50,7 @@
   --prop-key: var(--canvas);
   --prop-glass: var(--info);
   --prop-cloud: var(--muted);
+  --prop-alert: var(--warning);
   --prop-tweed: color-mix(in oklch, var(--warning) 34%, var(--ink));
   /* A portal is an object with its own fixed colour, like the mark; no token can stand in. */
   --portal-1: #5b1f96;
