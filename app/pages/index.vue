@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 loadSidecar();
-useFollow().listen({ isEager: true });
+$follow().listen({ isEager: true });
 </script>
 
 <template>

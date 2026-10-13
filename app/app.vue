@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 const chrome = useChrome();
-const follow = useFollow();
+const follow = $follow();
 const sc = useSidecar();
 const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
 const inlineAsk = useState<boolean>("sc:inline-ask", () => false);

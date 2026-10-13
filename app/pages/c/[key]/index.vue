@@ -45,7 +45,7 @@ const gone = computed(() => sc.ready.value && !session.value);
 watch([key, () => sc.sessions.value], () => (sc.sessionKey.value = key.value), { immediate: true });
 
 loadSidecar();
-useFollow().listen();
+follow.listen();
 </script>
 
 <template>
