@@ -13,13 +13,13 @@ type Watch = {
   holdsPoint: boolean;
 };
 
-// Guarded on `is running` so asking never launches Terminal; a tabless ghost window can sit at index 1, so it is skipped.
+// Guarded on `is running` so asking never launches Terminal; a tabless ghost window has no id, so it is skipped.
 const SCRIPT = `if application "Terminal" is running then
   tell application "Terminal"
-    repeat with w in windows
-      try
-        return custom title of selected tab of w
-      end try
+    set ids to id of every window
+    repeat with wid in ids
+      set wid to contents of wid
+      if wid is not missing value then return custom title of selected tab of window id wid
     end repeat
   end tell
 end if
