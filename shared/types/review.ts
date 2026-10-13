@@ -45,7 +45,6 @@ export type FollowSource = "claude" | "prompt" | "terminal" | "none";
 export interface FollowTarget {
   /** The face to show there, such as Review; the client ignores one it does not know. */
   face?: string;
-  /** Absent on a `terminal` point when the front tab left every conversation, which sends the page to Listening. */
   key?: string;
   name?: string;
   /** An artifact to open there, which always shows in Artifacts. */

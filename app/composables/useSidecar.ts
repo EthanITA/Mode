@@ -39,7 +39,6 @@ export function useSidecar(): Sidecar {
   };
 }
 
-// Kept per conversation, so a page or file picked in one never stays open in the next.
 export function useConversationPick(name: string): WritableComputedRef<string | undefined> {
   const sc = useSidecar();
   const picks = useState<Partial<Record<string, string>>>(name, () => ({}));

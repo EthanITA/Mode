@@ -9,7 +9,6 @@ export interface FollowOptions {
 
 export type FollowPlace = Pick<FollowTarget, "face" | "key" | "slug">;
 
-// The page the app opened on, typed or restored, reads the conversation active now instead of staying put.
 const LANDING = window.location.pathname;
 let hasLanded = false;
 

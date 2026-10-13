@@ -26,7 +26,6 @@ end if
 return ""`;
 
 const TERMINAL_EVERY_MS = 1000;
-// Long enough for `/sidecar` to launch the app and have its first page read the point.
 const FRESH_MS = 15_000;
 
 let target: FollowTarget = { source: "none" };
@@ -45,7 +44,6 @@ function targetAt({ face, key, slug, source }: Point): FollowTarget {
   return { face, key, name: entry?.name, slug, source };
 }
 
-// What a page opening now should show: a point just made, else the conversation in front, else nothing until Terminal is read.
 export function followTarget(): FollowTarget | undefined {
   if (isFresh()) return target;
   const front = watch?.seen;
@@ -75,7 +73,6 @@ export function onFollow(listener: Listener): () => void {
   };
 }
 
-// Undefined when Terminal could not be asked, so a failed read never counts as leaving a conversation.
 function frontTitle(): Promise<{ title: string } | undefined> {
   return new Promise((resolve) => {
     execFile("osascript", ["-e", SCRIPT], { timeout: 2000 }, (error, stdout) =>
@@ -101,7 +98,6 @@ async function frontKey(): Promise<Front | undefined> {
   return { key: entry && keyOf(entry.id) };
 }
 
-// The first read shows what is in front unless a point was just made; after that only a switch points.
 async function tick(current: Watch): Promise<void> {
   const front = await frontKey();
   if (watch !== current || !front) return;
