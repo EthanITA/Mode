@@ -3,6 +3,7 @@ import { createMarkdownParser } from "comark";
 import taskList from "comark/plugins/task-list";
 import type { MarkdownDocument as Tree } from "comark";
 import ProseCode from "./prose-code.vue";
+import ProseLine from "./prose-line.vue";
 import ProseLink from "./prose-link.vue";
 
 const parse = createMarkdownParser({
@@ -13,11 +14,11 @@ const parse = createMarkdownParser({
   registerDefaultPlugins: false,
 });
 
-const COMPONENTS = { a: ProseLink, pre: ProseCode };
+const COMPONENTS = { a: ProseLink, "line-ref": ProseLine, pre: ProseCode };
 </script>
 
 <script lang="ts" setup>
-const { value } = defineProps<{ value: string }>();
+const { lineRefsOf, value } = defineProps<{ lineRefsOf?: string; value: string }>();
 
 const tree = shallowRef<Tree>();
 
@@ -25,7 +26,8 @@ watch(
   () => value,
   async (next) => {
     const parsed = await parse(next);
-    if (next === value) tree.value = parsed;
+    if (next !== value) return;
+    tree.value = lineRefsOf ? { ...parsed, nodes: SideQuestion.withLineRefs(parsed.nodes, lineRefsOf) } : parsed;
   },
   { immediate: true },
 );
