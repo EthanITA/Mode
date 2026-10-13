@@ -22,6 +22,7 @@ const emit = defineEmits<{ reload: []; notes: [count: number] }>();
 
 const sc = useSidecar();
 const tray = useTray();
+const sides = $sideQuestion();
 
 const placed = computed(() => anchorThreads({ anchors, marks, threads }));
 
@@ -32,7 +33,7 @@ function isGutterNote(item: TrayItem): boolean {
   return !item.source || item.source === sc.slug.value;
 }
 
-function topOf(item: TrayItem): number {
+function topOf(item: Pick<TrayItem, "block" | "mark" | "quote" | "top">): number {
   const exact = marks.find((mark) => item.mark && mark.key === item.mark && (!item.block || mark.text === item.block));
   if (exact) return exact.top;
   const byBlock = marks.find((mark) => item.block && mark.text === item.block);
@@ -52,6 +53,12 @@ const placedNotes = computed(() => {
 });
 
 const linked = computed(() => new Set(placedNotes.value.map((row) => row.item.thread).filter(Boolean)));
+
+const asked = computed(() =>
+  sides
+    .at(sc.sessionKey.value, "artifact", sc.slug.value ?? "")
+    .map((thread) => ({ thread, top: topOf(thread.anchor) })),
+);
 
 const pageCards = computed(() => {
   const used = linked.value;
@@ -83,7 +90,9 @@ const adrift = computed<Pin | undefined>(() => {
 const away = computed(() => (side === "right" ? "left" : "right"));
 
 // The page sizes its notes column off this, so an empty one costs no width at all.
-watchEffect(() => emit("notes", pageCards.value.length + placedNotes.value.length + (adrift.value ? 1 : 0)));
+watchEffect(() =>
+  emit("notes", pageCards.value.length + placedNotes.value.length + asked.value.length + (adrift.value ? 1 : 0)),
+);
 </script>
 
 <template>
@@ -124,6 +133,10 @@ watchEffect(() => emit("notes", pageCards.value.length + placedNotes.value.lengt
     >
       <ArtifactNote :item="row.item" :live="live" :slug="sc.slug.value ?? ''" @reload="emit('reload')" />
     </div>
+
+    <div v-for="row in asked" :key="`ask:${row.thread.id}`" class="perch perch-ask" :style="{ top: `${row.top}px` }">
+      <SideQuestionCard source="prose" :thread="row.thread" />
+    </div>
   </TransitionGroup>
 </template>
 
@@ -149,6 +162,10 @@ watchEffect(() => emit("notes", pageCards.value.length + placedNotes.value.lengt
 
 .perch-note {
   z-index: 4;
+}
+
+.perch-ask {
+  z-index: 5;
 }
 
 /* A saved note lands beside its line; perches are absolute, so a leaving one shifts nothing. */

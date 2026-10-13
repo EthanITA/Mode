@@ -41,6 +41,7 @@ const version = ref(0);
 
 let editor: MonacoApi.editor.IStandaloneCodeEditor | undefined;
 let api: typeof MonacoApi | undefined;
+const asking = shallowRef<{ api: typeof MonacoApi; editor: MonacoApi.editor.ICodeEditor }>();
 let pen: Notes | undefined;
 let ticket = 0;
 
@@ -136,11 +137,13 @@ async function discard(): Promise<void> {
 
 function openNote({ lines, quote, x, y }: NoteAt): void {
   const span = EditorNotes.spanOf(lines);
+  const label = `${basename(path)}:${lines[0] === lines[1] ? lines[0] : lines.join("-")}`;
   chrome.comment.open({
+    ask: { label, lines, place: file.value, quote, surface: "files", where: `${span} of ${file.value}` },
     excerpt: quote,
     file: file.value,
     kind: "line",
-    label: `${basename(path)}:${lines[0] === lines[1] ? lines[0] : lines.join("-")}`,
+    label,
     path: span,
     quote,
     tell: `About ${span} of ${file.value}:`,
@@ -190,6 +193,7 @@ onMounted(async () => {
     wordWrap: "on",
   });
   pen = EditorNotes.attach({ api, editor, onNote: openNote });
+  asking.value = { api, editor };
   editor.addCommand(api.KeyMod.CtrlCmd | api.KeyCode.KeyS, () => void save());
   editor.onDidChangeModelContent(markDirty);
   await pull();
@@ -269,6 +273,7 @@ onBeforeUnmount(() => {
     </header>
     <div class="body">
       <div v-show="content && 'text' in content && !isPreviewing" ref="host" class="host" data-region="files-viewer" />
+      <SideQuestionZones v-if="asking" :api="asking.api" :editor="asking.editor" :place="file" surface="files" />
       <PreviewStage v-if="isPreviewing && kind" v-model:zoom="zoom" :kind="kind" :src="src" />
       <UiStateMessage v-else-if="content && 'reason' in content" align="center" class="empty">
         {{ UNSHOWN[content.reason] }}

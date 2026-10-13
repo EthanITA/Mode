@@ -2,6 +2,7 @@ import type { CanvasFitOptions } from "@cela/design";
 import type { ComputedRef, Ref } from "vue";
 import type { Maybe, MaybeComputed } from "~/composables/useSidecar";
 import type { FrameHit } from "~/types/frame";
+import type { SideAnchor } from "~/utils/ask-claude";
 import type { ArtifactReviewReply } from "~~/shared/types/artifact";
 
 export const FACES = ["artifacts", "review", "files", "history"] as const;
@@ -43,6 +44,8 @@ export interface CommentHover {
 }
 
 export interface CommentSpot extends CommentTarget {
+  /** Set only by a surface that has somewhere to show the answer. */
+  ask?: SideAnchor;
   x: number;
   y: number;
 }
@@ -72,8 +75,9 @@ export interface Chrome {
   comment: {
     arm: (holding?: boolean) => void;
     armed: Ref<boolean>;
+    ask: (text: string) => void;
     close: () => void;
-    compose: (hit: FrameHit) => void;
+    compose: (hit: FrameHit, canAsk?: boolean) => void;
     disarm: () => void;
     held: Ref<boolean>;
     hover: Maybe<CommentHover>;
@@ -139,6 +143,7 @@ let toastSeq = 0;
 export function useChrome(): Chrome {
   const tray = useTray();
   const sc = useSidecar();
+  const sides = $sideQuestion();
 
   const faces = useState<Face[]>("sc:faces", () => []);
   const picked = useState<Face>("sc:view", () => "artifacts");
@@ -200,15 +205,30 @@ export function useChrome(): Chrome {
   }
 
   // One step, because a picked block that then asks for a second click is the whole friction.
-  function compose(hit: FrameHit): void {
+  function compose(hit: FrameHit, canAsk = false): void {
+    const label = hit.label || hit.path;
+    const slug = sc.slug.value;
     pick.value = hit;
     hover.value = ringOf(hit);
     spot.value = {
+      ask:
+        canAsk && slug
+          ? {
+              block: hit.text,
+              label,
+              mark: hit.key,
+              place: slug,
+              quote: hit.text,
+              surface: "artifact",
+              top: hit.top,
+              where: `a block of the artifact ${slug}${sc.artifact.value?.path ? ` (${sc.artifact.value.path})` : ""}`,
+            }
+          : undefined,
       block: hit.text,
       excerpt: hit.text,
       file: sc.artifact.value?.path,
       kind: "block",
-      label: hit.label || hit.path,
+      label,
       mark: hit.key,
       path: hit.path,
       quote: hit.text,
@@ -239,6 +259,17 @@ export function useChrome(): Chrome {
     hover.value = undefined;
     toast("In the tray · Send notes hands it to Claude");
     void persist(at, body, id);
+  }
+
+  function ask(text: string): void {
+    const at = spot.value;
+    const question = text.trim();
+    const key = sc.sessionKey.value;
+    if (!at?.ask || !question || !key) return;
+    sides.ask({ anchor: at.ask, key, question });
+    close();
+    pick.value = undefined;
+    hover.value = undefined;
   }
 
   async function persist(at: CommentSpot, body: string, id?: string): Promise<void> {
@@ -314,6 +345,7 @@ export function useChrome(): Chrome {
         spot.value = undefined;
       },
       armed,
+      ask,
       close,
       compose,
       disarm,

@@ -17,6 +17,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   you and asleep once it's gone, apart from the side chat's state. Asking works on a finished
   conversation, and Send to session turns an answer into a real turn. `POST /api/sessions/<key>/ask` serves it.
 
+- **Quick ask from a comment.** The comment popover on lines in Review's diff, lines in Files, and a
+  block of an artifact gets Ask (⌘↵) beside Add to tray. Claude answers in a side question card under
+  the lines or in the margin, with follow-ups, Resolve (⌘⌫, with Undo) and Send to conversation (⌘↵),
+  and the lines an answer names light up as chips you can click. Asks never enter the tray.
+
 - **Claude reaches the sidecar through events, and a new artifact raises a notification.** Producers
   append typed events to `~/.claude/sidecar/events.jsonl`, and `/api/events/stream` streams them to every
   open sidecar with Kafka's offsets, so a consumer resumes where it stopped. The first topic,

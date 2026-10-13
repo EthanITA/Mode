@@ -19,6 +19,7 @@ const sc = useSidecar();
 const chrome = useChrome();
 const route = useRoute();
 const artifact = $artifact();
+const sides = $sideQuestion();
 
 // The sheet on a face is too narrow for a second column; a routed page or a grown sheet has the room.
 const roomy = computed(() => artifact.isFull || !!route.params.slug);
@@ -236,10 +237,16 @@ onMounted(() => {
   window.addEventListener("keydown", onWin);
 });
 
+watch(
+  () => slug,
+  (_, left) => sides.leave(conversation, "artifact", left),
+);
+
 onScopeDispose(() => {
   window.removeEventListener("keydown", onWin);
   inlineArmed.value = false;
   chrome.comment.disarm();
+  sides.leave(conversation, "artifact", slug);
 });
 </script>
 
@@ -270,6 +277,7 @@ onScopeDispose(() => {
         ref="frame"
         class="sheet-cell"
         data-region="artifact-page"
+        :can-ask="roomy && measured && live"
         :edition="edition"
         :html="markdown ? undefined : html"
         :inset="notesRoom"

@@ -213,6 +213,27 @@ body {
   background: color-mix(in oklch, var(--ed-accent) 12%, transparent);
 }
 
+.monaco-asked {
+  background: color-mix(in oklch, var(--primary) 16%, transparent);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+/* Stacked over .monaco-asked, so a line the answer names reads a step brighter than the selection. */
+.monaco-pointed {
+  background: color-mix(in oklch, var(--primary) 22%, transparent);
+}
+
+/* An overlay widget Monaco places, so no component's scoped style reaches it. */
+.side-zone {
+  box-sizing: border-box;
+  padding: 8px 12px 10px 0;
+  z-index: 5;
+}
+
+.side-zone[data-surface="files"] > * {
+  max-width: 460px;
+}
+
 .monaco-noted-glyph::before {
   background: var(--ed-accent);
   border-radius: 999px;

@@ -32,7 +32,8 @@ onBeforeUnmount(() => cameFrom?.focus());
 function onKey(event: KeyboardEvent): void {
   if (event.key !== "Enter" || event.shiftKey) return;
   event.preventDefault();
-  chrome.comment.save(draft.value);
+  if ((event.metaKey || event.ctrlKey) && spot.ask) chrome.comment.ask(draft.value);
+  else chrome.comment.save(draft.value);
 }
 
 // The pick is left standing: the artifact page reads it to place the edit panel, then closes this one.
@@ -78,6 +79,19 @@ function onEdit(): void {
         Edit
       </button>
       <button v-press class="cancel focusable" type="button" @click="chrome.comment.close()">Cancel</button>
+      <button
+        v-if="spot.ask"
+        v-press
+        class="ask focusable"
+        type="button"
+        data-region="comment-ask"
+        data-tip="Ask on the side, the session isn't told · {cmd enter}"
+        :disabled="!draft.trim()"
+        @click="chrome.comment.ask(draft)"
+      >
+        Ask
+        <UiKbd keys="cmd enter" />
+      </button>
       <button
         v-press
         class="save focusable"
@@ -187,6 +201,7 @@ function onEdit(): void {
 }
 
 .cancel,
+.ask,
 .save {
   border-radius: 999px;
   cursor: pointer;
@@ -216,6 +231,21 @@ function onEdit(): void {
   padding: 0 12px;
 }
 
+.ask {
+  align-items: center;
+  background: var(--raised);
+  border: 1px solid var(--border-strong);
+  color: var(--ink);
+  display: inline-flex;
+  gap: 8px;
+  padding: 0 5px 0 12px;
+}
+
+.ask:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+
+.ask:disabled,
 .save:disabled {
   cursor: not-allowed;
   opacity: 0.45;

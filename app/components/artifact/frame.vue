@@ -2,6 +2,7 @@
 import type { FrameAnchor, FrameHit, FrameMark, FramePending, ViewBox } from "~/types/frame";
 
 const {
+  canAsk = false,
   edition,
   html,
   inset = 0,
@@ -9,6 +10,7 @@ const {
   src,
   version,
 } = defineProps<{
+  canAsk?: boolean;
   edition?: number;
   html?: string;
   /** Pixels at the page's inline end that something laid over it holds, which the page's content leaves clear. */
@@ -320,7 +322,7 @@ function onLoad(): void {
     picked = node;
     hot = node;
     const hit = hitOf(node);
-    if (hit) chrome.comment.compose(hit);
+    if (hit) chrome.comment.compose(hit, canAsk);
   };
 
   const onKeyDown = (event: KeyboardEvent): void => {

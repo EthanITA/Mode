@@ -106,6 +106,8 @@ useEventListener(
     // An unsaved edit keeps ⌘Z for the editor's own undo.
     if (review.isDirty.value) return;
     const target = event.target instanceof Element ? event.target : undefined;
+    // A side question card sits inside the editor's DOM, yet its ⌘Z belongs to its own field or its Undo.
+    if (target?.closest("[data-region='side-question']")) return;
     if (target?.closest("input, textarea, [contenteditable]") && !target.closest(".monaco-editor")) return;
     event.preventDefault();
     event.stopPropagation();

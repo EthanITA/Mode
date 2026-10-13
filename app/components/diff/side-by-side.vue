@@ -57,6 +57,7 @@ const contentHeight = ref(
 );
 const hunks = ref<HunkAt[]>([]);
 const seam = ref(0);
+const asking = shallowRef<{ api: typeof MonacoApi; editor: MonacoApi.editor.ICodeEditor }>();
 
 let api: typeof MonacoApi | undefined;
 let diff: MonacoApi.editor.IStandaloneDiffEditor | undefined;
@@ -92,11 +93,17 @@ function placeHunks(): void {
 function openNote(side: Side, { lines, quote, x, y }: NoteAt): void {
   const span = EditorNotes.spanOf(lines);
   const where = side === "old" ? `original ${span}` : span;
+  const label = `${basename(file.path)}:${lines[0] === lines[1] ? lines[0] : lines.join("-")}`;
+  // History reads the same diff, and only Review's new side has a place to put the answer.
+  const canAsk = !isReadonly && side === "new";
   chrome.comment.open({
+    ask: canAsk
+      ? { label, lines, place: shown.value, quote, surface: "review", where: `${span} of ${shown.value}` }
+      : undefined,
     excerpt: quote,
     file: shown.value,
     kind: "line",
-    label: `${basename(file.path)}:${lines[0] === lines[1] ? lines[0] : lines.join("-")}`,
+    label,
     path: where,
     quote,
     tell: side === "old" ? `About the original ${span} of ${shown.value}:` : `About ${span} of ${shown.value}:`,
@@ -221,8 +228,10 @@ async function build(): Promise<void> {
     editor.onDidLayoutChange(placeHunks);
     editor.onDidContentSizeChange(() => {
       contentHeight.value = Math.max(...sides.map((one) => one.getContentHeight()));
+      placeHunks();
     });
   }
+  if (!isReadonly) asking.value = { api, editor: sides[1]! };
   diff.onDidUpdateDiff(() => {
     contentHeight.value = Math.max(...sides.map((one) => one.getContentHeight()));
     placeHunks();
@@ -274,6 +283,7 @@ onBeforeUnmount(() => {
     :style="[OneDarkVivid.cssVars, isFill ? {} : { height: `${contentHeight}px` }]"
   >
     <div ref="host" class="host" />
+    <SideQuestionZones v-if="asking" :api="asking.api" :editor="asking.editor" :place="shown" surface="review" />
     <div v-if="!isReadonly && hunks.length" class="hunks" :style="{ left: `${seam}px` }">
       <div
         v-for="hunk in hunks"

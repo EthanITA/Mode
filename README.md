@@ -282,6 +282,12 @@ off, and sends the undocumented `side_question` control request over stream-json
 conversation too, and since that request is internal, a Claude Code upgrade can break it, which shows as
 a failed answer.
 
+The same ask runs from a comment: Ask (⌘↵) in the comment popover opens a side question card where you
+picked, under the lines in Review and Files or in an artifact's margin. Its first question carries the
+place and the picked lines numbered from the file, so a "line 14" in the answer is the file's line 14,
+and Send to conversation hands the place, a short quote and the exchanges over as your next message.
+The threads live in the `$sideQuestion` store, in memory only like `/btw`.
+
 ---
 
 ## Pinning a pair to a directory
