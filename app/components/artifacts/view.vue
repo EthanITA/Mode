@@ -5,7 +5,7 @@ const KIND: Record<ArtifactKind, string> = { document: "Document", page: "Page",
 
 const { initial: sideInitial, width: side } = usePaneWidth();
 const sc = useSidecar();
-const follow = useFollow();
+const follow = $follow();
 const selected = useConversationPick("ar:picks");
 
 const session = computed(() => sc.sessions.value.find((s) => s.key === sc.sessionKey.value));
@@ -27,13 +27,13 @@ watch(
 
 // A page made after the catalogue loaded is not in it yet, so the catalogue is read again before giving up.
 watch(
-  () => follow.opening.value,
+  () => follow.opening,
   async (slug) => {
     if (!slug) return;
     const isKnown = (): boolean => sc.catalogue.value.some((meta) => meta.slug === slug);
     if (!isKnown()) sc.catalogue.value = await $fetch<ArtifactMeta[]>("/api/artifacts").catch(() => sc.catalogue.value);
-    if (follow.opening.value !== slug) return;
-    follow.opening.value = undefined;
+    if (follow.opening !== slug) return;
+    follow.opening = undefined;
     if (isKnown()) selected.value = slug;
   },
   { immediate: true },

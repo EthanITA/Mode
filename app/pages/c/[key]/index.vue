@@ -4,7 +4,7 @@ import type { Component } from "vue";
 const route = useRoute();
 const sc = useSidecar();
 const chrome = useChrome();
-const follow = useFollow();
+const follow = $follow();
 
 // Read off disk at build: an unbuilt face is unreachable, with no list kept by hand.
 const parts = import.meta.glob<Component>(
@@ -32,7 +32,7 @@ const asked = FACES.find((face) => face === route.query.face);
 if (asked) chrome.view.set(asked);
 if (typeof route.query.artifact === "string") {
   chrome.view.set("artifacts");
-  follow.opening.value = route.query.artifact;
+  follow.opening = route.query.artifact;
 }
 
 const key = computed(() => String(route.params.key ?? ""));
@@ -45,7 +45,7 @@ const gone = computed(() => sc.ready.value && !session.value);
 watch([key, () => sc.sessions.value], () => (sc.sessionKey.value = key.value), { immediate: true });
 
 loadSidecar();
-follow.listen();
+useFollow().listen();
 </script>
 
 <template>
