@@ -37,13 +37,13 @@ export function useCommentPick({ edit, frame, inset = () => 0, measure, owner }:
   // A frame on a face kept mounted out of sight has no box, and must not clear the ring a shown one lit.
   const isShown = (): boolean => !!frame.value?.getClientRects().length;
 
-  // Only what every clipping ancestor leaves is on screen, so the ring never spills past the pane.
+  // Only what every clipping ancestor leaves is on screen, so the ring never spills past the pane; grown, no island floats over it.
   function visibleBox(el: HTMLElement): ViewBox {
     let seen: ViewBox = {
       bottom: window.innerHeight,
       left: 0,
       right: window.innerWidth,
-      top: chrome.frame.insets.value.top,
+      top: artifact.isFull ? 0 : chrome.frame.insets.value.top,
     };
     for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
       const { overflowX, overflowY } = getComputedStyle(node);

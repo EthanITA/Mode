@@ -1,3 +1,4 @@
+import { parseTarget } from "../../lib/web/target.ts";
 import type { ReviewThread } from "../../shared/types/artifact.ts";
 
 export interface WebOriginOptions {
@@ -40,6 +41,13 @@ function upstreamOf(href: string, { proxy, upstream }: { proxy: string; upstream
   return at.origin === proxy ? `${upstream}${at.pathname}${at.search}${at.hash}` : href;
 }
 
+// The address as one would type it: the scheme goes only when typing it back would bring the same one.
+function typed(href: string): string {
+  const at = new URL(href);
+  const bare = href.slice(at.protocol.length + 2).replace(/^([^/?#]*)\/$/, "$1");
+  return parseTarget(bare)?.href === at.href ? bare : href;
+}
+
 function isLocal(href: string): boolean {
   const host = new URL(href).hostname;
   return host === "localhost" || host.endsWith(".localhost") || host.startsWith("127.") || host === "[::1]";
@@ -66,4 +74,4 @@ function elsewhere(threads: ReviewThread[], page: string): WebElsewhere[] {
     .map(([on, { count }]) => ({ count, page: on }));
 }
 
-export const Web = { addressOf, elsewhere, isLocal, origin, pageOf, srcOf, threadsOn, upstreamOf };
+export const Web = { addressOf, elsewhere, isLocal, origin, pageOf, srcOf, threadsOn, typed, upstreamOf };

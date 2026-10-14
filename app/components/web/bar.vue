@@ -1,85 +1,38 @@
 <script lang="ts" setup>
-import { ArrowLeft, ArrowRight, ExternalLink, RotateCw } from "@lucide/vue";
-import { parseTarget } from "~~/lib/web/target";
+import { ChevronLeft, ChevronRight, ExternalLink, RotateCw } from "@lucide/vue";
 
 const { conversation, slug } = defineProps<{ conversation: string; slug: string }>();
 
-const REFUSED = "Only http and https addresses open here, such as localhost:3000 or docs.mode.dev.";
-
 const sc = useSidecar();
-const chrome = useChrome();
 const web = $web();
-const follow = $follow();
 const field = useTemplateRef<HTMLInputElement>("field");
-const isEditing = ref(false);
-const isRefused = ref(false);
-const isOpening = ref(false);
-const draft = ref("");
-
-const address = computed(() => web.page?.url ?? sc.artifact.value?.url);
-const host = computed(() => (address.value ? new URL(address.value).host : ""));
-const page = computed(() => (address.value ? Web.pageOf(address.value) : ""));
+const { cancel, commit, draft, edit, host, isEditing, isOpening, isRefused, openOut, page } = useWebAddress({
+  conversation: () => conversation,
+  focus: () => {
+    field.value?.focus();
+    field.value?.select();
+  },
+  slug: () => slug,
+});
 const away = computed(() => Web.elsewhere(sc.artifact.value?.threads ?? [], page.value)[0]);
-
-async function edit(): Promise<void> {
-  draft.value = address.value ?? "";
-  isRefused.value = false;
-  isEditing.value = true;
-  await nextTick();
-  field.value?.focus();
-  field.value?.select();
-}
-
-function cancel(): void {
-  isEditing.value = false;
-  isRefused.value = false;
-}
-
-async function commit(): Promise<void> {
-  const typed = parseTarget(draft.value);
-  if (!typed) {
-    isRefused.value = true;
-    chrome.toast(REFUSED, "warning");
-    return;
-  }
-  isOpening.value = true;
-  try {
-    const next = await web.visit({ slug, typed });
-    isEditing.value = false;
-    if (next !== slug) follow.show({ key: conversation, slug: next });
-  } catch (error) {
-    chrome.toast(failReason(error) ?? `${typed.host} could not be opened here`, "destructive");
-  } finally {
-    isOpening.value = false;
-  }
-}
-
-function openOut(): void {
-  if (address.value) window.open(address.value, "_blank", "noopener");
-}
-
-watch(
-  () => slug,
-  () => cancel(),
-);
 </script>
 
 <template>
   <span class="steps">
     <UiIconButton
-      :icon="ArrowLeft"
+      :icon="ChevronLeft"
       aria-label="Back"
       data-region="web-back"
-      data-tip="Back"
+      data-tip="Back · {cmd [}"
       :disabled="!web.history.back"
       icon-size="sm"
       @click="web.step(-1)"
     />
     <UiIconButton
-      :icon="ArrowRight"
+      :icon="ChevronRight"
       aria-label="Forward"
       data-region="web-forward"
-      data-tip="Forward"
+      data-tip="Forward · {cmd ]}"
       :disabled="!web.history.forward"
       icon-size="sm"
       @click="web.step(1)"
@@ -109,7 +62,7 @@ watch(
     class="path focusable"
     type="button"
     data-region="web-address"
-    data-tip="Edit the address"
+    data-tip="Edit the address · {cmd L}"
     @click="edit"
   >
     <span class="host">{{ host }}</span>

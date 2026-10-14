@@ -1,10 +1,9 @@
 <script lang="ts" setup>
-import { Eye, EyeOff, X } from "@lucide/vue";
+import { X } from "@lucide/vue";
 
 const route = useRoute();
 const chrome = useChrome();
 const sc = useSidecar();
-const islands = $islands();
 
 const LABELS: Record<Face, string> = { artifacts: "Artifacts", files: "Files", history: "History", review: "Review" };
 
@@ -23,14 +22,6 @@ const face = computed({
   set: (next: Face) => chrome.view.set(next),
 });
 
-// Hiding the islands belongs to a grown page, so shrinking it brings them back.
-watch(
-  () => artifact.isFull,
-  (full) => {
-    if (!full) islands.isHidden = false;
-  },
-);
-
 // A routed page is replaced on close so Back never walks through it; a grown one just shrinks back.
 function closePage(): void {
   if (artifact.isFull) artifact.isFull = false;
@@ -39,7 +30,7 @@ function closePage(): void {
 </script>
 
 <template>
-  <div class="top-right" data-region="top-right" :data-bare="islands.isHidden">
+  <div class="top-right" data-region="top-right">
     <UiSurface
       v-if="onFaces && faces.length > 1"
       v-island-pop="'top right'"
@@ -61,16 +52,6 @@ function closePage(): void {
       tip="Close the page"
       @click="closePage"
     />
-    <span v-if="artifact.isFull" class="corner" data-region="islands-toggle">
-      <span class="slide">
-        <ChromeAction
-          :icon="islands.isHidden ? Eye : EyeOff"
-          shape="island"
-          :tip="islands.isHidden ? 'Show the islands' : 'Hide the islands'"
-          @click="islands.isHidden = !islands.isHidden"
-        />
-      </span>
-    </span>
   </div>
 </template>
 
@@ -88,32 +69,6 @@ function closePage(): void {
   flex: none;
   height: var(--island-row-h);
   padding: 0 6px;
-}
-
-.top-right > :not(.corner) {
-  transition: opacity var(--duration-base) var(--ease-out);
-}
-
-.top-right[data-bare="true"] > :not(.corner) {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* The padding is the hover zone that reaches the shell's corner, so the hidden toggle is found by pointing there. */
-.corner {
-  display: flex;
-  margin: calc(var(--gutter) * -1) calc(var(--gutter) * -1) calc(var(--gutter) * -1) 0;
-  padding: var(--gutter) var(--gutter) var(--gutter) 0;
-}
-
-.slide {
-  display: flex;
-  transition: transform var(--duration-base) var(--ease-out);
-}
-
-/* Keyboard focus holds it out, but the focus a click leaves behind must not, or it never slides away. */
-.top-right[data-bare="true"] .corner:not(:hover, :has(:focus-visible)) .slide {
-  transform: translate(calc(100% + var(--gutter)), calc(-100% - var(--gutter)));
 }
 
 /* The pill is the surface, so the segmented must not draw a second one. */

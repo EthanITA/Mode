@@ -9,6 +9,7 @@ type Scope = "all" | FileGroup;
 const { initial: sideInitial, width: side } = usePaneWidth();
 
 const sc = useSidecar();
+const artifact = $artifact();
 const files = useFiles(() => sc.sessionKey.value);
 const selected = useConversationPick("fl:picks");
 const scope = useState<Scope>("fl:scope", () => "produced");
@@ -54,7 +55,13 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
 
 <template>
   <section class="files" data-region="files" :style="{ '--side-w': `${side}px` }">
-    <UiSurface class="pane" data-region="files-table" pad="none" variant="raised">
+    <UiSurface
+      class="pane"
+      data-region="files-table"
+      :data-listed="artifact.isFull && artifact.isListed"
+      pad="none"
+      variant="raised"
+    >
       <header class="bar scopes">
         <UiSegmented v-model="scope" :options="SCOPES" />
       </header>
@@ -117,6 +124,16 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Over the grown sheet's left edge, under its islands, so another file opens without leaving fullscreen. */
+.pane[data-listed="true"] {
+  bottom: 8px;
+  left: 8px;
+  position: fixed;
+  top: 56px;
+  width: 320px;
+  z-index: 28;
 }
 
 .bar {

@@ -56,6 +56,7 @@ watch(
 );
 
 const web = $web();
+const artifact = $artifact();
 const address = ref("");
 const refused = ref<string>();
 const isFocused = ref(false);
@@ -98,7 +99,13 @@ async function openUrl(): Promise<void> {
 
 <template>
   <section class="artifacts" data-region="artifacts" :style="{ '--side-w': `${side}px` }">
-    <UiSurface class="pane" data-region="artifacts-list" pad="none" variant="raised">
+    <UiSurface
+      class="pane"
+      data-region="artifacts-list"
+      :data-listed="artifact.isFull && artifact.isListed"
+      pad="none"
+      variant="raised"
+    >
       <header class="bar">
         <div class="row">
           <span class="title">Artifacts</span>
@@ -203,6 +210,16 @@ async function openUrl(): Promise<void> {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Over the grown sheet's left edge, under its islands, so another artifact opens without leaving fullscreen. */
+.pane[data-listed="true"] {
+  bottom: 8px;
+  left: 8px;
+  position: fixed;
+  top: 56px;
+  width: 320px;
+  z-index: 28;
 }
 
 .bar {

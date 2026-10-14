@@ -55,6 +55,13 @@ test("the gutter holds the threads of the page on screen, and the newest open on
   assert.deepEqual(Web.elsewhere(threads, "/guide/hooks"), [{ count: 2, page: "/guide/slots" }]);
 });
 
+test("the address drops its scheme only where typing it back brings the same one", () => {
+  assert.equal(Web.typed("http://localhost:3000/guide/hooks"), "localhost:3000/guide/hooks");
+  assert.equal(Web.typed("https://www.google.com/"), "www.google.com");
+  assert.equal(Web.typed("https://localhost:8443/x"), "https://localhost:8443/x");
+  assert.equal(Web.typed("http://example.com/a?b=1"), "http://example.com/a?b=1");
+});
+
 test("an entry's trail goes back and forward like a tab, and a step from the sidecar lands where it aimed", () => {
   const [a, b, c] = ["http://localhost:3000/", "http://localhost:3000/b", "http://localhost:3000/c"];
   let trail = Trail.arrive({ at: 0, urls: [] }, { how: "replace", url: a });

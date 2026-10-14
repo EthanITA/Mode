@@ -1,5 +1,8 @@
 <script lang="ts" setup>
 import { Moon, Sun } from "@lucide/vue";
+import type { ActionShape } from "~/components/chrome/action.vue";
+
+const { shape = "island" } = defineProps<{ shape?: ActionShape }>();
 
 const look = useTheme();
 const isDark = computed(() => look.theme.value === "dark");
@@ -9,7 +12,7 @@ const isDark = computed(() => look.theme.value === "dark");
   <ChromeAction
     data-region="theme-toggle"
     :icon="isDark ? Sun : Moon"
-    shape="island"
+    :shape="shape"
     :tip="isDark ? 'Light theme' : 'Dark theme'"
     @click="look.toggle"
   />

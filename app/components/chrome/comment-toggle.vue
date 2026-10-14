@@ -17,7 +17,7 @@ function toggle(): void {
     data-region="comment-arm"
     :icon="MessageSquarePlus"
     :is-on="chrome.comment.armed.value"
-    label="Comment"
+    :label="shape === 'inset' ? undefined : 'Comment'"
     :shape="shape"
     tip="Comment on anything · {cmd K} or hold {C}"
     @click="toggle"
