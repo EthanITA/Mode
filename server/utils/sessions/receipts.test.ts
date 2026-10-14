@@ -341,11 +341,113 @@ test("restore refuses to clobber a file that moved on since the store's head", (
     assert.equal(readFileSync(target, "utf8"), "v1\n");
 
     // Disk now sits on a stored version, so a second restore is not a clobber and needs no force.
-    assert.equal(JSON.parse(run(["restore", key, "--path", target, "--turn", "1"])).restored, true);
+    const again = JSON.parse(run(["restore", key, "--path", target, "--turn", "1"]));
+    assert.equal(again.restored, true);
+    assert.equal(again.was, 1);
+
+    // Before the turn that created it there is nothing to write back, and History never deletes.
+    const unborn = JSON.parse(run(["restore", key, "--path", target, "--turn", "0"]));
+    assert.equal(unborn.restored, false);
+    assert.equal(unborn.forceable, false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("one turn stays one version across a mid-turn rebuild, and restoring before it writes the baseline back", () => {
+  const root = mkdtempSync(join(tmpdir(), "sidecar-fold-"));
+  const target = join(root, "target.ts");
+  const key = "ffffffff";
+  const transcript = join(root, "projects", "-tmp-f", `${key}-1111-2222-3333-444444444444.jsonl`);
+  const rows = editsTranscript(target);
+  try {
+    mkdirSync(dirname(transcript), { recursive: true });
+    const run = (args: string[]): string =>
+      execFileSync(process.execPath, ["--experimental-strip-types", BIN, ...args], {
+        encoding: "utf8",
+        env: { ...process.env, CLAUDE_CONFIG_DIR: root },
+      });
+
+    writeFileSync(transcript, rows.slice(0, 3).join("\n") + "\n");
+    run(["build", key]);
+    writeFileSync(transcript, rows.join("\n") + "\n");
+    writeFileSync(target, "delta\n");
+
+    const [file] = JSON.parse(run(["list", key, "--path", target])).files;
+    assert.deepEqual(
+      file.versions.map((one: { turn: number; added: number; removed: number }) => [one.turn, one.added, one.removed]),
+      [
+        [1, 1, 1],
+        [2, 1, 1],
+      ],
+    );
+    const pair = JSON.parse(run(["pair", key, "--path", target, "--from", "0", "--to", "1"]));
+    assert.equal(pair.original, "alpha\n");
+    assert.equal(pair.current, "gamma\n");
+
+    const back = JSON.parse(run(["restore", key, "--path", target, "--turn", "0"]));
+    assert.equal(back.restored, true);
+    assert.equal(back.was, 2);
+    assert.equal(readFileSync(target, "utf8"), "alpha\n");
+
+    // Disk on the baseline is not foreign, so Undo goes through without force.
+    const undo = JSON.parse(run(["restore", key, "--path", target, "--turn", String(back.was)]));
+    assert.equal(undo.restored, true);
+    assert.equal(undo.was, 0);
+    assert.equal(readFileSync(target, "utf8"), "delta\n");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+function editsTranscript(target: string): string[] {
+  const cwd = dirname(target);
+  const prompt = (at: string, content: string): object => ({
+    type: "user",
+    cwd,
+    timestamp: at,
+    message: { role: "user", content },
+  });
+  const edit = (id: string, at: string, oldWord: string, newWord: string): object[] => [
+    {
+      type: "assistant",
+      cwd,
+      timestamp: at,
+      message: {
+        role: "assistant",
+        content: [
+          {
+            type: "tool_use",
+            id,
+            name: "Edit",
+            input: { file_path: target, old_string: oldWord, new_string: newWord },
+          },
+        ],
+      },
+    },
+    {
+      type: "user",
+      cwd,
+      timestamp: at,
+      message: { role: "user", content: [{ type: "tool_result", tool_use_id: id, content: "ok" }] },
+      toolUseResult: {
+        filePath: target,
+        oldString: oldWord,
+        newString: newWord,
+        originalFile: `${oldWord}\n`,
+        replaceAll: false,
+        structuredPatch: [{ oldStart: 1 }],
+      },
+    },
+  ];
+  return [
+    prompt("2026-01-01T12:00:00.000Z", "fix it"),
+    ...edit("f1", "2026-01-01T12:00:10.000Z", "alpha", "beta"),
+    ...edit("f2", "2026-01-01T12:00:20.000Z", "beta", "gamma"),
+    prompt("2026-01-01T12:10:00.000Z", "and again"),
+    ...edit("f3", "2026-01-01T12:10:10.000Z", "gamma", "delta"),
+  ].map((one) => JSON.stringify(one));
+}
 
 function editTranscript(target: string): string {
   const cwd = dirname(target);

@@ -59,4 +59,6 @@ export interface RestoreResult {
   // Ask this, never `reason`: that is prose for a person and free to be reworded.
   forceable: boolean;
   reason?: string;
+  // The turn whose end disk matched before the write, so restoring to it undoes this one.
+  was?: number;
 }

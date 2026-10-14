@@ -34,6 +34,8 @@ const LOCK_STALE_MS = 60_000;
 
 interface IndexedFile {
   baseline: BaselineOrigin;
+  // The commit before this file's first version, which holds its baseline when one was recorded.
+  base?: string;
   skipped?: string;
   versions: FileVersion[];
 }
@@ -309,12 +311,18 @@ function hydrate({
   }
   const log = git(key, ["log", "--reverse", "--numstat", "--format=%x00%H %s", "--no-renames"]);
   const at = new Map(plans.map((one) => [one.turn, one.at]));
+  // The store's history is one straight line, so the commit read before another is its parent.
+  const before = new Map<string, string>();
+  const turnStart = new Map<string, string>();
   let turn = 0;
   let sha = "";
+  let prev = EMPTY_TREE;
   for (const line of log.split("\n")) {
     if (line.startsWith("\0")) {
       const [head, ...rest] = line.slice(1).split(" ");
+      if (sha) prev = sha;
       sha = head || "";
+      before.set(sha, prev);
       const match = /^turn (\d+)$/.exec(rest.join(" "));
       turn = match ? Number(match[1]) : 0;
       continue;
@@ -325,6 +333,22 @@ function hydrate({
     const path = "/" + file;
     const entry = index.files[path] || { baseline: "unknown", versions: [] };
     const mark = marks.get(path)?.get(turn);
+    const last = entry.versions.at(-1);
+    // A rebuild in the middle of a turn commits that turn again, and one turn must stay one version.
+    if (last?.turn === turn) {
+      const [net = "", gone = ""] = git(key, ["diff", "--numstat", turnStart.get(path)!, sha, "--", file]).split("\t");
+      Object.assign(last, {
+        sha,
+        by: mark?.by || last.by,
+        bytes: blobBytes({ key, sha, file }),
+        added: Number(net) || 0,
+        removed: Number(gone) || 0,
+        deleted: mark?.deleted,
+      });
+      continue;
+    }
+    if (!entry.versions.length) entry.base = before.get(sha);
+    turnStart.set(path, before.get(sha) || EMPTY_TREE);
     entry.versions.push({
       path,
       turn,
@@ -443,7 +467,7 @@ function diff({ key, index, path, from, to }: Range): FileDiff {
   if (!b) return gap(entry?.versions.length ? "unresolved-target" : "missing-content");
   // Both sides on one commit is a real no-change, the only place an empty patch is honest.
   if (a && a.sha === b.sha) return { path, from, to, computed: true, patch: "", added: 0, removed: 0 };
-  const left = a ? a.sha : parentOf(key, b.sha);
+  const left = a ? a.sha : baseOf({ key, index, path });
   const file = storePath(path);
   const patch = git(key, ["diff", "--no-prefix", left, b.sha, "--", file]);
   const [added, removed] = patch
@@ -463,36 +487,67 @@ function pair({ key, index, path, from, to }: Range): FilePair {
   if (!b) return gap(entry?.versions.length ? "unresolved-target" : "missing-content");
   const file = storePath(path);
   // A side the file is missing from, created or deleted, reads as empty rather than failing the pair.
-  const at = (sha: string): string => {
-    try {
-      execFileSync("git", ["cat-file", "-e", `${sha}:${file}`], { cwd: treeDir(key), stdio: "ignore" });
-    } catch {
-      return "";
-    }
-    return git(key, ["show", `${sha}:${file}`]);
-  };
-  return { path, from, to, computed: true, original: at(a ? a.sha : parentOf(key, b.sha)), current: at(b.sha) };
+  const at = (rev: string): string => contentAt({ key, rev, file }) ?? "";
+  return { path, from, to, computed: true, original: at(a ? a.sha : baseOf({ key, index, path })), current: at(b.sha) };
 }
 
 const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
-// A file first touched late has no version at from-1; its baseline commit is that version's parent.
-function parentOf(key: string, sha: string): string {
+function contentAt({ key, rev, file }: { key: string; rev: string; file: string }): string | undefined {
   try {
-    return git(key, ["rev-parse", "--verify", `${sha}^`]).trim();
+    execFileSync("git", ["cat-file", "-e", `${rev}:${file}`], { cwd: treeDir(key), stdio: "ignore" });
+  } catch {
+    return undefined;
+  }
+  return git(key, ["show", `${rev}:${file}`]);
+}
+
+// An index written before `base` was recorded falls back to the first version's parent.
+function baseOf({ key, index, path }: Omit<At, "turn">): string {
+  const entry = index.files[path];
+  const first = entry?.versions[0];
+  if (entry?.base) return entry.base;
+  if (!first) return EMPTY_TREE;
+  try {
+    return git(key, ["rev-parse", "--verify", `${first.sha}^`]).trim();
   } catch {
     return EMPTY_TREE;
   }
 }
 
+// Every turn before a file's first version stands on its baseline, so "before turn 1" is restorable.
+function standing({ key, index, path, turn }: At): { turn: number; content: string } | { reason: string } {
+  const entry = index.files[path];
+  const first = entry?.versions[0];
+  if (!entry || !first) return { reason: "no version of this file in the store" };
+  const file = storePath(path);
+  const version = versionAt({ index, path, turn });
+  if (!version) {
+    const content = contentAt({ key, rev: baseOf({ key, index, path }), file });
+    if (typeof content === "string") return { turn: first.turn - 1, content };
+    return {
+      reason:
+        entry.baseline === "unknown"
+          ? `what it looked like before turn ${first.turn} was never recorded`
+          : `it did not exist before turn ${first.turn}`,
+    };
+  }
+  if (version.deleted) return { reason: `it was deleted by the end of turn ${version.turn}` };
+  const content = contentAt({ key, rev: version.sha, file });
+  return typeof content === "string"
+    ? { turn: version.turn, content }
+    : { reason: "that turn has no version of this file" };
+}
+
 function restore({ key, index, path, turn, force }: At & { force?: boolean }): RestoreResult {
   const refuse = (reason: string): RestoreResult => ({ path, turn, restored: false, forceable: false, reason });
   if (!isAbsolute(path) || normalize(path) !== path) return refuse("path is not a plain absolute path");
-  if (!index.files[path]?.versions.length) return refuse("no version of this file in the store");
-  const version = show({ key, index, path, turn });
-  if (!version.found) return refuse("that turn has no version of this file");
+  const target = standing({ key, index, path, turn });
+  if ("reason" in target) return refuse(target.reason);
   if (!existsSync(dirname(path))) return refuse("the parent directory no longer exists");
-  if (!force && foreign({ key, index, path })) {
+  const onDisk = existsSync(path);
+  const held = onDisk ? heldTurn({ key, index, path }) : undefined;
+  if (!force && onDisk && !held) {
     return {
       path,
       turn,
@@ -501,21 +556,31 @@ function restore({ key, index, path, turn, force }: At & { force?: boolean }): R
       reason: "the file on disk holds work this conversation never wrote, so restoring would overwrite it",
     };
   }
-  writeFileSync(path, version.content);
-  return { path, turn: version.turn, restored: true, forceable: false };
+  writeFileSync(path, target.content);
+  return { path, turn: target.turn, restored: true, forceable: false, was: force ? undefined : held?.turn };
 }
 
-// Matching any stored version is enough: an earlier restore also leaves disk off head, and
+// Matching any stored state is enough: an earlier restore also leaves disk off head, and
 // refusing that would make every restore after the first need force.
-function foreign({ key, index, path }: Omit<At, "turn">): boolean {
-  const versions = index.files[path]?.versions || [];
-  if (!existsSync(path) || !versions.length) return false;
+function heldTurn({ key, index, path }: Omit<At, "turn">): { turn: number } | undefined {
+  const entry = index.files[path];
+  const first = entry?.versions[0];
+  if (!entry || !first) return undefined;
+  const file = storePath(path);
   try {
     const disk = git(key, ["hash-object", "--", path]).trim();
-    const blobs = git(key, ["rev-parse", ...versions.map((one) => `${one.sha}:${storePath(path)}`)]);
-    return !lines(blobs).some((one) => one.trim() === disk);
+    const kept = entry.versions.filter((one) => !one.deleted);
+    const blobs = kept.length ? lines(git(key, ["rev-parse", ...kept.map((one) => `${one.sha}:${file}`)])) : [];
+    const at = blobs.findLastIndex((one) => one.trim() === disk);
+    if (at >= 0) return { turn: kept[at]!.turn };
+    const base = execFileSync("git", ["rev-parse", "--verify", "-q", `${baseOf({ key, index, path })}:${file}`], {
+      cwd: treeDir(key),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return base === disk ? { turn: first.turn - 1 } : undefined;
   } catch {
-    return true;
+    return undefined;
   }
 }
 
