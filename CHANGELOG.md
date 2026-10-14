@@ -257,6 +257,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **A git switch, checkout or `reset --hard` stops before it touches someone else's work.**
   `git-guard` denies it while the checkout holds uncommitted changes to files the session never
   edited, and says to park them with a named stash first.
+- **Following Claude Code switches pages under a loading veil.** When the sidecar moves on its own,
+  from a conversation to Listening, from Listening to a conversation or between two conversations, a
+  blurred veil fades over the page, the page changes underneath it and the veil lifts once the new one
+  has rendered. Claude shows up on it only when the new page is slow, and a switch you start yourself
+  stays instant.
 
 ### Changed
 
