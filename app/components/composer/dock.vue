@@ -143,9 +143,15 @@ onMounted(() => {
             @keydown="onKey"
           />
 
-          <button v-press class="send focusable" type="button" :disabled="!ready" @click="send">
+          <button
+            v-press
+            class="send focusable"
+            type="button"
+            data-tip="Send · {enter}"
+            :disabled="!ready"
+            @click="send"
+          >
             {{ load ? `Send ${load}` : "Send" }}
-            <UiKbd keys="enter" tone="inverse" />
           </button>
         </div>
 

@@ -86,6 +86,7 @@ function onKey(event: KeyboardEvent): void {
         variant="raised"
         role="dialog"
         aria-label="Jump to a conversation"
+        data-tip="Close · {esc}"
       >
         <div ref="field" class="field">
           <UiTextInput
@@ -102,7 +103,13 @@ function onKey(event: KeyboardEvent): void {
           />
         </div>
 
-        <div id="jump-rows" class="rows" role="listbox" aria-label="Conversations">
+        <div
+          id="jump-rows"
+          class="rows"
+          role="listbox"
+          aria-label="Conversations"
+          :data-tip="rows.length ? 'Open · {enter}, {up down} moves' : undefined"
+        >
           <UiMenuItem
             v-for="(row, at) in rows"
             :id="`jump-${row.key}`"
@@ -122,12 +129,6 @@ function onKey(event: KeyboardEvent): void {
             {{ sc.sessions.value.length ? "No conversation matches that." : "No conversation is running." }}
           </p>
         </div>
-
-        <p class="legend">
-          <UiKbd keys="up down" label="move" />
-          <UiKbd keys="enter" label="open" />
-          <UiKbd keys="esc" label="close" />
-        </p>
       </UiSurface>
     </div>
   </div>
@@ -221,13 +222,5 @@ function onKey(event: KeyboardEvent): void {
   font-size: 12.5px;
   margin: 0;
   padding: 10px;
-}
-
-.legend {
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 12px;
-  margin: 0;
-  padding: 8px 14px;
 }
 </style>

@@ -22,22 +22,6 @@ const STATE_LINES: Record<AskClaudeState, string> = {
   failed: "failed · no answer",
 };
 
-const HINTS: Record<AskClaudeState, { keys: string; label: string }[]> = {
-  idle: [
-    { keys: "enter", label: "asks on the side" },
-    { keys: "esc", label: "closes" },
-  ],
-  asking: [{ keys: "esc", label: "cancels" }],
-  answered: [
-    { keys: "left right", label: "earlier answers" },
-    { keys: "esc", label: "dismisses" },
-  ],
-  failed: [
-    { keys: "enter", label: "asks again" },
-    { keys: "esc", label: "dismisses" },
-  ],
-};
-
 const view = computed(() => askClaude.view(sc.sessionKey.value));
 const question = computed(() => askClaudeQuestion(draft.value));
 const canAsk = computed(() => !!question.value && view.value.state !== "asking");
@@ -116,7 +100,7 @@ defineExpose({ focus });
     variant="glass-liquid"
     :responsive="{ axis: 'height', anchorY: 'end' }"
   >
-    <div ref="box" class="body" @keydown="onKey">
+    <div ref="box" class="body" :data-tip="view.turn ? undefined : 'Close · {esc}'" @keydown="onKey">
       <section v-if="view.turn" class="thread" data-region="ask-thread">
         <header class="head">
           <span class="title">Ask Claude</span>
@@ -126,7 +110,8 @@ defineExpose({ focus });
           <template v-if="view.state === 'answered'">
             <UiIconButton
               :icon="ChevronLeft"
-              label="Earlier answer"
+              aria-label="Earlier answer"
+              data-tip="Earlier answer · {left}"
               size="xs"
               :disabled="view.position <= 1"
               @click="askClaude.step(sc.sessionKey.value ?? '', -1)"
@@ -134,7 +119,8 @@ defineExpose({ focus });
             <span class="count mono-meta">{{ view.position }} / {{ view.count }}</span>
             <UiIconButton
               :icon="ChevronRight"
-              label="Later answer"
+              aria-label="Later answer"
+              data-tip="Later answer · {right}"
               size="xs"
               :disabled="view.position >= view.count"
               @click="askClaude.step(sc.sessionKey.value ?? '', 1)"
@@ -146,9 +132,9 @@ defineExpose({ focus });
             class="dismiss focusable"
             type="button"
             :aria-label="view.state === 'asking' ? 'Cancel' : 'Dismiss'"
+            :data-tip="view.state === 'asking' ? 'Cancel · {esc}' : 'Dismiss · {esc}'"
             @click="escape"
           >
-            <UiKbd keys="esc" />
             <UiIcon :icon="X" size="xs" />
           </button>
         </header>
@@ -209,16 +195,16 @@ defineExpose({ focus });
           :placeholder="view.turn ? 'Ask a follow-up…' : 'Ask Claude about this conversation…'"
           aria-label="Ask Claude"
         />
-        <button v-press class="ask focusable" type="button" :disabled="!canAsk" @click="submit()">
+        <button
+          v-press
+          class="ask focusable"
+          type="button"
+          data-tip="Ask · {enter}"
+          :disabled="!canAsk"
+          @click="submit()"
+        >
           Ask
-          <UiKbd keys="enter" tone="inverse" />
         </button>
-      </div>
-
-      <div class="meta">
-        <span class="legend">
-          <UiKbd v-for="hint in HINTS[view.state]" :key="hint.label" :keys="hint.keys" :label="hint.label" />
-        </span>
       </div>
     </div>
   </UiSurface>
@@ -441,22 +427,5 @@ defineExpose({ focus });
 .ask:disabled {
   cursor: not-allowed;
   opacity: 0.45;
-}
-
-.meta {
-  align-items: center;
-  display: flex;
-  flex: none;
-  gap: 6px;
-  height: 26px;
-  justify-content: flex-end;
-  padding: 0 4px 0 10px;
-}
-
-.legend {
-  display: flex;
-  gap: 12px;
-  overflow: hidden;
-  white-space: nowrap;
 }
 </style>

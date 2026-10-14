@@ -128,6 +128,7 @@ function onEnter(event: KeyboardEvent): void {
 
           <div
             class="add"
+            data-tip="Add a task · {enter}"
             :data-drop="overEnd ? '' : undefined"
             @dragover.prevent="overEnd = true"
             @dragleave="overEnd = false"
@@ -141,7 +142,6 @@ function onEnter(event: KeyboardEvent): void {
               variant="bare"
               @keydown="onEnter"
             />
-            <UiKbd v-if="!newTask" keys="enter" />
           </div>
 
           <div v-if="doneTasks.length" class="done-section">

@@ -93,7 +93,14 @@ useShortcuts(
         <p v-if="hint" class="hint">{{ hint }}</p>
       </div>
 
-      <div v-if="rows.length" class="rows" role="listbox" aria-label="Conversations" :aria-activedescendant="active">
+      <div
+        v-if="rows.length"
+        class="rows"
+        role="listbox"
+        aria-label="Conversations"
+        data-tip="Open · {enter}, {up down} moves"
+        :aria-activedescendant="active"
+      >
         <div
           v-for="(row, at) in rows"
           :id="`desk-${row.key}`"
@@ -117,12 +124,6 @@ useShortcuts(
           <p class="about">{{ row.about }}</p>
         </div>
       </div>
-
-      <p v-if="rows.length" class="legend">
-        <UiKbd keys="up down" label="move" />
-        <UiKbd keys="enter" label="open" />
-        <UiKbd keys="esc" label="back" />
-      </p>
     </div>
 
     <UiContextMenu ref="menuEl" data-region="desk-menu" label="Conversation" width="w-64">
@@ -252,12 +253,6 @@ useShortcuts(
   margin: 0;
   overflow: hidden;
   padding-left: 20px;
-}
-
-.legend {
-  display: flex;
-  gap: 12px;
-  margin: 0;
 }
 
 .menu-head {

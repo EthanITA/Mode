@@ -71,14 +71,12 @@ function onEdit(): void {
     </div>
 
     <p class="foot">
-      <span class="hint">
-        <UiKbd keys="enter" label="to tray" />
-        <UiKbd keys="esc" label="cancel" />
-      </span>
       <button v-if="spot.kind === 'block' && editable" v-press class="cancel focusable" type="button" @click="onEdit">
         Edit
       </button>
-      <button v-press class="cancel focusable" type="button" @click="chrome.comment.close()">Cancel</button>
+      <button v-press class="cancel focusable" type="button" data-tip="Cancel · {esc}" @click="chrome.comment.close()">
+        Cancel
+      </button>
       <button
         v-if="spot.ask"
         v-press
@@ -90,12 +88,12 @@ function onEdit(): void {
         @click="chrome.comment.ask(draft)"
       >
         Ask
-        <UiKbd keys="cmd enter" />
       </button>
       <button
         v-press
         class="save focusable"
         type="button"
+        data-tip="Add to the tray · {enter}"
         :disabled="!draft.trim()"
         @click="chrome.comment.save(draft)"
       >
@@ -191,13 +189,8 @@ function onEdit(): void {
   align-items: center;
   display: flex;
   gap: 10px;
+  justify-content: flex-end;
   margin: 0;
-}
-
-.hint {
-  display: flex;
-  flex: 1;
-  gap: 12px;
 }
 
 .cancel,
@@ -238,7 +231,7 @@ function onEdit(): void {
   color: var(--ink);
   display: inline-flex;
   gap: 8px;
-  padding: 0 5px 0 12px;
+  padding: 0 12px;
 }
 
 .ask:hover:not(:disabled) {

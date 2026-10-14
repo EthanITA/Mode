@@ -251,10 +251,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   went to whatever was pointed at last.
 - **A session waiting on a permission prompt or a question reports `waiting`.** `/api/sessions` used to
   drop that status to nothing, so a client reading `status` sees a third value beside `busy` and `idle`.
-- **Every key the sidecar shows is a keycap.** Legends, footers, the comment banner, both Send buttons,
-  the board's add field and the Monaco note hover draw their keys with `@cela/design`'s `Kbd`, and a
-  tooltip writes its shortcut as `{cmd K}` so the tip shows inverse caps too, as in "Comment on anything
-  · ⌘K or hold C". The ↵ leaves the board's placeholder for a cap beside the field.
+- **Every key the sidecar shows is a keycap, and only in the one tooltip under the pointer.** A tip
+  writes its shortcut as `{cmd K}` so it shows inverse caps, as in "Comment on anything · ⌘K or hold C",
+  and no screen draws a cap inline anymore. A key sits in the tip of the button it presses, and a key
+  with no button, such as ↑↓ in a list, ↵ in a field or esc on the comment banner, sits in a tip on that
+  list, field or surface, which opens on hover and never while you type. The key legends under the Desk,
+  the jump palette, Ask Claude, the comment popover, the edit panel and an adrift thread are gone, and
+  `app/utils/keycaps.test.ts` fails when a component mounts `UiKbd` again.
 - **Listening and the Desk follow the Sidecar design.** Home waits for Claude Code under a breathing
   Listening tag, offers to resume the last conversation, lists the three ways to point the sidecar and
   links to the Desk, a link that goes quiet with a tooltip when no other conversation exists. The Desk at

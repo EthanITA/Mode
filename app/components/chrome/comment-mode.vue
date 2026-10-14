@@ -116,9 +116,14 @@ onMounted(() => {
 <template>
   <!-- Reading is not reviewing: the ring and the banner both belong to the explicit arm. -->
   <div v-if="chrome.comment.armed.value || chrome.comment.hover.value" class="armed" data-region="comment-mode">
-    <p v-if="chrome.comment.armed.value" class="banner" data-region="comment-banner">
+    <p
+      v-if="chrome.comment.armed.value"
+      class="banner"
+      data-region="comment-banner"
+      data-tip="Cancel · {esc}"
+      data-tip-align="center"
+    >
       Pick anything to comment on
-      <UiKbd keys="esc" label="cancel" tone="inverse" />
     </p>
 
     <template v-if="chrome.comment.hover.value">
@@ -165,6 +170,8 @@ onMounted(() => {
   left: 50%;
   margin: 0;
   padding: 0 14px;
+  /* The overlay lets the pointer through to pick, so the banner opts back in for its tip. */
+  pointer-events: auto;
   position: absolute;
   top: 64px;
   transform: translateX(-50%);

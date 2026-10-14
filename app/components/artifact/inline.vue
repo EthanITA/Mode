@@ -115,7 +115,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div ref="panel" class="wrap" data-region="inline-panel" :style="{ left: `${left}px`, top: `${top}px` }">
+  <div
+    ref="panel"
+    class="wrap"
+    data-region="inline-panel"
+    data-tip="Edit · {enter}, {esc} closes"
+    :style="{ left: `${left}px`, top: `${top}px` }"
+  >
     <UiSurface class="panel" pad="none" variant="glass" :data-pending="pending">
       <UiTextInput
         ref="field"
@@ -124,12 +130,8 @@ onMounted(() => {
         placeholder="Change this to…"
         @keydown="onFieldKey"
       />
-      <footer>
-        <span v-if="pending" class="hint working mono-meta">working…</span>
-        <span v-else class="hint keys">
-          <UiKbd keys="enter" label="edit" />
-          <UiKbd keys="esc" label="close" />
-        </span>
+      <footer v-if="pending">
+        <span class="hint working mono-meta">working…</span>
       </footer>
     </UiSurface>
   </div>
@@ -167,11 +169,6 @@ footer {
 .working {
   @apply shimmer;
   color: var(--subtle);
-}
-
-.keys {
-  display: flex;
-  gap: 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {

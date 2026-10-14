@@ -186,7 +186,7 @@ onMounted(() => {
         </template>
       </div>
 
-      <div ref="field" class="field" :data-busy="isBusy">
+      <div ref="field" class="field" data-tip="Ask · {enter}" :data-busy="isBusy">
         <UiTextarea
           v-model="draft"
           auto-fit
@@ -197,7 +197,6 @@ onMounted(() => {
           aria-label="Ask a follow-up"
           @keydown="onFieldKey"
         />
-        <UiKbd keys="enter" />
       </div>
 
       <footer class="actions">
@@ -439,7 +438,7 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   min-height: 32px;
-  padding: 4px 6px 4px 12px;
+  padding: 4px 12px;
 }
 
 .field[data-busy="true"] {

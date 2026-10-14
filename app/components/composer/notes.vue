@@ -96,14 +96,19 @@ onMounted(() => {
         >
           <UiIcon :icon="MessageCircleQuestion" size="sm" />
           Ask Claude
-          <UiKbd keys="alt enter" />
         </button>
       </UiSurface>
       <UiSurface v-if="tray.count.value" class="pill" pad="none" shape="pill" variant="glass-liquid">
-        <button v-press class="send focusable" type="button" :disabled="sending" @click="send">
+        <button
+          v-press
+          class="send focusable"
+          type="button"
+          data-tip="Send to Claude · {cmd enter}"
+          :disabled="sending"
+          @click="send"
+        >
           <UiIcon :icon="Send" size="sm" />
           {{ sending ? "Sending…" : `Send ${plural(tray.count.value, "note")} to Claude` }}
-          <UiKbd keys="cmd enter" tone="inverse" />
         </button>
       </UiSurface>
     </div>
