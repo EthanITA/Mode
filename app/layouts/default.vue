@@ -4,6 +4,7 @@ import { useResizeObserver } from "@vueuse/core";
 const sc = useSidecar();
 const chrome = useChrome();
 const route = useRoute();
+const islands = $islands();
 
 const dockEl = useTemplateRef<HTMLElement>("dockEl");
 const boardEl = useTemplateRef<HTMLElement>("boardEl");
@@ -45,7 +46,7 @@ useResizeObserver(boardEl, ([entry]) => {
 <template>
   <!-- Unset until measured, so the first frame takes the CSS fallback rather than
        reserving nothing and shifting the reading surface once the observer reports. -->
-  <div class="shell" :style="dockHeight ? { '--dock-h': `${dockHeight}px` } : undefined">
+  <div class="shell" :data-bare="islands.isHidden" :style="dockHeight ? { '--dock-h': `${dockHeight}px` } : undefined">
     <!-- Covered rather than unmounted, so Listening keeps its stream and opens what is in front once the server is back. -->
     <div class="page" :inert="isDown">
       <slot />
@@ -131,6 +132,22 @@ useResizeObserver(boardEl, ([entry]) => {
 .foot-dock > :deep(*),
 .foot-board > :deep(*) {
   pointer-events: auto;
+}
+
+.row > :deep(:not([data-region="top-right"])),
+.foot {
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+/* The top right keeps its own toggle, so it fades the rest of its islands itself. */
+.shell[data-bare="true"] .row > :deep(:not([data-region="top-right"])),
+.shell[data-bare="true"] .foot {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.shell[data-bare="true"] .foot :deep(*) {
+  pointer-events: none;
 }
 
 /* Outranks the rule above on its own, rather than on source order: the row spans
