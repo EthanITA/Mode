@@ -106,5 +106,6 @@ onMounted(() => {
        ChromeTopRight is a cell of the island row and is rendered by the layout. -->
   <ChromeJump />
   <ChromeCommentMode />
+  <ChromeVeil />
   <ChromeToaster />
 </template>

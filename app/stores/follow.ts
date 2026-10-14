@@ -7,14 +7,24 @@ export interface FollowOptions {
 
 export type FollowPlace = Pick<FollowTarget, "face" | "key" | "slug">;
 
+// A page that never reports finishing still lifts the veil, rather than leaving the sidecar covered.
+const SWITCH_CAP_MS = 2000;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((done) => window.setTimeout(done, ms));
+}
+
 export const $follow = defineStore(() => {
   const sc = useSidecar();
   const chrome = useChrome();
   const router = useRouter();
+  const nuxtApp = useNuxtApp();
   const target = ref<FollowTarget>({ source: "none" });
   /** The artifact Claude Code asked to show, held until Artifacts mounts and opens it. */
   const opening = ref<string>();
   const isPinned = ref(false);
+  const isSwitching = ref(false);
+  let switches = 0;
   let landing: string | undefined = window.location.pathname;
 
   function claimLanding(path: string): boolean {
@@ -34,11 +44,25 @@ export const $follow = defineStore(() => {
     void navigateTo(`/c/${place.key}`, { replace: true });
   }
 
+  async function switchTo(change: () => void): Promise<void> {
+    const mine = ++switches;
+    isSwitching.value = true;
+    // The veil's fade-in, so the old page is covered before it changes.
+    await wait(Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--duration-fast")));
+    if (mine !== switches) return;
+    const rendered = new Promise<void>((done) => nuxtApp.hooks.hookOnce("page:finish", () => done()));
+    change();
+    await Promise.race([rendered, wait(SWITCH_CAP_MS)]);
+    if (mine === switches) isSwitching.value = false;
+  }
+
   function go(next: FollowTarget): void {
     if (isPinned.value) return;
-    if (next.key) show(next);
-    else if (next.source === "terminal" && router.currentRoute.value.path !== "/")
-      void navigateTo("/", { replace: true });
+    const route = router.currentRoute.value;
+    if (next.key && next.key !== route.params.key) void switchTo(() => show(next));
+    else if (next.key) show(next);
+    else if (next.source === "terminal" && route.path !== "/")
+      void switchTo(() => void navigateTo("/", { replace: true }));
   }
 
   // Otherwise the first read is a baseline, so a conversation opened by hand stays put until Claude Code points elsewhere.
@@ -68,5 +92,5 @@ export const $follow = defineStore(() => {
     });
   }
 
-  return { isPinned, listen, opening, show, target };
+  return { isPinned, isSwitching, listen, opening, show, target };
 });
