@@ -16,6 +16,7 @@ const emit = defineEmits<{
 const chrome = useChrome();
 const web = $web();
 const artifact = $artifact();
+const shown = useFaceShown();
 const frame = ref<HTMLIFrameElement>();
 const proxy = ref<string>();
 const upstream = ref<string>();
@@ -144,7 +145,7 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
 
 // With the sidecar focused, ⌘R would reload the sidecar itself rather than the page in it.
 useEventListener(window, "keydown", (event: KeyboardEvent) => {
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "r" && !event.shiftKey) {
+  if (shown.value && (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "r" && !event.shiftKey) {
     event.preventDefault();
     web.reload();
   }

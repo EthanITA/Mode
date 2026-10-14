@@ -21,9 +21,19 @@ const anchors = ref<FrameAnchor[]>([]);
 const noteCount = ref(0);
 const fresh = ref<string[]>([]);
 const answered = new Map<string, number>();
+const isShown = useFaceShown();
 let shown = "";
 
-const entry = computed(() => (sc.artifact.value?.slug === slug ? sc.artifact.value : undefined));
+// Files can point the shared artifact elsewhere while this face waits behind it, and losing the entry would drop the frame.
+const held = ref<ArtifactDetail>();
+watch(
+  () => sc.artifact.value,
+  (got) => {
+    if (got?.slug === slug) held.value = got;
+  },
+  { immediate: true },
+);
+const entry = computed(() => (held.value?.slug === slug ? held.value : undefined));
 const address = computed(() => web.page?.url ?? entry.value?.url);
 const page = computed(() => (address.value ? Web.pageOf(address.value) : "/"));
 const host = computed(() => (address.value ? new URL(address.value).host : slug));
@@ -130,8 +140,9 @@ async function onPage(): Promise<void> {
 
 // Re-asserted after every pull, like the conversation key: the poll re-picks a slug whenever the held one is unknown.
 watch(
-  [() => conversation, () => slug, () => sc.sessions.value],
+  [() => conversation, () => slug, () => sc.sessions.value, isShown],
   () => {
+    if (!isShown.value) return;
     sc.sessionKey.value = conversation;
     sc.slug.value = slug;
   },

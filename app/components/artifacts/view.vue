@@ -6,8 +6,17 @@ const KIND: Record<ArtifactKind, string> = { document: "Document", page: "Page",
 
 const { initial: sideInitial, width: side } = usePaneWidth();
 const sc = useSidecar();
+const chrome = useChrome();
 const follow = $follow();
 const selected = useConversationPick("ar:picks");
+
+const shown = computed(() => chrome.view.current.value === "artifacts");
+provide(FACE_SHOWN, shown);
+
+// Comment mode was armed against the page this face holds, which stays mounted out of sight.
+watch(shown, (on) => {
+  if (!on) chrome.comment.disarm();
+});
 
 const session = computed(() => sc.sessions.value.find((s) => s.key === sc.sessionKey.value));
 // A scratch .md the conversation wrote is a document, so it stays in Files with the rest of its files.

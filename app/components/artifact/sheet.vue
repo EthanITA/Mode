@@ -20,6 +20,7 @@ const GROW = { duration: MOTION_DURATION.slow, easing: EASE_CSS.drawer } satisfi
 const SHRINK = { duration: MOTION_DURATION.base, easing: EASE_CSS.drawer } satisfies KeyframeAnimationOptions;
 
 const artifact = $artifact();
+const shown = useFaceShown();
 const isExpanded = ref(false);
 const slot = useTemplateRef<HTMLElement>("slot");
 const preview = useTemplateRef<ComponentPublicInstance>("preview");
@@ -93,15 +94,22 @@ async function collapse(): Promise<void> {
 
 watch(
   () => artifact.isFull,
-  (full) => void (full ? expand() : collapse()),
+  (full) => {
+    if (shown.value) void (full ? expand() : collapse());
+  },
 );
 watch([() => path, () => conversation], () => {
-  artifact.isFull = false;
+  if (shown.value) artifact.isFull = false;
 });
-watchEffect(() => {
-  artifact.canGrow = !!(path && slug && conversation);
-});
+// Post flush, so a face leaving on the same switch has already cleared it.
+watchEffect(
+  () => {
+    if (shown.value) artifact.canGrow = !!(path && slug && conversation);
+  },
+  { flush: "post" },
+);
 useEventListener(window, "keydown", (event: KeyboardEvent) => {
+  if (!shown.value) return;
   if (event.key === "Escape" && !event.defaultPrevented && artifact.isFull) artifact.isFull = false;
   const isPlain = !(event.metaKey || event.ctrlKey || event.altKey || event.repeat || isTyping(event.target));
   if (isPlain && event.key.toLowerCase() === "f") artifact.toggleFull();

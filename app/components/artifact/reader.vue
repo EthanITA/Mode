@@ -20,6 +20,7 @@ const chrome = useChrome();
 const route = useRoute();
 const artifact = $artifact();
 const sides = $sideQuestion();
+const shown = useFaceShown();
 
 // The sheet on a face is too narrow for a second column; a routed page or a grown sheet has the room.
 const roomy = computed(() => artifact.isFull || !!route.params.slug);
@@ -190,7 +191,7 @@ async function settle(action: "accept" | "revert", edit: FramePending): Promise<
 }
 
 watch([() => chrome.comment.pick.value, live, markdown], ([hit, on, md]) => {
-  inlineArmed.value = Boolean(hit) && on && !md;
+  if (shown.value) inlineArmed.value = Boolean(hit) && on && !md;
 });
 
 watch(inlineAsk, (ask) => {
@@ -201,8 +202,9 @@ watch(inlineAsk, (ask) => {
 
 // Re-asserted after every pull, like the conversation key: the poll re-picks a slug whenever the held one is unknown.
 watch(
-  [() => conversation, () => slug, () => sc.sessions.value],
+  [() => conversation, () => slug, () => sc.sessions.value, shown],
   () => {
+    if (!shown.value) return;
     sc.sessionKey.value = conversation;
     sc.slug.value = slug;
   },
@@ -221,7 +223,7 @@ watch([() => sc.slug.value, () => versions.at.value], () => {
 });
 
 function onWin(event: KeyboardEvent): void {
-  if (event.key !== "Escape") return;
+  if (event.key !== "Escape" || !shown.value) return;
   const [edit] = pendingEdits.value;
   if (!edit) return;
   event.preventDefault();
