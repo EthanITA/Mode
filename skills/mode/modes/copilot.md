@@ -4,7 +4,6 @@ summary: Refine it together, then a team builds it while the user watches.
 color: magenta
 enter-when: build me|build the|build a|implement the|implement it|implement this|add these|several features
 exit-when: manual
-deliverables: change, artifact
 no-implement: true
 no-dispatch-without-approval: true
 steps: intake, spec@artifact, approval?@approve, dispatch@agent, integrate, deliver@commit

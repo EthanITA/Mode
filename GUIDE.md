@@ -85,7 +85,6 @@ Seven ship with the plugin:
 | `board`         | Autonomous work runs on a visible task board, and a ticked box is a receipt                                                                                       |
 | `collaboration` | Execute what is reversible, escalate what is genuinely yours, challenge by default                                                                                |
 | `prose`         | Write like a colleague typing to a colleague: the fact that settles it, then stop; no em dashes, symbols or chat formatting. Outranks every mode, style and skill |
-| `deliverable`   | Name what will land before producing it, then route it                                                                                                            |
 | `artifact`      | Scoped: fires only when a page is on the way, carrying the theming and interactivity contract                                                                     |
 
 **Why this tier exists is economic.** A rule in a `CLAUDE.md` is paid for on every request of every session. A ground rule costs one injection per conversation.
@@ -93,23 +92,6 @@ Seven ship with the plugin:
 A rules file needs only `name` and `summary` in its front matter. Drop a file with the same name into your own rules directory to replace a shipped one, or one with an empty body to silence it.
 
 **One rule outranks every contract.** A teaching style once talked Claude into glossaries and recaps the prose rule forbids, because the contract's voice outlasted a rule told once. A rules file carrying `outranks: contracts` closes that gap: its own `## Standing reminder` is restated on every turn, after anything the mode and the style sent, under a line saying it wins wherever they disagree. `prose` is the one that ships with it, so human prose holds in every mode, style and skill.
-
----
-
-## The deliverable
-
-What _lands_ at the end varies independently of how the work ran, but it used to be welded into each mode: `debug` always ended in an explainer plus a merge request, `tester` always in a report. So there was no way to ask for one mode's rigour with a different ending.
-
-The `deliverable` ground rule names the forms and routes each:
-
-| Form         | What it means                                          | Where it goes                                                       |
-| ------------ | ------------------------------------------------------ | ------------------------------------------------------------------- |
-| **chat**     | The answer lives in the conversation, nothing is built | Stay inline; do not build a page nobody asked for                   |
-| **artifact** | A page you open, keep and re-read                      | The `create-artifact` skill, always                                 |
-| **MR or PR** | A change plus the note a reviewer reads                | Human prose, sectioned what and why, visuals where structure exists |
-| **MVP**      | The smallest slice that actually runs                  | Code, run once for real before it is called done                    |
-
-Several at once is ordinary. The rule requires the form to be _stated_ before it is produced, which is the actual fix: the wrong shape gets caught while it is still cheap.
 
 ---
 
@@ -188,8 +170,6 @@ The Gates section is the one worth knowing about before you need it. A guard ref
 ## The eleven modes
 
 Each one is a pipeline. A yellow box is a gate, meaning the work genuinely stops there. A dashed line is a loop back.
-
-Each one also names what it can deliver in its front matter: an answer, a change, an artifact or a post, or nothing at all for `dispatcher`. The ask in hand narrows that to its own north star with `mode deliverable`, or Jev reads it from the ask, and how far a change then ships is the project's `delivery` row: a commit, a push, an MR or a publish. Every turn restates it, and `deliverable-guard` refuses an act outside it, such as a push in a tree that ships as a commit or a reply nobody asked to send. `mode deliverables` prints every mode against how a change ships where you stand.
 
 ### `pair`
 

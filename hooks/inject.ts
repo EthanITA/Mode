@@ -3,7 +3,6 @@ import { payload, str, type Payload } from "../lib/hook/io.ts";
 import { announce } from "../lib/mode/announce.ts";
 import { list } from "../lib/mode/catalogue.ts";
 import { AUTO, AXES, HOOK_CAP } from "../lib/mode/constants.ts";
-import { deliverableCommand } from "../lib/mode/deliverable.ts";
 import { rulesDue } from "../lib/mode/rules.ts";
 import {
   adopt,
@@ -215,26 +214,15 @@ try {
     const board = newsLine(str(data.session_id));
     if (board) blocks.push(board);
 
-    // Before the announce, so a fresh ask already carries Jev's reading of what it should deliver.
-    if (spare) {
-      try {
-        await deliverableCommand({ words: ["read"], message: spare, path: cwd, session });
-      } catch {}
-    }
-
     // One call, because lib/mode owns whether this prompt gets the whole contract or the reminder.
-    const announced = ask(() => announce({ session, path: cwd, room: HOOK_CAP - blocks.join("\n\n").length - 2 }));
+    const announced = ask(() => announce({ session, room: HOOK_CAP - blocks.join("\n\n").length - 2 }));
     if (announced) blocks.push(announced);
 
     if (blocks.length) {
       let context = blocks.join("\n\n");
       if (context.length > HOOK_CAP) {
         const [mode = "none", style = "none"] = AXES.map((axis) => ask(() => getSlot({ axis, session })) ?? "none");
-        // The north star rides in the preview, since the first turn is when it has to be named.
-        const north = lines(announced ?? "").find((line) => line.startsWith("Deliverable:")) ?? "";
-        context = [overflow(mode, style), north, ask(() => standing(session)) ?? "", context]
-          .filter(Boolean)
-          .join("\n\n");
+        context = [overflow(mode, style), ask(() => standing(session)) ?? "", context].filter(Boolean).join("\n\n");
       }
       // additionalContext reaches the model only; the surface a person watches is the status-line chip.
       emit({

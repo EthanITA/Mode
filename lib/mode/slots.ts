@@ -15,7 +15,6 @@ import {
   substitute,
   truthy,
 } from "./contracts.ts";
-import { delivers } from "./deliverable.ts";
 import { standingBlock } from "./frontmatter.ts";
 import { resolveDir, stateHome } from "./paths.ts";
 import { pinFor } from "./pins.ts";
@@ -23,7 +22,6 @@ import { Refusal } from "./refusal.ts";
 import {
   approvedSlug,
   declared,
-  deliverable,
   dropSlot,
   forgetAnnounced,
   held,
@@ -31,7 +29,6 @@ import {
   redStanding,
   removeState,
   require,
-  saveDeliverable,
   settled,
   sourceOf,
   stamp,
@@ -75,13 +72,7 @@ export function setSlot({
     return `${axis} set to off`;
   }
   hold(axis, session, name, chosen);
-  if (axis === "mode") {
-    // A new mode keeps only the parts of the north star it can still deliver.
-    const state = deliverable(session);
-    const offered = delivers(session);
-    saveDeliverable(session, { ...state, intents: (state.intents ?? []).filter((intent) => offered.includes(intent)) });
-    ownStyle(session, name);
-  }
+  if (axis === "mode") ownStyle(session, name);
   return `${axis} set to ${name}`;
 }
 
@@ -94,21 +85,14 @@ export function getSlot({ axis, session, chip = false }: SlotArgs & { chip?: boo
 }
 
 export function chips(session?: string): string {
-  const parts = AXES.map((axis) => {
+  return AXES.map((axis) => {
     const name = held(axis, session);
     // An empty slot renders as off rather than vanishing, so the line always has both entries.
     if (!name) return `${CHIP_ICON[axis]} ${OFF}`;
     const label = (MARK[sourceOf(axis, session) ?? ""] ?? "") + name;
     const color = COLORS[metaOf(axis, name).color ?? ""] ?? "";
     return `${CHIP_ICON[axis]} ${color ? `\x1b[${color}m${label}${RESET}` : label}`;
-  });
-  if (delivers(session).length) {
-    const state = deliverable(session);
-    const named = (state.intents ?? []).join("+");
-    // The same mark as a chosen slot: something read it off the ask rather than somebody naming it.
-    parts.push(`${CHIP_ICON.deliverable} ` + (named ? (state.source === "jev" ? MARK.chosen : "") + named : "none"));
-  }
-  return parts.join("  ");
+  }).join("  ");
 }
 
 // The contract a message asks for, while that slot is on auto or still holds only a pin.

@@ -14,7 +14,7 @@ const COLORS = ["red", "green", "yellow", "blue", "magenta", "cyan", "grey", "sk
 const EXITS = ["manual", "approved", "mr-opened"];
 const BUDGET = 4;
 const SUMMARY_MAX = 120;
-// A switch prompt carries the head, the switch line, position, deliverable and an outranking reminder beside the body.
+// A switch prompt carries the head, the switch line, position and an outranking reminder beside the body.
 const LINES_ROOM = 1_600;
 
 type Parsed = { stem: string; file: string; meta: Record<string, string>; body: string; text: string };
@@ -130,7 +130,7 @@ describe("every shipped contract's body", () => {
     },
   );
 
-  test("fits one hook beside its position and deliverable lines, so it never spills to a file", () => {
+  test("fits one hook beside its position line, so it never spills to a file", () => {
     assert.deepEqual(
       offenders(contracts, ({ body }) => body.length > HOOK_CAP - LINES_ROOM),
       [],
@@ -309,23 +309,6 @@ describe("the pipeline each mode declares", () => {
     );
   });
 
-  test("what a mode delivers is named, and covers the events its pipeline waits on", () => {
-    const INTENTS = ["answer", "change", "artifact", "post"];
-    assert.deepEqual(
-      offenders(modes, (contract) => {
-        const declared = listed(contract.meta, "deliverables");
-        const events = steps(contract).map((match) => match?.[3]);
-        const named =
-          declared.length && (declared.join() === "none" || declared.every((intent) => INTENTS.includes(intent)));
-        return (
-          !named ||
-          (events.includes("artifact") && !declared.includes("artifact")) ||
-          (events.includes("commit") && !declared.includes("change"))
-        );
-      }),
-      [],
-    );
-  });
 });
 
 describe("routing through the real chooser against the shipped contracts", () => {

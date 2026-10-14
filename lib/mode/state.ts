@@ -1,13 +1,11 @@
-import { readdirSync, rmSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import type { Axis } from "../../shared/types/mode.ts";
 import { readTextSafe, writeText } from "../files.ts";
-import { lines, pyJson, strip } from "../text.ts";
+import { lines, strip } from "../text.ts";
 import { FALSEY, GREEN, RED } from "./constants.ts";
-import { configRoot, modeHome, stateHome } from "./paths.ts";
+import { modeHome, stateHome } from "./paths.ts";
 import { Refusal } from "./refusal.ts";
-
-export type Deliverable = { intents?: string[]; line?: string; ship?: string; source?: string };
 
 export function sessionKey(sid?: string): string {
   return (sid || process.env.CLAUDE_CODE_SESSION_ID || "").slice(0, 8);
@@ -59,50 +57,12 @@ export function settled(axis: Axis, sid?: string): string | undefined {
 export function dropSlot(axis: Axis, sid?: string): void {
   // .announced stays, so the next prompt can tell the model the contract it worked under is gone.
   for (const suffix of ["", ".chosen", ".pinned", ".done"]) removeState(statePath(sid, `.${axis}${suffix}`));
-  // An approval outlives its mode only as a gate nobody meant to leave open, and so does a north star.
-  if (axis === "mode") for (const suffix of [".approved", ".deliverable"]) removeState(statePath(sid, suffix));
+  // An approval outlives its mode only as a gate nobody meant to leave open.
+  if (axis === "mode") removeState(statePath(sid, ".approved"));
 }
 
 export function forgetAnnounced(axis: Axis, sid?: string): void {
   for (const suffix of [".announced", ".said"]) removeState(statePath(sid, `.${axis}${suffix}`));
-}
-
-export function deliverable(sid?: string): Deliverable {
-  try {
-    const found: unknown = JSON.parse(readTextSafe(statePath(sid, ".deliverable")) ?? "{}");
-    return typeof found === "object" && found && !Array.isArray(found) ? (found as Deliverable) : {};
-  } catch {
-    return {};
-  }
-}
-
-export function saveDeliverable(sid: string | undefined, state: Deliverable): void {
-  const path = require(statePath(sid, ".deliverable"));
-  if (!state.intents?.length) return removeState(path);
-  writeText(path, pyJson(state) + "\n");
-}
-
-// The open board items, so a bare "go" reads against what is already in flight.
-export function openBoard(sid?: string): string[] {
-  const folder = join(configRoot(), "tasks", `session-${sessionKey(sid)}`);
-  let files: string[];
-  try {
-    files = readdirSync(folder)
-      .filter((name) => name.endsWith(".json"))
-      .sort();
-  } catch {
-    return [];
-  }
-  const subjects: string[] = [];
-  for (const file of files) {
-    try {
-      const task: unknown = JSON.parse(readTextSafe(join(folder, file)) ?? "");
-      if (typeof task !== "object" || !task || Array.isArray(task)) continue;
-      const { status, subject } = task as { status?: unknown; subject?: unknown };
-      if (status !== "completed" && subject) subjects.push(String(subject));
-    } catch {}
-  }
-  return subjects;
 }
 
 // A record carries the mode it was made under, so one mode's record cannot satisfy another.

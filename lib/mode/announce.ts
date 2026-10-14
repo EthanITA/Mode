@@ -3,12 +3,10 @@ import { readTextSafe } from "../files.ts";
 import { strip } from "../text.ts";
 import { AUTO, AXES, HOOK_CAP } from "./constants.ts";
 import { readContract, substitute } from "./contracts.ts";
-import { announceDeliverable, delivers } from "./deliverable.ts";
 import { standingBlock } from "./frontmatter.ts";
-import { resolveDir } from "./paths.ts";
 import { position } from "./pipeline.ts";
 import { outranking } from "./rules.ts";
-import { deliverable, forgetAnnounced, held, readState, sessionKey, statePath, writeState } from "./state.ts";
+import { forgetAnnounced, held, readState, sessionKey, statePath, writeState } from "./state.ts";
 
 // Silence here would leave the status-line chip naming a contract whose rules nobody can read.
 const unreadable = (name: string): string =>
@@ -22,11 +20,11 @@ const left = (axis: string, from: string): string =>
 const deferred = (axis: string, name: string): string =>
   `Active ${axis}: ${name}\n\nThe ${axis} switched to ${name}, and its contract arrives with the next prompt because it does not fit in one hook beside the mode's. Until then, work under the ground rules and the mode.`;
 
-type AxisTurn = { axis: Axis; session?: string; folder: string; fresh: boolean };
+type AxisTurn = { axis: Axis; session?: string; fresh: boolean };
 type Block = { axis: Axis; name: string; text: string; whole: boolean; commit: () => void };
 
 // fresh is a start, where nothing injected before survives, so the held contract goes out whole with no switch line.
-function axisBlock({ axis, session, folder, fresh }: AxisTurn): Block | undefined {
+function axisBlock({ axis, session, fresh }: AxisTurn): Block | undefined {
   const name = held(axis, session);
   const marker = statePath(session, `.${axis}.announced`);
   const before = fresh ? "" : readState(marker);
@@ -44,15 +42,12 @@ function axisBlock({ axis, session, folder, fresh }: AxisTurn): Block | undefine
   // Marking an unreadable contract announced would swallow the long version for good.
   if (!standingBlock(body))
     return { axis, name, text: `${head}\n\n${unreadable(name)}`, whole: false, commit: () => {} };
-  const lines = [position(axis, session)];
-  const offered = axis === "mode" ? delivers(session) : [];
-  if (offered.length) lines.push(announceDeliverable(deliverable(session), name, offered, folder));
-  const said = lines.filter(Boolean).join("\n");
+  const said = position(axis, session);
   const saidMarker = statePath(session, `.${axis}.said`);
   const remember = (): void => {
     if (saidMarker) writeState(saidMarker, said);
   };
-  // A held contract is already in context, so an unchanged turn sends only a position or deliverable that moved.
+  // A held contract is already in context, so an unchanged turn sends only a position that moved.
   if (marker && before === name) {
     if (!said || strip(readTextSafe(saidMarker) ?? "") === said) return undefined;
     return { axis, name, text: `${head}\n\n${said}`, whole: false, commit: remember };
@@ -70,19 +65,8 @@ function axisBlock({ axis, session, folder, fresh }: AxisTurn): Block | undefine
   };
 }
 
-export function announce({
-  session,
-  path,
-  room = HOOK_CAP,
-}: {
-  session?: string;
-  path?: string;
-  room?: number;
-}): string {
-  const folder = resolveDir(path);
-  const parts = AXES.map((axis) => axisBlock({ axis, session, folder, fresh: false })).filter(
-    (part): part is Block => !!part,
-  );
+export function announce({ session, room = HOOK_CAP }: { session?: string; room?: number }): string {
+  const parts = AXES.map((axis) => axisBlock({ axis, session, fresh: false })).filter((part): part is Block => !!part);
   // Every turn and last, so the rule that outranks the contracts is the final word before each reply.
   const reminders = sessionKey(session)
     ? outranking().map(({ stem, reminder }) => `${outranks(stem)}\n\n${reminder}`)
@@ -99,8 +83,8 @@ export function announce({
   return blocks.length ? substitute(blocks.join("\n\n")) : "";
 }
 
-export function startContract({ axis, session, path }: { axis: Axis; session?: string; path?: string }): string {
-  const part = axisBlock({ axis, session, folder: resolveDir(path), fresh: true });
+export function startContract({ axis, session }: { axis: Axis; session?: string }): string {
+  const part = axisBlock({ axis, session, fresh: true });
   if (!part) return "";
   part.commit();
   return substitute(part.text);

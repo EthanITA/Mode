@@ -4,7 +4,6 @@ summary: The user wants X and is away. Every decision is Claude's, one report wa
 color: red
 enter-never: true
 exit-when: mr-opened
-deliverables: change
 no-implement: true
 steps: read, plan, dispatch@agent, integrate@test, mr
 loops: integrate>dispatch

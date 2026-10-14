@@ -3,7 +3,6 @@ import type { Axis } from "../shared/types/mode.ts";
 import { announce } from "../lib/mode/announce.ts";
 import { list, show, version } from "../lib/mode/catalogue.ts";
 import { AXES } from "../lib/mode/constants.ts";
-import { deliverableCommand, deliverablesReport } from "../lib/mode/deliverable.ts";
 import { pin, pinsReport } from "../lib/mode/pins.ts";
 import { stepReport } from "../lib/mode/pipeline.ts";
 import { Refusal } from "../lib/mode/refusal.ts";
@@ -131,18 +130,6 @@ const VERBS: Record<string, Spec> = {
       if (!verdict) throw new Refusal("Jev gave no reading, so the outcome is yours to decide.");
       return triageReport(verdict);
     },
-  },
-  deliverable: {
-    help: "the ask's north star: show it, name it, mark it done, check an act against it, or let Jev read it",
-    usage: "[intent|done|check|read ...]",
-    values: ["ship", "message"],
-    run: ({ positionals, values, session, path }) =>
-      deliverableCommand({ words: positionals, ship: values.ship, message: values.message, session, path }),
-  },
-  deliverables: {
-    help: "what each mode delivers, and how a change ships here and per project",
-    max: 0,
-    run: ({ path }) => deliverablesReport(path),
   },
   why: {
     help: "slots, pipeline, gates, ground rules and what the next prompt will carry",

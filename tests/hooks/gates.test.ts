@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, test } from "node:test";
-import { deliverableCommand } from "../../lib/mode/deliverable.ts";
 import { approve, done, setSlot } from "../../lib/mode/slots.ts";
 import {
   contract,
@@ -334,53 +332,6 @@ describe("director-guard, which keeps the director's hands off the work", () => 
   test("another named agent and the lead itself are untouched", () => {
     assert.ok(silent(acted("Write", { file_path: "/repo/src/thing.ts" }, "a9b14b6d84d00b2ba")));
     assert.ok(silent(acted("TaskCreate", { subject: "[AI] build it" })));
-  });
-});
-
-describe("deliverable-guard, which holds every delivery act to the named north star", () => {
-  const session = "h-north0";
-  const act = (tool: string, input: object, extra: object = {}) =>
-    fire(
-      "guards/deliverable-guard",
-      {
-        session_id: session,
-        hook_event_name: "PreToolUse",
-        tool_name: tool,
-        cwd: "/work/repo",
-        tool_input: input,
-        ...extra,
-      },
-      vars,
-    );
-  const name = (...words: string[]) => deliverableCommand({ words, session });
-
-  test("the first edit waits for a deliverable, while a scratch file never counts as one", () => {
-    hold(session, "pair");
-    assert.match(denial(act("Write", { file_path: "/work/repo/src/thing.ts" })) ?? "", /No deliverable is named/);
-    assert.ok(silent(act("Write", { file_path: join(tmpdir(), "probe.py") })));
-  });
-
-  test("an edit is a change, so it waits for change to be named, and then goes", async () => {
-    await name("answer");
-    assert.match(denial(act("Edit", { file_path: "/work/repo/src/thing.ts" })) ?? "", /is a change/);
-    await name("change", "the retry fix");
-    assert.ok(silent(act("Edit", { file_path: "/work/repo/src/thing.ts" })));
-  });
-
-  test("a page in an artifacts folder is an artifact, while code under a folder of that name is a change", () => {
-    assert.match(denial(act("Write", { file_path: "/work/notes/artifacts/plan.html" })) ?? "", /is an artifact/);
-    assert.ok(silent(act("Edit", { file_path: "/work/repo/server/api/artifacts/[slug]/review.post.ts" })));
-  });
-
-  test("a push past how the tree ships and a message nobody asked to send are refused, naming the fix", () => {
-    assert.match(denial(act("Bash", { command: "git -C /work/repo push" })) ?? "", /--ship push/);
-    assert.match(denial(act("mcp__claude_ai_Gmail__send_message", { to: "someone" })) ?? "", /add post/);
-  });
-
-  test("a teammate works to its own charter, and a mode that delivers nothing has no north star", () => {
-    assert.ok(silent(act("Bash", { command: "git -C /work/repo push" }, { agent_id: "a4c36797db827b609" })));
-    hold(session, "dispatcher");
-    assert.ok(silent(act("Bash", { command: "git -C /work/repo push" })));
   });
 });
 

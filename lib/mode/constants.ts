@@ -50,4 +50,4 @@ export const COLORS: Record<string, string> = {
 };
 export const RESET = "\x1b[0m";
 // Both are East Asian Wide: a narrow emoji here measures one column and renders two, misaligning the row.
-export const CHIP_ICON = { mode: "\u{1f9ed}", style: "\u{1f4ac}", deliverable: "\u{1f3af}" };
+export const CHIP_ICON = { mode: "\u{1f9ed}", style: "\u{1f4ac}" };

@@ -427,6 +427,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Removed
 
+- **The deliverable.** `mode deliverable` and `mode deliverables`, the `deliverable` ground rule,
+  `deliverable-guard`, the `deliverables:` front matter key, the status-line chip and the
+  `Deliverable:` line in the injection are gone, so an edit, a commit, a push or a post is no longer
+  held to a named north star. The `delivery` config rows stay, since `board-deliver` still reads them.
+- **The board island in the sidecar.** Conversation and artifact pages no longer render it, and the
+  `board-island` render-check region goes with it.
 - **`artifact wait` and the page's local sink.** The review layer sends Send and Approve to the
   sidecar relay, and with no sidecar running it downloads `<slug>.comments.json` for
   `artifact comments` to pick up. `artifact review --sink` goes with it, and a page built by an

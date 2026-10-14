@@ -17,7 +17,7 @@ function text(part: StartPart, session: string | undefined, path: string): strin
     case "style":
       // Every part adopts on its own because the parts run in parallel, and adopt fills only an untouched slot.
       adopt({ path, session });
-      return startContract({ axis: part, session, path });
+      return startContract({ axis: part, session });
   }
 }
 

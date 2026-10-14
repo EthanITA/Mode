@@ -8,7 +8,6 @@ import { declaring } from "../lib/hook/declares.ts";
 import { announce } from "../lib/mode/announce.ts";
 import { list, show, version } from "../lib/mode/catalogue.ts";
 import { CHIP_ICON } from "../lib/mode/constants.ts";
-import { deliverableCommand, deliverablesReport } from "../lib/mode/deliverable.ts";
 import { pin, pinsReport } from "../lib/mode/pins.ts";
 import { stepReport } from "../lib/mode/pipeline.ts";
 import { Refusal } from "../lib/mode/refusal.ts";
@@ -1026,79 +1025,6 @@ describe("triage, Jev's reading of where one request goes", () => {
   test("with no reading there is no verdict, leaving the call to the dispatcher", async () => {
     write(join(home, "mode", "config.json"), JSON.stringify({ "jev-url": "http://127.0.0.1:9" }));
     assert.equal(await triage("wrap up"), undefined);
-  });
-});
-
-describe("deliverable, the north star of the ask in hand", () => {
-  const home = join(tmp, "north");
-  const session = "d311ab1e-north";
-  const path = "/work/acme/repo";
-  within({ plugin: PLUGIN, home, vars: { MODE_JEV: "", OPENROUTER_API_KEY: "test" } });
-  before(async () => {
-    write(
-      join(home, "mode", "config.json"),
-      JSON.stringify({ delivery: [["acme", "mr-merged"]], "jev-url": await jevUrl }),
-    );
-    for (const [name, delivers] of [
-      ["allround", "answer, change, artifact, post"],
-      ["pages", "artifact"],
-    ]) {
-      write(
-        join(home, "mode", "modes", `${name}.md`),
-        contract({ name: name ?? "", keys: `deliverables: ${delivers}\n` }),
-      );
-    }
-  });
-  const deliverable = (words: string[], at = path, message?: string) =>
-    deliverableCommand({ words, session, path: at, message });
-
-  test("with nothing named, every turn says so, how a change ships here, and the chip says none", () => {
-    set("mode", session, "allround");
-    const said = announce({ session, path });
-    assert.ok(
-      said.includes("Deliverable: none named") && said.includes("an MR, done when merged (the `acme` row)"),
-      said,
-    );
-    assert.match(chips(session), /\u{1F3AF} none/u);
-  });
-
-  test("naming one reads back the intent, how it ships and its line, and acts are checked against it", async () => {
-    assert.equal(
-      (await deliverable(["change", "the retry fix merged"])).text,
-      "change, and a change here ships as an MR, done when merged (the `acme` row). the retry fix merged.",
-    );
-    assert.equal((await deliverable(["check", "push"])).code, 0);
-    const elsewhere = await deliverable(["check", "push"], "/work/other");
-    assert.ok(
-      elsewhere.code === 1 && elsewhere.text?.includes("`delivery` row") && elsewhere.text.includes("--ship push"),
-      elsewhere.text,
-    );
-    const post = await deliverable(["check", "post"]);
-    assert.ok(post.code === 1 && post.text?.includes("add post"), post.text);
-  });
-
-  test("a mode that cannot deliver a change drops it and refuses to name one", async () => {
-    set("mode", session, "pages");
-    assert.equal((await deliverable([])).code, 1);
-    await assert.rejects(
-      deliverable(["change", "x"]),
-      (error) => error instanceof Refusal && error.code === 2 && error.message.includes("pages delivers artifact"),
-    );
-  });
-
-  test("Jev's reading of an ask is recorded as its own, marked on the chip, only while nothing is named", async () => {
-    await deliverable(["read"], path, "write it up as a page");
-    assert.match(chips(session), /\u{1F3AF} ~artifact/u);
-    await deliverable(["read"], path, "write it up as a page");
-    assert.match((await deliverable([])).text ?? "", /artifact/);
-  });
-
-  test("deliverables leads with how a change ships here, then every mode and project", () => {
-    const report = deliverablesReport(path);
-    assert.ok(
-      report.startsWith("Here a change ships as an MR") && report.includes("pages") && report.includes("anything else"),
-      report,
-    );
   });
 });
 

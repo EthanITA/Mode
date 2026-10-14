@@ -2,10 +2,9 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
-import { deliverableCommand } from "../../lib/mode/deliverable.ts";
 import { pipelineFor } from "../../lib/mode/pipeline.ts";
 import { approve, done, getSlot, red, setSlot } from "../../lib/mode/slots.ts";
-import { declared, deliverable } from "../../lib/mode/state.ts";
+import { declared } from "../../lib/mode/state.ts";
 import { contextOf, env, fire, fixtureRoot, output, PLUGIN, scratch, write, contract, type Run } from "../support.ts";
 
 const tmp = scratch("mode-prompt-");
@@ -510,7 +509,7 @@ describe("the PostToolUse hooks", () => {
     );
   });
 
-  test("observe records the step a call satisfied, a failing suite as test-fail, and ticks the deliverable an MR delivers", async () => {
+  test("observe records the step a call satisfied, and a failing suite as test-fail", () => {
     const session = sid();
     setSlot({ axis: "mode", session, name: "pair" });
     const ran = (command: string, event = "PostToolUse") =>
@@ -525,9 +524,6 @@ describe("the PostToolUse hooks", () => {
     ran("git commit -m wip");
     assert.equal(red(session), undefined);
     assert.ok(declared("mode", session).has("commit"));
-    await deliverableCommand({ words: ["change", "artifact", "the fix"], session });
-    ran("glab mr create --fill");
-    assert.deepEqual(deliverable(session).intents, ["artifact"]);
   });
 
   test("observe reads the red a pipe hides, skips a suite that never loaded and a commit that never happened, and an approval passes its step", () => {

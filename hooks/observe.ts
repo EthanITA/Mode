@@ -1,7 +1,6 @@
 import * as Artifacts from "../lib/artifact/store.ts";
 import { newsLine } from "../lib/hook/board.ts";
 import { context, payload, record, str, type Payload } from "../lib/hook/io.ts";
-import { deliverableCommand } from "../lib/mode/deliverable.ts";
 import { done } from "../lib/mode/slots.ts";
 
 const TESTS =
@@ -13,12 +12,6 @@ const UNLOADED =
   /ModuleNotFoundError|ImportError|SyntaxError|IndentationError|NameError|error during collection|Cannot find module/;
 const COMMIT = /\bgit\s+(?:-[Cc]\s+\S+\s+|--?[\w-]+(?:=\S+)?\s+)*(commit|cherry-pick)\b/;
 const NOT_COMMITTED = /nothing (?:added )?to commit|no changes added to commit/;
-// The two delivery acts that finish one part of the north star outright: the MR opened, the page stamped.
-const RECEIPTS: [RegExp, string][] = [
-  [/\b(?:glab\s+mr\s+create|gh\s+pr\s+create)\b/, "change"],
-  [/\bartifact\s+stamp\b/, "artifact"],
-];
-const MR_TOOL = /^mcp__.+__create_(?:merge_request|pull_request)$/;
 // Only at the top of the folder: a .md one level down is a page's build brief, not an artifact.
 const ARTIFACT_MD = /\/artifacts\/[^/]+\.md$/;
 
@@ -79,13 +72,6 @@ try {
   if (token) await quietly(() => done({ axis: "mode", session, reason: token }));
   recordDocument(data);
   await quietly(() => announceCreated(data));
-
-  if (data.hook_event_name === "PostToolUse" && !data.agent_id) {
-    const command = data.tool_name === "Bash" ? str(record(data.tool_input).command) : "";
-    const parts = RECEIPTS.filter(([pattern]) => pattern.test(command)).map(([, part]) => part);
-    if (MR_TOOL.test(str(data.tool_name))) parts.push("change");
-    for (const part of parts) await quietly(() => deliverableCommand({ words: ["done", part], session }));
-  }
 
   // Only on the success event: a failed call already owes the model an error, not a board aside.
   if (data.hook_event_name === "PostToolUse") {

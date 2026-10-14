@@ -62,7 +62,7 @@
 
 <rect class="box mode" x="374" y="208" width="240" height="40"/>
 <text class="lbl mode-t" x="386" y="225">only what moved</text>
-<text class="sub mode-t" x="386" y="240">a pipeline step, a deliverable</text>
+<text class="sub mode-t" x="386" y="240">a pipeline step</text>
 
 <rect class="box rules" x="374" y="254" width="240" height="40"/>
 <text class="lbl rules-t" x="386" y="271">prose reminder</text>

@@ -6,7 +6,6 @@ enter-when: you are dispatcher|you are the dispatcher|act as dispatcher|act as t
 enter-over-pin: true
 style: fast
 exit-when: manual
-deliverables: none
 no-implement: true
 steps: split, ground, triage
 loops: triage>split
