@@ -11,6 +11,9 @@ const { sessionState } = useScreen();
 const askClaude = $askClaude();
 
 const draft = ref("");
+const isHovered = ref(false);
+// Hover only slides the field out, so a pointer passing over never pulls focus from what is being typed elsewhere.
+const isShown = computed(() => open.value || isHovered.value);
 const box = useTemplateRef<HTMLElement>("box");
 const list = useTemplateRef<HTMLElement>("list");
 
@@ -107,8 +110,10 @@ defineExpose({ focus });
     pad="none"
     shape="island"
     variant="glass-liquid"
-    :data-open="open"
+    :data-open="isShown"
     :responsive="{ axis: 'height', anchorY: 'end' }"
+    @pointerenter="isHovered = true"
+    @pointerleave="isHovered = false"
   >
     <div
       ref="box"
@@ -198,7 +203,7 @@ defineExpose({ focus });
           <ComposerSessionPerch :tip="open ? undefined : 'Ask Claude on the side · {alt enter}'" />
         </button>
         <UiTextarea
-          v-show="open"
+          v-show="isShown"
           v-model="draft"
           auto-fit
           class="field focusable"
@@ -208,7 +213,7 @@ defineExpose({ focus });
           aria-label="Ask Claude"
         />
         <button
-          v-show="open"
+          v-show="isShown"
           v-press
           class="ask focusable"
           type="button"
