@@ -15,6 +15,7 @@ const emit = defineEmits<{
 
 const chrome = useChrome();
 const web = $web();
+const artifact = $artifact();
 const frame = ref<HTMLIFrameElement>();
 const proxy = ref<string>();
 const upstream = ref<string>();
@@ -88,6 +89,7 @@ function onKey(key: string): void {
   else if (key === "reload") web.reload();
   else if (key === "remove") web.removeAimed();
   else if (key === "undo") web.undoRemove();
+  else if (key === "full") artifact.toggleFull();
 }
 
 function onLayout(message: Extract<AgentMessage, { type: "layout" }>): void {

@@ -137,6 +137,8 @@ window.addEventListener(
       post({ type: "key", key: "escape" });
     } else if (!meta && !event.altKey && !isTyping(event.target) && event.key.toLowerCase() === "c" && !event.repeat) {
       post({ type: "key", key: "hold" });
+    } else if (!meta && !event.altKey && !isTyping(event.target) && event.key.toLowerCase() === "f" && !event.repeat) {
+      post({ type: "key", key: "full" });
     }
   },
   true,

@@ -3,6 +3,7 @@ import { EASE_CSS, MOTION_DURATION, prefersReducedMotion } from "@cela/design/ut
 import { Maximize2 } from "@lucide/vue";
 import { useEventListener } from "@vueuse/core";
 import type { ComponentPublicInstance } from "vue";
+import { isTyping } from "~~/lib/web/page/blocks";
 import type { ArtifactKind } from "~~/shared/types/artifact";
 
 const { conversation, kind, path, slug } = defineProps<{
@@ -97,11 +98,17 @@ watch(
 watch([() => path, () => conversation], () => {
   artifact.isFull = false;
 });
+watchEffect(() => {
+  artifact.canGrow = !!(path && slug && conversation);
+});
 useEventListener(window, "keydown", (event: KeyboardEvent) => {
   if (event.key === "Escape" && !event.defaultPrevented && artifact.isFull) artifact.isFull = false;
+  const isPlain = !(event.metaKey || event.ctrlKey || event.altKey || event.repeat || isTyping(event.target));
+  if (isPlain && event.key.toLowerCase() === "f") artifact.toggleFull();
 });
 onBeforeUnmount(() => {
   artifact.isFull = false;
+  artifact.canGrow = false;
 });
 </script>
 
@@ -125,7 +132,7 @@ onBeforeUnmount(() => {
             :icon="Maximize2"
             label="Fullscreen"
             shape="pill"
-            tip="Grow the page over everything · {esc} shrinks it back"
+            tip="Grow the page over everything · {F}"
             @click="artifact.isFull = true"
           />
         </header>

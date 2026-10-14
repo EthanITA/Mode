@@ -44,6 +44,7 @@ const SUPPRESS_ID = "sidecar-suppress";
 const EDIT_ID = "sidecar-edit";
 
 const chrome = useChrome();
+const artifact = $artifact();
 const look = useTheme();
 
 const frame = ref<HTMLIFrameElement>();
@@ -224,7 +225,7 @@ function onLoad(): void {
     if (event.key.toLowerCase() === "c" && !event.repeat) {
       armKey = "c";
       chrome.comment.arm(true);
-    }
+    } else if (event.key.toLowerCase() === "f" && !event.repeat) artifact.toggleFull();
   };
   // A hold begun in the app window ends here once a click has carried focus into the frame.
   const onKeyUp = (event: KeyboardEvent): void => {

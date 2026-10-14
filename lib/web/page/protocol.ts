@@ -19,7 +19,7 @@ export interface WebPage {
   url: string;
 }
 
-export type WebKey = "comment" | "escape" | "hold" | "reload" | "release" | "remove" | "undo";
+export type WebKey = "comment" | "escape" | "full" | "hold" | "reload" | "release" | "remove" | "undo";
 
 export type AgentMessage =
   | { type: "away"; url: string }
