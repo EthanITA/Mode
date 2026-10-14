@@ -14,9 +14,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **Open a URL live, with the comment layer.** The Open a URL field in Artifacts, or `artifact open <url>`,
   shows any local app or website in the sheet through a proxy on this machine that injects the comment
   agent, so a block takes a thread, Ask Claude and the tray the way an artifact's does, and Claude answers
-  with `artifact comments`. Each origin is one Web entry that keeps its port, its last page and its threads,
-  a thread names the page it was left on, the address in the bar is editable, and a remote site is fenced
-  off from localhost and from the sidecar's API.
+  with `artifact comments`. Each site is one Web entry, www and http or https included, that keeps its port,
+  its last page and its threads, a redirect is followed on its own and its last stop is the entry kept, a
+  site's cookies and storage last across conversations and browser restarts, a thread names the page it
+  was left on, the address in the bar is editable, hovering a Web entry offers to remove it with Undo, and a
+  remote site is fenced off from localhost and from the sidecar's API.
 
 - **Ask Claude, `/btw` from the sidecar.** ⌥↵ or the Ask Claude pill asks a side question with the
   whole conversation as context, the running turn included, and nothing reaches the transcript. The
@@ -242,6 +244,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **The sidecar opened at plain localhost moves to sidecar.localhost.** A site in it opens on a
+  subdomain of the sidecar's host, and under plain localhost that frame is cross-site, so no login stuck.
+  Theme, pane width and the other settings the sidecar keeps in the browser start over once.
 - **comment-guard challenges every comment an Edit adds.** Two short notes per edit no longer pass
   quietly, and a comment the edit only carries over from `old_string` no longer counts, so a short
   one-liner that restates the code gets flagged the moment it lands.
