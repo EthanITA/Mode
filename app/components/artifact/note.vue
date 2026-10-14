@@ -45,8 +45,7 @@ function failStatus(error: unknown): number {
 
 function toastFail(error: unknown): void {
   const status = failStatus(error);
-  if (status === 503) chrome.toast("No model credential is configured", "warning");
-  else if (status === 502) chrome.toast("Both models failed", "destructive");
+  if (status === 502) chrome.toast("Both models failed", "destructive");
   else chrome.toast("That note could not be sent", "destructive");
 }
 
@@ -224,9 +223,8 @@ async function resolve(): Promise<void> {
   min-width: 0;
 }
 
-.reply[data-by="haiku"],
-.reply[data-by="gemini"],
-.reply[data-by="claude"] {
+/* Not a list of models, so a reply saved by one no longer used keeps its look. */
+.reply:not([data-by="user"]) {
   border-left: 2px solid var(--success);
   padding-left: 8px;
 }

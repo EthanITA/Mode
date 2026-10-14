@@ -1,6 +1,6 @@
 export type FastTask = "edit" | "answer" | "chat";
 
-export type FastModelProvider = "haiku" | "gemini";
+export type FastModelProvider = "haiku" | "sonnet";
 
 export interface FastChatMessage {
   role: "user" | "assistant";

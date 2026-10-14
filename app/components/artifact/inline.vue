@@ -34,8 +34,7 @@ function failStatus(error: unknown): number {
 
 function toastFail(error: unknown): void {
   const status = failStatus(error);
-  if (status === 503) chrome.toast("No model credential is configured", "warning");
-  else if (status === 502) chrome.toast("Both models failed", "destructive");
+  if (status === 502) chrome.toast("Both models failed", "destructive");
   else chrome.toast("The model could not finish that", "destructive");
 }
 

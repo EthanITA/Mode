@@ -1,7 +1,8 @@
 import { execFile } from "node:child_process";
+import { tmpdir } from "node:os";
 import { promisify } from "node:util";
-import Anthropic from "@anthropic-ai/sdk";
-import type { FastModelReply, FastModelRequest, FastTask } from "../../../shared/types/models";
+import type { FastModelProvider, FastModelReply, FastModelRequest, FastTask } from "../../../shared/types/models";
+import { claudeBinary } from "../sessions/jobs";
 
 const execFileAsync = promisify(execFile);
 
@@ -12,12 +13,19 @@ const DELEGATE_RULE =
   "When the instruction needs a decision rather than a rewording (the instruction asks you to choose, restructure, add content whose facts you do not have, or the selection is longer than about 1200 characters), answer with exactly the single line DELEGATE and nothing else.";
 
 const HAIKU_SYSTEM_PROMPT = `${SYSTEM_INSTRUCTION} ${DELEGATE_RULE}`;
-const GEMINI_SYSTEM_PROMPT = SYSTEM_INSTRUCTION;
+
+const TIMEOUT_MS = 60_000;
 
 export interface FormatReplyOptions {
   task: FastTask;
   text: string;
-  by: "haiku" | "gemini";
+  by: FastModelProvider;
+}
+
+interface Run {
+  by: FastModelProvider;
+  prompt: string;
+  system: string;
 }
 
 function formatReply({ task, text, by }: FormatReplyOptions): FastModelReply {
@@ -47,21 +55,8 @@ function buildUserMessage(request: FastModelRequest): string {
   return parts.join("\n\n");
 }
 
-function buildHaikuMessages(request: FastModelRequest): Anthropic.MessageParam[] {
-  const userMessage = buildUserMessage(request);
-  if (request.task === "chat" && request.history && request.history.length > 0) {
-    const messages: Anthropic.MessageParam[] = [];
-    for (const entry of request.history) {
-      messages.push({ role: entry.role, content: entry.text });
-    }
-    messages.push({ role: "user", content: userMessage });
-    return messages;
-  }
-  return [{ role: "user", content: userMessage }];
-}
-
-function buildGeminiPrompt(request: FastModelRequest): string {
-  const parts: string[] = [GEMINI_SYSTEM_PROMPT];
+function promptOf(request: FastModelRequest): string {
+  const parts: string[] = [];
   if (request.task === "chat" && request.history && request.history.length > 0) {
     const historyText = request.history
       .map((entry) => `${entry.role === "user" ? "User" : "Assistant"}: ${entry.text}`)
@@ -72,55 +67,56 @@ function buildGeminiPrompt(request: FastModelRequest): string {
   return parts.join("\n\n");
 }
 
-async function runGemini(request: FastModelRequest): Promise<string> {
-  const prompt = buildGeminiPrompt(request);
-  const { stdout } = await execFileAsync(
-    "agy",
-    ["-p", prompt, "--model", "gemini-3.8-flash-low", "--output-format", "text"],
-    { timeout: 60_000 },
+// Claude Code's own login answers, so nobody sets an API key, and with no setting sources no CLAUDE.md or plugin steers it.
+async function run({ by, prompt, system }: Run): Promise<string> {
+  const pending = execFileAsync(
+    claudeBinary(),
+    [
+      "-p",
+      "--model",
+      by,
+      "--tools",
+      "",
+      "--setting-sources",
+      "",
+      "--disable-slash-commands",
+      "--no-session-persistence",
+      "--strict-mcp-config",
+      "--settings",
+      JSON.stringify({ disableAllHooks: true }),
+      "--system-prompt",
+      system,
+      "--output-format",
+      "json",
+    ],
+    { cwd: tmpdir(), maxBuffer: 16 * 1024 * 1024, timeout: TIMEOUT_MS },
   );
-  return stdout.trim();
+  pending.child.stdin?.end(prompt);
+  const { stdout } = await pending;
+  type Result = { type?: string; is_error?: boolean; result?: unknown };
+  const parsed = JSON.parse(stdout) as Result | Result[];
+  // With no setting sources the CLI prints every event as an array, so the answer is its result event.
+  const reply = (Array.isArray(parsed) ? parsed.findLast((event) => event.type === "result") : parsed) ?? {};
+  if (reply.is_error || typeof reply.result !== "string") {
+    throw new Error(typeof reply.result === "string" ? reply.result : "Claude Code gave no answer");
+  }
+  return reply.result;
 }
 
 export async function fast(request: FastModelRequest): Promise<FastModelReply> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw createError({
-      statusCode: 503,
-      statusMessage: "ANTHROPIC_API_KEY is not set in the server's environment",
-    });
-  }
-
-  const client = new Anthropic();
-  let haikuOutcome: { ok: true; text: string } | { ok: false } = { ok: false };
-
-  try {
-    const response = await client.messages.create({
-      model: "claude-haiku-4-5",
-      max_tokens: 4096,
-      system: HAIKU_SYSTEM_PROMPT,
-      messages: buildHaikuMessages(request),
-    });
-    const text = response.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("");
-    haikuOutcome = { ok: true, text };
-  } catch (err) {
-    if (err instanceof Anthropic.APIError) {
-      haikuOutcome = { ok: false };
-    } else {
-      throw err;
-    }
-  }
-
-  if (haikuOutcome.ok && !isDelegateReply(haikuOutcome.text)) {
-    return formatReply({ task: request.task, text: haikuOutcome.text, by: "haiku" });
+  const prompt = promptOf(request);
+  const quick = await run({ by: "haiku", prompt, system: HAIKU_SYSTEM_PROMPT }).catch(() => undefined);
+  if (quick && !isDelegateReply(quick)) {
+    return formatReply({ task: request.task, text: quick, by: "haiku" });
   }
 
   try {
-    const geminiText = await runGemini(request);
-    return formatReply({ task: request.task, text: geminiText, by: "gemini" });
-  } catch {
+    const text = await run({ by: "sonnet", prompt, system: SYSTEM_INSTRUCTION });
+    return formatReply({ task: request.task, text, by: "sonnet" });
+  } catch (error) {
     throw createError({
       statusCode: 502,
-      statusMessage: "Both fast models failed",
+      statusMessage: `Claude Code could not answer: ${(error as Error).message.split("\n")[0]}`,
     });
   }
 }

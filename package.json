@@ -18,7 +18,6 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
     "@cela/design": "git+https://github.com/cela-sage/design.git",
     "@comark/nuxt": "^0.6.2",
     "@comark/vue": "^0.6.2",
