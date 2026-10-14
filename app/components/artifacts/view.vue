@@ -167,17 +167,19 @@ async function openUrl(): Promise<void> {
             </span>
             <span class="name">{{ nameOf(meta) }}</span>
           </button>
-          <span v-if="meta.kind === 'web'" class="pill">
-            <button
-              class="dot focusable"
-              type="button"
-              data-region="remove-entry"
-              :aria-label="`Remove ${nameOf(meta)} from Artifacts`"
-              :data-tip="removeTip(meta)"
-              @click="web.remove(meta)"
-            >
-              <UiIcon :icon="Trash2" size="xs" />
-            </button>
+          <span v-if="meta.kind === 'web'" class="actions">
+            <span class="pill">
+              <button
+                class="dot focusable"
+                type="button"
+                data-region="remove-entry"
+                :aria-label="`Remove ${nameOf(meta)} from Artifacts`"
+                :data-tip="removeTip(meta)"
+                @click="web.remove(meta)"
+              >
+                <UiIcon :icon="Trash2" size="xs" />
+              </button>
+            </span>
           </span>
         </div>
       </div>
@@ -313,8 +315,38 @@ async function openUrl(): Promise<void> {
 }
 
 .slot {
+  --row-bg: var(--raised);
   flex: none;
   position: relative;
+}
+
+.slot:hover,
+.slot:has(.entry[data-selected="true"]) {
+  --row-bg: var(--sunken);
+}
+
+/* Laid over the row's right end like the review tree's actions, so the text runs under it and never rewraps. */
+.actions {
+  align-items: center;
+  background: linear-gradient(to right, transparent, var(--row-bg) 18px);
+  border-radius: 0 9px 9px 0;
+  display: flex;
+  inset: 1px 1px 1px auto;
+  opacity: 0;
+  padding: 0 8px 0 18px;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.slot:hover .actions,
+.slot:focus-within .actions {
+  opacity: 1;
+}
+
+.slot:hover .pill,
+.slot:focus-within .pill {
+  pointer-events: auto;
 }
 
 /* The review tree's approve and reject pill, so removing reads like the other row decisions. */
@@ -324,19 +356,7 @@ async function openUrl(): Promise<void> {
   border: 1px solid var(--border-strong);
   border-radius: 999px;
   display: inline-flex;
-  opacity: 0;
   padding: 1px;
-  pointer-events: none;
-  position: absolute;
-  right: 9px;
-  top: calc(50% - 10px);
-  transition: opacity var(--duration-fast) var(--ease-out);
-}
-
-.slot:hover .pill,
-.slot:focus-within .pill {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .dot {
@@ -360,11 +380,6 @@ async function openUrl(): Promise<void> {
   }
 }
 
-.slot[data-kind="web"]:hover .entry,
-.slot[data-kind="web"]:focus-within .entry {
-  padding-right: 40px;
-}
-
 .slot[data-kind="web"]:hover .threads,
 .slot[data-kind="web"]:focus-within .threads {
   display: none;
@@ -382,7 +397,8 @@ async function openUrl(): Promise<void> {
   width: 100%;
 }
 
-.entry:hover {
+/* On the slot, so the row keeps its hover while the pointer sits on the pill laid over it. */
+.slot:hover .entry {
   background: var(--sunken);
 }
 
