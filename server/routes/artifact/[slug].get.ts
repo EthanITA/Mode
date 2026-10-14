@@ -7,7 +7,8 @@ export default defineEventHandler(async (event): Promise<string> => {
   if (!slug) throw createError({ statusCode: 400, statusMessage: "missing slug" });
 
   const source = await readArtifact(slug);
-  if (!source) throw createError({ statusCode: 404, statusMessage: `no artifact matching '${slug}'` });
+  if (!source || source.kind === "web")
+    throw createError({ statusCode: 404, statusMessage: `no page matching '${slug}'` });
 
   setResponseHeader(event, "content-type", "text/html; charset=utf-8");
   // The file on disk is rewritten by every rebuild, so a cached frame would show a stale page.

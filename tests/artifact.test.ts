@@ -206,3 +206,72 @@ describe("a .md outside the folder", () => {
     );
   });
 });
+
+describe("web entries", () => {
+  test("a URL becomes one entry per site, which keeps its port and remembers the last page opened", async () => {
+    process.env.CLAUDE_CONFIG_DIR = config;
+    const { openRecord, parseTarget, webSlug } = await import("../lib/web/records.ts");
+    assert.equal(parseTarget("localhost:3000/guide/hooks")?.href, "http://localhost:3000/guide/hooks");
+    assert.equal(parseTarget("docs.mode.dev/guide")?.href, "https://docs.mode.dev/guide");
+    assert.equal(parseTarget("ftp://files.dev"), undefined);
+    assert.equal(parseTarget("  "), undefined);
+
+    const first = openRecord({ url: new URL("http://localhost:3000/guide") });
+    const again = openRecord({ title: "Mode docs", url: new URL("http://localhost:3000/guide/slots") });
+    const other = openRecord({ url: new URL("http://127.0.0.1:5173/") });
+    const hash = createHash("sha1").update("http://localhost:3000").digest("hex").slice(0, 6);
+    assert.equal(first.slug, `localhost-3000--${hash}`);
+    assert.deepEqual(
+      [again.slug, again.port, again.url, again.title],
+      [first.slug, first.port, "http://localhost:3000/guide/slots", "Mode docs"],
+    );
+    assert.equal(other.port, first.port + 1);
+    assert.equal(webSlug(new URL("https://docs.mode.dev")).replace(/--.*/, ""), "docs-mode-dev-443");
+  });
+
+  test("a host too long for one DNS label is trimmed, keeping the port and the hash whole", async () => {
+    const { webSlug } = await import("../lib/web/records.ts");
+    const host = `${"feature-branch-".repeat(3)}mode-docs-team.vercel.app`;
+    assert.equal(host.length, 70);
+    const slug = webSlug(new URL(`https://${host}/`));
+    const hash = createHash("sha1").update(`https://${host}`).digest("hex").slice(0, 6);
+    assert.ok(slug.length <= 63, slug);
+    assert.ok(slug.endsWith(`-443--${hash}`) && /^[a-z0-9]/.test(slug), slug);
+  });
+
+  test("resolves by its slug, answers comments in its record, and names the page each one was left on", () => {
+    const slug = "localhost-4000--abc123";
+    const threads = [
+      {
+        id: "w1",
+        n: 1,
+        by: "user",
+        at: "a",
+        updated: "a",
+        body: "simpler?",
+        status: "open",
+        anchor: { label: "Drift", page: "/guide/hooks" },
+        replies: [],
+      },
+    ];
+    const file = write(
+      join(config, "sidecar", "web", `${slug}.json`),
+      JSON.stringify({
+        v: 1,
+        slug,
+        url: "http://localhost:4000/guide/hooks",
+        port: 47490,
+        title: "Docs",
+        threads,
+        updated: "a",
+      }),
+    );
+    assert.equal(artifact("path", "localhost-4000").stdout.trim(), file);
+    assert.equal(artifact("url", slug).stdout.trim(), "http://localhost:4000/guide/hooks");
+    assert.match(artifact("list", "--tsv").stdout, new RegExp(`^${slug}\\t${file}$`, "m"));
+    assert.match(artifact("comments", slug).stdout, /#1 {2}open {6}Drift on \/guide\/hooks/);
+    assert.equal(artifact("comments", slug, "--resolve", "1", "rewrote it").status, 0);
+    const kept = JSON.parse(read(file)) as { port: number; threads: { status: string; replies: unknown[] }[] };
+    assert.deepEqual([kept.port, kept.threads[0]?.status, kept.threads[0]?.replies.length], [47490, "resolved", 1]);
+  });
+});

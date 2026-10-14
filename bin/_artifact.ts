@@ -4,7 +4,6 @@ import { basename, dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ingest, install, readDoc, render, reply } from "../lib/artifact/review.ts";
 import {
-  artifactFiles,
   documentSlug,
   dropped,
   ds,
@@ -21,6 +20,7 @@ import {
 import { isFile } from "../lib/files.ts";
 import { Refusal } from "../lib/mode/refusal.ts";
 import { pyJson, pyStr } from "../lib/text.ts";
+import { openRecord, parseTarget } from "../lib/web/records.ts";
 
 type Parsed = {
   positionals: string[];
@@ -44,8 +44,21 @@ const NEGATIVE = /^-\d+$|^-\d*\.\d+$/;
 
 const print = (text: string): void => void process.stdout.write(`${text}\n`);
 const stemOf = (path: string): string => basename(path, extname(path));
-const slugOf = (path: string): string => (artifactFiles().includes(path) ? stemOf(path) : documentSlug(path));
+const slugOf = (path: string): string => (entryOf(path) === path ? documentSlug(path) : entryOf(path));
 const SIDECAR = join(dirname(fileURLToPath(import.meta.url)), "sidecar");
+
+// Absolute on macOS because bin/open on PATH shadows the system one inside a Notes-style tree.
+function browse(target: string): void {
+  spawnSync(process.platform === "darwin" ? "/usr/bin/open" : "xdg-open", [target], { stdio: "inherit" });
+}
+
+// A slug never has a scheme, a port or a dotted host, and a file name keeps its own extension.
+function urlGiven(given: string): URL | undefined {
+  if (/\.(html|md)$/.test(given) || /^[/~.]/.test(given)) return undefined;
+  const isUrl =
+    /^[a-z][a-z0-9+.-]*:\/\//i.test(given) || /^[^\s/:]+(\.[^\s/.:]+)+(:\d+)?(\/|$)|^[^\s/:]+:\d+(\/|$)/.test(given);
+  return isUrl ? parseTarget(given) : undefined;
+}
 
 function parse(argv: string[], spec: Spec): Parsed {
   const parsed: Parsed = { positionals: [], values: {}, lists: {}, flags: new Set() };
@@ -129,10 +142,19 @@ const VERBS: Record<string, Spec> = {
     },
   },
   open: {
-    help: "open the artifact in the sidecar, or with --browser or --web in the browser",
+    help: "open the artifact, or any URL live with comments, in the sidecar, or with --browser or --web in the browser",
     positionals: 1,
     options: { browser: "flag", web: "flag" },
     run: ({ positionals: [slug = ""], flags }) => {
+      const site = urlGiven(slug);
+      if (site) {
+        const entry = openRecord({ url: site });
+        record(entry.slug);
+        if (flags.has("browser") || flags.has("web")) browse(entry.url);
+        else
+          process.exitCode = spawnSync(SIDECAR, ["open", "--artifact", entry.slug], { stdio: "inherit" }).status ?? 1;
+        return;
+      }
       const path = resolve(slug);
       if (!flags.has("browser") && !flags.has("web")) {
         process.exitCode = spawnSync(SIDECAR, ["open", "--artifact", slugOf(path)], { stdio: "inherit" }).status ?? 1;
@@ -144,8 +166,7 @@ const VERBS: Record<string, Spec> = {
         if (meta.url) target = meta.url;
         else console.error(`no published URL recorded for ${meta.slug}, opening the local file`);
       }
-      // Absolute on macOS because bin/open on PATH shadows the system one inside a Notes-style tree.
-      spawnSync(process.platform === "darwin" ? "/usr/bin/open" : "xdg-open", [target], { stdio: "inherit" });
+      browse(target);
     },
   },
   review: {

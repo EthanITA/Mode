@@ -20,6 +20,7 @@ import {
   withoutLegacyBlock,
   writeComments,
 } from "../../lib/sidecar/comments.ts";
+import { listRecords, readRecord, recordPath, type WebRecord, writeRecord } from "../../lib/web/records.ts";
 import { Markdown } from "./markdown.ts";
 import { Documents } from "./sessions/artifact-lists.ts";
 
@@ -116,13 +117,14 @@ function toReply(raw: unknown): ThreadReply | undefined {
   };
 }
 
-function toAnchor(raw: unknown): ThreadAnchor | undefined {
+export function toAnchor(raw: unknown): ThreadAnchor | undefined {
   if (!isRecord(raw)) return undefined;
   const label = typeof raw.label === "string" ? raw.label : undefined;
+  const page = typeof raw.page === "string" ? raw.page : undefined;
   const quote = typeof raw.quote === "string" ? raw.quote : undefined;
   const sel = typeof raw.sel === "string" ? raw.sel : undefined;
   const text = typeof raw.text === "string" ? raw.text : undefined;
-  return label || quote || sel || text ? { label, quote, sel, text } : undefined;
+  return label || quote || sel || text ? { label, page, quote, sel, text } : undefined;
 }
 
 function toThread(raw: unknown): ReviewThread | undefined {
@@ -281,11 +283,25 @@ async function metaOf({ file, path, stats, stored }: MetaOfInput): Promise<Artif
   return meta;
 }
 
+function webMeta(record: WebRecord): ArtifactMeta {
+  return {
+    format: "html",
+    kind: "web",
+    path: recordPath(record.slug),
+    slug: record.slug,
+    target: "s",
+    threadCount: threadsOf(record.threads).length,
+    title: record.title || new URL(record.url).host,
+    updated: record.updated,
+    url: record.url,
+  };
+}
+
 export async function listArtifacts(): Promise<ArtifactMeta[]> {
   const dir = artifactsDir();
   const documents = [...Documents.paths()].map(([slug, path]) => ({ file: documentFile({ path, slug }), path }));
   const sources = [...(await artifactFiles(dir)).map((file) => ({ file, path: join(dir, file.name) })), ...documents];
-  const rows: { meta: ArtifactMeta; mtime: number }[] = [];
+  const rows = listRecords().map((record) => ({ meta: webMeta(record), mtime: Date.parse(record.updated) || 0 }));
   for (const { file, path } of sources) {
     try {
       const stats = await stat(path);
@@ -331,6 +347,8 @@ export interface ArtifactSource extends ArtifactMeta {
 }
 
 export async function readArtifact(slug: string): Promise<ArtifactSource | undefined> {
+  const record = readRecord(slug);
+  if (record) return { ...webMeta(record), text: "" };
   const file = await artifactFile(slug);
   const text = file ? await readWhole(file.path) : undefined;
   if (!file || !text) return undefined;
@@ -349,6 +367,7 @@ export async function getArtifact(slug: string): Promise<ArtifactDetail | undefi
   const source = await readArtifact(slug);
   if (!source) return undefined;
   const { text, ...meta } = source;
+  if (meta.kind === "web") return { ...meta, threads: threadsOf(readRecord(slug)?.threads) };
   if (isStoredArtifact(meta.path)) return { ...meta, threads: threadsOf(readComments(meta.path, text)?.threads) };
   return { ...meta, threads: parseThreads(text, meta.format) };
 }
@@ -762,6 +781,14 @@ export function applyStoredReview(
   if (!change.ok) return change;
   writeComments(input.path, { ...doc, threads: change.threads });
   return { ...change, text: hasLegacyBlock(input.text) ? withoutLegacyBlock(input.text) : input.text };
+}
+
+export function applyWebReview(input: Omit<ThreadChangeInput, "threads"> & { slug: string }): ThreadChange {
+  const record = readRecord(input.slug);
+  if (!record) return { ok: false, reason: "not-found" };
+  const change = changeThreads({ ...input, threads: threadsOf(record.threads) });
+  if (change.ok) writeRecord({ ...record, threads: change.threads });
+  return change;
 }
 
 export function isStoredArtifact(path: string): boolean {

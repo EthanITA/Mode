@@ -7,6 +7,7 @@ import { Refusal } from "../mode/refusal.ts";
 import { head, lines, lstrip, pad, strip, words } from "../text.ts";
 import { documentSlug } from "../sidecar/comments.ts";
 import * as Events from "../sidecar/events.ts";
+import { isWebRecord, listRecords, readRecord, recordPath } from "../web/records.ts";
 import { artifactsDir, expandHome, readPage, root } from "./files.ts";
 import { install } from "./review.ts";
 
@@ -79,7 +80,7 @@ export function artifactFiles(): string[] {
 }
 
 export function entryOf(path: string): string {
-  return artifactFiles().includes(path) ? stem(path) : path;
+  return isWebRecord(path) || artifactFiles().includes(path) ? stem(path) : path;
 }
 
 const ENTITIES: Record<string, string> = {
@@ -119,6 +120,8 @@ function unescapeHtml(text: string): string {
 }
 
 export function readMeta(path: string): Meta {
+  const site = isWebRecord(path) ? readRecord(stem(path)) : undefined;
+  if (site) return { path, slug: site.slug, target: "s", title: site.title ?? new URL(site.url).host, url: site.url };
   const top = head(readPage(path), 4000);
   const meta: Meta = { slug: stem(path), path };
   for (const line of lines(BLOCK.exec(top)?.[1] ?? "")) {
@@ -147,6 +150,7 @@ export function resolve(given: string, sid?: string): string {
   const token = given.replace(/\.(html|md)$/, "");
   const document = recordedDocuments().get(token);
   if (document) return document;
+  files.push(...listRecords().map((site) => recordPath(site.slug)));
   if (!files.length) throw new Refusal(`no artifacts in ${artifactsDir()}`);
   const recorded = new Set(sessionEntries(sid));
   const pools = recorded.size ? [files.filter((path) => recorded.has(stem(path))), files] : [files];
@@ -212,7 +216,7 @@ export function listReport({
   session?: string;
   tsv?: boolean;
 }): string {
-  let files = artifactFiles();
+  let files = [...artifactFiles(), ...listRecords().map((site) => recordPath(site.slug))];
   let docs = new Map<string, string>();
   if (mine) {
     const entries = sessionEntries(session || undefined);

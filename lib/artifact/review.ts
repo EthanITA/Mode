@@ -12,6 +12,7 @@ import {
   writeComments,
 } from "../sidecar/comments.ts";
 import { lines, pad, pyJson, pyStr } from "../text.ts";
+import { isWebRecord, readRecord, writeRecord } from "../web/records.ts";
 import { artifactsDir, readPage, root } from "./files.ts";
 
 export type Thread = Payload & { id?: unknown; n?: unknown; at?: unknown; updated?: unknown; replies?: unknown };
@@ -32,6 +33,10 @@ const asThreads = (value: unknown): Thread[] => (Array.isArray(value) ? value : 
 const isStored = (path: string): boolean => isStoredDocument(path, artifactsDir());
 
 export function readDoc(path: string): Doc {
+  if (isWebRecord(path)) {
+    const site = readRecord(stem(path));
+    return { v: 1, slug: stem(path), url: site?.url, threads: asThreads(site?.threads) };
+  }
   if (isStored(path)) {
     const stored = readComments(path, readPage(path));
     return { v: 1, slug: stem(path), ...stored, threads: asThreads(stored?.threads) };
@@ -52,6 +57,11 @@ export function readDoc(path: string): Doc {
 }
 
 export function writeDoc(path: string, doc: Doc): void {
+  if (isWebRecord(path)) {
+    const site = readRecord(stem(path));
+    if (!site) throw new Refusal(`no web entry at ${path}`);
+    return writeRecord({ ...site, threads: doc.threads });
+  }
   const text = readPage(path);
   if (isStored(path)) {
     writeComments(path, doc);
@@ -108,7 +118,7 @@ export function ingest(path: string, incoming: Payload): [added: number, total: 
 
 // Inject or refresh the layer in place, carrying whatever threads the page already holds.
 export function install(path: string, sidecar = ""): string {
-  if (isStored(path)) return "already present";
+  if (isStored(path) || isWebRecord(path)) return "already present";
   if (path.endsWith(".md")) {
     // The sidecar is a .md's comment surface, so its whole layer is the trailing block.
     if (MD_SEED.test(readPage(path))) return "already present";
@@ -154,8 +164,9 @@ export function render(doc: Doc, slug: string): string {
   const user = userLabel();
   for (const thread of threads) {
     const anchor = isRecord(thread.anchor) ? thread.anchor : {};
+    const page = anchor.page ? ` on ${pyStr(anchor.page)}` : "";
     out.push(
-      `\n#${pyStr(thread.n)}  ${pad(thread.status === "resolved" ? "resolved" : "open", 8)}  ${anchor.label || "the page"}`,
+      `\n#${pyStr(thread.n)}  ${pad(thread.status === "resolved" ? "resolved" : "open", 8)}  ${anchor.label || "the page"}${page}`,
     );
     if (anchor.quote) out.push(`    quoting: ${pyStr(anchor.quote)}`);
     for (const message of [thread, ...asThreads(thread.replies)]) {

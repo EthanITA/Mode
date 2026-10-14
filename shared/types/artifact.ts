@@ -1,6 +1,6 @@
 export type ArtifactFormat = "html" | "md";
-// A page sits in the artifacts folder, a plan in Claude Code's plans folder, and a document anywhere else a conversation wrote a .md.
-export type ArtifactKind = "page" | "plan" | "document";
+// Where it lives: the artifacts folder, Claude Code's plans folder, any other .md a conversation wrote, or a live site.
+export type ArtifactKind = "page" | "plan" | "document" | "web";
 
 export interface ArtifactMeta {
   slug: string;
@@ -19,6 +19,8 @@ export interface ArtifactMeta {
 
 export interface ThreadAnchor {
   label?: string;
+  /** The path a web entry's thread was left on, since one entry holds every page of its site. */
+  page?: string;
   quote?: string;
   sel?: string;
   text?: string;

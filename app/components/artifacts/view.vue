@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { ArtifactKind, ArtifactMeta } from "~~/shared/types/artifact";
 
-const KIND: Record<ArtifactKind, string> = { document: "Document", page: "Page", plan: "Plan" };
+const KIND: Record<ArtifactKind, string> = { document: "Document", page: "Page", plan: "Plan", web: "Web" };
 
 const { initial: sideInitial, width: side } = usePaneWidth();
 const sc = useSidecar();

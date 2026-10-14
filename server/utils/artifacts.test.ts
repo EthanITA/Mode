@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { readComments } from "../../lib/sidecar/comments.ts";
-import { applyReviewChange, applyStoredReview, listArtifacts } from "./artifacts.ts";
+import { openRecord, readRecord } from "../../lib/web/records.ts";
+import { applyReviewChange, applyStoredReview, applyWebReview, listArtifacts } from "./artifacts.ts";
 import { Markdown } from "./markdown.ts";
 import { Documents } from "./sessions/artifact-lists.ts";
 
@@ -90,6 +91,31 @@ test("a listed entry is a page in the artifacts folder, a plan in the plans fold
     writeFileSync(join(dir, "artifacts", "session-0123abcd"), `${plan}\n${scratch}\n`);
     const kinds = Object.fromEntries((await listArtifacts()).map((one) => [one.title, one.kind]));
     assert.deepEqual(kinds, { Deck: "page", Plan: "plan", Notes: "document" });
+  } finally {
+    delete process.env.CLAUDE_CONFIG_DIR;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a web entry lists under its host, and a thread left on one of its pages lands in its record", async () => {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "web-")));
+  process.env.CLAUDE_CONFIG_DIR = dir;
+  try {
+    const { slug } = openRecord({ url: new URL("http://localhost:3000/guide/hooks") });
+    const made = applyWebReview({
+      action: "create",
+      anchor: { label: "Drift", page: "/guide/hooks" },
+      body: "simpler?",
+      slug,
+    });
+    if (!made.ok) assert.fail(made.reason);
+    const [row] = await listArtifacts();
+    assert.deepEqual([row?.kind, row?.title, row?.threadCount], ["web", "localhost:3000", 1]);
+    assert.equal(readRecord(slug)?.threads[0]?.anchor?.page, "/guide/hooks");
+    assert.deepEqual(applyWebReview({ action: "create", body: "x", slug: "gone-80--000000" }), {
+      ok: false,
+      reason: "not-found",
+    });
   } finally {
     delete process.env.CLAUDE_CONFIG_DIR;
     rmSync(dir, { recursive: true, force: true });
