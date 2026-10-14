@@ -245,6 +245,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **Pages, live sites and rendered files share one comment layer, the page artifact's.** A picked block
+  opens the same popover everywhere, and its notes float over the page's inline end once the sheet is
+  grown or the page has its own address, with the page kept clear of them. A live site drops its notes
+  column for it and narrows its frame rather than padding a site it doesn't own, and a Markdown or HTML
+  file previewed in Files takes block comments too, kept in the tray against the file, with F growing the
+  Files sheet so they show. Edit shows only on a page it can rewrite, and every pick carries the artifact
+  it was made on, so a note no longer lands on whichever one another face held last.
 - **The sidecar opened at plain localhost moves to sidecar.localhost.** A site in it opens on a
   subdomain of the sidecar's host, and under plain localhost that frame is cross-site, so no login stuck.
   Theme, pane width and the other settings the sidecar keeps in the browser start over once.
@@ -410,6 +417,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **Switching faces keeps a live page loaded.** Artifacts stays mounted behind Files, Review and History
+  once opened, so a site comes back with its scroll and sign-in as you left it, and its F, ⌘R and Esc
+  stay quiet while another face is up.
 - **Switching apps no longer sends the sidecar to Listening.** While another app activates, Terminal
   reports a hidden tabless window, or another of its windows, as the front one for a moment, and a read
   landing there left the conversation. The read now skips hidden windows, and a front tab change counts
