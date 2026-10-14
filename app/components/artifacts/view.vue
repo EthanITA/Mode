@@ -167,18 +167,18 @@ async function openUrl(): Promise<void> {
             </span>
             <span class="name">{{ nameOf(meta) }}</span>
           </button>
-          <button
-            v-if="meta.kind === 'web'"
-            v-press
-            class="trash focusable"
-            type="button"
-            data-region="remove-entry"
-            :aria-label="`Remove ${nameOf(meta)} from Artifacts`"
-            :data-tip="removeTip(meta)"
-            @click="web.remove(meta)"
-          >
-            <UiIcon :icon="Trash2" size="xs" />
-          </button>
+          <span v-if="meta.kind === 'web'" class="pill">
+            <button
+              class="dot focusable"
+              type="button"
+              data-region="remove-entry"
+              :aria-label="`Remove ${nameOf(meta)} from Artifacts`"
+              :data-tip="removeTip(meta)"
+              @click="web.remove(meta)"
+            >
+              <UiIcon :icon="Trash2" size="xs" />
+            </button>
+          </span>
         </div>
       </div>
     </UiSurface>
@@ -317,35 +317,52 @@ async function openUrl(): Promise<void> {
   position: relative;
 }
 
-.trash {
+/* The review tree's approve and reject pill, so removing reads like the other row decisions. */
+.pill {
   align-items: center;
-  background: var(--error-soft);
-  border: 0;
-  border-radius: 8px;
-  color: var(--error);
-  cursor: pointer;
+  background: var(--raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
   display: inline-flex;
-  height: 28px;
-  justify-content: center;
   opacity: 0;
-  padding: 0;
+  padding: 1px;
   pointer-events: none;
   position: absolute;
   right: 9px;
-  top: calc(50% - 14px);
+  top: calc(50% - 10px);
   transition: opacity var(--duration-fast) var(--ease-out);
-  width: 28px;
 }
 
-.slot:hover .trash,
-.slot:focus-within .trash {
+.slot:hover .pill,
+.slot:focus-within .pill {
   opacity: 1;
   pointer-events: auto;
 }
 
+.dot {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  height: 16px;
+  justify-items: center;
+  padding: 0;
+  width: 20px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dot:hover {
+    background: var(--error-soft);
+    color: var(--error);
+  }
+}
+
 .slot[data-kind="web"]:hover .entry,
 .slot[data-kind="web"]:focus-within .entry {
-  padding-right: 46px;
+  padding-right: 40px;
 }
 
 .slot[data-kind="web"]:hover .threads,
