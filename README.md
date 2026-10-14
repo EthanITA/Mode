@@ -212,7 +212,11 @@ the threads. `artifact new <slug> --ds <key>` writes a page with the pack's styl
 kit already in it, so Claude writes markup rather than CSS and JavaScript, and `artifact kit <slug>`
 refreshes the kit in an older page. `artifact open <slug>` shows the page in the sidecar's Artifacts face
 when you want to look at it, and `--browser` opens the file in the browser instead, or `--web` its
-published URL. Claude never runs it for you. Three lookups are worth knowing:
+published URL. Claude never runs it for you. `artifact open localhost:3000/guide`, or any http or https
+address, does the same for a live site: the sidecar serves it through a local proxy that adds the comment
+layer, keeps one entry per origin in `~/.claude/sidecar/web/`, and `artifact comments <slug>` reads and
+answers its threads like a page's. A remote site runs fenced off from localhost, and a sign-in that bounces
+through another domain stays out of reach. Three lookups are worth knowing:
 
 | It resolves           | In this order                                                                                                   |
 | --------------------- | --------------------------------------------------------------------------------------------------------------- |

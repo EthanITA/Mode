@@ -11,6 +11,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **Open a URL live, with the comment layer.** The Open a URL field in Artifacts, or `artifact open <url>`,
+  shows any local app or website in the sheet through a proxy on this machine that injects the comment
+  agent, so a block takes a thread, Ask Claude and the tray the way an artifact's does, and Claude answers
+  with `artifact comments`. Each origin is one Web entry that keeps its port, its last page and its threads,
+  a thread names the page it was left on, the address in the bar is editable, and a remote site is fenced
+  off from localhost and from the sidecar's API.
+
 - **Ask Claude, `/btw` from the sidecar.** ⌥↵ or the Ask Claude pill asks a side question with the
   whole conversation as context, the running turn included, and nothing reaches the transcript. The
   session's mascot perches by the field and acts out its status, hopping under a "!" while it waits on
