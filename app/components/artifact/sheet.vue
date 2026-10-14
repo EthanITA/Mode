@@ -70,13 +70,10 @@ async function collapse(): Promise<void> {
   }
   growth?.cancel();
   // Held on its last frame until the class comes off, or the sheet would flash full size for a frame.
-  const shrink = pane.animate(
-    [frameOf(boxOf(pane), "0px", "lg"), frameOf(boxOf(slot.value), rest.radius, "sm")],
-    {
-      ...SHRINK,
-      fill: "forwards",
-    },
-  );
+  const shrink = pane.animate([frameOf(boxOf(pane), "0px", "lg"), frameOf(boxOf(slot.value), rest.radius, "sm")], {
+    ...SHRINK,
+    fill: "forwards",
+  });
   const settle = read.value?.animate(
     [{ paddingTop: getComputedStyle(read.value).paddingTop }, { paddingTop: `${rest.pad}px` }],
     {
