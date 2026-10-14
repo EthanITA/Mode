@@ -1,9 +1,12 @@
 {
-  const given = new URL(document.currentScript?.getAttribute("src") ?? "", location.href).searchParams.get("upstream");
+  const script = new URL(document.currentScript?.getAttribute("src") ?? "", location.href).searchParams;
+  const given = script.get("upstream");
   const upstream = given ? new URL(given) : undefined;
+  const site = script.get("site") ?? "";
   const WEB: Record<string, string> = { "ws:": "http:", "wss:": "https:" };
 
-  const mapped = (raw: string | URL): string | URL => {
+  // Only calls take the sibling route, since a page loaded through it would resolve its links against the wrong host.
+  const mapped = (raw: string | URL, { siblings = false } = {}): string | URL => {
     if (!upstream) return raw;
     let url: URL;
     try {
@@ -12,23 +15,30 @@
       return raw;
     }
     const socket = url.protocol in WEB;
-    if ((WEB[url.protocol] ?? url.protocol) !== upstream.protocol || url.host !== upstream.host) return raw;
+    if ((WEB[url.protocol] ?? url.protocol) !== upstream.protocol) return raw;
+    if (url.host !== upstream.host) {
+      const isSibling = !!site && (url.hostname === site || url.hostname.endsWith(`.${site}`));
+      return siblings && isSibling && !socket
+        ? `${location.origin}/__sidecar/via/${url.host}${url.pathname}${url.search}${url.hash}`
+        : raw;
+    }
     url.protocol = socket ? (location.protocol === "https:" ? "wss:" : "ws:") : location.protocol;
     url.host = location.host;
     return url.href;
   };
+  const CALL = { siblings: true };
 
   const fetchNative = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    if (!(input instanceof Request)) return fetchNative(mapped(input), init);
-    const url = mapped(input.url);
+    if (!(input instanceof Request)) return fetchNative(mapped(input, CALL), init);
+    const url = mapped(input.url, CALL);
     return fetchNative(url === input.url ? input : new Request(url, input), init);
   };
 
   // Arity matters: open(method, url, undefined) is a synchronous request, so the arguments pass through as given.
   const open = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, ...args: unknown[]): void {
-    if (args.length > 1) args[1] = mapped(args[1] as string | URL);
+    if (args.length > 1) args[1] = mapped(args[1] as string | URL, CALL);
     Reflect.apply(open, this, args);
   } as typeof open;
 
@@ -36,7 +46,7 @@
     const Native = window[name];
     window[name] = new Proxy(Native, {
       construct: (target, args: unknown[]) => {
-        if (args.length) args[0] = mapped(args[0] as string | URL);
+        if (args.length) args[0] = mapped(args[0] as string | URL, CALL);
         return Reflect.construct(target, args) as object;
       },
     }) as never;

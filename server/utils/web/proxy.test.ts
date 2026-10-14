@@ -7,7 +7,7 @@ import type { AddressInfo } from "node:net";
 import { after, test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { landing } from "../../../lib/web/records.ts";
-import { isFencedOrigin, rewriteResponse, serve, stopAll } from "./proxy.ts";
+import { isFencedOrigin, rewriteResponse, serve, siteOfHost, stopAll, viaOf } from "./proxy.ts";
 
 const PARENT = "http://sidecar.localhost:4747";
 const servers: Server[] = [];
@@ -194,6 +194,18 @@ test("the proxy serves its own scripts type-stripped and nothing else under its 
   assert.equal((await get(port, "/__sidecar/../package.json")).status, 502);
 });
 
+test("a call routed for another host of the site goes to that host, and nothing outside the site gets through", () => {
+  const google = { site: siteOfHost("www.google.com"), upstream: "https://www.google.com" };
+  assert.deepEqual(viaOf("/__sidecar/via/consent.google.com/save", google), {
+    origin: "https://consent.google.com",
+    path: "/save",
+  });
+  for (const host of ["evil.com", "google.com.evil.com", "Consent.google.com@evil.com"])
+    assert.equal(viaOf(`/__sidecar/via/${host}/x`, google), undefined, host);
+  assert.equal(viaOf("/__sidecar/via/consent.google.com/x", { upstream: "http://localhost:3000" }), undefined);
+  assert.notEqual(siteOfHost("foo.github.io"), siteOfHost("bar.github.io"));
+});
+
 test("the bootstrap points the site's own calls at the proxy, keeps its cookies and sessionStorage, and leaves the rest", async () => {
   const calls: string[] = [];
   class Xhr {
@@ -239,11 +251,13 @@ test("the bootstrap points the site's own calls at the proxy, keeps its cookies 
   const local = new Storage();
   const session = new Storage();
   local.setItem("__sidecar:session", JSON.stringify({ token: "kept" }));
+  const listeners: Record<string, (event: unknown) => void> = {};
   const sandbox: Record<string, unknown> = {
-    addEventListener: () => {},
+    addEventListener: (type: string, listener: (event: unknown) => void) => (listeners[type] = listener),
     document: Object.assign(Object.create(Document.prototype) as object, {
       currentScript: {
-        getAttribute: () => `/__sidecar/bootstrap.ts?upstream=${encodeURIComponent("http://localhost:3000")}`,
+        getAttribute: () =>
+          `/__sidecar/bootstrap.ts?upstream=${encodeURIComponent("http://localhost:3000")}&site=example.dev`,
       },
     }),
     Document,
@@ -277,6 +291,9 @@ test("the bootstrap points the site's own calls at the proxy, keeps its cookies 
   page.fetch(new Request("http://localhost:3000/req"));
   new page.WebSocket("ws://localhost:3000/_hmr");
   new page.XMLHttpRequest().open("GET", "http://localhost:3000/xhr");
+  page.fetch("http://consent.example.dev/save?a=1");
+  page.fetch("http://notexample.dev/save");
+  new page.WebSocket("ws://live.example.dev/feed");
 
   const proxy = "localhost-3000--abcdef.sidecar.localhost:47481";
   assert.deepEqual(calls, [
@@ -287,7 +304,13 @@ test("the bootstrap points the site's own calls at the proxy, keeps its cookies 
     `fetch http://${proxy}/req`,
     `ws ws://${proxy}/_hmr`,
     `xhr 2 http://${proxy}/xhr`,
+    `fetch http://${proxy}/__sidecar/via/consent.example.dev/save?a=1`,
+    "fetch http://notexample.dev/save",
+    "ws ws://live.example.dev/feed",
   ]);
+  const sibling = { href: "http://consent.example.dev/page" };
+  listeners.click?.({ target: { closest: () => sibling }, type: "click" });
+  assert.equal(sibling.href, "http://consent.example.dev/page");
 
   const doc = sandbox.document as { cookie: string };
   doc.cookie = "a=1; path=/";

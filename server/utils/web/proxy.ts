@@ -14,6 +14,7 @@ import {
   toWebRequest,
 } from "h3";
 import { proxyFetch, proxyUpgrade } from "httpxy";
+import { getDomain } from "tldts";
 import { pluginRoot } from "../../../lib/mode/paths.ts";
 import { CHANNEL } from "../../../lib/web/page/protocol.ts";
 import { siteAgents } from "../../../lib/web/records.ts";
@@ -32,6 +33,7 @@ interface Running {
   parents: Set<string>;
   ready: Promise<void>;
   servers: Server[];
+  site?: string;
   // An upgraded socket leaves the server's books, so close would wait on an open HMR socket forever.
   sockets: Set<Duplex>;
   upstream: string;
@@ -41,6 +43,7 @@ const GENERATION = Symbol("web-proxy");
 // IPv4 must bind, since Chrome's *.localhost lookup tries it; a machine without IPv6 just serves one.
 const HOSTS = ["127.0.0.1", "::1"];
 const OWN = "/__sidecar/";
+const VIA = "/__sidecar/via/";
 const PAGE_FILE = /^\/__sidecar\/([a-z]+)\.ts$/;
 const DROPPED = ["content-security-policy", "content-security-policy-report-only", "x-frame-options"];
 const PERMANENT: Record<number, number> = { 301: 302, 308: 307 };
@@ -74,6 +77,29 @@ export function isFencedOrigin(origin: string | undefined): boolean {
   }
 }
 
+// Private suffixes count, so two github.io sites never share one origin's cookies.
+export function siteOfHost(host: string): string | undefined {
+  return getDomain(host, { allowPrivateDomains: true }) ?? undefined;
+}
+
+export interface ViaTarget {
+  origin: string;
+  path: string;
+}
+
+// Another host of the site, such as consent.google.com, so the cookies it sets land on the frame's own origin.
+export function viaOf(
+  pathname: string,
+  { site, upstream }: { site?: string; upstream: string },
+): ViaTarget | undefined {
+  if (!site || !pathname.startsWith(VIA)) return undefined;
+  const rest = pathname.slice(VIA.length);
+  const cut = rest.indexOf("/");
+  const host = (cut < 0 ? rest : rest.slice(0, cut)).toLowerCase();
+  if (!/^[a-z0-9.-]+(:\d+)?$/.test(host) || siteOfHost(host.replace(/:\d+$/, "")) !== site) return undefined;
+  return { origin: `${new URL(upstream).protocol}//${host}`, path: cut < 0 ? "/" : rest.slice(cut) };
+}
+
 function swapOrigin(value: string, from: string, to: string): string {
   return value === from || value.startsWith(`${from}/`) ? `${to}${value.slice(from.length)}` : value;
 }
@@ -90,9 +116,10 @@ function cookiesOf(response: Response): string[] {
   return response.headers.getSetCookie().map(kept);
 }
 
-function inject(html: string, { parents, upstream }: { parents: Set<string>; upstream: string }): string {
+function inject(html: string, { parents, site, upstream }: Pick<Running, "parents" | "site" | "upstream">): string {
+  const sibling = site ? `&site=${encodeURIComponent(site)}` : "";
   const tags =
-    `<script src="${OWN}bootstrap.ts?upstream=${encodeURIComponent(upstream)}"></script>` +
+    `<script src="${OWN}bootstrap.ts?upstream=${encodeURIComponent(upstream)}${sibling}"></script>` +
     `<script type="module" src="${OWN}agent.ts?parent=${encodeURIComponent([...parents].join(","))}"></script>`;
   const page = html.replace(META_CSP, "");
   const at = /<head\b[^>]*>/i.exec(page) ?? /<html\b[^>]*>/i.exec(page) ?? /<!doctype[^>]*>/i.exec(page);
@@ -104,7 +131,7 @@ interface RewriteInput {
   here: string;
   isHead: boolean;
   response: Response;
-  running: Pick<Running, "isLoopback" | "parents" | "upstream">;
+  running: Pick<Running, "isLoopback" | "parents" | "site" | "upstream">;
 }
 
 export async function rewriteResponse({ here, isHead, response, running: held }: RewriteInput): Promise<Response> {
@@ -179,10 +206,12 @@ async function pageFile(name: string): Promise<Response> {
 
 async function handle(event: H3Event, held: Running): Promise<void> {
   const url = getRequestURL(event);
-  if (url.pathname.startsWith(OWN)) {
+  const via = viaOf(url.pathname, held);
+  if (!via && url.pathname.startsWith(OWN)) {
     const name = PAGE_FILE.exec(url.pathname)?.[1];
     return sendWebResponse(event, name ? await pageFile(name) : new Response("", { status: 404 }));
   }
+  const target = via?.origin ?? held.upstream;
   const request = toWebRequest(event);
   const headers = new Headers(request.headers);
   headers.set("accept-encoding", "identity");
@@ -193,8 +222,8 @@ async function handle(event: H3Event, held: Running): Promise<void> {
   let response: Response;
   try {
     response = await proxyFetch(
-      held.upstream,
-      new URL(`${url.pathname}${url.search}`, held.upstream),
+      target,
+      new URL(`${via?.path ?? url.pathname}${url.search}`, target),
       { body: request.body, duplex: "half", headers, method: request.method, redirect: "manual" } as RequestInit,
       {
         agent: agentOf(held),
@@ -258,7 +287,9 @@ function listen({
 }
 
 async function start(held: Running, port: number): Promise<void> {
-  held.isLoopback = await isLoopbackHost(new URL(held.upstream).hostname);
+  const { hostname } = new URL(held.upstream);
+  held.isLoopback = await isLoopbackHost(hostname);
+  held.site = held.isLoopback ? undefined : siteOfHost(hostname);
   const app = createApp();
   app.use(eventHandler((event) => handle(event, held)));
   const listener = toNodeListener(app);
