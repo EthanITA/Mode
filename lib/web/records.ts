@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, readdirSync, renameSync, writeFileSync } from "node:fs";
+import { Agent as HttpAgent, get as httpGet, type IncomingMessage } from "node:http";
+import { Agent as HttpsAgent, get as httpsGet } from "node:https";
 import { basename, dirname, join } from "node:path";
 import { readTextSafe } from "../files.ts";
 import { sidecarHome } from "../mode/paths.ts";
@@ -31,7 +33,12 @@ export function isWebRecord(path: string): boolean {
 }
 
 const HOPS = 5;
+const LANDING_MS = 10_000;
 const bare = (host: string): string => host.toLowerCase().replace(/^www\./, "");
+
+// Node gives up on each address after 250ms, which no connect beats on a slow link, so every site would read as down.
+const PATIENT = { autoSelectFamilyAttemptTimeout: 5000, keepAlive: true, maxFreeSockets: 64, maxSockets: 256 };
+export const siteAgents = { http: new HttpAgent(PATIENT), https: new HttpsAgent(PATIENT) };
 
 // Only the host with or without www, or its https upgrade, so an app that bounces to a login provider keeps its own entry.
 export function isSameSite(from: URL, to: URL): boolean {
@@ -39,15 +46,28 @@ export function isSameSite(from: URL, to: URL): boolean {
   return from.protocol === to.protocol ? from.port === to.port : to.protocol === "https:" && !to.port;
 }
 
+function answer(url: URL, signal: AbortSignal): Promise<{ location?: string; status: number }> {
+  return new Promise((resolve, reject) => {
+    const done = (res: IncomingMessage): void => {
+      res.destroy();
+      resolve({ location: res.headers.location, status: res.statusCode ?? 0 });
+    };
+    const req =
+      url.protocol === "https:"
+        ? httpsGet(url, { agent: siteAgents.https, signal }, done)
+        : httpGet(url, { agent: siteAgents.http, signal }, done);
+    req.on("error", reject);
+  });
+}
+
 /** Where the site really answers: google.com lives at www.google.com, and a frame can't follow it there itself. */
 export async function landing(url: URL): Promise<URL> {
   let at = url;
+  const signal = AbortSignal.timeout(LANDING_MS);
   try {
     for (let hop = 0; hop < HOPS; hop += 1) {
-      const response = await fetch(at, { redirect: "manual", signal: AbortSignal.timeout(4000) });
-      void response.body?.cancel();
-      const location = response.headers.get("location");
-      if (response.status < 300 || response.status >= 400 || !location) return at;
+      const { location, status } = await answer(at, signal);
+      if (status < 300 || status >= 400 || !location) return at;
       const next = new URL(location, at);
       if (next.origin === at.origin || !isSameSite(at, next)) return at;
       at = next;

@@ -16,6 +16,7 @@ import {
 import { proxyFetch, proxyUpgrade } from "httpxy";
 import { pluginRoot } from "../../../lib/mode/paths.ts";
 import { CHANNEL } from "../../../lib/web/page/protocol.ts";
+import { siteAgents } from "../../../lib/web/records.ts";
 
 export interface ProxyTarget {
   /** The origin the sidecar's page is on, which is the only one the injected agent answers. */
@@ -121,6 +122,10 @@ export async function rewriteResponse({ here, isHead, response, running: held }:
   return new Response(html, init);
 }
 
+function agentOf(held: Running): (typeof siteAgents)[keyof typeof siteAgents] {
+  return held.upstream.startsWith("https:") ? siteAgents.https : siteAgents.http;
+}
+
 function isNavigation(request: Request): boolean {
   const dest = request.headers.get("sec-fetch-dest");
   return (
@@ -183,7 +188,11 @@ async function handle(event: H3Event, held: Running): Promise<void> {
       held.upstream,
       new URL(`${url.pathname}${url.search}`, held.upstream),
       { body: request.body, duplex: "half", headers, method: request.method, redirect: "manual" } as RequestInit,
-      { changeOrigin: true, ssl: held.isLoopback ? { rejectUnauthorized: false } : undefined },
+      {
+        agent: agentOf(held),
+        changeOrigin: true,
+        ssl: held.isLoopback ? { rejectUnauthorized: false } : undefined,
+      },
     );
   } catch {
     const down = isNavigation(request) && noticePage({ held, status: 502, type: "down" });
@@ -207,6 +216,7 @@ function upgrade(held: Running, req: IncomingMessage, socket: Duplex, head: Buff
   }
   track(held, socket);
   proxyUpgrade(held.upstream, req, socket, head, {
+    agent: agentOf(held),
     changeOrigin: true,
     headers: { origin: held.upstream },
     secure: !held.isLoopback,
