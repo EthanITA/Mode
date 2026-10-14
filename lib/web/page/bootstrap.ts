@@ -52,16 +52,31 @@
     }) as never;
   }
 
+  // Read off the attribute, since form.action is shadowed by any field named "action".
+  const aim = (el: Element | undefined, name: string): void => {
+    const raw = el?.getAttribute(name);
+    const to = raw && String(mapped(raw, CALL));
+    if (to && to !== raw) el?.setAttribute(name, to);
+  };
+
   // An absolute link or form aimed at the site itself would leave the proxy, and the comment layer with it.
   const keep = (event: Event): void => {
     const target = event.target as Element | undefined;
     const link = target?.closest?.("a[href]") as HTMLAnchorElement | undefined;
     if (link && mapped(link.href) !== link.href) link.href = String(mapped(link.href));
-    const form = event.type === "submit" ? (target as HTMLFormElement | undefined) : undefined;
-    if (form?.action && mapped(form.action) !== form.action) form.action = String(mapped(form.action));
+    if (event.type !== "submit") return;
+    aim(target, "action");
+    aim((event as SubmitEvent).submitter ?? undefined, "formaction");
   };
   window.addEventListener("click", keep, true);
   window.addEventListener("submit", keep, true);
+
+  // form.submit() fires no submit event, and it is how scripted forms such as Google's consent post.
+  const submit = HTMLFormElement.prototype.submit;
+  HTMLFormElement.prototype.submit = function (this: HTMLFormElement): void {
+    aim(this, "action");
+    submit.call(this);
+  };
 
   // The proxy makes the site's own session cookies last, and these are the ones its scripts set.
   const jar = Object.getOwnPropertyDescriptor(Document.prototype, "cookie");

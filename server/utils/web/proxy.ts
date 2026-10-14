@@ -132,13 +132,32 @@ interface RewriteInput {
   isHead: boolean;
   response: Response;
   running: Pick<Running, "isLoopback" | "parents" | "site" | "upstream">;
+  via?: ViaTarget;
 }
 
-export async function rewriteResponse({ here, isHead, response, running: held }: RewriteInput): Promise<Response> {
+// A redirect from another host of the site points at that host, relative or not, so it stays on the sibling route.
+function locationOf({
+  here,
+  location,
+  upstream,
+  via,
+}: {
+  here: string;
+  location: string;
+  upstream: string;
+  via?: ViaTarget;
+}): string {
+  if (!via) return swapOrigin(location, upstream, here);
+  const next = new URL(location, via.origin);
+  if (next.origin === via.origin) return `${here}${VIA}${next.host}${next.pathname}${next.search}${next.hash}`;
+  return swapOrigin(next.href, upstream, here);
+}
+
+export async function rewriteResponse({ here, isHead, response, running: held, via }: RewriteInput): Promise<Response> {
   const headers = new Headers(response.headers);
   for (const name of DROPPED) headers.delete(name);
   const location = headers.get("location");
-  if (location) headers.set("location", swapOrigin(location, held.upstream, here));
+  if (location) headers.set("location", locationOf({ here, location, upstream: held.upstream, via }));
   headers.delete("set-cookie");
   for (const cookie of cookiesOf(response)) headers.append("set-cookie", cookie);
   if (!held.isLoopback) headers.set("content-security-policy", FENCE);
@@ -169,10 +188,10 @@ function isNavigation(request: Request): boolean {
 }
 
 // A frame that followed it would leave the proxy for a site that refuses to be framed, so the sidecar is told instead.
-function movedTo(response: Response, upstream: string): string | undefined {
+function movedTo(response: Response, { base, upstream }: { base: string; upstream: string }): string | undefined {
   const location = response.headers.get("location");
   if (response.status < 300 || response.status >= 400 || !location) return undefined;
-  const next = new URL(location, upstream);
+  const next = new URL(location, base);
   return next.origin === upstream || !/^https?:$/.test(next.protocol) ? undefined : next.href;
 }
 
@@ -204,6 +223,16 @@ async function pageFile(name: string): Promise<Response> {
   });
 }
 
+// The frame stands in for a browser tab, and a site may refuse what reads as framed, as Google's sign-in answers 401.
+export function asTab(headers: Headers, { here, isVia }: { here: string; isVia: boolean }): void {
+  if (headers.get("sec-fetch-dest") === "iframe") headers.set("sec-fetch-dest", "document");
+  const referer = headers.get("referer");
+  const isFromPage = !!referer && swapOrigin(referer, here, "") !== referer;
+  if (referer && !isFromPage) headers.delete("referer");
+  if (headers.get("sec-fetch-mode") === "navigate" && !isFromPage) headers.set("sec-fetch-site", "none");
+  else if (isVia && headers.get("sec-fetch-site") === "same-origin") headers.set("sec-fetch-site", "same-site");
+}
+
 async function handle(event: H3Event, held: Running): Promise<void> {
   const url = getRequestURL(event);
   const via = viaOf(url.pathname, held);
@@ -215,6 +244,7 @@ async function handle(event: H3Event, held: Running): Promise<void> {
   const request = toWebRequest(event);
   const headers = new Headers(request.headers);
   headers.set("accept-encoding", "identity");
+  asTab(headers, { here: url.origin, isVia: !!via });
   for (const name of ["origin", "referer"]) {
     const value = headers.get(name);
     if (value) headers.set(name, swapOrigin(value, url.origin, held.upstream));
@@ -235,12 +265,12 @@ async function handle(event: H3Event, held: Running): Promise<void> {
     const down = isNavigation(request) && noticePage({ held, status: 502, type: "down" });
     return sendWebResponse(event, down || new Response("", { status: 502 }));
   }
-  const moved = isNavigation(request) && movedTo(response, held.upstream);
+  const moved = isNavigation(request) && movedTo(response, { base: target, upstream: held.upstream });
   // A sign-in often sets its session on the very redirect that leaves, so the cookies ride on the notice.
   const cookies = moved ? cookiesOf(response) : [];
   if (moved) return sendWebResponse(event, noticePage({ cookies, held, status: 200, type: "moved", url: moved }));
   const isHead = request.method === "HEAD";
-  return sendWebResponse(event, await rewriteResponse({ here: url.origin, isHead, response, running: held }));
+  return sendWebResponse(event, await rewriteResponse({ here: url.origin, isHead, response, running: held, via }));
 }
 
 function track(held: Running, socket: Duplex): void {

@@ -7,7 +7,7 @@ import type { AddressInfo } from "node:net";
 import { after, test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { landing } from "../../../lib/web/records.ts";
-import { isFencedOrigin, rewriteResponse, serve, siteOfHost, stopAll, viaOf } from "./proxy.ts";
+import { asTab, isFencedOrigin, rewriteResponse, serve, siteOfHost, stopAll, viaOf } from "./proxy.ts";
 
 const PARENT = "http://sidecar.localhost:4747";
 const servers: Server[] = [];
@@ -206,6 +206,29 @@ test("a call routed for another host of the site goes to that host, and nothing 
   assert.notEqual(siteOfHost("foo.github.io"), siteOfHost("bar.github.io"));
 });
 
+test("a request leaves as a browser tab's would: never framed, and the sidecar never its referrer", () => {
+  const here = "http://google-com.sidecar.localhost:47481";
+  const sent = (init: Record<string, string>, isVia = false): Record<string, string> => {
+    const headers = new Headers(init);
+    asTab(headers, { here, isVia });
+    return Object.fromEntries(headers);
+  };
+  const nav = { "sec-fetch-dest": "iframe", "sec-fetch-mode": "navigate", "sec-fetch-site": "same-site" };
+  assert.deepEqual(sent({ ...nav, referer: `${PARENT}/c/x` }), {
+    "sec-fetch-dest": "document",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-site": "none",
+  });
+  assert.equal(
+    sent({ ...nav, referer: `${here}/search`, "sec-fetch-site": "same-origin" })["sec-fetch-site"],
+    "same-origin",
+  );
+  assert.equal(
+    sent({ "sec-fetch-dest": "empty", "sec-fetch-site": "same-origin" }, true)["sec-fetch-site"],
+    "same-site",
+  );
+});
+
 test("the bootstrap points the site's own calls at the proxy, keeps its cookies and sessionStorage, and leaves the rest", async () => {
   const calls: string[] = [];
   class Xhr {
@@ -216,6 +239,18 @@ test("the bootstrap points the site's own calls at the proxy, keeps its cookies 
   class Socket {
     constructor(url: string) {
       calls.push(`ws ${url}`);
+    }
+  }
+  class Form {
+    #attrs = new Map<string, string>();
+    getAttribute(name: string): string | undefined {
+      return this.#attrs.get(name);
+    }
+    setAttribute(name: string, value: string): void {
+      this.#attrs.set(name, value);
+    }
+    submit(): void {
+      calls.push(`submit ${this.getAttribute("action")}`);
     }
   }
   let jar = "";
@@ -263,6 +298,7 @@ test("the bootstrap points the site's own calls at the proxy, keeps its cookies 
     Document,
     EventSource: Socket,
     fetch: (input: unknown) => calls.push(`fetch ${input instanceof Request ? input.url : String(input)}`),
+    HTMLFormElement: Form,
     localStorage: local,
     location: new URL("http://localhost-3000--abcdef.sidecar.localhost:47481/guide"),
     queueMicrotask,
@@ -311,6 +347,15 @@ test("the bootstrap points the site's own calls at the proxy, keeps its cookies 
   const sibling = { href: "http://consent.example.dev/page" };
   listeners.click?.({ target: { closest: () => sibling }, type: "click" });
   assert.equal(sibling.href, "http://consent.example.dev/page");
+
+  const scripted = new Form();
+  scripted.setAttribute("action", "http://consent.example.dev/save");
+  scripted.submit();
+  assert.equal(calls.at(-1), `submit http://${proxy}/__sidecar/via/consent.example.dev/save`);
+  const button = new Form();
+  button.setAttribute("formaction", "http://localhost:3000/go");
+  listeners.submit?.({ submitter: button, target: new Form(), type: "submit" });
+  assert.equal(button.getAttribute("formaction"), `http://${proxy}/go`);
 
   const doc = sandbox.document as { cookie: string };
   doc.cookie = "a=1; path=/";
