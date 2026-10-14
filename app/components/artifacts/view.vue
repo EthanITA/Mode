@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { Globe, Trash2 } from "@lucide/vue";
-import { useEventListener } from "@vueuse/core";
 import type { ArtifactKind, ArtifactMeta } from "~~/shared/types/artifact";
 
 const KIND: Record<ArtifactKind, string> = { document: "Document", page: "Page", plan: "Plan", web: "Web" };
@@ -50,8 +49,6 @@ const isOpening = ref(false);
 const hostOf = (meta: ArtifactMeta): string => (meta.url ? new URL(meta.url).host : "");
 const nameOf = (meta: ArtifactMeta): string => meta.title || deslug(meta.slug);
 
-const hovered = ref<string>();
-
 function removeTip({ threadCount = 0 }: ArtifactMeta): string {
   if (!threadCount) return "Remove it · {cmd backspace}";
   return threadCount === 1
@@ -62,17 +59,6 @@ function removeTip({ threadCount = 0 }: ArtifactMeta): string {
 // The entry open in the sheet was removed, wherever that happened, so the sheet moves to the next one.
 watch(picked, (now, before) => {
   if (before && !now && before.slug === selected.value) selected.value = entries.value[0]?.slug;
-});
-
-// The row under the pointer, or the one holding focus, is the one ⌘⌫ means.
-useEventListener(window, "keydown", (event: KeyboardEvent) => {
-  if (!(event.metaKey || event.ctrlKey) || event.key !== "Backspace") return;
-  if (event.target instanceof Element && event.target.closest("input, textarea, [contenteditable]")) return;
-  const focused = document.activeElement?.closest<HTMLElement>("[data-region='artifact-row']")?.dataset.slug;
-  const meta = entries.value.find((one) => one.kind === "web" && one.slug === (focused ?? hovered.value));
-  if (!meta) return;
-  event.preventDefault();
-  void web.remove(meta);
 });
 
 async function openUrl(): Promise<void> {
@@ -143,8 +129,6 @@ async function openUrl(): Promise<void> {
           data-region="artifact-row"
           :data-kind="meta.kind"
           :data-slug="meta.slug"
-          @mouseenter="hovered = meta.slug"
-          @mouseleave="hovered = undefined"
         >
           <button
             v-press

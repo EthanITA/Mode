@@ -82,6 +82,8 @@ function onKey(key: string): void {
   else if (key === "hold") chrome.comment.arm(true);
   else if (key === "release") chrome.comment.release();
   else if (key === "reload") web.reload();
+  else if (key === "remove") web.removeAimed();
+  else if (key === "undo") web.undoRemove();
 }
 
 function onLayout(message: Extract<AgentMessage, { type: "layout" }>): void {

@@ -128,6 +128,10 @@ window.addEventListener(
     } else if (meta && event.key.toLowerCase() === "r") {
       event.preventDefault();
       post({ type: "key", key: "reload" });
+    } else if (meta && !isTyping(event.target) && event.key === "Backspace") {
+      post({ type: "key", key: "remove" });
+    } else if (meta && !event.shiftKey && !isTyping(event.target) && event.key.toLowerCase() === "z") {
+      post({ type: "key", key: "undo" });
     } else if (event.key === "Escape") {
       if (armed) event.preventDefault();
       post({ type: "key", key: "escape" });

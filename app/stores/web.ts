@@ -13,6 +13,7 @@ export interface WebOpenOptions {
 // Redirects that run this long without a page are a loop, so the frame stops and says so.
 const HOPS = 8;
 const EDITABLE = "input, textarea, select, [contenteditable]:not([contenteditable='false'])";
+const WEB_ROW = "[data-region='artifact-row'][data-kind='web']";
 
 export const $web = defineStore(() => {
   const sc = useSidecar();
@@ -127,14 +128,29 @@ export const $web = defineStore(() => {
     }
   }
 
+  // The pointer wins over focus, since a row clicked earlier keeps focus long after the pointer moved on.
+  function removeAimed(): boolean {
+    const row =
+      document.querySelector<HTMLElement>(`${WEB_ROW}:hover`) ?? document.activeElement?.closest<HTMLElement>(WEB_ROW);
+    const meta = sc.catalogue.value.find((one) => one.slug === row?.dataset.slug);
+    if (!meta) return false;
+    void remove(meta);
+    return true;
+  }
+
   // Only while its toast is up, so a later ⌘Z can't bring back something long gone.
-  useEventListener(window, "keydown", (event: KeyboardEvent) => {
+  function undoRemove(): boolean {
     const held = undo;
-    if (!held || !(event.metaKey || event.ctrlKey) || event.shiftKey || event.key.toLowerCase() !== "z") return;
-    if (event.target instanceof Element && event.target.closest(EDITABLE)) return;
-    if (!chrome.toasts.value.some((one) => one.id === held.toast)) return;
-    event.preventDefault();
+    if (!held || !chrome.toasts.value.some((one) => one.id === held.toast)) return false;
     void putBack();
+    return true;
+  }
+
+  useEventListener(window, "keydown", (event: KeyboardEvent) => {
+    if (!(event.metaKey || event.ctrlKey) || event.shiftKey) return;
+    if (event.target instanceof Element && event.target.closest(EDITABLE)) return;
+    const key = event.key.toLowerCase();
+    if ((key === "backspace" && removeAimed()) || (key === "z" && undoRemove())) event.preventDefault();
   });
 
   return {
@@ -148,9 +164,11 @@ export const $web = defineStore(() => {
     page,
     reload,
     remove,
+    removeAimed,
     reset,
     shown,
     state,
+    undoRemove,
     visit,
   };
 });
