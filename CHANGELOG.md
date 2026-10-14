@@ -20,6 +20,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   was left on, the address in the bar is editable, hovering a Web entry offers to remove it with Undo, and a
   remote site is fenced off from localhost and from the sidecar's API.
 
+- **Links open in Artifacts.** A link anywhere in the sidecar, in a page, a rendered file, a live site, a
+  note, an answer or the code editor, opens there instead of in a browser tab: a web address as a Web entry,
+  a local `.md` or `.html` as a File entry listed beside the pages, with its threads kept beside the file
+  rather than in it, and any other file in Files. A relative link reads against the file it sits in, a mail
+  link still leaves, and the href stays real so Copy link gives it.
+
 - **Ask Claude, `/btw` from the sidecar.** The session's mascot sits beside the notes, and ⌥↵ or a click
   slides its field out to ask a side question with the whole conversation as context, the running turn
   included, and nothing reaches the transcript. The mascot acts out the session's status, hopping under a

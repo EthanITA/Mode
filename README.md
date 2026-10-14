@@ -219,7 +219,9 @@ layer, keeps one entry per site in `~/.claude/sidecar/web/`, google.com and www.
 and its last stop is the entry kept. A site's cookies and storage live under its own proxy origin, which
 `~/.claude/sidecar/web-origins.json` keeps even after the entry is removed, so they last across
 conversations and restarts and come back when the site is opened again. A remote site runs fenced off
-from localhost. Three lookups are worth knowing:
+from localhost. A link clicked in the sidecar opens there too, a web address as a Web entry and a local
+`.md` or `.html` as a File entry, which `~/.claude/sidecar/tracked.json` remembers until you remove it, so
+the sidecar serves only files someone opened. Three lookups are worth knowing:
 
 | It resolves           | In this order                                                                                                   |
 | --------------------- | --------------------------------------------------------------------------------------------------------------- |
