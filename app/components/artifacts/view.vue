@@ -139,7 +139,7 @@ async function openUrl(): Promise<void> {
         <div
           v-for="meta in entries"
           :key="meta.slug"
-          class="slot"
+          class="item"
           data-region="artifact-row"
           :data-kind="meta.kind"
           :data-slug="meta.slug"
@@ -314,14 +314,14 @@ async function openUrl(): Promise<void> {
   padding: 6px 8px var(--float-clear);
 }
 
-.slot {
+.item {
   --row-bg: var(--raised);
   flex: none;
   position: relative;
 }
 
-.slot:hover,
-.slot:has(.entry[data-selected="true"]) {
+.item:hover,
+.item:has(.entry[data-selected="true"]) {
   --row-bg: var(--sunken);
 }
 
@@ -339,13 +339,13 @@ async function openUrl(): Promise<void> {
   transition: opacity var(--duration-fast) var(--ease-out);
 }
 
-.slot:hover .actions,
-.slot:focus-within .actions {
+.item:hover .actions,
+.item:focus-within .actions {
   opacity: 1;
 }
 
-.slot:hover .pill,
-.slot:focus-within .pill {
+.item:hover .pill,
+.item:focus-within .pill {
   pointer-events: auto;
 }
 
@@ -380,8 +380,8 @@ async function openUrl(): Promise<void> {
   }
 }
 
-.slot[data-kind="web"]:hover .threads,
-.slot[data-kind="web"]:focus-within .threads {
+.item[data-kind="web"]:hover .threads,
+.item[data-kind="web"]:focus-within .threads {
   display: none;
 }
 
@@ -397,8 +397,8 @@ async function openUrl(): Promise<void> {
   width: 100%;
 }
 
-/* On the slot, so the row keeps its hover while the pointer sits on the pill laid over it. */
-.slot:hover .entry {
+/* On the item, so the row keeps its hover while the pointer sits on the pill laid over it. */
+.item:hover .entry {
   background: var(--sunken);
 }
 
