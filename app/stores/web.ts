@@ -13,7 +13,7 @@ export interface WebOpenOptions {
 // Redirects that run this long without a page are a loop, so the frame stops and says so.
 const HOPS = 8;
 const EDITABLE = "input, textarea, select, [contenteditable]:not([contenteditable='false'])";
-const WEB_ROW = "[data-region='artifact-row'][data-kind='web']";
+const REMOVABLE_ROW = "[data-region='artifact-row']:is([data-kind='web'], [data-kind='file'])";
 
 export const $web = defineStore(() => {
   const sc = useSidecar();
@@ -107,15 +107,22 @@ export const $web = defineStore(() => {
     }
   }
 
-  // The app itself isn't touched, and its cookies and storage stay where they are for the site opened again.
+  async function forget(meta: ArtifactMeta): Promise<() => Promise<void>> {
+    if (meta.kind === "file") {
+      const { path } = await $fetch<{ path: string }>(`/api/files/${meta.slug}`, { method: "DELETE" });
+      const session = sc.sessionKey.value;
+      return async () => void (await $fetch("/api/files/open", { body: { path, session }, method: "POST" }));
+    }
+    const record = await $fetch<Record<string, unknown>>(`/api/web/${meta.slug}`, { method: "DELETE" });
+    return async () => void (await $fetch(`/api/web/${meta.slug}`, { body: record, method: "PUT" }));
+  }
+
+  // Only the entry goes: a site's cookies and storage, or a file on disk, stay for when it is opened again.
   async function remove(meta: ArtifactMeta): Promise<void> {
     const name = meta.title || meta.slug;
     try {
-      const record = await $fetch<Record<string, unknown>>(`/api/web/${meta.slug}`, { method: "DELETE" });
+      const put = await forget(meta);
       sc.catalogue.value = sc.catalogue.value.filter((one) => one.slug !== meta.slug);
-      const put = async (): Promise<void> => {
-        await $fetch<WebOpenReply>(`/api/web/${meta.slug}`, { body: record, method: "PUT" });
-      };
       const toast = chrome.notify({
         action: "Undo",
         open: () => void putBack(),
@@ -131,7 +138,8 @@ export const $web = defineStore(() => {
   // The pointer wins over focus, since a row clicked earlier keeps focus long after the pointer moved on.
   function removeAimed(): boolean {
     const row =
-      document.querySelector<HTMLElement>(`${WEB_ROW}:hover`) ?? document.activeElement?.closest<HTMLElement>(WEB_ROW);
+      document.querySelector<HTMLElement>(`${REMOVABLE_ROW}:hover`) ??
+      document.activeElement?.closest<HTMLElement>(REMOVABLE_ROW);
     const meta = sc.catalogue.value.find((one) => one.slug === row?.dataset.slug);
     if (!meta) return false;
     void remove(meta);

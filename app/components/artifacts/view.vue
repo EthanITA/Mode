@@ -2,7 +2,13 @@
 import { Globe, Trash2 } from "@lucide/vue";
 import type { ArtifactKind, ArtifactMeta } from "~~/shared/types/artifact";
 
-const KIND: Record<ArtifactKind, string> = { document: "Document", page: "Page", plan: "Plan", web: "Web" };
+const KIND: Record<ArtifactKind, string> = {
+  document: "Document",
+  file: "File",
+  page: "Page",
+  plan: "Plan",
+  web: "Web",
+};
 
 const { initial: sideInitial, width: side } = usePaneWidth();
 const sc = useSidecar();
@@ -160,7 +166,7 @@ async function openUrl(): Promise<void> {
             </span>
             <span class="name">{{ nameOf(meta) }}</span>
           </button>
-          <span v-if="meta.kind === 'web'" class="actions">
+          <span v-if="meta.kind === 'web' || meta.kind === 'file'" class="actions">
             <span class="pill">
               <button
                 class="dot focusable"
@@ -381,8 +387,8 @@ async function openUrl(): Promise<void> {
   }
 }
 
-.item[data-kind="web"]:hover .threads,
-.item[data-kind="web"]:focus-within .threads {
+.item:is([data-kind="web"], [data-kind="file"]):hover .threads,
+.item:is([data-kind="web"], [data-kind="file"]):focus-within .threads {
   display: none;
 }
 

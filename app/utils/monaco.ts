@@ -65,9 +65,17 @@ function load(): Promise<typeof MonacoApi> {
     }
     monaco.json.jsonDefaults.setDiagnosticsOptions({ allowComments: true, trailingCommas: "ignore", validate: true });
     monaco.editor.defineTheme(OneDarkVivid.name, OneDarkVivid.theme);
+    monaco.editor.registerLinkOpener({ open: (uri) => opener(uri.toString(true)) });
     return monaco;
   })();
   return loading;
+}
+
+// Monaco sends a link to a browser tab until the app hands it the Artifacts opener.
+let opener = (_href: string): boolean => false;
+
+function openLinksWith(open: (href: string) => boolean): void {
+  opener = open;
 }
 
 // Undefined leaves the choice to Monaco, which reads the model URI's extension and file name itself.
@@ -81,4 +89,4 @@ function languageOf(path: string): string | undefined {
   );
 }
 
-export const Monaco = { languageOf, load };
+export const Monaco = { languageOf, load, openLinksWith };

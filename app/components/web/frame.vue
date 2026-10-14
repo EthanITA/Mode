@@ -29,6 +29,7 @@ const web = $web();
 const artifact = $artifact();
 const shown = useFaceShown();
 const look = useTheme();
+const links = useLinks();
 const frame = ref<HTMLIFrameElement>();
 const proxy = ref<string>();
 const upstream = ref<string>();
@@ -123,7 +124,7 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
   const message = event.data as Envelope<AgentMessage>;
   switch (message.type) {
     case "away":
-      window.open(message.url, "_blank", "noopener");
+      void links.open(message.url);
       return;
     case "down":
       web.state = "down";

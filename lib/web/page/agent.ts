@@ -75,9 +75,17 @@ function schedule(reindex = false): void {
 // Another site would load in the frame without the agent, and most refuse to be framed at all.
 function leave(event: MouseEvent): void {
   const link = (event.target as Element | undefined)?.closest?.("a[href]");
-  if (!(link instanceof HTMLAnchorElement) || link.target === "_blank" || event.defaultPrevented) return;
+  if (!(link instanceof HTMLAnchorElement) || event.defaultPrevented) return;
   const to = new URL(link.href, location.href);
-  if (to.origin === location.origin || !/^https?:$/.test(to.protocol)) return;
+  if (!/^https?:$/.test(to.protocol)) return;
+  if (to.origin === location.origin) {
+    // A new tab would take the page out of the sidecar, so the site's own pages open in place.
+    if (link.target === "_blank") {
+      event.preventDefault();
+      location.assign(to.href);
+    }
+    return;
+  }
   event.preventDefault();
   post({ type: "away", url: to.href });
 }

@@ -37,6 +37,7 @@ const SUPPRESS_ID = "sidecar-suppress";
 const EDIT_ID = "sidecar-edit";
 
 const look = useTheme();
+const links = useLinks();
 
 const frame = ref<HTMLIFrameElement>();
 const height = ref(0);
@@ -66,12 +67,12 @@ function reset(): void {
   emit("pending", []);
 }
 
-// A receipt opens away rather than in here, which would navigate the artifact out of its own frame.
+// Followed in place, a link would navigate the artifact out of its own frame.
 function onLink(event: MouseEvent): void {
-  const link = (event.target as Element | undefined)?.closest?.("a[href^='http']");
-  if (!link) return;
+  const href = (event.target as Element | undefined)?.closest?.("a[href]")?.getAttribute("href") ?? "";
+  if (!links.owns(href)) return;
   event.preventDefault();
-  window.open(link.getAttribute("href") ?? "", "_blank", "noopener");
+  void links.open(href, { base: file && file.slice(0, file.lastIndexOf("/")) });
 }
 
 function onLoad(): void {

@@ -26,6 +26,7 @@ const emit = defineEmits<{
 }>();
 
 const look = useTheme();
+const links = useLinks();
 const scroller = useTemplateRef<HTMLElement>("scroller");
 const content = useTemplateRef<HTMLElement>("content");
 const frame = ref<HTMLIFrameElement>();
@@ -137,12 +138,12 @@ function onFrameLoad(): void {
     zoom.value = Preview.pinch(zoom.value, event.deltaY);
   };
   const onEngage = (): void => emit("engage");
-  // A link opens away, since following it inside the frame would leave the file behind.
+  // Followed in place, a link would leave the file behind.
   const onClick = (event: MouseEvent): void => {
-    const link = event.target instanceof Element ? event.target.closest("a[href^='http']") : undefined;
-    if (!link) return;
+    const href = event.target instanceof Element ? event.target.closest("a[href]")?.getAttribute("href") : undefined;
+    if (!href || !links.owns(href)) return;
     event.preventDefault();
-    window.open(link.getAttribute("href") ?? "", "_blank", "noopener");
+    void links.open(href, { base: file && file.slice(0, file.lastIndexOf("/")) });
   };
   win.addEventListener("wheel", onFrameWheel, { passive: false });
   win.addEventListener("scroll", onScroll, { passive: true });

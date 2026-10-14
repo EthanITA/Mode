@@ -149,7 +149,7 @@ onBeforeUnmount(() => {
           <ArtifactReader v-else :conversation="conversation" :slug="slug" />
         </div>
       </template>
-      <div v-else ref="read" class="read" data-kind="file">
+      <div v-else ref="read" class="read" data-kind="files">
         <slot />
       </div>
     </UiSurface>
@@ -229,7 +229,7 @@ onBeforeUnmount(() => {
 }
 
 /* A file brings its own bar and scrolls itself, so the sheet only lends it the room. */
-.read[data-kind="file"] {
+.read[data-kind="files"] {
   display: flex;
   flex-direction: column;
   overflow: hidden;
