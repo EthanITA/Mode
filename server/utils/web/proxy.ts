@@ -42,6 +42,7 @@ const HOSTS = ["127.0.0.1", "::1"];
 const OWN = "/__sidecar/";
 const PAGE_FILE = /^\/__sidecar\/([a-z]+)\.ts$/;
 const DROPPED = ["content-security-policy", "content-security-policy-report-only", "x-frame-options"];
+const PERMANENT: Record<number, number> = { 301: 302, 308: 307 };
 const META_CSP = /<meta\b[^>]*http-equiv\s*=\s*["']?content-security-policy["']?[^>]*>/gi;
 // A remote page runs on a loopback origin here, so its calls stay on the proxy and the open web, away from local services.
 const FENCE = "connect-src 'self' https: wss:; form-action 'self' https:";
@@ -105,7 +106,10 @@ export async function rewriteResponse({ here, isHead, response, running: held }:
   headers.delete("set-cookie");
   for (const cookie of response.headers.getSetCookie()) headers.append("set-cookie", hostOnly(cookie));
   if (!held.isLoopback) headers.set("content-security-policy", FENCE);
-  const init = { headers, status: response.status, statusText: response.statusText };
+  // A browser keeps a permanent redirect forever, so one passed on once would send the frame past the proxy for good.
+  const status = PERMANENT[response.status] ?? response.status;
+  if (status !== response.status) headers.set("cache-control", "no-store");
+  const init = { headers, status, statusText: status === response.status ? response.statusText : "" };
   const isHtml = (headers.get("content-type") ?? "").includes("text/html");
   // Asked for identity, so a body still encoded came from a server that ignores it, and is passed on as it is.
   const isEncoded = !["", "identity"].includes(headers.get("content-encoding") ?? "");

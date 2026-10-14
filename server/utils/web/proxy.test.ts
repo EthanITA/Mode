@@ -53,7 +53,7 @@ test("a page comes back framable, its cookies host-only and its own scripts firs
   const upstream = createServer((req, res) => {
     seen = req.headers;
     if (req.url === "/go") {
-      res.writeHead(302, { location: `http://127.0.0.1:${up}/next` }).end();
+      res.writeHead(301, { location: `http://127.0.0.1:${up}/next` }).end();
       return;
     }
     res.writeHead(200, {
@@ -85,7 +85,10 @@ test("a page comes back framable, its cookies host-only and its own scripts firs
   assert.equal(seen["accept-encoding"], "identity");
 
   const moved = await get(port, "/go", { host });
-  assert.equal(moved.headers.location, `http://${host}/next`);
+  assert.deepEqual(
+    [moved.status, moved.headers.location, moved.headers["cache-control"]],
+    [302, `http://${host}/next`, "no-store"],
+  );
 });
 
 test("a socket upgrade reaches the site as its own origin, so a dev server's HMR connects", async () => {

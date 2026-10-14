@@ -40,14 +40,8 @@ export const $web = defineStore(() => {
     return got;
   }
 
-  // An entry is one origin, since its proxy, port and storage are, so only another origin earns a new one.
+  // An entry is one origin, and a typed one may really live at another, google.com at www, so the server settles which.
   async function visit({ slug, typed }: { slug: string; typed: URL }): Promise<string> {
-    const here = page.value?.url ?? sc.artifact.value?.url;
-    if (here && new URL(here).origin === typed.origin) {
-      page.value = { title: "", url: typed.href };
-      reload();
-      return slug;
-    }
     const got = await open(typed.href);
     if (got.slug === slug) {
       page.value = { title: "", url: got.url };
