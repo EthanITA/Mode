@@ -28,6 +28,7 @@ const chrome = useChrome();
 const web = $web();
 const artifact = $artifact();
 const shown = useFaceShown();
+const look = useTheme();
 const frame = ref<HTMLIFrameElement>();
 const proxy = ref<string>();
 const upstream = ref<string>();
@@ -83,6 +84,7 @@ function greet(): void {
   if (web.state === "starting") web.state = "live";
   post({ type: "hello" });
   post({ type: "arm", armed: chrome.comment.armed.value });
+  post({ type: "theme", theme: look.theme.value });
 }
 
 function onLoad(): void {
@@ -163,6 +165,7 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
 });
 
 watch(chrome.comment.armed, (armed) => post({ type: "arm", armed }));
+watch(look.theme, (theme) => post({ type: "theme", theme }));
 watch(chrome.comment.pick, (hit) => {
   if (!hit) post({ type: "clear" });
 });
@@ -194,6 +197,7 @@ watch(
       allow="clipboard-read; clipboard-write; fullscreen"
       :data-state="web.state"
       :src="src"
+      :style="{ colorScheme: look.theme.value }"
       :title="`Live page ${slug}`"
       @load="onLoad"
     />

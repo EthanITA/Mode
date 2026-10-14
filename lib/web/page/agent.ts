@@ -191,6 +191,8 @@ window.addEventListener("message", (event: MessageEvent<Partial<Envelope<Sidecar
     schedule();
   } else if (message.type === "go") {
     location.assign(new URL(message.path, location.origin).href);
+  } else if (message.type === "theme") {
+    document.documentElement.setAttribute("data-theme", message.theme);
   }
 });
 

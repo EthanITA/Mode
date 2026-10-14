@@ -32,6 +32,10 @@ export type AgentMessage =
   | { type: "ready" };
 
 export type SidecarMessage =
-  { type: "arm"; armed: boolean } | { type: "clear" } | { type: "go"; path: string } | { type: "hello" };
+  | { type: "arm"; armed: boolean }
+  | { type: "clear" }
+  | { type: "go"; path: string }
+  | { type: "hello" }
+  | { type: "theme"; theme: string };
 
 export type Envelope<T> = T & { channel: typeof CHANNEL };
