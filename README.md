@@ -218,8 +218,9 @@ and its last stop is the entry kept. A site's cookies and storage live under its
 `~/.claude/sidecar/web-origins.json` keeps even after the entry is removed, so they last across
 conversations and restarts and come back when the site is opened again. Every host of a remote site
 shares one cookie jar, so a consent or a sign-in on accounts.google.com holds on www.google.com too, and
-the proxy sends each request as a browser tab would rather than as a framed page. A remote site runs
-fenced off from localhost. A link clicked in the sidecar opens there too, a web address as a Web entry and a local
+the proxy sends each request as a browser tab would rather than as a framed page. Each entry keeps its
+own back and forward history in its record, so ⌘[ and ⌘] step through it after a switch or a reload, and
+⌘L edits the address. A remote site runs fenced off from localhost. A link clicked in the sidecar opens there too, a web address as a Web entry and a local
 `.md` or `.html` as a File entry, which `~/.claude/sidecar/tracked.json` remembers until you remove it, so
 the sidecar serves only files someone opened. Three lookups are worth knowing:
 

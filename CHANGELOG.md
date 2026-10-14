@@ -18,19 +18,22 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   its last page and its threads, a redirect is followed on its own and its last stop is the entry kept, a
   site's cookies and storage last across conversations and browser restarts, a thread names the page it
   was left on, the address in the bar is editable, hovering a Web entry offers to remove it with Undo, and a
-  remote site is fenced off from localhost and from the sidecar's API. Back and forward arrows step through
-  the site's own history and never the sidecar's, and grown to fullscreen the site keeps its bar as the one
-  island left, with the address, the arrows, reload, open in a browser tab, Comment and Exit fullscreen.
+  remote site is fenced off from localhost and from the sidecar's API. Back and forward arrows, ⌘[ and ⌘],
+  step through the site's own history and never the sidecar's, each entry keeps that history in its record
+  so it survives a switch or a reload, and ⌘L edits the address.
+
+- **Fullscreen is three islands over the page.** F, from the sidecar or inside a live site, grows any artifact to the whole window
+  under a strip of islands: the list button on the left, which lays Artifacts or Files over the left edge
+  to switch without leaving fullscreen, the title in the middle, and Comment, the theme and Exit on the
+  right. A live site's title island carries the arrows, its favicon, title and host, and open in a browser
+  tab, and clicking the title edits the URL in place. The top bar, the board and the dock step aside, and
+  Esc closes comment mode before it leaves fullscreen.
 
 - **Links open in Artifacts.** A link anywhere in the sidecar, in a page, a rendered file, a live site, a
   note, an answer or the code editor, opens there instead of in a browser tab: a web address as a Web entry,
   a local `.md` or `.html` as a File entry listed beside the pages, with its threads kept beside the file
   rather than in it, and any other file in Files. A relative link reads against the file it sits in, a mail
   link still leaves, and the href stays real so Copy link gives it.
-
-- **F grows the page, and the islands can step aside.** F grows or shrinks the sheet from the sidecar or
-  from inside a live site. A grown page or file gets a corner toggle that fades every island away and
-  slides itself into the corner until the pointer finds it, and a grown live site shows only its own bar.
 
 - **A live site follows the sidecar's theme.** Light or dark reaches the page through the frame's
   `color-scheme`, so `prefers-color-scheme` answers with the sidecar's choice, and a `data-theme` on its root.
