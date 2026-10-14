@@ -92,7 +92,15 @@ function toSelection(hit: FrameHit): FrameSelection {
   return {
     bottom: hit.top + hit.height,
     left: hit.left + hit.width / 2,
-    mark: { height: hit.height, key: hit.key, label: hit.label, text: hit.text, top: hit.top },
+    mark: {
+      height: hit.height,
+      key: hit.key,
+      label: hit.label,
+      left: hit.left,
+      text: hit.text,
+      top: hit.top,
+      width: hit.width,
+    },
     path: hit.path,
     quote: hit.text,
     top: hit.top,

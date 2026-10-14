@@ -72,8 +72,21 @@ function schedule(reindex = false): void {
   if (!frame && parent) frame = requestAnimationFrame(layout);
 }
 
+// Another site would load in the frame without the agent, and most refuse to be framed at all.
+function leave(event: MouseEvent): void {
+  const link = (event.target as Element | undefined)?.closest?.("a[href]");
+  if (!(link instanceof HTMLAnchorElement) || link.target === "_blank" || event.defaultPrevented) return;
+  const to = new URL(link.href, location.href);
+  if (to.origin === location.origin || !/^https?:$/.test(to.protocol)) return;
+  event.preventDefault();
+  post({ type: "away", url: to.href });
+}
+
 function pick(event: MouseEvent): void {
-  if (!armed) return;
+  if (!armed) {
+    if (event.type === "click") leave(event);
+    return;
+  }
   const node = blockAt(event.target);
   if (!node) return;
   event.preventDefault();
@@ -112,6 +125,9 @@ window.addEventListener(
     if (meta && event.key.toLowerCase() === "k") {
       event.preventDefault();
       post({ type: "key", key: "comment" });
+    } else if (meta && event.key.toLowerCase() === "r") {
+      event.preventDefault();
+      post({ type: "key", key: "reload" });
     } else if (event.key === "Escape") {
       if (armed) event.preventDefault();
       post({ type: "key", key: "escape" });

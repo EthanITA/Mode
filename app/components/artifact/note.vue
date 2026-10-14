@@ -7,11 +7,13 @@ import type { TrayItem, TrayReply } from "~/composables/useTray";
 const {
   item,
   live = true,
+  notice,
   slug,
   thread,
 } = defineProps<{
   item?: TrayItem;
   live?: boolean;
+  notice?: string;
   slug: string;
   thread?: ReviewThread;
 }>();
@@ -161,6 +163,8 @@ async function resolve(): Promise<void> {
       <Prose class="body" :value="row.text" />
     </div>
 
+    <p v-if="notice" class="notice" role="status">{{ notice }}</p>
+
     <ArtifactCompose v-model="draft" :disabled="!!busy" placeholder="Reply…" @save="onReply" />
 
     <footer>
@@ -220,6 +224,27 @@ async function resolve(): Promise<void> {
 
 .who {
   color: var(--subtle);
+}
+
+.notice {
+  align-items: center;
+  background: var(--success-soft);
+  border-radius: 10px;
+  display: flex;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 7px;
+  margin: 0;
+  padding: 7px 10px;
+}
+
+.notice::before {
+  background: var(--success);
+  border-radius: 999px;
+  content: "";
+  flex: none;
+  height: 7px;
+  width: 7px;
 }
 
 footer {

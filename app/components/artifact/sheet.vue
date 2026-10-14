@@ -3,8 +3,14 @@ import { EASE_CSS, MOTION_DURATION, prefersReducedMotion } from "@cela/design/ut
 import { Maximize2 } from "@lucide/vue";
 import { useEventListener } from "@vueuse/core";
 import type { ComponentPublicInstance } from "vue";
+import type { ArtifactKind } from "~~/shared/types/artifact";
 
-const { conversation, path, slug } = defineProps<{ conversation?: string; path?: string; slug?: string }>();
+const { conversation, kind, path, slug } = defineProps<{
+  conversation?: string;
+  kind?: ArtifactKind;
+  path?: string;
+  slug?: string;
+}>();
 
 type Box = { height: number; left: number; top: number; width: number };
 
@@ -116,7 +122,8 @@ onBeforeUnmount(() => {
     >
       <template v-if="path && slug && conversation">
         <header ref="bar" class="bar">
-          <span class="path">{{ homePath(path) }}</span>
+          <WebBar v-if="kind === 'web'" :conversation="conversation" :slug="slug" />
+          <span v-else class="path">{{ homePath(path) }}</span>
           <ChromeCommentToggle shape="pill" />
           <ChromeAction
             data-region="artifact-fullscreen"
@@ -127,8 +134,9 @@ onBeforeUnmount(() => {
             @click="artifact.isFull = true"
           />
         </header>
-        <div ref="read" class="read">
-          <ArtifactReader :conversation="conversation" :slug="slug" />
+        <div ref="read" class="read" :data-kind="kind">
+          <WebReader v-if="kind === 'web'" :conversation="conversation" :slug="slug" />
+          <ArtifactReader v-else :conversation="conversation" :slug="slug" />
         </div>
       </template>
       <slot v-else />
@@ -194,5 +202,12 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow-y: auto;
   padding: 16px 0 var(--float-clear);
+}
+
+/* A live page scrolls itself and runs to the sheet's edges, with its notes beside it. */
+.read[data-kind="web"] {
+  display: flex;
+  overflow: hidden;
+  padding: 0;
 }
 </style>

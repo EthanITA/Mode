@@ -6,6 +6,7 @@ const chrome = useChrome();
 const key = computed(() => String(route.params.key ?? ""));
 const slug = computed(() => String(route.params.slug ?? ""));
 const title = computed(() => sc.artifact.value?.title || deslug(slug.value));
+const isWeb = computed(() => sc.artifact.value?.slug === slug.value && sc.artifact.value.kind === "web");
 
 loadSidecar();
 
@@ -29,8 +30,9 @@ watchEffect(() => {
       <BoardIsland />
     </template>
 
-    <main class="stage">
-      <ArtifactReader :conversation="key" :slug="slug">
+    <main class="stage" :data-web="isWeb">
+      <WebReader v-if="isWeb" :conversation="key" :slug="slug" />
+      <ArtifactReader v-else :conversation="key" :slug="slug">
         <template #blank>
           <NuxtLink class="back focusable" :to="`/c/${key}`">Back to the conversation</NuxtLink>
         </template>
@@ -47,6 +49,12 @@ watchEffect(() => {
   overflow-y: auto;
   padding: var(--stage-top) 0 calc(var(--dock-h, var(--dock-rest-h)) + var(--gutter) * 2);
   position: absolute;
+}
+
+/* A live page scrolls itself, so the stage only holds it. */
+.stage[data-web="true"] {
+  display: flex;
+  overflow: hidden;
 }
 
 .back {

@@ -6,14 +6,18 @@ import type { Pin } from "~/utils/anchors";
 
 const {
   anchors = [],
+  file,
   live = true,
   marks = [],
+  notices = {},
   side = "left",
   threads,
 } = defineProps<{
   anchors?: FrameAnchor[];
+  file?: string;
   live?: boolean;
   marks?: FrameMark[];
+  notices?: Record<string, string>;
   side?: "left" | "right";
   threads: ReviewThread[];
 }>();
@@ -29,7 +33,8 @@ const placed = computed(() => anchorThreads({ anchors, marks, threads }));
 function isGutterNote(item: TrayItem): boolean {
   if (item.kind !== "comment") return false;
   if (!item.mark && !item.block && !item.quote) return false;
-  if (item.file && sc.artifact.value?.path && item.file !== sc.artifact.value.path) return false;
+  const here = file ?? sc.artifact.value?.path;
+  if (item.file && here && item.file !== here) return false;
   return !item.source || item.source === sc.slug.value;
 }
 
@@ -103,7 +108,13 @@ watchEffect(() =>
       class="perch perch-note"
       :style="{ top: `${row.top}px` }"
     >
-      <ArtifactNote :live="live" :slug="sc.slug.value ?? ''" :thread="row.thread" @reload="emit('reload')" />
+      <ArtifactNote
+        :live="live"
+        :notice="notices[row.thread.id]"
+        :slug="sc.slug.value ?? ''"
+        :thread="row.thread"
+        @reload="emit('reload')"
+      />
     </div>
 
     <div v-if="adrift" key="adrift" class="perch perch-foot">
@@ -131,7 +142,14 @@ watchEffect(() =>
       class="perch perch-note"
       :style="{ top: `${row.top}px` }"
     >
-      <ArtifactNote :item="row.item" :live="live" :slug="sc.slug.value ?? ''" @reload="emit('reload')" />
+      <ArtifactNote
+        :item="row.item"
+        :live="live"
+        :notice="row.item.thread && notices[row.item.thread]"
+        :slug="sc.slug.value ?? ''"
+        :thread="threads.find((thread) => thread.id === row.item.thread)"
+        @reload="emit('reload')"
+      />
     </div>
 
     <div v-for="row in asked" :key="`ask:${row.thread.id}`" class="perch perch-ask" :style="{ top: `${row.top}px` }">

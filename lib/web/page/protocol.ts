@@ -19,12 +19,14 @@ export interface WebPage {
   url: string;
 }
 
-export type WebKey = "comment" | "escape" | "hold" | "release";
+export type WebKey = "comment" | "escape" | "hold" | "reload" | "release";
 
 export type AgentMessage =
+  | { type: "away"; url: string }
   | { type: "down"; url: string }
   | { type: "key"; key: WebKey }
   | { type: "layout"; anchors: FrameAnchor[]; hot?: WebHit; marks: FrameMark[]; picked?: WebHit }
+  | { type: "moved"; url: string }
   | { type: "page"; page: WebPage }
   | { type: "pick"; hit: WebHit };
 

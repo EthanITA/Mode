@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { Globe } from "@lucide/vue";
 import type { ArtifactKind, ArtifactMeta } from "~~/shared/types/artifact";
 
 const KIND: Record<ArtifactKind, string> = { document: "Document", page: "Page", plan: "Plan", web: "Web" };
@@ -38,14 +39,70 @@ watch(
   },
   { immediate: true },
 );
+
+const web = $web();
+const address = ref("");
+const refused = ref<string>();
+const isFocused = ref(false);
+const isOpening = ref(false);
+
+const hostOf = (meta: ArtifactMeta): string => (meta.url ? new URL(meta.url).host : "");
+
+async function openUrl(): Promise<void> {
+  const url = address.value.trim();
+  const key = sc.sessionKey.value;
+  if (!url || !key || isOpening.value) return;
+  isOpening.value = true;
+  refused.value = undefined;
+  try {
+    selected.value = (await web.open(url)).slug;
+    address.value = "";
+  } catch (error) {
+    refused.value =
+      (error as { statusCode?: number }).statusCode === 400
+        ? "Only http and https addresses open here, such as localhost:3000 or docs.mode.dev."
+        : "The sidecar could not open that address. Try again in a moment.";
+  } finally {
+    isOpening.value = false;
+  }
+}
 </script>
 
 <template>
   <section class="artifacts" data-region="artifacts" :style="{ '--side-w': `${side}px` }">
     <UiSurface class="pane" data-region="artifacts-list" pad="none" variant="raised">
       <header class="bar">
-        <span class="title">Artifacts</span>
-        <span class="meta mono-meta">{{ entries.length ? plural(entries.length, "item") : "" }}</span>
+        <div class="row">
+          <span class="title">Artifacts</span>
+          <span class="meta mono-meta">{{ entries.length ? plural(entries.length, "item") : "" }}</span>
+        </div>
+        <form
+          class="open"
+          data-region="open-url"
+          data-tip="Any website or app on this machine opens live here · {enter}"
+          :data-focused="isFocused"
+          :data-refused="!!refused"
+          @submit.prevent="openUrl"
+        >
+          <UiIcon class="globe" :icon="Globe" size="xs" />
+          <input
+            v-model="address"
+            aria-label="Open a URL"
+            autocomplete="off"
+            class="field"
+            inputmode="url"
+            placeholder="Open a URL"
+            spellcheck="false"
+            type="text"
+            :aria-invalid="!!refused"
+            :disabled="isOpening || !sc.sessionKey.value"
+            @blur="isFocused = false"
+            @focus="isFocused = true"
+            @input="refused = undefined"
+          />
+        </form>
+        <p v-if="refused" class="hint" data-tone="error" role="alert">{{ refused }}</p>
+        <p v-else-if="isFocused && address.trim()" class="hint">Opens live here, with the comment layer.</p>
       </header>
       <div class="scroll">
         <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
@@ -66,7 +123,8 @@ watch(
         >
           <span class="head">
             <span class="kind mono-meta" :data-kind="meta.kind">{{ KIND[meta.kind] }}</span>
-            <span v-if="meta.updated" class="age mono-meta">{{ relativeAge(meta.updated) }}</span>
+            <span v-if="meta.kind === 'web'" class="age mono-meta">{{ hostOf(meta) }}</span>
+            <span v-else-if="meta.updated" class="age mono-meta">{{ relativeAge(meta.updated) }}</span>
             <span class="spacer" />
             <span v-if="meta.threadCount" class="age mono-meta">{{ plural(meta.threadCount, "thread") }}</span>
           </span>
@@ -77,7 +135,7 @@ watch(
 
     <PaneResizer v-model="side" :initial="sideInitial" label="Resize the artifact list" />
 
-    <ArtifactSheet :conversation="sc.sessionKey.value" :path="picked?.path" :slug="picked?.slug">
+    <ArtifactSheet :conversation="sc.sessionKey.value" :kind="picked?.kind" :path="picked?.path" :slug="picked?.slug">
       <UiStateMessage align="center" class="centered">Pick a page or a plan to open it here.</UiStateMessage>
     </ArtifactSheet>
   </section>
@@ -101,12 +159,87 @@ watch(
 }
 
 .bar {
-  align-items: center;
   border-bottom: 1px solid var(--border);
   display: flex;
   flex: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 14px 12px;
+}
+
+.row {
+  align-items: center;
+  display: flex;
   gap: 8px;
-  padding: 10px 14px;
+}
+
+.open {
+  align-items: center;
+  background: var(--sunken);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-sizing: border-box;
+  cursor: text;
+  display: flex;
+  gap: 8px;
+  height: 34px;
+  margin: 0;
+  padding: 0 12px;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.open[data-focused="true"] {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-soft);
+}
+
+.open[data-refused="true"] {
+  border-color: var(--error);
+  box-shadow: 0 0 0 2px var(--error-soft);
+}
+
+.globe {
+  color: var(--subtle);
+  flex: none;
+}
+
+.open[data-focused="true"] .globe {
+  color: var(--muted);
+}
+
+.open[data-refused="true"] .globe {
+  color: var(--error);
+}
+
+.field {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  flex: 1;
+  font: inherit;
+  font-size: 13px;
+  min-width: 0;
+  outline: none;
+  padding: 0;
+}
+
+.field::placeholder {
+  color: var(--subtle);
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin: -4px 0 0;
+  padding: 0 4px;
+  text-wrap: pretty;
+}
+
+.hint[data-tone="error"] {
+  color: var(--error);
 }
 
 .title {
@@ -172,6 +305,11 @@ watch(
 .kind[data-kind="plan"] {
   background: var(--primary-soft);
   color: var(--primary-deep);
+}
+
+.kind[data-kind="web"] {
+  background: var(--info-soft);
+  color: var(--info);
 }
 
 .age {

@@ -16,6 +16,7 @@ export interface FrameHit {
   key: string;
   label: string;
   left: number;
+  page?: string;
   path: string;
   text: string;
   top: number;

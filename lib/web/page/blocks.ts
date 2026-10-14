@@ -12,7 +12,9 @@ export interface FrameBlock {
 export interface FrameMark extends FrameBlock {
   key: string;
   label: string;
+  left: number;
   text: string;
+  width: number;
 }
 
 export interface FramePending {
@@ -138,7 +140,7 @@ export function indexBlocks(doc: Document): Indexed[] {
 export function measure(indexed: Indexed[], scroll: number): FrameMark[] {
   return indexed.map(({ el, key, label, text }) => {
     const box = el.getBoundingClientRect();
-    return { height: box.height, key, label, text, top: box.top + scroll };
+    return { height: box.height, key, label, left: box.left, text, top: box.top + scroll, width: box.width };
   });
 }
 

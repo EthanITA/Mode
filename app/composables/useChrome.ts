@@ -27,6 +27,7 @@ export interface CommentTarget {
   kind: string;
   label: string;
   mark?: string;
+  page?: string;
   path?: string;
   quote?: string;
   tell: string;
@@ -208,6 +209,7 @@ export function useChrome(): Chrome {
   function compose(hit: FrameHit, canAsk = false): void {
     const label = hit.label || hit.path;
     const slug = sc.slug.value;
+    const file = hit.page ?? sc.artifact.value?.path;
     pick.value = hit;
     hover.value = ringOf(hit);
     spot.value = {
@@ -217,23 +219,26 @@ export function useChrome(): Chrome {
               block: hit.text,
               label,
               mark: hit.key,
-              path: sc.artifact.value?.path,
+              path: file,
               place: slug,
               quote: hit.text,
               surface: "artifact",
               top: hit.top,
-              where: `a block of the artifact ${slug}${sc.artifact.value?.path ? ` (${sc.artifact.value.path})` : ""}`,
+              where: hit.page
+                ? `a block of the live page ${hit.page}`
+                : `a block of the artifact ${slug}${file ? ` (${file})` : ""}`,
             }
           : undefined,
       block: hit.text,
       excerpt: hit.text,
-      file: sc.artifact.value?.path,
+      file,
       kind: "block",
       label,
       mark: hit.key,
+      page: hit.page,
       path: hit.path,
       quote: hit.text,
-      tell: [hit.path, sc.artifact.value?.path].filter(Boolean).join(" · ") || "On this block",
+      tell: [hit.path, file].filter(Boolean).join(" · ") || "On this block",
       top: hit.top,
       x: clamp(hit.viewLeft, POPOVER_W),
       y: clamp(hit.viewTop + hit.height + 8, POPOVER_H, window.innerHeight),
@@ -280,7 +285,13 @@ export function useChrome(): Chrome {
       const got = await $fetch<ArtifactReviewReply>(`/api/artifacts/${slug}/review`, {
         body: {
           action: "create",
-          anchor: { label: at.label, quote: at.quote ?? at.excerpt, sel: at.path, text: at.block },
+          anchor: {
+            label: at.label,
+            page: at.page && Web.pageOf(at.page),
+            quote: at.quote ?? at.excerpt,
+            sel: at.path,
+            text: at.block,
+          },
           body,
         },
         method: "POST",
