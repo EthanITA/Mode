@@ -28,6 +28,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   rather than in it, and any other file in Files. A relative link reads against the file it sits in, a mail
   link still leaves, and the href stays real so Copy link gives it.
 
+- **F grows the page, and the islands can step aside.** F grows or shrinks the sheet from the sidecar or
+  from inside a live site. A grown page or file gets a corner toggle that fades every island away and
+  slides itself into the corner until the pointer finds it, and a grown live site shows only its own bar.
+
+- **A live site follows the sidecar's theme.** Light or dark reaches the page through the frame's
+  `color-scheme`, so `prefers-color-scheme` answers with the sidecar's choice, and a `data-theme` on its root.
+
 - **Ask Claude, `/btw` from the sidecar.** The session's mascot sits beside the notes, hovering it slides its
   field out without taking focus, and ⌥↵ or a click puts the cursor there to ask a side question with the whole conversation as context, the running turn
   included, and nothing reaches the transcript. The mascot acts out the session's status, hopping under a
@@ -431,6 +438,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   now go out as a browser tab's, forms and redirects stay on the proxy, a link clicked inside a site opens
   where it points, and all of a remote site's hosts share one cookie jar. A remote entry opened before
   this starts with fresh cookies once, because its proxy origin is now named after its site.
+- **Google's cookie consent sticks.** A site's calls to its other hosts, such as consent.google.com, go
+  through its proxy, so the cookies they set land where the site reads them.
+- **A live page shows as soon as it is parsed.** The sidecar held a site behind its full load, which on
+  Storybook meant its own slow preview, and the loading line now sits centred instead of over the page.
 - **Switching faces keeps a live page loaded.** Artifacts stays mounted behind Files, Review and History
   once opened, so a site comes back with its scroll and sign-in as you left it, and its F, ⌘R and Esc
   stay quiet while another face is up.
