@@ -53,7 +53,7 @@ function parse(patch: string): DiffRow[] {
     if (
       /^(diff |index |--- |\+\+\+ |new file|deleted file|similarity|rename |old mode|new mode|Binary files)/.test(line)
     ) {
-      if (line.startsWith("Binary files")) rows.push({ kind: "hunk", text: "binary file — no line-by-line diff" });
+      if (line.startsWith("Binary files")) rows.push({ kind: "hunk", text: "binary file, so there is no line-by-line diff" });
       continue;
     }
     if (line.startsWith("+")) rows.push({ kind: "add", text: line.slice(1) });
@@ -72,7 +72,7 @@ function parse(patch: string): DiffRow[] {
 function gapOf({ reason, file, to }: { reason: DiffGap; file: FileVersions; to: DiffTarget }): DiffState {
   switch (reason) {
     case "skipped":
-      return { kind: "absent", reason: `not versioned — ${file.skipped || "it was over the size budget"}` };
+      return { kind: "absent", reason: `not versioned, ${file.skipped || "it was over the size budget"}` };
     case "unknown-baseline":
       return {
         kind: "unknown",
@@ -84,7 +84,7 @@ function gapOf({ reason, file, to }: { reason: DiffGap; file: FileVersions; to: 
         kind: "absent",
         reason:
           to === "next"
-            ? "nothing came after this turn — this is the newest version of the file"
+            ? "nothing came after this turn, so this is the newest version of the file"
             : "there is no version of this file at the point being compared against",
       };
     case "missing-content":

@@ -1,46 +1,130 @@
 <script lang="ts" setup>
+import { useShortcuts } from "@cela/design";
+import { ChevronDown, ChevronUp, FoldVertical, TextWrap } from "@lucide/vue";
+import { useNow } from "@vueuse/core";
+import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
+
 const sc = useSidecar();
 const history = useHistory();
-const restoring = ref<string>();
+const review = useReview();
+const now = useNow({ interval: 30_000 });
 const { initial: sideInitial, width: side } = usePaneWidth();
 
-const firstFresh = computed(() => history.turns.value.find((one) => one.fresh)?.receipt.turn);
+const isChangesOnly = ref(false);
+// The turn picked when changes only went on stays listed until the reader moves.
+const kept = ref<number>();
+const inView = ref<string>();
+const isAskOpen = ref(false);
+const isReplyOpen = ref(false);
+const listEl = useTemplateRef<HTMLElement>("listEl");
+const bodyEl = useTemplateRef<HTMLElement>("bodyEl");
 
-const selectedTurn = computed(() => history.turns.value.find((one) => one.receipt.turn === history.selected.value));
+const turn = computed(() => history.picked.value);
+const cwd = computed(() => sc.sessions.value.find((one) => one.key === sc.sessionKey.value)?.cwd);
+const asked = computed(() => history.turns.value.filter((one) => !one.isOpen).length);
 
-const span = computed(() => {
-  const range = history.range.value;
-  if (!range) return "";
-  return range.first === range.last ? `turn ${range.first}` : `turns ${range.first} to ${range.last}`;
+const visible = computed(() =>
+  history.turns.value.filter(
+    (one) => !isChangesOnly.value || one.files.length || one.state !== "done" || one.turn === kept.value,
+  ),
+);
+
+// The divider sits under the turns that landed since the reader last looked, and only when some did.
+const dividerAt = computed(() => {
+  const seen = history.seen.value;
+  const [first] = visible.value;
+  if (!seen || !first || first.turn <= seen) return undefined;
+  return visible.value.find((one) => one.turn <= seen)?.turn;
 });
 
-const subtitle = computed(() => {
-  if (!selectedTurn.value) return "";
-  const count = history.files.value.length;
-  return `${span.value}, ${count ? plural(count, "file") : "no files changed"}`;
+const at = computed(() => visible.value.findIndex((one) => one.turn === turn.value?.turn));
+const isNewest = computed(() => at.value <= 0);
+const isOldest = computed(() => at.value < 0 || at.value >= visible.value.length - 1);
+
+const eyebrow = computed(() => {
+  const one = turn.value;
+  if (!one) return "";
+  const age = relativeAge(new Date(one.at).toISOString(), now.value.getTime());
+  const when = age === "just now" ? age : `${age} ago`;
+  return `${one.isOpen ? `After turn ${one.turn - 1}` : `Turn ${one.turn}`} · ${when}`;
 });
 
-function isPicked(turn: number): boolean {
-  const range = history.range.value;
-  return !!range && turn >= range.first && turn <= range.last;
+const sides = computed(() => {
+  const point = turn.value?.isOpen ? "this work" : `turn ${turn.value?.turn}`;
+  return [`Before ${point}`, `After ${point}`];
+});
+
+const quiet = computed(() => {
+  const one = turn.value;
+  if (!one || one.files.length) return "";
+  const label = one.isOpen ? "This work" : `Turn ${one.turn}`;
+  if (one.state === "running") return `${label} is still running. Its changes show up here as Claude makes them.`;
+  if (one.state === "waiting") return `${label} is waiting on you. Its changes show up here as Claude makes them.`;
+  // Receipts only see deletes done with rm, so a command may have written what History can't show.
+  if (one.commands)
+    return `Claude made no edits in this turn. It ran ${plural(one.commands, "command")}, and History can't see what a command writes.`;
+  return "No files changed in this turn. Claude read and answered.";
+});
+
+function pick(next: number): void {
+  kept.value = undefined;
+  history.pick(next);
 }
 
-async function restore(path: string, force?: boolean): Promise<void> {
-  restoring.value = path;
-  await history.restore(path, force);
-  restoring.value = undefined;
+function step(by: number): void {
+  const rows = visible.value;
+  const next = rows[Math.min(Math.max(Math.max(at.value, 0) + by, 0), rows.length - 1)];
+  if (next && next.turn !== turn.value?.turn) pick(next.turn);
 }
 
-const restoreMessage = computed(() => {
-  const done = history.restored.value;
-  if (!done) return "";
-  if (done.restored) return `Restored ${basename(done.path)} to turn ${done.turn}.`;
-  // The store refuses only when disk matches no version it holds, so this is never our own earlier restore.
-  if (history.forceable.value) {
-    return `${basename(done.path)} on disk is not any version this conversation stored. Something outside this conversation — a hand edit, or another session — has changed it since. Restoring will overwrite that work.`;
+function toggleChanges(): void {
+  kept.value = isChangesOnly.value ? undefined : turn.value?.turn;
+  isChangesOnly.value = !isChangesOnly.value;
+}
+
+function showFile(path: string): void {
+  const body = bodyEl.value;
+  const section = body?.querySelector<HTMLElement>(`[data-path="${CSS.escape(path)}"]`);
+  if (!body || !section) return;
+  body.scrollTop = section.offsetTop;
+  inView.value = path;
+}
+
+// Follows whichever file header the diff has scrolled under, so the list marks what is on screen.
+function onScroll(): void {
+  const body = bodyEl.value;
+  if (!body) return;
+  let current = turn.value?.files[0]?.path;
+  for (const section of body.querySelectorAll<HTMLElement>("[data-path]")) {
+    if (section.offsetTop > body.scrollTop + 4) break;
+    current = section.dataset.path;
   }
-  return `Could not restore ${basename(done.path)} — ${done.reason || "no reason was given"}`;
-});
+  inView.value = current;
+}
+
+watch(
+  () => turn.value?.turn,
+  () => {
+    isAskOpen.value = false;
+    isReplyOpen.value = false;
+    inView.value = turn.value?.files[0]?.path;
+    void nextTick(() => {
+      if (bodyEl.value) bodyEl.value.scrollTop = 0;
+      listEl.value?.querySelector("[aria-current='true']")?.scrollIntoView({ block: "nearest" });
+    });
+  },
+  { immediate: true },
+);
+
+useShortcuts(
+  {
+    ArrowDown: { repeat: true, run: () => step(1) },
+    ArrowUp: { repeat: true, run: () => step(-1) },
+    J: { repeat: true, run: () => step(1) },
+    K: { repeat: true, run: () => step(-1) },
+  },
+  { when: () => !sc.failure.value },
+);
 </script>
 
 <template>
@@ -48,26 +132,46 @@ const restoreMessage = computed(() => {
     <UiSurface class="pane" data-region="history-turns" pad="none" variant="raised">
       <header class="bar">
         <span class="title">Turns</span>
-        <span class="meta mono-meta">{{ plural(history.turns.value.length, "turn") }}</span>
-      </header>
-      <div class="scroll" data-scroll="turns">
-        <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
-        <UiStateMessage v-else-if="history.loading.value" class="empty" kind="loading"
-          >Reading the receipts…</UiStateMessage
+        <span class="meta mono-meta">{{ plural(asked, "turn") }}</span>
+        <span class="spacer" />
+        <UiChip
+          v-if="history.turns.value.length"
+          :selected="isChangesOnly"
+          size="xs"
+          :title="isChangesOnly ? 'Show every turn' : 'Hide turns that changed nothing'"
+          @click="toggleChanges"
         >
-        <UiStateMessage v-else-if="history.error.value" class="failure" kind="error" :title="history.error.value">
+          changes only
+        </UiChip>
+      </header>
+
+      <div ref="listEl" class="scroll" data-scroll="turns">
+        <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
+        <UiStateMessage v-else-if="history.loading.value" class="empty" kind="loading">
+          Reading the turns…
+        </UiStateMessage>
+        <UiStateMessage v-else-if="history.error.value" class="empty" kind="error">
           Couldn't read this conversation's turns.
+          <template #action>
+            <button v-press class="again focusable" type="button" :title="history.error.value" @click="history.retry()">
+              Try again
+            </button>
+          </template>
         </UiStateMessage>
         <UiStateMessage v-else-if="!history.turns.value.length" class="empty">
           No turns have been recorded for this conversation.
         </UiStateMessage>
+        <UiStateMessage v-else-if="!visible.length" class="empty">No turn has changed a file yet.</UiStateMessage>
 
-        <template v-for="turn in history.turns.value" :key="turn.receipt.turn">
-          <p v-if="turn.receipt.turn === firstFresh" class="divider mono-meta">new since you looked</p>
+        <template v-for="one in visible" :key="one.turn">
+          <p v-if="one.turn === dividerAt" class="divider mono-meta">new since you looked</p>
           <HistoryTurn
-            :selected="isPicked(turn.receipt.turn)"
-            :turn="turn"
-            @select="(extend) => history.pick(turn.receipt.turn, extend)"
+            :in-view="inView"
+            :is-picked="one.turn === turn?.turn"
+            :now="now.getTime()"
+            :turn="one"
+            @file="showFile"
+            @pick="pick(one.turn)"
           />
         </template>
       </div>
@@ -76,68 +180,110 @@ const restoreMessage = computed(() => {
     <PaneResizer v-model="side" :initial="sideInitial" label="Resize the turns pane" />
 
     <UiSurface class="pane" data-region="history-changes" pad="none" variant="raised">
-      <header class="bar">
-        <span class="title">Changes</span>
-        <span class="meta mono-meta">{{ subtitle }}</span>
-        <span class="spacer" />
-        <span class="toggle">
-          <UiChip
-            :selected="history.compare.value === 'turns'"
-            size="xs"
-            title="What the picked turns did. Shift-click a second turn for a range."
-            @click="history.compare.value = 'turns'"
+      <template v-if="turn">
+        <header class="bar" data-layout="stacked">
+          <div class="line">
+            <span class="eyebrow mono-meta">{{ eyebrow }}</span>
+            <span v-for="agent in turn.agents" :key="agent" class="agent mono-meta">{{ authorOf(agent) }}</span>
+            <span class="spacer" />
+            <ChromeAction
+              class="step"
+              :disabled="isNewest"
+              :icon="ChevronUp"
+              shape="pill"
+              tip="Newer turn · {K}"
+              @click="step(-1)"
+            />
+            <ChromeAction
+              class="step"
+              :disabled="isOldest"
+              :icon="ChevronDown"
+              shape="pill"
+              tip="Older turn · {J}"
+              @click="step(1)"
+            />
+          </div>
+          <button
+            v-if="turn.prompt"
+            class="ask plain-button"
+            type="button"
+            :aria-expanded="isAskOpen"
+            @click="isAskOpen = !isAskOpen"
           >
-            these turns
-          </UiChip>
-          <UiChip
-            :selected="history.compare.value === 'head'"
-            size="xs"
-            title="From before the picked turns to the newest version"
-            @click="history.compare.value = 'head'"
-          >
-            through now
-          </UiChip>
-        </span>
-      </header>
+            {{ turn.prompt }}
+          </button>
+          <p v-else class="ask" data-open="true">Agents kept working after turn {{ turn.turn - 1 }}</p>
+          <div v-if="turn.reply" class="say">
+            <span class="mark" aria-hidden="true">C</span>
+            <button
+              class="reply plain-button"
+              type="button"
+              :aria-expanded="isReplyOpen"
+              @click="isReplyOpen = !isReplyOpen"
+            >
+              {{ turn.reply }}
+            </button>
+          </div>
+          <div class="line">
+            <HistoryMeta :turn="turn" />
+            <span class="spacer" />
+            <span v-if="turn.files.length" class="group">
+              <ChromeAction
+                :icon="FoldVertical"
+                :is-on="review.isCompact.value"
+                shape="pill"
+                tip="Hide unchanged lines"
+                @click="review.isCompact.value = !review.isCompact.value"
+              />
+              <ChromeAction
+                :icon="TextWrap"
+                :is-on="review.isWrapped.value"
+                shape="pill"
+                tip="Wrap long lines"
+                @click="review.isWrapped.value = !review.isWrapped.value"
+              />
+            </span>
+          </div>
+        </header>
 
-      <div class="scroll" data-scroll="changes">
         <p v-if="history.capped.value" class="notice" role="status">
           The version store hit its size budget for this conversation, so some files were never kept. Anything missing
           below is missing from the store, not from the conversation.
         </p>
 
-        <div v-if="history.restored.value" class="notice" :data-ok="history.restored.value.restored" role="status">
-          <span>{{ restoreMessage }}</span>
-          <!-- Overwriting work we never wrote is a second, deliberate act, never a retry of the first. -->
-          <button
-            v-if="history.forceable.value"
-            v-press
-            class="overwrite focusable"
-            type="button"
-            @click="restore(history.restored.value.path, true)"
-          >
-            Overwrite anyway
-          </button>
+        <template v-if="turn.files.length">
+          <div class="heads mono-meta" :style="OneDarkVivid.cssVars">
+            <span>{{ sides[0] }}</span>
+            <span>{{ sides[1] }}</span>
+          </div>
+          <div ref="bodyEl" class="changes" :style="OneDarkVivid.cssVars" @scroll.passive="onScroll">
+            <HistoryFile
+              v-for="file in turn.files"
+              :key="file.path"
+              :body="history.bodyOf(file)"
+              :cwd="cwd"
+              :file="file"
+              :is-compact="review.isCompact.value"
+              :is-restoring="history.restoring.value === file.path"
+              :is-wrapped="review.isWrapped.value"
+              :notice="history.notices.value[file.path]"
+              :plan="history.planOf(file)"
+              :turn="turn"
+              @restore="(force) => history.restore(file, force)"
+              @undo="history.undo(file)"
+            />
+          </div>
+        </template>
+        <div v-else class="quiet">
+          <span v-if="turn.state !== 'done'" class="dot pulse" :data-tone="turn.state" aria-hidden="true" />
+          <p>{{ quiet }}</p>
         </div>
+      </template>
 
-        <UiStateMessage v-if="!selectedTurn" class="empty">Pick a turn to see what it changed.</UiStateMessage>
-        <UiStateMessage v-else-if="history.diffing.value" class="empty" kind="loading"
-          >Reading the diffs…</UiStateMessage
-        >
-        <UiStateMessage v-else-if="!history.files.value.length" class="empty">
-          {{ selectedTurn.inFlight ? "This work" : `Turn ${selectedTurn.receipt.turn}` }} touched no files. It read and
-          reasoned, but nothing on disk moved.
-        </UiStateMessage>
-
-        <HistoryFile
-          v-for="file in history.files.value"
-          :key="file.path"
-          :compare="history.compare.value"
-          :file="file"
-          :restoring="restoring === file.path"
-          @restore="restore(file.path)"
-        />
-      </div>
+      <UiStateMessage v-else-if="history.loading.value" align="center" kind="loading"
+        >Reading the turns…</UiStateMessage
+      >
+      <UiStateMessage v-else align="center">Pick a turn to see what it changed.</UiStateMessage>
     </UiSurface>
   </section>
 </template>
@@ -165,7 +311,21 @@ const restoreMessage = computed(() => {
   display: flex;
   flex: none;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 10px 10px 10px 14px;
+}
+
+.bar[data-layout="stacked"] {
+  align-items: stretch;
+  flex-direction: column;
+  padding: 12px 14px 10px;
+}
+
+.line {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-height: 26px;
+  min-width: 0;
 }
 
 .title {
@@ -182,30 +342,102 @@ const restoreMessage = computed(() => {
   flex: 1;
 }
 
-.toggle {
+.group {
   display: inline-flex;
   flex: none;
   gap: 4px;
+}
+
+.eyebrow {
+  color: var(--subtle);
+}
+
+.agent {
+  background: var(--primary-soft);
+  border-radius: 999px;
+  color: var(--primary-deep);
+  padding: 1px 7px;
+  text-transform: none;
+}
+
+.step:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+/* Prompts run to 400 characters and replies have no bound, so both fold to three lines until asked. */
+.ask,
+.reply {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-align: left;
+  text-wrap: pretty;
+  white-space: pre-line;
+}
+
+.ask[aria-expanded="true"],
+.reply[aria-expanded="true"],
+.ask[data-open="true"] {
+  -webkit-line-clamp: unset;
+}
+
+.ask {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.4;
+}
+
+p.ask {
+  color: var(--muted);
+}
+
+.say {
+  display: flex;
+  gap: 8px;
+  max-width: 880px;
+}
+
+.mark {
+  align-items: center;
+  background: var(--primary-soft);
+  border-radius: 999px;
+  color: var(--primary-deep);
+  display: flex;
+  flex: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  height: 18px;
+  justify-content: center;
+  margin-top: 1px;
+  width: 18px;
+}
+
+.reply {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .scroll {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 10px;
+  gap: 2px;
   min-height: 0;
   overflow-y: auto;
-  padding: 12px 12px var(--float-clear);
+  padding: 6px 8px var(--float-clear);
 }
 
-/* A column flex item shrinks by default, so long content squeezed every card instead of scrolling. */
+/* A column flex item shrinks by default, so long content squeezed every row instead of scrolling. */
 .scroll > * {
   flex-shrink: 0;
-}
-
-.scroll[data-scroll="turns"] {
-  gap: 2px;
-  padding: 6px 8px var(--float-clear);
 }
 
 .divider {
@@ -213,7 +445,7 @@ const restoreMessage = computed(() => {
   color: var(--primary);
   display: flex;
   gap: 10px;
-  margin: 10px 0 4px;
+  margin: 8px 0 6px;
   text-transform: none;
 }
 
@@ -229,45 +461,77 @@ const restoreMessage = computed(() => {
   padding: 2px;
 }
 
-.failure {
-  background: var(--error-soft);
-  border: 1px solid var(--error);
-  border-radius: var(--radius-field);
-  color: var(--error);
-  font-size: 13px;
-  margin: 0;
-  padding: 9px 13px;
-}
-
-.notice {
-  align-items: flex-start;
-  background: var(--warning-soft);
-  border-radius: var(--radius-field);
-  color: var(--warning);
-  display: flex;
-  font-size: 12.5px;
-  gap: 10px;
-  line-height: 1.5;
-  margin: 0;
-  padding: 9px 13px;
-}
-
-.overwrite {
-  background: var(--warning);
-  border: 0;
+.again {
+  background: var(--raised);
+  border: 1px solid var(--border-strong);
   border-radius: 999px;
-  color: var(--canvas);
+  color: var(--ink);
   cursor: pointer;
-  flex: none;
   font: inherit;
   font-size: 11.5px;
   font-weight: 600;
-  margin-left: auto;
+  margin-top: 8px;
   padding: 4px 11px;
 }
 
-.notice[data-ok="true"] {
-  background: var(--success-soft);
-  color: var(--success);
+.notice {
+  background: var(--warning-soft);
+  color: var(--warning);
+  flex: none;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 9px 14px;
+}
+
+.heads {
+  background: var(--ed-bar);
+  border-bottom: 1px solid var(--ed-border);
+  color: var(--ed-muted);
+  display: grid;
+  flex: none;
+  grid-template-columns: 1fr 1fr;
+  padding: 5px 0 5px 54px;
+  text-transform: none;
+}
+
+.changes {
+  background: var(--ed-bg);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: var(--float-clear);
+  position: relative;
+}
+
+.quiet {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  flex: 1;
+  font-size: 13px;
+  gap: 10px;
+  justify-content: center;
+  line-height: 1.55;
+  padding: 24px;
+  text-wrap: pretty;
+}
+
+.quiet p {
+  margin: 0;
+  max-width: 360px;
+  text-align: center;
+}
+
+.pulse {
+  @apply breathe;
+  --dot-size: 8px;
+  background: var(--primary);
+}
+
+/* Waiting on a person is not work in progress, so it holds still. */
+.pulse[data-tone="waiting"] {
+  animation: none;
+  background: var(--warning);
 }
 </style>

@@ -99,6 +99,7 @@ const theme: MonacoApi.editor.IStandaloneThemeData = {
 const cssVars = {
   "--ed-accent": VIVID.malibu,
   "--ed-add": "#89ca7826",
+  "--ed-add-ink": VIVID.green,
   "--ed-bar": CHROME.bar,
   "--ed-bg": CHROME.background,
   "--ed-border": CHROME.border,
@@ -106,6 +107,7 @@ const cssVars = {
   "--ed-ink": VIVID.lightWhite,
   "--ed-muted": VIVID.lightDark,
   "--ed-remove": "#ef596f26",
+  "--ed-remove-ink": VIVID.coral,
   "--ed-warn": VIVID.whiskey,
 } as const;
 

@@ -1,219 +1,218 @@
 <script lang="ts" setup>
-import type { HistoryTurn } from "~/composables/useHistory";
+import { File as FileIcon } from "@lucide/vue";
+import type { Turn } from "~/utils/turns";
 
-const { turn, selected = false } = defineProps<{ turn: HistoryTurn; selected?: boolean }>();
-defineEmits<{ select: [extend: boolean] }>();
+const {
+  turn,
+  isPicked = false,
+  inView,
+  now,
+} = defineProps<{ turn: Turn; isPicked?: boolean; inView?: string; now: number }>();
+const emit = defineEmits<{ pick: []; file: [path: string] }>();
 
-const age = computed(() => relativeAge(new Date(turn.receipt.at).toISOString()));
-const agents = computed(() => turn.receipt.by ?? []);
-const touched = computed(() => turn.receipt.wrote.length + turn.receipt.deleted.length);
-const failures = computed(() => turn.receipt.ran.filter((one) => one.failed).length);
-const label = computed(() => (turn.inFlight ? "In progress" : `Turn ${turn.receipt.turn}`));
+const age = computed(() => relativeAge(new Date(turn.at).toISOString(), now));
+const ask = computed(() => (turn.isOpen ? `Agents kept working after turn ${turn.turn - 1}` : (turn.prompt ?? "")));
 
 const tell = computed(() => {
-  const who = agents.value.length ? agents.value.map(authorOf).join(" and ") : "you";
-  const what = touched.value ? `where ${who} changed ${plural(touched.value, "file")}` : "which changed no files";
-  return `About ${label.value.toLowerCase()}, ${what}:`;
+  const what = turn.files.length ? `which changed ${plural(turn.files.length, "file")}` : "which changed no files";
+  return `About ${turn.isOpen ? `the work after turn ${turn.turn - 1}` : `turn ${turn.turn}`}, ${what}:`;
 });
 </script>
 
 <template>
-  <button
-    v-press
-    class="turn focusable plain-button"
-    type="button"
-    :data-selected="selected"
-    :data-in-flight="turn.inFlight"
-    data-cmt="turn"
-    :data-cmt-label="label"
-    :data-cmt-tell="tell"
-    :data-cmt-excerpt="turn.receipt.prompt"
-    @click="$emit('select', $event.shiftKey)"
-  >
-    <span class="head">
-      <span class="label mono-meta">{{ label }}</span>
-      <span v-if="age" class="age mono-meta">{{ age }}</span>
-      <span class="spacer" />
-      <!-- A turn that named no agent was the session acting alone, which is not the same as unattributed. -->
-      <span v-for="agent in agents" :key="agent" class="agent mono-meta">{{ authorOf(agent) }}</span>
-    </span>
+  <div class="row" :data-picked="isPicked" :data-open="turn.isOpen">
+    <button
+      v-press
+      class="turn focusable plain-button"
+      type="button"
+      :aria-current="isPicked"
+      data-cmt="turn"
+      :data-cmt-label="turn.isOpen ? 'Agents after the session' : `Turn ${turn.turn}`"
+      :data-cmt-tell="tell"
+      :data-cmt-excerpt="turn.prompt"
+      @click="emit('pick')"
+    >
+      <span class="number mono-meta">{{ turn.isOpen ? "" : turn.turn }}</span>
+      <span class="body">
+        <span class="ask">{{ ask }}</span>
+        <HistoryMeta :turn="turn" has-agents />
+      </span>
+      <span class="age mono-meta">{{ age }}</span>
+    </button>
 
-    <span v-if="turn.inFlight" class="pending mono-meta">
-      work that landed after the session went quiet, not yet part of a closed turn
-    </span>
-
-    <span v-if="turn.receipt.prompt" class="say">
-      <span class="mark" data-who="you">Y</span>
-      <span class="text">{{ turn.receipt.prompt }}</span>
-    </span>
-
-    <span v-if="turn.reply" class="say">
-      <span class="mark" data-who="claude">C</span>
-      <span class="text" data-reply>{{ turn.reply }}</span>
-    </span>
-
-    <span class="receipts">
-      <span v-if="turn.receipt.read.length" class="chip mono-meta">{{ plural(turn.receipt.read.length, "read") }}</span>
-      <span v-if="touched" class="chip mono-meta" data-kind="wrote">{{ plural(touched, "file") }}</span>
-      <span v-if="turn.receipt.ran.length" class="chip mono-meta">{{
-        plural(turn.receipt.ran.length, "command")
-      }}</span>
-      <span v-if="failures" class="chip mono-meta" data-kind="failed">{{ failures }} failed</span>
-      <span v-if="!touched" class="chip mono-meta" data-kind="none">no files</span>
-      <!-- Spawns are shown so an agent never appears in the attribution from nowhere. -->
-      <span v-for="name in turn.spawned" :key="name" class="chip mono-meta" data-kind="spawned"
-        >spawned {{ name }}</span
+    <div v-if="isPicked && turn.files.length" class="files">
+      <button
+        v-for="file in turn.files"
+        :key="file.path"
+        class="file focusable plain-button"
+        type="button"
+        :data-kind="file.kind"
+        :data-in-view="file.path === inView"
+        :title="homePath(file.path)"
+        @click="emit('file', file.path)"
       >
-    </span>
-  </button>
+        <UiIcon class="icon" :icon="FileIcon" size="xs" />
+        <span class="name">{{ file.name }}</span>
+        <span v-if="file.churn" class="churn mono-meta">
+          <span data-tone="add">+{{ file.churn.added }}</span>
+          <span data-tone="remove">−{{ file.churn.removed }}</span>
+        </span>
+      </button>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.turn {
+.row {
   border: 1px solid transparent;
   border-radius: 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 12px;
+}
+
+.row[data-picked="true"] {
+  background: var(--sunken);
+  border-color: var(--border-strong);
+  padding-bottom: 8px;
+}
+
+.turn {
+  align-items: start;
+  border-radius: 10px;
+  column-gap: 8px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  padding: 10px 8px 10px 6px;
   text-align: left;
-  transition: background var(--duration-fast) var(--ease-out);
+  transition: background-color var(--duration-fast) var(--ease-out);
   width: 100%;
 }
 
-.turn:hover {
-  background: var(--sunken);
+.row[data-picked="true"] .turn {
+  padding-bottom: 0;
 }
 
-.turn[data-selected="true"] {
-  background: var(--sunken);
-  border-color: var(--border-strong);
+@media (hover: hover) and (pointer: fine) {
+  .row:not([data-picked="true"]) .turn:hover {
+    background: var(--sunken);
+  }
 }
 
-.turn[data-in-flight="true"] {
-  border-color: var(--primary-soft);
-  border-style: dashed;
-}
-
-.head {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-}
-
-.spacer {
-  flex: 1;
-}
-
-.label {
-  color: var(--ink);
-}
-
-.turn[data-selected="true"] .label {
-  color: var(--primary);
-}
-
-.turn[data-in-flight="true"] .label {
-  color: var(--primary);
-}
-
-.age,
-.chip {
+.number {
   color: var(--subtle);
+  font-size: 11px;
+  letter-spacing: 0;
+  padding-top: 2px;
+  text-align: right;
 }
 
-.agent {
-  background: var(--primary-soft);
-  border-radius: 999px;
-  color: var(--primary-deep);
-  padding: 2px 7px;
-  text-transform: none;
-}
-
-.pending {
-  color: var(--muted);
-  line-height: 1.5;
-  text-transform: none;
-}
-
-.say {
-  display: flex;
-  gap: 8px;
-}
-
-.mark {
-  align-items: center;
-  border-radius: 999px;
-  display: flex;
-  flex: none;
-  font-family: var(--mono);
-  font-size: 10px;
+.row[data-picked="true"] .number {
+  color: var(--primary);
   font-weight: 600;
-  height: 18px;
-  justify-content: center;
-  margin-top: 2px;
-  width: 18px;
 }
 
-.mark[data-who="you"] {
-  background: var(--warning-soft);
-  color: var(--warning);
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
 
-.mark[data-who="claude"] {
-  background: var(--primary-soft);
-  color: var(--primary-deep);
-}
-
-.text {
+.ask {
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 2;
   color: var(--ink);
   display: -webkit-box;
   font-size: 13px;
-  line-height: 1.5;
-  min-width: 0;
+  line-height: 1.45;
   overflow: hidden;
+  overflow-wrap: anywhere;
   white-space: pre-line;
 }
 
-.text[data-reply] {
+.row[data-picked="true"] .ask {
+  -webkit-line-clamp: unset;
+  text-wrap: pretty;
+}
+
+.row[data-open="true"] .ask {
   color: var(--muted);
 }
 
-.receipts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  padding-left: 26px;
-}
-
-.chip {
-  background: var(--sunken);
-  border-radius: 999px;
-  padding: 3px 8px;
+.age {
+  color: var(--subtle);
+  padding-top: 2px;
   text-transform: none;
+  white-space: nowrap;
 }
 
-.chip[data-kind="wrote"] {
-  background: var(--success-soft);
+.files {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0 8px 0 36px;
+}
+
+.file {
+  align-items: center;
+  border-radius: 6px;
+  display: flex;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 8px 0 6px;
+  text-align: left;
+}
+
+.file[data-in-view="true"] {
+  background: var(--primary-soft);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .file:hover {
+    background: var(--primary-soft);
+  }
+}
+
+.icon {
+  color: var(--subtle);
+  flex: none;
+}
+
+.name {
+  color: var(--info);
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file[data-kind="created"] .name {
   color: var(--success);
 }
 
-.chip[data-kind="failed"] {
-  background: var(--error-soft);
+.file[data-kind="deleted"] .name {
   color: var(--error);
 }
 
-.chip[data-kind="spawned"] {
-  background: var(--primary-soft);
-  color: var(--primary-deep);
+.file[data-kind="unchanged"] .name {
+  color: var(--muted);
 }
 
-/* A turn that changed nothing is a real turn, so it says so rather than showing nothing. */
-.chip[data-kind="none"] {
-  background: transparent;
-  color: var(--subtle);
-  padding-left: 0;
+.churn {
+  display: inline-flex;
+  flex: none;
+  gap: 5px;
+}
+
+[data-tone="add"] {
+  color: var(--success);
+}
+
+[data-tone="remove"] {
+  color: var(--error);
 }
 </style>

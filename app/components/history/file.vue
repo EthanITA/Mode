@@ -1,262 +1,263 @@
 <script lang="ts" setup>
-import type { Compare, HistoryFile } from "~/composables/useHistory";
+import { File as FileIcon } from "@lucide/vue";
+import type { FileBody, RestoreNotice } from "~/composables/useHistory";
+import type { RestorePlan, Turn, TurnFile } from "~/utils/turns";
 
 const {
   file,
-  compare,
-  restoring = false,
-} = defineProps<{ file: HistoryFile; compare: Compare; restoring?: boolean }>();
-defineEmits<{ restore: [] }>();
+  turn,
+  body,
+  plan,
+  notice,
+  cwd,
+  isRestoring = false,
+  isCompact = true,
+  isWrapped = true,
+} = defineProps<{
+  file: TurnFile;
+  turn: Turn;
+  body: FileBody;
+  plan: RestorePlan;
+  notice?: RestoreNotice;
+  cwd?: string;
+  isRestoring?: boolean;
+  isCompact?: boolean;
+  isWrapped?: boolean;
+}>();
+const emit = defineEmits<{ restore: [force: boolean]; undo: [] }>();
 
-const baseline = computed(() => Diff.baselineNote(file.baseline));
-const note = computed(() => Diff.stateNote(file.state));
-const rows = computed(() => (file.state.kind === "changed" ? file.state.rows : []));
-const paired = computed(() => (file.state.kind === "paired" ? file.state.file : undefined));
-const churn = computed(() => (file.state.kind === "changed" || file.state.kind === "paired" ? file.state : undefined));
-const against = computed(() => (compare === "head" ? "through to the newest version" : "what these turns did"));
-const lang = computed(() => Syntax.languageOf(file.path));
-const highlighted = useHighlightedRows(rows, lang);
+const point = computed(() => Turns.pointOf(turn));
+const shown = computed(() =>
+  cwd && file.path.startsWith(`${cwd}/`) ? file.path.slice(cwd.length + 1) : homePath(file.path),
+);
+const paired = computed(() => (body.kind === "paired" ? body.file : undefined));
+const note = computed(() => (body.kind === "reading" || body.kind === "pending" ? undefined : Diff.stateNote(body)));
+
+const said = computed(() => {
+  if (!notice) return "";
+  switch (notice.kind) {
+    case "restored":
+      return `Put ${file.name} back the way it was before ${point.value}.`;
+    case "undone":
+      return `${file.name} is back to what it was before the restore.`;
+    case "conflict":
+      return `${file.name} changed outside this conversation since, by hand or from another session. Restoring overwrites that.`;
+    case "failed":
+      return `Couldn't restore ${file.name}, because ${notice.reason}.`;
+  }
+});
 
 const tell = computed(() => {
-  const what = churn.value
-    ? `+${churn.value.added} −${churn.value.removed} this turn`
-    : (note.value?.text ?? "unchanged");
-  return `About ${homePath(file.path)}, ${what}:`;
+  const churn = file.churn
+    ? `+${file.churn.added} −${file.churn.removed} in ${point.value}`
+    : `changed in ${point.value}`;
+  return `About ${homePath(file.path)}, ${churn}:`;
 });
 </script>
 
 <template>
-  <article
-    class="file"
-    :data-state="file.state.kind"
-    data-cmt="file"
-    :data-cmt-label="file.name"
-    :data-cmt-tell="tell"
-    :data-cmt-excerpt="homePath(file.path)"
-  >
-    <header class="head">
-      <span class="name">{{ file.name }}</span>
-      <span v-if="churn" class="churn mono-meta">
-        <span data-mark="add">+{{ churn.added }}</span>
-        <span data-mark="remove">−{{ churn.removed }}</span>
+  <section class="file" :data-path="file.path" :data-kind="file.kind">
+    <header
+      class="head"
+      data-cmt="file"
+      :data-cmt-label="file.name"
+      :data-cmt-tell="tell"
+      :data-cmt-excerpt="homePath(file.path)"
+    >
+      <UiIcon class="icon" :icon="FileIcon" size="xs" />
+      <span class="path" :title="homePath(file.path)">{{ shown }}</span>
+      <span v-if="file.churn" class="churn mono-meta">
+        <span data-tone="add">+{{ file.churn.added }}</span>
+        <span data-tone="remove">−{{ file.churn.removed }}</span>
       </span>
-      <!-- Attribution belongs on the row that claims the work, not only on the turn. -->
-      <span v-if="file.by" class="by mono-meta">{{ authorOf(file.by) }}</span>
-      <span class="against mono-meta">{{ against }}</span>
+      <span v-if="file.kind === 'created' || file.kind === 'deleted'" class="chip mono-meta">
+        {{ file.kind === "created" ? "new" : "deleted" }} in {{ turn.isOpen ? "this work" : "this turn" }}
+      </span>
       <span class="spacer" />
-      <button v-press class="restore focusable" type="button" :disabled="restoring" @click="$emit('restore')">
-        {{ restoring ? "Restoring…" : "Restore" }}
+      <button
+        v-press
+        class="restore focusable"
+        type="button"
+        :aria-disabled="!plan.isEnabled"
+        :data-tip="plan.tip"
+        :disabled="isRestoring"
+        @click="plan.isEnabled && emit('restore', false)"
+      >
+        {{ isRestoring ? "Restoring…" : "Restore" }}
       </button>
     </header>
 
-    <p v-if="baseline" class="note" :data-tone="baseline.tone">{{ baseline.text }}</p>
-
-    <div v-if="paired" class="pair">
-      <DiffSideBySide :file="paired" is-readonly />
+    <div v-if="notice" class="notice" :data-kind="notice.kind" role="status">
+      <span>{{ said }}</span>
+      <button
+        v-if="notice.kind === 'restored' && typeof notice.was === 'number'"
+        v-press
+        class="act focusable"
+        type="button"
+        :disabled="isRestoring"
+        @click="emit('undo')"
+      >
+        Undo
+      </button>
+      <!-- Overwriting work we never wrote is a second, deliberate act, never a retry of the first. -->
+      <button
+        v-else-if="notice.kind === 'conflict'"
+        v-press
+        class="act focusable"
+        type="button"
+        data-tone="warn"
+        :disabled="isRestoring"
+        @click="emit('restore', true)"
+      >
+        Overwrite anyway
+      </button>
     </div>
 
-    <div v-else-if="rows.length" class="rows">
-      <p v-for="(row, index) in rows" :key="index" class="row" :data-kind="row.kind">
-        <span class="mark" aria-hidden="true" />
-        <span class="code" v-html="highlighted[index] ?? ''" />
-      </p>
-    </div>
-
-    <p v-if="note" class="note" :data-tone="note.tone">{{ note.text }}</p>
-
-    <p class="path mono-meta">{{ homePath(file.path) }}</p>
-  </article>
+    <DiffSideBySide v-if="paired" :file="paired" :is-compact="isCompact" :is-wrapped="isWrapped" is-readonly />
+    <p v-else-if="body.kind === 'reading'" class="note" aria-busy="true">Reading…</p>
+    <p v-else-if="body.kind === 'pending'" class="note">
+      Not in the version store yet. It shows up once the store catches up.
+    </p>
+    <p v-else-if="note" class="note" :data-tone="note.tone">{{ note.text }}</p>
+  </section>
 </template>
 
 <style scoped>
-.file {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-/* A card whose history we could not reconstruct is marked as a whole, not only in its body.
-   Warning, not error: an unrecoverable baseline is a gap in what we know, not a failure. */
-.file[data-state="unknown"] {
-  border-color: var(--warning);
-}
-
 .head {
   align-items: center;
-  background: var(--sunken);
-  border-bottom: 1px solid var(--border);
+  background: var(--ed-bar);
+  border-bottom: 1px solid var(--ed-border);
+  border-top: 1px solid var(--ed-border);
+  color: var(--ed-muted);
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
-  padding: 9px 12px;
+  padding: 6px 10px 6px 14px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
-.name {
-  color: var(--ink);
+.icon {
+  flex: none;
+}
+
+.path {
+  color: var(--ed-ink);
   font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.churn {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+}
+
+[data-tone="add"] {
+  color: var(--ed-add-ink);
+}
+
+[data-tone="remove"] {
+  color: var(--ed-remove-ink);
+}
+
+.chip {
+  border: 1px solid var(--ed-button);
+  border-radius: 999px;
+  color: var(--ed-muted);
+  flex: none;
+  padding: 0 6px;
+  text-transform: none;
+}
+
+.file[data-kind="deleted"] .chip {
+  color: var(--ed-remove-ink);
 }
 
 .spacer {
   flex: 1;
 }
 
-.churn {
-  display: inline-flex;
-  gap: 6px;
-  text-transform: none;
-}
-
-.churn [data-mark="add"] {
-  color: var(--success);
-}
-
-.churn [data-mark="remove"] {
-  color: var(--error);
-}
-
-.by {
-  background: var(--primary-soft);
+.restore,
+.act {
+  background: var(--ed-button);
+  border: 1px solid var(--ed-button);
   border-radius: 999px;
-  color: var(--primary-deep);
-  padding: 2px 7px;
-  text-transform: none;
-}
-
-.against,
-.path {
-  color: var(--subtle);
-  text-transform: none;
-}
-
-.restore {
-  background: var(--raised);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  color: var(--ink);
+  color: var(--ed-ink);
   cursor: pointer;
   flex: none;
   font: inherit;
   font-size: 11px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 3px 10px;
+  transition: border-color var(--duration-fast) var(--ease-out);
 }
 
-.restore:hover:not(:disabled) {
-  border-color: var(--ink);
+@media (hover: hover) and (pointer: fine) {
+  .restore:not([aria-disabled="true"]):hover,
+  .act:hover {
+    border-color: var(--ed-muted);
+  }
 }
 
-.restore:disabled {
+/* Still focusable and still tipped, so the reason it is off stays one hover away. */
+.restore[aria-disabled="true"] {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
-/* The diff caps its own height and scrolls inside, so this only frames it. */
-.pair {
-  border-bottom: 1px solid var(--border);
+.restore:disabled,
+.act:disabled {
+  cursor: progress;
 }
 
-.rows {
+.notice {
+  align-items: center;
+  background: color-mix(in oklch, var(--ed-warn) 14%, var(--ed-bg));
+  color: var(--ed-warn);
   display: flex;
-  flex-direction: column;
-  max-height: var(--transcript-max-h);
-  overflow-y: auto;
-  padding: 6px 0;
-  scrollbar-width: thin;
-}
-
-.row {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 22px minmax(0, 1fr);
-  margin: 0;
-  padding: 1px 12px 1px 0;
-}
-
-.mark {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.7;
-  text-align: center;
-}
-
-.code {
-  font-family: var(--mono);
-  font-size: 12px;
-  line-height: 1.7;
-  min-width: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.row[data-kind="add"] {
-  background: var(--success-soft);
-}
-
-.row[data-kind="add"] .mark {
-  color: var(--success);
-}
-
-.row[data-kind="add"] .mark::before {
-  content: "+";
-}
-
-.row[data-kind="remove"] {
-  background: var(--error-soft);
-}
-
-.row[data-kind="remove"] .mark {
-  color: var(--error);
-}
-
-.row[data-kind="remove"] .mark::before {
-  content: "−";
-}
-
-.row[data-kind="context"] .code {
-  color: var(--muted);
-}
-
-.row[data-kind="hunk"] {
-  border-top: 1px solid var(--border);
-  margin-top: 4px;
-  padding-top: 4px;
-}
-
-.row[data-kind="hunk"] .code {
-  color: var(--subtle);
-  font-size: 11px;
-}
-
-/* The whole point of the domain: a gap we could not fill never renders as a quiet nothing. */
-.note[data-tone="loud"] {
-  background: var(--warning-soft);
-  border-left: 3px solid var(--warning);
-  color: var(--warning);
+  font-family: var(--sans);
   font-size: 12.5px;
-  font-weight: 500;
+  gap: 10px;
   line-height: 1.5;
-  margin: 0;
-  padding: 10px 12px;
+  padding: 8px 14px;
 }
 
-.note[data-tone="quiet"] {
-  color: var(--muted);
+.notice[data-kind="restored"],
+.notice[data-kind="undone"] {
+  background: color-mix(in oklch, var(--ed-add-ink) 12%, var(--ed-bg));
+  color: var(--ed-add-ink);
+}
+
+.act {
+  margin-left: auto;
+}
+
+.act[data-tone="warn"] {
+  background: var(--ed-warn);
+  border-color: var(--ed-warn);
+  color: var(--ed-bg);
+}
+
+.note {
+  color: var(--ed-muted);
   font-family: var(--mono);
   font-size: 11px;
   line-height: 1.5;
   margin: 0;
-  padding: 10px 12px;
+  padding: 10px 14px;
 }
 
-.path {
-  border-top: 1px solid var(--border);
-  margin: 0;
-  overflow: hidden;
-  padding: 6px 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* A gap we could not fill never renders as a quiet nothing. */
+.note[data-tone="loud"] {
+  border-left: 3px solid var(--ed-warn);
+  color: var(--ed-warn);
+  font-family: var(--sans);
+  font-size: 12.5px;
 }
 </style>

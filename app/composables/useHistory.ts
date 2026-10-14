@@ -1,50 +1,35 @@
 import type { ComputedRef, Ref } from "vue";
 import type { Maybe, MaybeComputed } from "~/composables/useSidecar";
+import type { DiffState } from "~/utils/diff";
+import type { RestorePlan, Turn, TurnFile } from "~/utils/turns";
 import type { ReceiptsSlice, TurnReceipt } from "~~/shared/types/receipts";
-import type { BaselineOrigin, ConversationVersions, RestoreResult, VersionPair } from "~~/shared/types/versions";
+import type { ConversationVersions, RestoreResult, VersionPair } from "~~/shared/types/versions";
 
-// `turns`: what the picked turns did together. `head`: from before them to the newest version.
-export type Compare = "turns" | "head";
+export type FileBody = DiffState | { kind: "reading" } | { kind: "pending" };
 
-export interface TurnRange {
-  first: number;
-  last: number;
-}
-
-export interface HistoryTurn {
-  receipt: TurnReceipt;
-  reply?: string;
-  /** Agent work that landed after the session went quiet, belonging to no closed turn. */
-  inFlight: boolean;
-  /** First turn the reader has not seen, which is where the divider goes. */
-  fresh: boolean;
-  spawned: string[];
-}
-
-export interface HistoryFile {
-  path: string;
-  name: string;
-  by?: string;
-  baseline: BaselineOrigin;
-  state: DiffState;
-}
+export type RestoreNotice =
+  | { kind: "restored"; was?: number }
+  | { kind: "undone" }
+  | { kind: "conflict"; turn: number }
+  | { kind: "failed"; reason: string };
 
 export interface History {
+  bodyOf: (file: TurnFile) => FileBody;
   capped: ComputedRef<boolean>;
-  compare: Ref<Compare>;
-  diffing: Ref<boolean>;
+  /** Set only when the first load failed; a later failed refresh keeps the last good turns. */
   error: Maybe<string>;
-  files: Ref<HistoryFile[]>;
-  /** The last restore refused, and overwriting is the one thing that would get past it. */
-  forceable: ComputedRef<boolean>;
   loading: Ref<boolean>;
-  /** A plain pick starts a range on that turn; `extend` stretches it to this one, the way shift-click does. */
-  pick: (turn: number, extend?: boolean) => void;
-  range: MaybeComputed<TurnRange>;
-  restore: (path: string, force?: boolean) => Promise<void>;
-  restored: Maybe<RestoreResult>;
-  selected: Maybe<number>;
-  turns: ComputedRef<HistoryTurn[]>;
+  notices: Ref<Partial<Record<string, RestoreNotice>>>;
+  pick: (turn: number) => void;
+  picked: MaybeComputed<Turn>;
+  planOf: (file: TurnFile) => RestorePlan;
+  restore: (file: TurnFile, force?: boolean) => Promise<void>;
+  restoring: Maybe<string>;
+  retry: () => void;
+  /** The newest turn the reader had seen when History opened, which is where the divider stays. */
+  seen: Ref<number>;
+  turns: ComputedRef<Turn[]>;
+  undo: (file: TurnFile) => Promise<void>;
 }
 
 interface Snapshot {
@@ -53,7 +38,9 @@ interface Snapshot {
 }
 
 const SEEN_KEY = "sc:history-seen";
-const SPAWN = /^spawned\s+(.+)$/;
+const REFRESH_MS = 5000;
+// Each pair is a node process under the store's lock, so a 40-file turn must not wait on all of them at once.
+const PAIR_LANES = 4;
 
 function seenOf(key: string): number {
   try {
@@ -84,200 +71,258 @@ function replyBetween(snapshot: Snapshot["turns"], from: number, to: number): st
   return text || undefined;
 }
 
+function repliesOf(receipts: TurnReceipt[], snapshot: Snapshot): Map<number, string> {
+  const replies = new Map<number, string>();
+  for (const [index, receipt] of receipts.entries()) {
+    const reply = replyBetween(snapshot.turns, receipt.at, receipts[index + 1]?.at ?? Number.MAX_SAFE_INTEGER);
+    if (reply) replies.set(receipt.turn, reply);
+  }
+  return replies;
+}
+
 export function useHistory(): History {
   const sc = useSidecar();
+  const choice = useConversationPick("hi:picks");
 
-  const compare = ref<Compare>("turns");
   const error = ref<string>();
-  const files = ref<HistoryFile[]>([]);
   const loading = ref(false);
-  const diffing = ref(false);
+  const notices = ref<Partial<Record<string, RestoreNotice>>>({});
   const receipts = ref<TurnReceipt[]>([]);
-  const replies = ref<Map<number, string>>(new Map());
-  const restored = ref<RestoreResult>();
-  const selected = ref<number>();
-  const through = ref<number>();
-  const versions = ref<ConversationVersions>();
-
-  const range = computed<TurnRange | undefined>(() => {
-    const anchor = selected.value;
-    if (!anchor) return undefined;
-    const end = through.value ?? anchor;
-    return { first: Math.min(anchor, end), last: Math.max(anchor, end) };
-  });
-
-  function pick(turn: number, extend = false): void {
-    if (extend && selected.value) {
-      through.value = turn;
-      return;
-    }
-    selected.value = turn;
-    through.value = undefined;
-  }
+  const replies = ref(new Map<number, string>());
+  const restoring = ref<string>();
   const seen = ref(0);
+  const versions = ref<ConversationVersions>();
+  // Keyed by both sides' commits, so a running turn's next edit fetches anew and nothing else does.
+  const pairs = shallowReactive(new Map<string, DiffState>());
+  // A file's last diff stays on screen while its next one loads, so a running turn never blinks to "Reading".
+  const shown = shallowReactive(new Map<string, DiffState>());
+  const slots = new Map<string, string>();
+  const inFlight = new Set<string>();
+  let mark = "";
+  let touched = 0;
+  let ticket = 0;
+  let isRefreshing = false;
 
-  let loadTicket = 0;
-  let diffTicket = 0;
-
+  const status = computed(() => sc.sessions.value.find((one) => one.key === sc.sessionKey.value)?.status);
+  const turns = computed(() =>
+    Turns.build({ receipts: receipts.value, versions: versions.value, replies: replies.value, status: status.value }),
+  );
+  const picked = computed(() => turns.value.find((one) => String(one.turn) === choice.value) ?? turns.value[0]);
   const capped = computed(() => !!versions.value?.capped);
 
-  const forceable = computed(() => {
-    const done = restored.value;
-    return !!done && !done.restored && done.forceable;
-  });
+  // Picking the newest leaves no pick behind, so a new turn landing takes its place the way a tail does.
+  function pick(turn: number): void {
+    choice.value = turn === turns.value[0]?.turn ? undefined : String(turn);
+  }
 
-  const turns = computed<HistoryTurn[]>(() =>
-    receipts.value.map((receipt, index) => ({
-      receipt,
-      reply: replies.value.get(receipt.turn),
-      inFlight: index === receipts.value.length - 1 && !receipt.prompt,
-      fresh: receipt.turn > seen.value,
-      spawned: receipt.ran.flatMap((one) => SPAWN.exec(one.command)?.[1] ?? []),
-    })),
-  );
+  function entryOf(path: string): ConversationVersions["files"][number] | undefined {
+    return versions.value?.files.find((one) => one.path === path);
+  }
 
-  async function load(key?: string): Promise<void> {
-    const mine = ++loadTicket;
-    receipts.value = [];
-    files.value = [];
-    versions.value = undefined;
-    replies.value = new Map();
-    restored.value = undefined;
-    selected.value = undefined;
-    through.value = undefined;
-    error.value = undefined;
-    if (!key) return;
+  function pairId({ turn, file }: { turn: Turn; file: TurnFile }): string | undefined {
+    const entry = entryOf(file.path);
+    const own = entry?.versions.find((one) => one.turn === turn.turn);
+    if (!entry || !own) return undefined;
+    const earlier = entry.versions.filter((one) => one.turn < turn.turn).at(-1);
+    return [sc.sessionKey.value, file.path, earlier?.sha ?? "base", own.sha].join("\0");
+  }
 
-    seen.value = seenOf(key);
-    loading.value = true;
+  function slotOf({ turn, file }: { turn: Turn; file: TurnFile }): string {
+    return [sc.sessionKey.value, turn.turn, file.path].join("\0");
+  }
+
+  function bodyOf(file: TurnFile): FileBody {
+    const turn = picked.value;
+    if (!turn) return { kind: "reading" };
+    const id = pairId({ turn, file });
+    if (id) return pairs.get(id) ?? shown.get(slotOf({ turn, file })) ?? { kind: "reading" };
+    if (file.kind === "unchanged")
+      return { kind: "absent", reason: "no change between the start and end of this turn" };
+    const entry = entryOf(file.path);
+    if (entry?.skipped) return { kind: "absent", reason: `not versioned, ${entry.skipped}` };
+    if (turn.state !== "done" || turn.isOpen) return { kind: "pending" };
+    return { kind: "absent", reason: "the version store holds no version of this file from this turn" };
+  }
+
+  async function pullPairs(): Promise<void> {
+    const key = sc.sessionKey.value;
+    const turn = picked.value;
+    if (!key || !turn) return;
+    const queue = turn.files.flatMap((file) => {
+      const id = pairId({ turn, file });
+      return id && !pairs.has(id) && !inFlight.has(id) ? [{ id, file }] : [];
+    });
+    for (const one of queue) inFlight.add(one.id);
+    const at = encodeURIComponent(key);
+    const lane = async (): Promise<void> => {
+      for (let next = queue.shift(); next; next = queue.shift()) {
+        const entry = entryOf(next.file.path);
+        const query = `path=${encodeURIComponent(next.file.path)}&from=${turn.turn - 1}&to=${turn.turn}`;
+        const pair = await $fetch<VersionPair>(`/api/sessions/${at}/versions/pair?${query}`).catch(() => undefined);
+        inFlight.delete(next.id);
+        if (!entry) continue;
+        const state = Diff.readPair({ file: entry, to: turn.turn, pair });
+        const slot = slotOf({ turn, file: next.file });
+        // Both full texts sit in each pair, so a file re-edited all turn would otherwise pile up every version.
+        const replaced = slots.get(slot);
+        if (replaced && replaced !== next.id) pairs.delete(replaced);
+        slots.set(slot, next.id);
+        pairs.set(next.id, state);
+        shown.set(slot, state);
+      }
+    };
+    await Promise.all(Array.from({ length: PAIR_LANES }, lane));
+  }
+
+  async function refresh(key: string): Promise<void> {
+    if (isRefreshing) return;
+    isRefreshing = true;
+    const mine = ticket;
     const at = encodeURIComponent(key);
     try {
-      const [slice, store, snapshot] = await Promise.all([
-        $fetch<ReceiptsSlice>(`/api/sessions/${at}/receipts`),
-        $fetch<ConversationVersions>(`/api/sessions/${at}/versions`),
+      const slice = await $fetch<ReceiptsSlice>(`/api/sessions/${at}/receipts`);
+      const newest = slice.turns.at(-1);
+      const writes = slice.turns.reduce((sum, one) => sum + one.wrote.length + one.deleted.length, 0);
+      const work = slice.turns.reduce((sum, one) => sum + one.ran.length + (one.by?.length ?? 0), 0);
+      // The offset is the main transcript's size alone, and a subagent's progress only shows in the other counts.
+      const next = [slice.offset, slice.turns.length, writes, work].join(":");
+      if (mine !== ticket || next === mark) return;
+      // A running turn editing the same file again changes no count, so the newest turn's writes re-pull too.
+      const isStale = !versions.value || writes !== touched || !!newest?.wrote.length || !!newest?.deleted.length;
+      const [store, snapshot] = await Promise.all([
+        isStale ? $fetch<ConversationVersions>(`/api/sessions/${at}/versions`) : versions.value,
         $fetch<Snapshot>(`/api/sessions/${at}/conversation`).catch(() => ({ offset: 0, turns: [] }) as Snapshot),
       ]);
-      if (mine !== loadTicket) return;
-
+      if (mine !== ticket) return;
+      mark = next;
+      touched = writes;
       receipts.value = slice.turns;
       versions.value = store;
-      const paired = new Map<number, string>();
-      for (const [index, receipt] of slice.turns.entries()) {
-        const until = slice.turns[index + 1]?.at ?? Number.MAX_SAFE_INTEGER;
-        const reply = replyBetween(snapshot.turns, receipt.at, until);
-        if (reply) paired.set(receipt.turn, reply);
-      }
-      replies.value = paired;
-      selected.value = slice.turns.at(-1)?.turn;
-
-      const newest = slice.turns.at(-1)?.turn;
-      if (newest) markSeen(key, newest);
+      replies.value = repliesOf(slice.turns, snapshot);
+      error.value = undefined;
+      if (newest) markSeen(key, newest.turn);
     } catch (caught) {
-      if (mine !== loadTicket) return;
-      error.value = caught instanceof Error ? caught.message : String(caught);
+      // Only a History that never loaded says so; a refresh that fails keeps what the reader has.
+      if (mine === ticket && !mark) error.value = caught instanceof Error ? caught.message : String(caught);
     } finally {
-      if (mine === loadTicket) loading.value = false;
+      isRefreshing = false;
+      if (mine === ticket) loading.value = false;
     }
   }
 
-  async function pullDiffs(): Promise<void> {
-    const mine = ++diffTicket;
-    const key = sc.sessionKey.value;
-    const span = range.value;
-    const store = versions.value;
-    if (!key || !span || !store) {
-      files.value = [];
-      return;
-    }
-
-    const inSpan = receipts.value.filter((one) => one.turn >= span.first && one.turn <= span.last);
-    const touched = [...new Set(inSpan.flatMap((one) => [...one.wrote, ...one.deleted]))];
-    if (!touched.length) {
-      files.value = [];
-      return;
-    }
-
-    diffing.value = true;
-    const at = encodeURIComponent(key);
-    // Read from before the first picked turn, so its own edit is part of what is shown.
-    const from = span.first - 1;
-    const to = compare.value === "head" ? "head" : span.last;
-    const built = await Promise.all(
-      touched.map(async (path): Promise<HistoryFile> => {
-        // A file the store holds no record of is genuinely unknown, not silently unchanged.
-        const file = store.files.find((one) => one.path === path) ?? {
-          path,
-          baseline: "unknown" as const,
-          versions: [],
-        };
-        const query = `path=${encodeURIComponent(path)}&from=${from}&to=${to}`;
-        const pair = await $fetch<VersionPair>(`/api/sessions/${at}/versions/pair?${query}`).catch(() => undefined);
-        const by = [
-          ...new Set(
-            file.versions.filter((one) => one.turn >= span.first && one.turn <= span.last).map((one) => one.by),
-          ),
-        ];
-        return {
-          path,
-          name: basename(path),
-          by: by.join(", ") || undefined,
-          baseline: file.baseline,
-          state: Diff.readPair({ file, to, pair }),
-        };
-      }),
-    );
-    if (mine !== diffTicket) return;
-    files.value = built;
-    diffing.value = false;
+  function load(key?: string): void {
+    ticket += 1;
+    mark = "";
+    touched = 0;
+    isRefreshing = false;
+    receipts.value = [];
+    versions.value = undefined;
+    replies.value = new Map();
+    notices.value = {};
+    error.value = undefined;
+    pairs.clear();
+    shown.clear();
+    slots.clear();
+    inFlight.clear();
+    if (!key) return;
+    seen.value = seenOf(key);
+    loading.value = true;
+    void refresh(key);
   }
 
-  async function restore(path: string, force?: boolean): Promise<void> {
-    const key = sc.sessionKey.value;
-    const turn = range.value?.last;
-    if (!key || !turn) return;
-    restored.value = await $fetch<RestoreResult>(`/api/sessions/${encodeURIComponent(key)}/versions/restore`, {
-      method: "POST",
-      body: { path, turn, force },
-    }).catch((caught: unknown) => ({
-      path,
-      turn,
+  async function send({
+    file,
+    turn,
+    force,
+  }: {
+    file: TurnFile;
+    turn: number;
+    force?: boolean;
+  }): Promise<RestoreResult> {
+    const key = sc.sessionKey.value ?? "";
+    restoring.value = file.path;
+    try {
+      return await $fetch<RestoreResult>(`/api/sessions/${encodeURIComponent(key)}/versions/restore`, {
+        method: "POST",
+        body: { path: file.path, turn, force },
+      });
+    } catch (caught) {
       // A call that never reached the store proves nothing about disk, so force would not help.
-      forceable: false,
-      restored: false,
-      reason: caught instanceof Error ? caught.message : "the restore call failed",
-    }));
+      return {
+        path: file.path,
+        turn,
+        restored: false,
+        forceable: false,
+        reason: caught instanceof Error ? caught.message : "the restore call failed",
+      };
+    } finally {
+      restoring.value = undefined;
+    }
+  }
+
+  function noticeOf({ done, isUndo }: { done: RestoreResult; isUndo: boolean }): RestoreNotice {
+    if (done.restored) return isUndo ? { kind: "undone" } : { kind: "restored", was: done.was };
+    if (done.forceable) return { kind: "conflict", turn: done.turn };
+    return { kind: "failed", reason: done.reason || "no reason was given" };
+  }
+
+  async function restore(file: TurnFile, force?: boolean): Promise<void> {
+    const turn = picked.value;
+    if (!turn) return;
+    const prior = notices.value[file.path];
+    const target = force && prior?.kind === "conflict" ? prior.turn : turn.turn - 1;
+    const done = await send({ file, turn: target, force });
+    const notice = noticeOf({ done, isUndo: false });
+    // A second Restore finds disk already on the before-state, so only the first knows where Undo goes.
+    const kept = notice.kind === "restored" && prior?.kind === "restored" ? prior : notice;
+    notices.value = { ...notices.value, [file.path]: kept };
+  }
+
+  async function undo(file: TurnFile): Promise<void> {
+    const prior = notices.value[file.path];
+    if (prior?.kind !== "restored" || typeof prior.was !== "number") return;
+    const done = await send({ file, turn: prior.was });
+    notices.value = { ...notices.value, [file.path]: noticeOf({ done, isUndo: true }) };
+  }
+
+  function planOf(file: TurnFile): RestorePlan {
+    const turn = picked.value;
+    return turn ? Turns.restoreOf({ turn, file, versions: versions.value }) : { isEnabled: false, tip: "" };
   }
 
   onMounted(() => {
     watch(
       () => sc.sessionKey.value,
-      (key) => void load(key),
+      (key) => load(key),
       { immediate: true },
     );
-    watch([range, compare, versions], () => void pullDiffs(), { immediate: true });
-    // A restore receipt names the turn it acted on, so it must not follow the reader to another turn.
-    watch(range, () => {
-      restored.value = undefined;
-    });
+    watch([picked, versions], () => void pullPairs(), { immediate: true });
+    // A notice names the turn it acted on, so it must not follow the reader to another turn.
+    watch(
+      () => picked.value?.turn,
+      () => (notices.value = {}),
+    );
+    const timer = window.setInterval(() => sc.sessionKey.value && void refresh(sc.sessionKey.value), REFRESH_MS);
     onScopeDispose(() => {
-      loadTicket += 1;
-      diffTicket += 1;
+      window.clearInterval(timer);
+      ticket += 1;
     });
   });
 
   return {
+    bodyOf,
     capped,
-    compare,
-    diffing,
     error,
-    files,
-    forceable,
     loading,
+    notices,
     pick,
-    range,
+    picked,
+    planOf,
     restore,
-    restored,
-    selected,
+    restoring,
+    retry: () => load(sc.sessionKey.value),
+    seen,
     turns,
+    undo,
   };
 }
