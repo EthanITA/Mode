@@ -20,7 +20,7 @@ import {
 import { isFile } from "../lib/files.ts";
 import { Refusal } from "../lib/mode/refusal.ts";
 import { pyJson, pyStr } from "../lib/text.ts";
-import { landing, openRecord } from "../lib/web/records.ts";
+import { openRecord } from "../lib/web/records.ts";
 import { parseTarget } from "../lib/web/target.ts";
 
 type Parsed = {
@@ -149,7 +149,7 @@ const VERBS: Record<string, Spec> = {
     run: async ({ positionals: [slug = ""], flags }) => {
       const site = urlGiven(slug);
       if (site) {
-        const entry = openRecord({ url: await landing(site) });
+        const { record: entry } = await openRecord({ typed: true, url: site });
         record(entry.slug);
         if (flags.has("browser") || flags.has("web")) browse(entry.url);
         else

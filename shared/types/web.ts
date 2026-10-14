@@ -1,4 +1,6 @@
 export interface WebOpenReply {
+  /** Made by this open, so an entry a redirect passed through can be dropped once the redirect moves on. */
+  isNew: boolean;
   port: number;
   slug: string;
   url: string;

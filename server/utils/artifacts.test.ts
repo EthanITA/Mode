@@ -101,7 +101,9 @@ test("a web entry lists under its host, and a thread left on one of its pages la
   const dir = realpathSync(mkdtempSync(join(tmpdir(), "web-")));
   process.env.CLAUDE_CONFIG_DIR = dir;
   try {
-    const { slug } = openRecord({ url: new URL("http://localhost:3000/guide/hooks") });
+    const {
+      record: { slug },
+    } = await openRecord({ url: new URL("http://localhost:3000/guide/hooks") });
     const made = applyWebReview({
       action: "create",
       anchor: { label: "Drift", page: "/guide/hooks" },

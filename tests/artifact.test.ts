@@ -217,17 +217,61 @@ describe("web entries", () => {
     assert.equal(parseTarget("ftp://files.dev"), undefined);
     assert.equal(parseTarget("  "), undefined);
 
-    const first = openRecord({ url: new URL("http://localhost:3000/guide") });
-    const again = openRecord({ title: "Mode docs", url: new URL("http://localhost:3000/guide/slots") });
-    const other = openRecord({ url: new URL("http://127.0.0.1:5173/") });
+    const { record: first } = await openRecord({ url: new URL("http://localhost:3000/guide") });
+    const { isNew, record: again } = await openRecord({
+      title: "Mode docs",
+      url: new URL("http://localhost:3000/guide/slots"),
+    });
+    const { record: other } = await openRecord({ url: new URL("http://127.0.0.1:5173/") });
     const hash = createHash("sha1").update("http://localhost:3000").digest("hex").slice(0, 6);
     assert.equal(first.slug, `localhost-3000--${hash}`);
     assert.deepEqual(
-      [again.slug, again.port, again.url, again.title],
-      [first.slug, first.port, "http://localhost:3000/guide/slots", "Mode docs"],
+      [isNew, again.slug, again.port, again.url, again.title],
+      [false, first.slug, first.port, "http://localhost:3000/guide/slots", "Mode docs"],
     );
     assert.equal(other.port, first.port + 1);
     assert.equal(webSlug(new URL("https://docs.mode.dev")).replace(/--.*/, ""), "docs-mode-dev-443");
+  });
+
+  test("www and the https upgrade are one site, and a removed site opened again is back on its own origin", async () => {
+    const { foldWebSites, record: link, sessionEntries } = await import("../lib/artifact/store.ts");
+    const { openRecord, readRecord, removeRecord, restoreRecord, writeRecord } = await import("../lib/web/records.ts");
+    const { record: bare } = await openRecord({ url: new URL("https://mode.dev/") });
+    const { isNew, record: www } = await openRecord({ url: new URL("https://www.mode.dev/guide") });
+    const { record: plain } = await openRecord({ url: new URL("http://mode.dev/") });
+    assert.deepEqual([isNew, www.slug, www.port, plain.slug], [false, bare.slug, bare.port, bare.slug]);
+
+    const gone = removeRecord(bare.slug);
+    assert.ok(gone && !readRecord(bare.slug));
+    const { isNew: fresh, record: back } = await openRecord({ url: new URL("https://www.mode.dev/") });
+    assert.deepEqual([fresh, back.slug, back.port], [true, bare.slug, bare.port]);
+    assert.ok(restoreRecord({ ...gone, threads: [{ id: "t1" }] }));
+    assert.deepEqual(readRecord(bare.slug)?.threads, [{ id: "t1" }]);
+    assert.equal(restoreRecord({ ...gone, slug: "../out" }), undefined);
+
+    writeRecord({
+      port: 49001,
+      slug: "old-site-80--aaaaaa",
+      threads: [{ id: "a" }],
+      updated: "",
+      url: "http://old.site/",
+      v: 1,
+    });
+    writeRecord({
+      port: 49002,
+      slug: "www-old-site-80--bbbbbb",
+      threads: [],
+      title: "Old",
+      updated: "",
+      url: "http://www.old.site/",
+      v: 1,
+    });
+    link("www-old-site-80--bbbbbb", "abcd1234");
+    foldWebSites();
+    assert.deepEqual(
+      [readRecord("old-site-80--aaaaaa")?.title, readRecord("www-old-site-80--bbbbbb"), sessionEntries("abcd1234")],
+      ["Old", undefined, ["www-old-site-80--bbbbbb", "old-site-80--aaaaaa"]],
+    );
   });
 
   test("a host too long for one DNS label is trimmed, keeping the port and the hash whole", async () => {
