@@ -7,6 +7,7 @@ import { Refusal } from "../mode/refusal.ts";
 import { head, lines, lstrip, pad, strip, words } from "../text.ts";
 import { documentSlug } from "../sidecar/comments.ts";
 import * as Events from "../sidecar/events.ts";
+import { Tracked } from "../sidecar/tracked.ts";
 import { isWebRecord, listRecords, mergeSites, readRecord, recordPath } from "../web/records.ts";
 import { artifactsDir, expandHome, readPage, root } from "./files.ts";
 import { install } from "./review.ts";
@@ -158,12 +159,12 @@ export function readMeta(path: string): Meta {
   return meta;
 }
 
-// A .md given by its path, then a recorded document's slug, then this conversation's artifacts, then the folder.
+// A .md given by its path, then a recorded document's or opened file's slug, then this conversation's artifacts, then the folder.
 export function resolve(given: string, sid?: string): string {
   if (given.includes("/") && given.endsWith(".md") && isFile(expandHome(given))) return resolvePath(expandHome(given));
   const files = artifactFiles();
   const token = given.replace(/\.(html|md)$/, "");
-  const document = recordedDocuments().get(token);
+  const document = recordedDocuments().get(token) ?? Tracked.paths().get(token);
   if (document) return document;
   files.push(...listRecords().map((site) => recordPath(site.slug)));
   if (!files.length) throw new Refusal(`no artifacts in ${artifactsDir()}`);

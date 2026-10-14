@@ -23,3 +23,5 @@ export type FileUnshown = "not-touched" | "missing" | "too-large" | "binary";
 export type FileContent = { path: string; text: string; hash: string } | { path: string; reason: FileUnshown };
 
 export type FileSave = { saved: true; hash: string } | { saved: false; reason: FileUnshown | "changed-on-disk" };
+
+export type FileOpenReply = { at: "artifacts"; slug: string } | { at: "files"; path: string };

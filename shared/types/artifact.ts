@@ -1,6 +1,6 @@
 export type ArtifactFormat = "html" | "md";
 // Where it lives: the artifacts folder, Claude Code's plans folder, any other .md a conversation wrote, or a live site.
-export type ArtifactKind = "page" | "plan" | "document" | "web";
+export type ArtifactKind = "page" | "plan" | "document" | "file" | "web";
 
 export interface ArtifactMeta {
   slug: string;

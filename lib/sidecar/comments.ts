@@ -24,9 +24,9 @@ export function documentSlug(path: string): string {
   return `${stem}--${createHash("sha1").update(real).digest("hex").slice(0, 6)}`;
 }
 
-// A .md outside the artifacts folder is somebody's document, so its comments stay out of it.
+// A file outside the artifacts folder is somebody's own, so its comments stay out of it.
 export function isStoredDocument(path: string, artifactsDir: string): boolean {
-  return path.endsWith(".md") && dirname(path) !== artifactsDir;
+  return dirname(path) !== artifactsDir;
 }
 
 export function commentsFile(path: string): string {

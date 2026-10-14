@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { readComments } from "../../lib/sidecar/comments.ts";
+import { Tracked } from "../../lib/sidecar/tracked.ts";
 import { openRecord, readRecord } from "../../lib/web/records.ts";
 import { applyReviewChange, applyStoredReview, applyWebReview, listArtifacts } from "./artifacts.ts";
 import { Markdown } from "./markdown.ts";
@@ -91,6 +92,26 @@ test("a listed entry is a page in the artifacts folder, a plan in the plans fold
     writeFileSync(join(dir, "artifacts", "session-0123abcd"), `${plan}\n${scratch}\n`);
     const kinds = Object.fromEntries((await listArtifacts()).map((one) => [one.title, one.kind]));
     assert.deepEqual(kinds, { Deck: "page", Plan: "plan", Notes: "document" });
+  } finally {
+    delete process.env.CLAUDE_CONFIG_DIR;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a file a link opened lists as a file until it is untracked, with its threads kept outside it", async () => {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "tracked-")));
+  process.env.CLAUDE_CONFIG_DIR = dir;
+  try {
+    const path = join(dir, "readme.md");
+    writeFileSync(path, "# Readme\n\nSome text.\n");
+    const slug = Tracked.track(path);
+    const [row] = await listArtifacts();
+    assert.deepEqual([row?.slug, row?.kind, row?.title], [slug, "file", "Readme"]);
+    const made = applyStoredReview({ action: "create", anchor: { label: "Text" }, body: "why?", path, text: "" });
+    if (!made.ok) assert.fail(made.reason);
+    assert.equal(readComments(path, "")?.threads.length, 1);
+    assert.equal(Tracked.untrack(slug), path);
+    assert.deepEqual(await listArtifacts(), []);
   } finally {
     delete process.env.CLAUDE_CONFIG_DIR;
     rmSync(dir, { recursive: true, force: true });

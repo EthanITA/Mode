@@ -20,6 +20,7 @@ import {
   withoutLegacyBlock,
   writeComments,
 } from "../../lib/sidecar/comments.ts";
+import { Tracked } from "../../lib/sidecar/tracked.ts";
 import { listRecords, readRecord, recordPath, type WebRecord, writeRecord } from "../../lib/web/records.ts";
 import { Markdown } from "./markdown.ts";
 import { Documents } from "./sessions/artifact-lists.ts";
@@ -297,16 +298,23 @@ function webMeta(record: WebRecord): ArtifactMeta {
   };
 }
 
+// A file a link opened is listed as a file even when a conversation also wrote it.
+function outsidePaths(): Map<string, string> {
+  return new Map([...Documents.paths(), ...Tracked.paths()]);
+}
+
 export async function listArtifacts(): Promise<ArtifactMeta[]> {
   const dir = artifactsDir();
-  const documents = [...Documents.paths()].map(([slug, path]) => ({ file: documentFile({ path, slug }), path }));
-  const sources = [...(await artifactFiles(dir)).map((file) => ({ file, path: join(dir, file.name) })), ...documents];
+  const tracked = Tracked.paths();
+  const outside = [...outsidePaths()].map(([slug, path]) => ({ file: documentFile({ path, slug }), path }));
+  const sources = [...(await artifactFiles(dir)).map((file) => ({ file, path: join(dir, file.name) })), ...outside];
   const rows = listRecords().map((record) => ({ meta: webMeta(record), mtime: Date.parse(record.updated) || 0 }));
   for (const { file, path } of sources) {
     try {
       const stats = await stat(path);
+      const meta = await metaOf({ file, path, stats, stored: isStoredDocument(path, dir) });
       rows.push({
-        meta: await metaOf({ file, path, stats, stored: isStoredDocument(path, dir) }),
+        meta: tracked.has(meta.slug) ? { ...meta, kind: "file" } : meta,
         mtime: stats.mtimeMs,
       });
     } catch {
@@ -325,13 +333,13 @@ async function artifactFile(slug: string): Promise<(ArtifactFile & { path: strin
     const stats = path ? await stat(path).catch(() => undefined) : undefined;
     if (file && path && stats?.isFile()) return { ...file, path };
   }
-  const recorded = Documents.paths().get(slug);
+  const recorded = outsidePaths().get(slug);
   const stats = recorded ? await stat(recorded).catch(() => undefined) : undefined;
   return recorded && stats?.isFile() ? { ...documentFile({ path: recorded, slug }), path: recorded } : undefined;
 }
 
 function documentFile({ path, slug }: { path: string; slug: string }): ArtifactFile {
-  return { format: "md", name: basename(path), slug };
+  return { format: path.toLowerCase().endsWith(".html") ? "html" : "md", name: basename(path), slug };
 }
 
 async function readWhole(path: string): Promise<string | undefined> {
@@ -352,10 +360,8 @@ export async function readArtifact(slug: string): Promise<ArtifactSource | undef
   const file = await artifactFile(slug);
   const text = file ? await readWhole(file.path) : undefined;
   if (!file || !text) return undefined;
-  return {
-    ...parseMeta({ format: file.format, head: text.slice(0, HEAD_BYTES), fallbackSlug: slug, path: file.path }),
-    text,
-  };
+  const meta = parseMeta({ format: file.format, head: text.slice(0, HEAD_BYTES), fallbackSlug: slug, path: file.path });
+  return { ...meta, kind: Tracked.paths().has(slug) ? "file" : meta.kind, text };
 }
 
 /** The sidecar draws the notes in its own gutter, so the page's own comment surface would be a second one. */
