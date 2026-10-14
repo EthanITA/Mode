@@ -1,3 +1,5 @@
+import type { WebTrail } from "./web.ts";
+
 export type ArtifactFormat = "html" | "md";
 // Where it lives: the artifacts folder, Claude Code's plans folder, any other .md a conversation wrote, or a live site.
 export type ArtifactKind = "page" | "plan" | "document" | "file" | "web";
@@ -47,6 +49,7 @@ export interface ReviewThread {
 
 export interface ArtifactDetail extends ArtifactMeta {
   threads: ReviewThread[];
+  trail?: WebTrail;
 }
 
 export type ArtifactEditAction = "accept" | "apply" | "revert";

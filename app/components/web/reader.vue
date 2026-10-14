@@ -2,6 +2,7 @@
 import { ExternalLink, RotateCw, Trash2 } from "@lucide/vue";
 import { useDebounceFn } from "@vueuse/core";
 import type { FrameAnchor, FrameMark } from "~/types/frame";
+import type { WebArrival } from "~~/shared/types/web";
 import type { ArtifactDetail, ArtifactMeta, ReviewThread } from "~~/shared/types/artifact";
 
 const { conversation, slug } = defineProps<{ conversation: string; slug: string }>();
@@ -34,6 +35,8 @@ watch(
   { immediate: true },
 );
 const entry = computed(() => (held.value?.slug === slug ? held.value : undefined));
+// Seeded as soon as the entry reads, so the arrows know the way back before the page has loaded.
+watch(entry, (got) => web.seed(got?.trail));
 const address = computed(() => web.page?.url ?? entry.value?.url);
 const page = computed(() => (address.value ? Web.pageOf(address.value) : "/"));
 const host = computed(() => (address.value ? new URL(address.value).host : slug));
@@ -124,14 +127,16 @@ function onMarks(next: FrameMark[]): void {
   shown = text;
 }
 
-// The record keeps the last page and title, so the list and a reopen land where the person left off.
-async function onPage(): Promise<void> {
+// The record keeps the last page, its title and the way back to it, so the list and a reopen land where the person left off.
+async function onPage(how: WebArrival): Promise<void> {
   const at = web.page;
   if (!at) return;
   web.shown(slug);
+  web.seed(entry.value?.trail);
+  web.arrive({ how, url: at.url });
   void refresh(true);
   await $fetch("/api/web", {
-    body: { landed: true, session: conversation, title: at.title, url: at.url },
+    body: { landed: true, session: conversation, title: at.title, trail: web.trail, url: at.url },
     method: "POST",
   }).catch(() => undefined);
   sc.catalogue.value = sc.catalogue.value.map((meta): ArtifactMeta =>

@@ -3,6 +3,8 @@ import { mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:
 import { Agent as HttpAgent, get as httpGet, type IncomingMessage } from "node:http";
 import { Agent as HttpsAgent, get as httpsGet } from "node:https";
 import { basename, dirname, join } from "node:path";
+import type { WebTrail } from "../../shared/types/web.ts";
+import { Trail } from "../../shared/utils/trail.ts";
 import { readTextSafe } from "../files.ts";
 import { sidecarHome } from "../mode/paths.ts";
 
@@ -12,6 +14,7 @@ export interface WebRecord {
   slug: string;
   threads: unknown[];
   title?: string;
+  trail?: WebTrail;
   updated: string;
   url: string;
   v: 1;
@@ -110,6 +113,7 @@ function recordOf(raw: unknown): WebRecord | undefined {
     slug: rec.slug,
     threads: Array.isArray(rec.threads) ? rec.threads : [],
     title: typeof rec.title === "string" && rec.title ? rec.title : undefined,
+    trail: Trail.of(rec.trail),
     updated: typeof rec.updated === "string" ? rec.updated : "",
     url: rec.url,
     v: 1,
@@ -192,6 +196,7 @@ function siteEntry(url: URL): WebRecord | undefined {
 
 export interface OpenRecordOptions {
   title?: string;
+  trail?: WebTrail;
   /** Typed by someone, so a site not held yet is chased to the last stop of its redirects. */
   typed?: boolean;
   url: URL;
@@ -205,7 +210,7 @@ function where({ held, typed, url }: { held?: WebRecord; typed: boolean; url: UR
 }
 
 /** Reuses the site's entry, so its port and with it the site's storage survive, and remembers where it was opened. */
-export async function openRecord({ title, typed = false, url }: OpenRecordOptions): Promise<OpenedRecord> {
+export async function openRecord({ title, trail, typed = false, url }: OpenRecordOptions): Promise<OpenedRecord> {
   const at = await where({ held: siteEntry(url), typed, url });
   const held = siteEntry(at);
   const home = held ? undefined : origins()[siteOf(at)];
@@ -214,6 +219,7 @@ export async function openRecord({ title, typed = false, url }: OpenRecordOption
     slug: held?.slug ?? home?.slug ?? webSlug(at),
     threads: held?.threads ?? [],
     title: title || held?.title,
+    trail: trail ?? held?.trail,
     updated: new Date().toISOString(),
     url: at.href,
     v: 1,

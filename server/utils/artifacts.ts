@@ -373,7 +373,10 @@ export async function getArtifact(slug: string): Promise<ArtifactDetail | undefi
   const source = await readArtifact(slug);
   if (!source) return undefined;
   const { text, ...meta } = source;
-  if (meta.kind === "web") return { ...meta, threads: threadsOf(readRecord(slug)?.threads) };
+  if (meta.kind === "web") {
+    const record = readRecord(slug);
+    return { ...meta, threads: threadsOf(record?.threads), trail: record?.trail };
+  }
   if (isStoredArtifact(meta.path)) return { ...meta, threads: threadsOf(readComments(meta.path, text)?.threads) };
   return { ...meta, threads: parseThreads(text, meta.format) };
 }

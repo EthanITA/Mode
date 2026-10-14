@@ -9,11 +9,14 @@ import {
   pathOf,
   readAnchors,
 } from "./blocks.ts";
+import type { WebArrival } from "../../../shared/types/web.ts";
+import { isAddressKey, stepOf } from "./keys.ts";
 import { type AgentMessage, CHANNEL, type Envelope, type SidecarMessage, type WebHit } from "./protocol.ts";
 
 const parents = new Set((new URL(import.meta.url).searchParams.get("parent") ?? "").split(",").filter(Boolean));
 const nav = "navigation" in window ? window.navigation : undefined;
 
+let how: WebArrival = nav?.activation?.navigationType ?? "push";
 let parent: string | undefined;
 let armed = false;
 let indexed: Indexed[] = [];
@@ -54,11 +57,11 @@ function layout(): void {
       picked = again ? { ...picked, el: again } : undefined;
     }
   }
-  const history = { back: !!nav?.canGoBack, forward: !!nav?.canGoForward };
-  const page = `${location.href}\n${document.title}\n${history.back} ${history.forward}`;
+  const icon = document.querySelector<HTMLLinkElement>("link[rel~='icon']")?.href || `${location.origin}/favicon.ico`;
+  const page = `${location.href}\n${document.title}\n${icon}`;
   if (page !== shown) {
     shown = page;
-    post({ type: "page", history, page: { title: document.title, url: location.href } });
+    post({ type: "page", how, page: { icon, title: document.title, url: location.href } });
   }
   post({
     type: "layout",
@@ -92,10 +95,15 @@ function leave(event: MouseEvent): void {
   post({ type: "away", url: to.href });
 }
 
-// The frame's own entries only: history.back() at its first page would walk the sidecar's history instead.
-function step(by: -1 | 1): void {
-  if (!nav || !(by < 0 ? nav.canGoBack : nav.canGoForward)) return;
-  const { committed, finished } = by < 0 ? nav.back() : nav.forward();
+// The frame's own entry when it is the page asked for, which keeps an app's state; a frame that forgot it loads it in place.
+function step(by: -1 | 1, to: string): void {
+  const index = nav?.currentEntry?.index ?? -1;
+  const next = index < 0 ? undefined : nav?.entries()[index + by];
+  if (!nav || next?.url !== to) {
+    location.replace(to);
+    return;
+  }
+  const { committed, finished } = nav.traverseTo(next.key);
   committed?.catch(() => undefined);
   finished?.catch(() => undefined);
 }
@@ -140,7 +148,14 @@ window.addEventListener(
   "keydown",
   (event) => {
     const meta = event.metaKey || event.ctrlKey;
-    if (meta && event.key.toLowerCase() === "k") {
+    const by = isTyping(event.target) ? undefined : stepOf(event);
+    if (by) {
+      event.preventDefault();
+      post({ type: "key", key: by < 0 ? "back" : "forward" });
+    } else if (isAddressKey(event)) {
+      event.preventDefault();
+      post({ type: "key", key: "address" });
+    } else if (meta && event.key.toLowerCase() === "k") {
       event.preventDefault();
       post({ type: "key", key: "comment" });
     } else if (meta && event.key.toLowerCase() === "r") {
@@ -173,7 +188,10 @@ window.addEventListener("scroll", () => schedule(), true);
 window.addEventListener("resize", () => schedule());
 window.addEventListener("popstate", () => schedule(true));
 window.addEventListener("hashchange", () => schedule(true));
-nav?.addEventListener("currententrychange", () => schedule());
+nav?.addEventListener("currententrychange", (event) => {
+  how = event.navigationType ?? "push";
+  schedule();
+});
 for (const name of ["pushState", "replaceState"] as const) {
   const native = history[name];
   history[name] = function (this: History, ...args: Parameters<History["pushState"]>): void {
@@ -211,7 +229,7 @@ window.addEventListener("message", (event: MessageEvent<Partial<Envelope<Sidecar
   } else if (message.type === "go") {
     location.assign(new URL(message.path, location.origin).href);
   } else if (message.type === "step") {
-    step(message.by);
+    step(message.by, message.to);
   } else if (message.type === "theme") {
     document.documentElement.setAttribute("data-theme", message.theme);
   }

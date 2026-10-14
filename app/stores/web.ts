@@ -1,7 +1,8 @@
 import { useEventListener } from "@vueuse/core";
-import type { WebHistory, WebPage } from "~~/lib/web/page/protocol";
+import type { WebPage } from "~~/lib/web/page/protocol";
 import type { ArtifactMeta } from "~~/shared/types/artifact";
-import type { WebOpenReply } from "~~/shared/types/web";
+import type { WebArrival, WebOpenReply, WebTrail } from "~~/shared/types/web";
+import { Trail } from "~~/shared/utils/trail";
 
 export type WebState = "down" | "live" | "moved" | "starting" | "unreachable";
 
@@ -19,8 +20,13 @@ export const $web = defineStore(() => {
   const sc = useSidecar();
   const chrome = useChrome();
   const page = ref<WebPage>();
-  const history = ref<WebHistory>({ back: false, forward: false });
-  const stepping = ref<-1 | 1>();
+  const trail = ref<WebTrail>({ at: 0, urls: [] });
+  const history = computed(() => ({
+    back: trail.value.at > 0,
+    forward: trail.value.at < trail.value.urls.length - 1,
+  }));
+  const stepping = ref<{ by: -1 | 1; to: string }>();
+  const addressing = ref(0);
   const state = ref<WebState>("starting");
   const edition = ref(0);
   const going = ref<string>();
@@ -29,10 +35,14 @@ export const $web = defineStore(() => {
   // An entry a redirect made and passed through without a page, which goes once the redirect moves on.
   const passing = new Set<string>();
   let undo: { put: () => Promise<void>; toast: number } | undefined;
+  let aim: number | undefined;
+  // A frame the sidecar just (re)made lands where it was sent, so a redirect there replaces that page rather than adding one.
+  let isLanding = true;
 
   function reload(): void {
     state.value = "starting";
     movedTo.value = undefined;
+    isLanding = true;
     edition.value += 1;
   }
 
@@ -41,12 +51,36 @@ export const $web = defineStore(() => {
   }
 
   function step(by: -1 | 1): void {
-    stepping.value = by;
+    const to = trail.value.urls[trail.value.at + by];
+    if (!to) return;
+    aim = trail.value.at + by;
+    if (state.value === "live") {
+      stepping.value = { by, to };
+      return;
+    }
+    page.value = { title: "", url: to };
+    reload();
+  }
+
+  function seed(held?: WebTrail): void {
+    if (!trail.value.urls.length && held) trail.value = held;
+  }
+
+  function arrive({ how, url }: { how: WebArrival; url: string }): void {
+    trail.value = Trail.arrive(trail.value, { aim, how: isLanding ? "replace" : how, url });
+    aim = undefined;
+    isLanding = false;
+  }
+
+  function askAddress(): void {
+    addressing.value += 1;
   }
 
   function reset(): void {
     page.value = undefined;
-    history.value = { back: false, forward: false };
+    trail.value = { at: 0, urls: [] };
+    aim = undefined;
+    isLanding = true;
     state.value = "starting";
     going.value = undefined;
     movedTo.value = undefined;
@@ -73,6 +107,7 @@ export const $web = defineStore(() => {
   async function visit({ slug, typed }: { slug: string; typed: URL }): Promise<string> {
     const got = await open(typed.href);
     if (got.slug === slug) {
+      trail.value = Trail.arrive(trail.value, { how: "push", url: got.url });
       page.value = { title: "", url: got.url };
       reload();
     }
@@ -169,6 +204,9 @@ export const $web = defineStore(() => {
   });
 
   return {
+    addressing,
+    arrive,
+    askAddress,
     edition,
     follow,
     go,
@@ -182,10 +220,12 @@ export const $web = defineStore(() => {
     remove,
     removeAimed,
     reset,
+    seed,
     shown,
     state,
     step,
     stepping,
+    trail,
     undoRemove,
     visit,
   };

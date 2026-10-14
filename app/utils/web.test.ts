@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { ReviewThread } from "../../shared/types/artifact.ts";
+import { Trail } from "../../shared/utils/trail.ts";
 import { Web } from "./web.ts";
 
 const thread = (id: string, page: string, updated: string, status: ReviewThread["status"] = "open"): ReviewThread => ({
@@ -52,4 +53,19 @@ test("the gutter holds the threads of the page on screen, and the newest open on
     { count: 2, page: "/guide/slots" },
   ]);
   assert.deepEqual(Web.elsewhere(threads, "/guide/hooks"), [{ count: 2, page: "/guide/slots" }]);
+});
+
+test("an entry's trail goes back and forward like a tab, and a step from the sidecar lands where it aimed", () => {
+  const [a, b, c] = ["http://localhost:3000/", "http://localhost:3000/b", "http://localhost:3000/c"];
+  let trail = Trail.arrive({ at: 0, urls: [] }, { how: "replace", url: a });
+  trail = Trail.arrive(trail, { how: "push", url: b });
+  trail = Trail.arrive(trail, { how: "push", url: c });
+  assert.deepEqual(trail, { at: 2, urls: [a, b, c] });
+  trail = Trail.arrive(trail, { aim: 0, how: "replace", url: a });
+  assert.deepEqual(trail, { at: 0, urls: [a, b, c] });
+  assert.equal(Trail.arrive(trail, { how: "traverse", url: b }).at, 1);
+  assert.deepEqual(Trail.arrive(trail, { how: "push", url: c }), { at: 1, urls: [a, c] });
+  assert.deepEqual(Trail.arrive(trail, { how: "replace", url: `${a}?moved` }).urls, [`${a}?moved`, b, c]);
+  assert.equal(Trail.of({ at: 3, urls: [a] }), undefined);
+  assert.equal(Trail.of({ at: 0, urls: ["javascript:alert(1)"] }), undefined);
 });

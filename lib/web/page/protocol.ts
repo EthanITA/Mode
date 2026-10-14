@@ -1,3 +1,4 @@
+import type { WebArrival } from "../../../shared/types/web.ts";
 import type { FrameAnchor, FrameMark } from "./blocks.ts";
 
 export const CHANNEL = "sidecar-web";
@@ -15,16 +16,13 @@ export interface WebHit {
 }
 
 export interface WebPage {
+  icon?: string;
   title: string;
   url: string;
 }
 
-export interface WebHistory {
-  back: boolean;
-  forward: boolean;
-}
-
-export type WebKey = "comment" | "escape" | "full" | "hold" | "reload" | "release" | "remove" | "undo";
+export type WebKey =
+  "address" | "back" | "comment" | "escape" | "forward" | "full" | "hold" | "reload" | "release" | "remove" | "undo";
 
 export type AgentMessage =
   | { type: "away"; url: string }
@@ -32,7 +30,7 @@ export type AgentMessage =
   | { type: "key"; key: WebKey }
   | { type: "layout"; anchors: FrameAnchor[]; hot?: WebHit; marks: FrameMark[]; picked?: WebHit }
   | { type: "moved"; url: string }
-  | { type: "page"; history: WebHistory; page: WebPage }
+  | { type: "page"; how: WebArrival; page: WebPage }
   | { type: "pick"; hit: WebHit }
   | { type: "ready" };
 
@@ -41,7 +39,7 @@ export type SidecarMessage =
   | { type: "clear" }
   | { type: "go"; path: string }
   | { type: "hello" }
-  | { type: "step"; by: -1 | 1 }
+  | { type: "step"; by: -1 | 1; to: string }
   | { type: "theme"; theme: string };
 
 export type Envelope<T> = T & { channel: typeof CHANNEL };

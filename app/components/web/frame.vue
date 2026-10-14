@@ -1,8 +1,10 @@
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
 import type { FrameAnchor, FrameHit, FrameMark, ViewBox } from "~/types/frame";
+import { isTyping } from "~~/lib/web/page/blocks";
+import { isAddressKey, stepOf } from "~~/lib/web/page/keys";
 import { type AgentMessage, CHANNEL, type Envelope, type SidecarMessage, type WebHit } from "~~/lib/web/page/protocol";
-import type { WebServeReply } from "~~/shared/types/web";
+import type { WebArrival, WebServeReply } from "~~/shared/types/web";
 
 const {
   canAsk = false,
@@ -21,7 +23,7 @@ const emit = defineEmits<{
   anchors: [anchors: FrameAnchor[]];
   load: [];
   marks: [marks: FrameMark[]];
-  page: [];
+  page: [how: WebArrival];
 }>();
 
 const chrome = useChrome();
@@ -58,13 +60,13 @@ function post(message: SidecarMessage): void {
     );
 }
 
-// The page scrolls itself, so the frame's own box is all of it that can be on screen.
+// The page scrolls itself, so the frame's own box is all of it that can be on screen; grown, nothing floats over it.
 function clipOf(box: DOMRect): ViewBox {
   return {
     bottom: Math.min(box.bottom, window.innerHeight),
     left: box.left,
     right: box.right,
-    top: Math.max(box.top, chrome.frame.insets.value.top),
+    top: artifact.isFull ? box.top : Math.max(box.top, chrome.frame.insets.value.top),
   };
 }
 
@@ -105,6 +107,9 @@ function onKey(key: string): void {
   else if (key === "remove") web.removeAimed();
   else if (key === "undo") web.undoRemove();
   else if (key === "full") artifact.toggleFull();
+  else if (key === "back") web.step(-1);
+  else if (key === "forward") web.step(1);
+  else if (key === "address") web.askAddress();
 }
 
 function onLayout(message: Extract<AgentMessage, { type: "layout" }>): void {
@@ -142,9 +147,8 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
     case "page": {
       const address = Web.upstreamOf(message.page.url, { proxy: proxy.value, upstream: upstream.value ?? "" });
       if (new URL(address).origin !== upstream.value) return;
-      web.page = { title: message.page.title, url: address };
-      web.history = message.history;
-      emit("page");
+      web.page = { icon: message.page.icon, title: message.page.title, url: address };
+      emit("page", message.how);
       return;
     }
     case "pick": {
@@ -158,12 +162,15 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
   }
 });
 
-// With the sidecar focused, ⌘R would reload the sidecar itself rather than the page in it.
+// With the sidecar focused, ⌘R, ⌘[ and ⌘L would act on the sidecar itself rather than the page in it.
 useEventListener(window, "keydown", (event: KeyboardEvent) => {
-  if (shown.value && (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "r" && !event.shiftKey) {
-    event.preventDefault();
-    web.reload();
-  }
+  if (!shown.value || !(event.metaKey || event.ctrlKey)) return;
+  const by = isTyping(event.target) ? undefined : stepOf(event);
+  if (event.key.toLowerCase() === "r" && !event.shiftKey) web.reload();
+  else if (by) web.step(by);
+  else if (isAddressKey(event)) web.askAddress();
+  else return;
+  event.preventDefault();
 });
 
 watch(chrome.comment.armed, (armed) => post({ type: "arm", armed }));
@@ -181,10 +188,10 @@ watch(
 );
 watch(
   () => web.stepping,
-  (by) => {
-    if (!by) return;
+  (asked) => {
+    if (!asked || !proxy.value) return;
     web.stepping = undefined;
-    post({ type: "step", by });
+    post({ type: "step", by: asked.by, to: Web.srcOf({ proxy: proxy.value, url: asked.to }) });
   },
 );
 watch(
