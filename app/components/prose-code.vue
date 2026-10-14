@@ -2,10 +2,11 @@
 const { language } = defineProps<{ language?: string }>();
 const slots = useSlots();
 
-// A fenced code block is one literal text child, never inline markdown: `code.children` is the raw string.
+// The fence's raw text sits in `code`'s array children, since comark renders nothing inside a fence as markdown.
 const text = computed(() => {
   const [node] = slots.default?.() ?? [];
-  return typeof node?.children === "string" ? node.children : "";
+  const children = node?.children;
+  return Array.isArray(children) ? children.filter((one) => typeof one === "string").join("") : "";
 });
 const html = ref<string>();
 

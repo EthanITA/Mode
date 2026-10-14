@@ -390,6 +390,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **Fenced code shows in answers, turns and notes.** Every fenced block rendered as an empty box,
+  because the highlighter read the fence's text as a string while Vue holds it as an array.
 - **Artifacts and Files open what this conversation picked, not the last page opened anywhere.** Each
   conversation keeps its own pick, so switching to one that never made a page opens its own first page
   or nothing. Before, the page last opened in any conversation stayed open in every other one.
