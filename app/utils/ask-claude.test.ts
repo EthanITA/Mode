@@ -100,15 +100,16 @@ test("the card's state comes off its status and its newest turn", () => {
   assert.equal(SideQuestion.stateOf(threadOf([{ answer: "a", id: "1", question: "q" }], "resolved")), "resolved");
 });
 
-test("the handover names the place with a short quote, then only the answered exchanges", () => {
-  const text = SideQuestion.handoverOf(
-    threadOf([
+test("the handover names the place with a short quote, the answered exchanges, then what is still in the field", () => {
+  const text = SideQuestion.handoverOf({
+    ...threadOf([
       { answer: "It caps the input.", id: "1", prompt: "About …", question: "What does it do?" },
       { failure: "no", id: "2", question: "Why?" },
     ]),
-  );
+    draft: "  Raise it to 4 MB.  ",
+  });
   assert.equal(
     text,
-    "I asked you on the side about lines 9-10 of ~/src/mode/lib/hook/io.ts (“let size = 0; for await (const chunk of process.stdin) {”).\nI asked: What does it do?\nYou answered: It caps the input.",
+    "I asked you on the side about lines 9-10 of ~/src/mode/lib/hook/io.ts (“let size = 0; for await (const chunk of process.stdin) {”).\nI asked: What does it do?\nYou answered: It caps the input.\n\nRaise it to 4 MB.",
   );
 });

@@ -35,9 +35,13 @@ const draft = computed({
 });
 const went = computed(() => {
   const count = answered.value;
-  if (count === 1) return "Your question and its answer went with it.";
-  if (count === 2) return "Your two questions and both answers went with it.";
-  return `Your ${count} questions and their answers went with it.`;
+  const asked =
+    count === 1
+      ? "Your question and its answer"
+      : count === 2
+        ? "Your two questions and both answers"
+        : `Your ${count} questions and their answers`;
+  return `${asked} went with it${thread.draft.trim() ? ", and so did what you typed" : ""}.`;
 });
 
 function focusField(): void {

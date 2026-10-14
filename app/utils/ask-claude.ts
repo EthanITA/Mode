@@ -135,13 +135,14 @@ function withLineRefs(nodes: Node[], file: string): Node[] {
   });
 }
 
-function handoverOf({ anchor, turns }: SideThread): string {
+function handoverOf({ anchor, draft, turns }: SideThread): string {
   const quote = anchor.quote.replace(/\s+/g, " ").trim();
   const short = quote.length > QUOTE_MAX ? `${quote.slice(0, QUOTE_MAX - 1)}…` : quote;
   const exchanges = turns.flatMap((turn) =>
     turn.answer ? [`I asked: ${turn.question}`, `You answered: ${turn.answer}`] : [],
   );
-  return [`I asked you on the side about ${anchor.where} (“${short}”).`, ...exchanges].join("\n");
+  const thread = [`I asked you on the side about ${anchor.where} (“${short}”).`, ...exchanges].join("\n");
+  return draft.trim() ? `${thread}\n\n${draft.trim()}` : thread;
 }
 
 export const SideQuestion = { handoverOf, linesNamed, promptOf, stateOf, withLineRefs };

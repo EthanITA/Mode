@@ -20,7 +20,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **Quick ask from a comment.** The comment popover on lines in Review's diff, lines in Files, and a
   block of an artifact gets Ask (⌘↵) beside Add to tray. Claude answers in a side question card under
   the lines or in the margin, with follow-ups, Resolve (⌘⌫, with Undo) and Send to conversation (⌘↵),
-  and the lines an answer names light up as chips you can click. Asks never enter the tray.
+  which also carries what is still in the field, and the lines an answer names light up as chips you
+  can click. Asks never enter the tray.
 
 - **Claude reaches the sidecar through events, and a new artifact raises a notification.** Producers
   append typed events to `~/.claude/sidecar/events.jsonl`, and `/api/events/stream` streams them to every
