@@ -143,6 +143,7 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
       const address = Web.upstreamOf(message.page.url, { proxy: proxy.value, upstream: upstream.value ?? "" });
       if (new URL(address).origin !== upstream.value) return;
       web.page = { title: message.page.title, url: address };
+      web.history = message.history;
       emit("page");
       return;
     }
@@ -176,6 +177,14 @@ watch(
     if (!path) return;
     web.going = undefined;
     post({ type: "go", path });
+  },
+);
+watch(
+  () => web.stepping,
+  (by) => {
+    if (!by) return;
+    web.stepping = undefined;
+    post({ type: "step", by });
   },
 );
 watch(

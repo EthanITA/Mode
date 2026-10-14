@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ExternalLink, RotateCw } from "@lucide/vue";
+import { ArrowLeft, ArrowRight, ExternalLink, RotateCw } from "@lucide/vue";
 import { parseTarget } from "~~/lib/web/target";
 
 const { conversation, slug } = defineProps<{ conversation: string; slug: string }>();
@@ -65,6 +65,26 @@ watch(
 </script>
 
 <template>
+  <span class="steps">
+    <UiIconButton
+      :icon="ArrowLeft"
+      aria-label="Back"
+      data-region="web-back"
+      data-tip="Back"
+      :disabled="!web.history.back"
+      icon-size="sm"
+      @click="web.step(-1)"
+    />
+    <UiIconButton
+      :icon="ArrowRight"
+      aria-label="Forward"
+      data-region="web-forward"
+      data-tip="Forward"
+      :disabled="!web.history.forward"
+      icon-size="sm"
+      @click="web.step(1)"
+    />
+  </span>
   <form v-if="isEditing" class="address" data-region="web-address" :data-refused="isRefused" @submit.prevent="commit">
     <input
       ref="field"
@@ -123,6 +143,13 @@ watch(
 </template>
 
 <style scoped>
+.steps {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  margin-left: -4px;
+}
+
 .path {
   align-items: center;
   background: transparent;

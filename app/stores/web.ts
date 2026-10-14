@@ -1,5 +1,5 @@
 import { useEventListener } from "@vueuse/core";
-import type { WebPage } from "~~/lib/web/page/protocol";
+import type { WebHistory, WebPage } from "~~/lib/web/page/protocol";
 import type { ArtifactMeta } from "~~/shared/types/artifact";
 import type { WebOpenReply } from "~~/shared/types/web";
 
@@ -19,6 +19,8 @@ export const $web = defineStore(() => {
   const sc = useSidecar();
   const chrome = useChrome();
   const page = ref<WebPage>();
+  const history = ref<WebHistory>({ back: false, forward: false });
+  const stepping = ref<-1 | 1>();
   const state = ref<WebState>("starting");
   const edition = ref(0);
   const going = ref<string>();
@@ -38,8 +40,13 @@ export const $web = defineStore(() => {
     going.value = path;
   }
 
+  function step(by: -1 | 1): void {
+    stepping.value = by;
+  }
+
   function reset(): void {
     page.value = undefined;
+    history.value = { back: false, forward: false };
     state.value = "starting";
     going.value = undefined;
     movedTo.value = undefined;
@@ -166,6 +173,7 @@ export const $web = defineStore(() => {
     follow,
     go,
     going,
+    history,
     hops,
     movedTo,
     open,
@@ -176,6 +184,8 @@ export const $web = defineStore(() => {
     reset,
     shown,
     state,
+    step,
+    stepping,
     undoRemove,
     visit,
   };

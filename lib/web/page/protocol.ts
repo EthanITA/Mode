@@ -19,6 +19,11 @@ export interface WebPage {
   url: string;
 }
 
+export interface WebHistory {
+  back: boolean;
+  forward: boolean;
+}
+
 export type WebKey = "comment" | "escape" | "full" | "hold" | "reload" | "release" | "remove" | "undo";
 
 export type AgentMessage =
@@ -27,7 +32,7 @@ export type AgentMessage =
   | { type: "key"; key: WebKey }
   | { type: "layout"; anchors: FrameAnchor[]; hot?: WebHit; marks: FrameMark[]; picked?: WebHit }
   | { type: "moved"; url: string }
-  | { type: "page"; page: WebPage }
+  | { type: "page"; history: WebHistory; page: WebPage }
   | { type: "pick"; hit: WebHit }
   | { type: "ready" };
 
@@ -36,6 +41,7 @@ export type SidecarMessage =
   | { type: "clear" }
   | { type: "go"; path: string }
   | { type: "hello" }
+  | { type: "step"; by: -1 | 1 }
   | { type: "theme"; theme: string };
 
 export type Envelope<T> = T & { channel: typeof CHANNEL };

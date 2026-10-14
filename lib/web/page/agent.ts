@@ -12,6 +12,7 @@ import {
 import { type AgentMessage, CHANNEL, type Envelope, type SidecarMessage, type WebHit } from "./protocol.ts";
 
 const parents = new Set((new URL(import.meta.url).searchParams.get("parent") ?? "").split(",").filter(Boolean));
+const nav = "navigation" in window ? window.navigation : undefined;
 
 let parent: string | undefined;
 let armed = false;
@@ -53,10 +54,11 @@ function layout(): void {
       picked = again ? { ...picked, el: again } : undefined;
     }
   }
-  const page = `${location.href}\n${document.title}`;
+  const history = { back: !!nav?.canGoBack, forward: !!nav?.canGoForward };
+  const page = `${location.href}\n${document.title}\n${history.back} ${history.forward}`;
   if (page !== shown) {
     shown = page;
-    post({ type: "page", page: { title: document.title, url: location.href } });
+    post({ type: "page", history, page: { title: document.title, url: location.href } });
   }
   post({
     type: "layout",
@@ -88,6 +90,14 @@ function leave(event: MouseEvent): void {
   }
   event.preventDefault();
   post({ type: "away", url: to.href });
+}
+
+// The frame's own entries only: history.back() at its first page would walk the sidecar's history instead.
+function step(by: -1 | 1): void {
+  if (!nav || !(by < 0 ? nav.canGoBack : nav.canGoForward)) return;
+  const { committed, finished } = by < 0 ? nav.back() : nav.forward();
+  committed?.catch(() => undefined);
+  finished?.catch(() => undefined);
 }
 
 function pick(event: MouseEvent): void {
@@ -163,6 +173,7 @@ window.addEventListener("scroll", () => schedule(), true);
 window.addEventListener("resize", () => schedule());
 window.addEventListener("popstate", () => schedule(true));
 window.addEventListener("hashchange", () => schedule(true));
+nav?.addEventListener("currententrychange", () => schedule());
 for (const name of ["pushState", "replaceState"] as const) {
   const native = history[name];
   history[name] = function (this: History, ...args: Parameters<History["pushState"]>): void {
@@ -199,6 +210,8 @@ window.addEventListener("message", (event: MessageEvent<Partial<Envelope<Sidecar
     schedule();
   } else if (message.type === "go") {
     location.assign(new URL(message.path, location.origin).href);
+  } else if (message.type === "step") {
+    step(message.by);
   } else if (message.type === "theme") {
     document.documentElement.setAttribute("data-theme", message.theme);
   }
