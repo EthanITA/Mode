@@ -28,5 +28,6 @@
     "skills/create-artifact/scripts/checks.ts",
     "skills/create-artifact/scripts/highlight-ts.ts",
     "tests/**/*.ts"
-  ]
+  ],
+  "exclude": ["lib/web/page/**"]
 }
