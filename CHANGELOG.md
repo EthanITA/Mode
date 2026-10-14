@@ -18,7 +18,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   its last page and its threads, a redirect is followed on its own and its last stop is the entry kept, a
   site's cookies and storage last across conversations and browser restarts, a thread names the page it
   was left on, the address in the bar is editable, hovering a Web entry offers to remove it with Undo, and a
-  remote site is fenced off from localhost and from the sidecar's API.
+  remote site is fenced off from localhost and from the sidecar's API. Back and forward arrows step through
+  the site's own history and never the sidecar's, and grown to fullscreen the site keeps its bar as the one
+  island left, with the address, the arrows, reload, open in a browser tab, Comment and Exit fullscreen.
 
 - **Links open in Artifacts.** A link anywhere in the sidecar, in a page, a rendered file, a live site, a
   note, an answer or the code editor, opens there instead of in a browser tab: a web address as a Web entry,
@@ -26,8 +28,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   rather than in it, and any other file in Files. A relative link reads against the file it sits in, a mail
   link still leaves, and the href stays real so Copy link gives it.
 
-- **Ask Claude, `/btw` from the sidecar.** The session's mascot sits beside the notes, and ⌥↵ or a click
-  slides its field out to ask a side question with the whole conversation as context, the running turn
+- **Ask Claude, `/btw` from the sidecar.** The session's mascot sits beside the notes, hovering it slides its
+  field out without taking focus, and ⌥↵ or a click puts the cursor there to ask a side question with the whole conversation as context, the running turn
   included, and nothing reaches the transcript. The mascot acts out the session's status, hopping under a
   "!" while it waits on you and asleep once it's gone, apart from the side chat's state. The exchanges
   stack in one scrolling thread that Clear empties with Undo, asking works on a finished conversation, and

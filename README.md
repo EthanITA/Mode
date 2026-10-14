@@ -282,8 +282,8 @@ component's scope. Outside the app, `/api/events/stream` is plain server-sent ev
 named after its topic and its id is the offset to resume from, `?topic=` narrows it, and `?since=` or a
 `Last-Event-ID` header replays from an offset where a new connection starts at the end.
 
-Ask Claude is `/btw` from the sidecar: the mascot beside the notes opens its field on ⌥↵ or a click and
-folds back when focus leaves, asks a side question with the whole conversation as context, and nothing
+Ask Claude is `/btw` from the sidecar: the mascot beside the notes slides its field out on hover, and ⌥↵
+or a click puts the cursor in it, folding back once the pointer and focus have left, asks a side question with the whole conversation as context, and nothing
 reaches the transcript or interrupts the turn. Its exchanges stack in one scrolling thread, which Clear
 empties with Undo, and they live in the page's memory only.
 `POST /api/sessions/<key>/ask` with `kind: "btw"` copies the transcript to the OS temp dir with its `last-prompt` record
