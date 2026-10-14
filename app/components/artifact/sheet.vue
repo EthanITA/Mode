@@ -27,10 +27,10 @@ const read = useTemplateRef<HTMLElement>("read");
 let rest = { pad: 0, radius: "0px" };
 let growth: Animation | undefined;
 
-function boxOf(el: Element, frame: Element): Box {
-  const box = el.getBoundingClientRect();
-  const origin = frame.getBoundingClientRect();
-  return { height: box.height, left: box.left - origin.left, top: box.top - origin.top, width: box.width };
+// In viewport terms, since that is what a fixed sheet's left and top mean.
+function boxOf(el: Element): Box {
+  const { height, left, top, width } = el.getBoundingClientRect();
+  return { height, left, top, width };
 }
 
 function frameOf({ height, left, top, width }: Box, radius: string, depth: "lg" | "sm"): Keyframe {
@@ -48,8 +48,7 @@ function frameOf({ height, left, top, width }: Box, radius: string, depth: "lg" 
 async function expand(): Promise<void> {
   const pane = preview.value?.$el;
   if (!(pane instanceof HTMLElement) || !slot.value) return;
-  const stage = pane.offsetParent ?? document.body;
-  const from = boxOf(slot.value, stage);
+  const from = boxOf(slot.value);
   const pad = read.value
     ? Number.parseFloat(getComputedStyle(read.value).paddingTop) + (bar.value?.offsetHeight ?? 0)
     : 0;
@@ -58,7 +57,7 @@ async function expand(): Promise<void> {
   await nextTick();
   if (prefersReducedMotion()) return;
   growth?.cancel();
-  growth = pane.animate([frameOf(from, rest.radius, "sm"), frameOf(boxOf(pane, stage), "0px", "lg")], GROW);
+  growth = pane.animate([frameOf(from, rest.radius, "sm"), frameOf(boxOf(pane), "0px", "lg")], GROW);
   if (read.value)
     read.value.animate([{ paddingTop: `${pad}px` }, { paddingTop: getComputedStyle(read.value).paddingTop }], GROW);
 }
@@ -69,11 +68,10 @@ async function collapse(): Promise<void> {
     isExpanded.value = false;
     return;
   }
-  const stage = pane.offsetParent ?? document.body;
   growth?.cancel();
   // Held on its last frame until the class comes off, or the sheet would flash full size for a frame.
   const shrink = pane.animate(
-    [frameOf(boxOf(pane, stage), "0px", "lg"), frameOf(boxOf(slot.value, stage), rest.radius, "sm")],
+    [frameOf(boxOf(pane), "0px", "lg"), frameOf(boxOf(slot.value), rest.radius, "sm")],
     {
       ...SHRINK,
       fill: "forwards",
@@ -161,12 +159,12 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-/* Absolute against the face's stage: over the whole face, and still under the island and dock rows. */
+/* Fixed, so it fills the window past the shell's max width, and still under the island and dock rows. */
 .preview[data-expanded="true"] {
   border-radius: 0;
   box-shadow: var(--shadow-lg);
   inset: 0;
-  position: absolute;
+  position: fixed;
   z-index: 10;
 }
 
