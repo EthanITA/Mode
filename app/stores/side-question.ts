@@ -1,4 +1,4 @@
-import type { AskClaudeReply } from "~~/shared/types/ask-claude";
+import type { AskClaudeReply, AskClaudeRequest } from "~~/shared/types/ask-claude";
 import type { AskClaudeTurn, SideAnchor, SideSurface, SideThread } from "~/utils/ask-claude";
 
 export type SideDelivery = { delivered: true } | { delivered: false; reason: "no-live-session" | "refused-by-inbox" };
@@ -36,7 +36,12 @@ export const $sideQuestion = defineStore(() => {
     };
     try {
       const reply = await $fetch<AskClaudeReply>(`/api/sessions/${encodeURIComponent(thread.key)}/ask`, {
-        body: { history, question: turn.prompt ?? turn.question },
+        body: {
+          history,
+          kind: "blank",
+          path: thread.anchor.path,
+          question: turn.prompt ?? turn.question,
+        } satisfies AskClaudeRequest,
         method: "POST",
         signal: abort.signal,
       });

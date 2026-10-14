@@ -139,7 +139,7 @@ function openNote({ lines, quote, x, y }: NoteAt): void {
   const span = EditorNotes.spanOf(lines);
   const label = `${basename(path)}:${lines[0] === lines[1] ? lines[0] : lines.join("-")}`;
   chrome.comment.open({
-    ask: { label, lines, place: file.value, quote, surface: "files", where: `${span} of ${file.value}` },
+    ask: { label, lines, path, place: file.value, quote, surface: "files", where: `${span} of ${file.value}` },
     excerpt: quote,
     file: file.value,
     kind: "line",

@@ -180,7 +180,7 @@ onMounted(() => {
           <Prose v-if="turn.answer" class="answer" :line-refs-of="file" :value="turn.answer" />
           <p v-else-if="turn.failure" class="failure" role="alert">{{ turn.failure }}</p>
           <template v-else>
-            <p class="thinking shimmer">Reading the conversation<span class="dots" /></p>
+            <p class="thinking shimmer">Reading the file<span class="dots" /></p>
             <span v-if="thread.turns.length === 1" class="bones" aria-hidden="true"><span /><span /><span /></span>
           </template>
         </template>

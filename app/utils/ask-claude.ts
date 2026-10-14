@@ -38,6 +38,7 @@ export interface SideAnchor {
   quote: string;
   lines?: LineSpan;
   mark?: string;
+  path?: string;
   block?: string;
   top?: number;
 }
@@ -76,7 +77,7 @@ function stateOf({ status, turns }: SideThread): SideQuestionState {
   return turns.length > 1 ? "thread" : "answered";
 }
 
-// Numbered, because the fork has no tools: a "line 14" in its answer is only right if it read the number here.
+// Numbered, so a "line 14" in the answer means the file's line 14 and lights the right row.
 function promptOf(anchor: SideAnchor, question: string): string {
   const [first = 1] = anchor.lines ?? [];
   const rows = anchor.quote.split("\n");
@@ -139,9 +140,10 @@ function handoverOf({ anchor, draft, turns }: SideThread): string {
   const quote = anchor.quote.replace(/\s+/g, " ").trim();
   const short = quote.length > QUOTE_MAX ? `${quote.slice(0, QUOTE_MAX - 1)}…` : quote;
   const exchanges = turns.flatMap((turn) =>
-    turn.answer ? [`I asked: ${turn.question}`, `You answered: ${turn.answer}`] : [],
+    turn.answer ? [`I asked: ${turn.question}`, `Claude answered: ${turn.answer}`] : [],
   );
-  const thread = [`I asked you on the side about ${anchor.where} (“${short}”).`, ...exchanges].join("\n");
+  // The side Claude never saw this conversation, so the session must not read its answer as its own.
+  const thread = [`I asked a blank Claude on the side about ${anchor.where} (“${short}”).`, ...exchanges].join("\n");
   return draft.trim() ? `${thread}\n\n${draft.trim()}` : thread;
 }
 

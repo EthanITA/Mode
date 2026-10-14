@@ -217,6 +217,7 @@ export function useChrome(): Chrome {
               block: hit.text,
               label,
               mark: hit.key,
+              path: sc.artifact.value?.path,
               place: slug,
               quote: hit.text,
               surface: "artifact",

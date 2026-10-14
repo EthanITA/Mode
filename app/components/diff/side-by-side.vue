@@ -98,7 +98,7 @@ function openNote(side: Side, { lines, quote, x, y }: NoteAt): void {
   const canAsk = !isReadonly && side === "new";
   chrome.comment.open({
     ask: canAsk
-      ? { label, lines, place: shown.value, quote, surface: "review", where: `${span} of ${shown.value}` }
+      ? { label, lines, path: file.path, place: shown.value, quote, surface: "review", where: `${span} of ${shown.value}` }
       : undefined,
     excerpt: quote,
     file: shown.value,

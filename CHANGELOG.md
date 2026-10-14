@@ -18,8 +18,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   conversation, and Send to session turns an answer into a real turn. `POST /api/sessions/<key>/ask` serves it.
 
 - **Quick ask from a comment.** The comment popover on lines in Review's diff, lines in Files, and a
-  block of an artifact gets Ask (⌘↵) beside Add to tray. Claude answers in a side question card under
-  the lines or in the margin, with follow-ups, Resolve (⌘⌫, with Undo) and Send to conversation (⌘↵),
+  block of an artifact gets Ask (⌘↵) beside Add to tray. A blank Claude answers in a side question card
+  under the lines or in the margin: a bare `claude -p` with none of your configuration that can only
+  read files, so it looks at the code instead of quoting your rules. It has follow-ups, Resolve (⌘⌫, with Undo) and Send to conversation (⌘↵),
   which also carries what is still in the field, and the lines an answer names light up as chips you
   can click. Asks never enter the tray.
 

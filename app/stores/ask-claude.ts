@@ -1,4 +1,4 @@
-import type { AskClaudeReply } from "~~/shared/types/ask-claude";
+import type { AskClaudeReply, AskClaudeRequest } from "~~/shared/types/ask-claude";
 import type { AskClaudeState, AskClaudeTurn } from "~/utils/ask-claude";
 
 interface Thread {
@@ -47,7 +47,7 @@ export const $askClaude = defineStore(() => {
     };
     try {
       const reply = await $fetch<AskClaudeReply>(`/api/sessions/${encodeURIComponent(key)}/ask`, {
-        body: { history, question },
+        body: { history, kind: "btw", question } satisfies AskClaudeRequest,
         method: "POST",
         signal: abort.signal,
       });

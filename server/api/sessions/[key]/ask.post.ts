@@ -1,4 +1,4 @@
-import { askClaude } from "~~/server/utils/sessions/ask-claude";
+import { askClaude } from "~~/server/utils/sessions/ask-claude/index";
 import type { AskClaudeExchange, AskClaudeReply, AskClaudeRequest } from "~~/shared/types/ask-claude";
 
 // The newest twenty, the same window /btw replays, so a follow-up can lean on what was asked before.
@@ -14,7 +14,12 @@ function requestOf(raw: unknown): AskClaudeRequest | undefined {
   const question = typeof record?.question === "string" ? record.question.trim() : "";
   const history = record?.history ?? [];
   if (!question || !Array.isArray(history) || !history.every(isExchange)) return undefined;
-  return { question, history: history.slice(-HISTORY_MAX) };
+  const asked = { question, history: history.slice(-HISTORY_MAX) };
+  if (record?.kind === "btw") return { ...asked, kind: "btw" };
+  if (record?.kind !== "blank") return undefined;
+  return typeof record.path === "string" && record.path
+    ? { ...asked, kind: "blank", path: record.path }
+    : { ...asked, kind: "blank" };
 }
 
 export default defineEventHandler(async (event): Promise<AskClaudeReply> => {

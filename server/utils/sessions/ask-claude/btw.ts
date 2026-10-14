@@ -4,19 +4,21 @@ import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AskClaudeReply, AskClaudeRequest } from "../../../shared/types/ask-claude.ts";
-import { claudeBinary } from "./jobs.ts";
-import { forkable, identityOf, transcriptIndex } from "./transcripts.ts";
+import type { AskClaudeExchange, AskClaudeReply } from "../../../../shared/types/ask-claude.ts";
+import { claudeBinary } from "../jobs.ts";
+import { forkable, identityOf, transcriptIndex } from "../transcripts.ts";
 
-export interface AskClaudeOptions extends AskClaudeRequest {
+export interface AskBtw {
   key: string;
+  question: string;
+  history: AskClaudeExchange[];
   signal?: AbortSignal;
 }
 
 interface Fork {
   cwd: string;
   build: string;
-  history: AskClaudeRequest["history"];
+  history: AskClaudeExchange[];
   model?: string;
   path: string;
   question: string;
@@ -138,7 +140,7 @@ function converse({ cwd, build, history, model, path, question, signal, version 
   });
 }
 
-export async function askClaude({ key, question, history, signal }: AskClaudeOptions): Promise<AskClaudeReply> {
+export async function askBtw({ key, question, history, signal }: AskBtw): Promise<AskClaudeReply> {
   const ref = transcriptIndex().get(key);
   if (!ref) return failed("This conversation has no transcript on disk, so there is nothing to ask about.");
   const fork = forkable(await readFile(ref.path, "utf8"));

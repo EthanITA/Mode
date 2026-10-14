@@ -275,18 +275,22 @@ named after its topic and its id is the offset to resume from, `?topic=` narrows
 
 Ask Claude is `/btw` from the sidecar: ⌥↵, or the Ask Claude pill beside the notes, asks a side question
 with the whole conversation as context, and nothing reaches the transcript or interrupts the turn.
-`POST /api/sessions/<key>/ask` copies the transcript to the OS temp dir with its `last-prompt` record
+`POST /api/sessions/<key>/ask` with `kind: "btw"` copies the transcript to the OS temp dir with its `last-prompt` record
 pointed at the newest entry, so the running turn is included, then runs the session's own build from
 `~/.local/share/claude/versions` with `--resume <copy> --fork-session --no-session-persistence` and hooks
 off, and sends the undocumented `side_question` control request over stream-json. It works on a finished
 conversation too, and since that request is internal, a Claude Code upgrade can break it, which shows as
 a failed answer.
 
-The same ask runs from a comment: Ask (⌘↵) in the comment popover opens a side question card where you
-picked, under the lines in Review and Files or in an artifact's margin. Its first question carries the
-place and the picked lines numbered from the file, so a "line 14" in the answer is the file's line 14,
-and Send to conversation hands the place, a short quote and the exchanges over as your next message,
-with whatever is still in the field as its last paragraph.
+A comment asks a blank Claude instead: Ask (⌘↵) in the comment popover opens a side question card where
+you picked, under the lines in Review and Files or in an artifact's margin, and posts `kind: "blank"`.
+That is a fresh `claude -p` on Sonnet with no conversation and none of your configuration (no setting
+sources, hooks, MCP servers or slash commands), whose only tools are Read, Glob and Grep in the session's
+folder, plus the picked file's folder through `--add-dir` when it sits outside. It stops after 8 turns or
+two minutes, and with the session's folder gone it reads nothing. Its first question carries the place
+and the picked lines numbered from the file, so a "line 14" in the answer is the file's line 14, and Send
+to conversation hands the place, a short quote and the exchanges over as your next message, with
+whatever is still in the field as its last paragraph.
 The threads live in the `$sideQuestion` store, in memory only like `/btw`.
 
 ---

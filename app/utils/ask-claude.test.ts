@@ -110,6 +110,6 @@ test("the handover names the place with a short quote, the answered exchanges, t
   });
   assert.equal(
     text,
-    "I asked you on the side about lines 9-10 of ~/src/mode/lib/hook/io.ts (“let size = 0; for await (const chunk of process.stdin) {”).\nI asked: What does it do?\nYou answered: It caps the input.\n\nRaise it to 4 MB.",
+    "I asked a blank Claude on the side about lines 9-10 of ~/src/mode/lib/hook/io.ts (“let size = 0; for await (const chunk of process.stdin) {”).\nI asked: What does it do?\nClaude answered: It caps the input.\n\nRaise it to 4 MB.",
   );
 });
