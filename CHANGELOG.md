@@ -409,6 +409,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **Switching apps no longer sends the sidecar to Listening.** While another app activates, Terminal
+  reports a hidden tabless window, or another of its windows, as the front one for a moment, and a read
+  landing there left the conversation. The read now skips hidden windows, and a front tab change counts
+  only once it still holds 300ms later.
 - **Listening opens the conversation it offers to resume.** Pointing the sidecar at the last
   conversation, from Terminal, `/sidecar` or typing, left the page on Listening, because it took that
   conversation for the one already on screen. Now it opens it like any other.

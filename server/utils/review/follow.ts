@@ -12,19 +12,21 @@ type Watch = {
   seen?: Front;
 };
 
-// Guarded on `is running` so asking never launches Terminal; a tabless ghost window has no id, so it is skipped.
+// Guarded on `is running` so asking never launches Terminal; ghost windows, idless or hidden and tabless, are skipped.
 const SCRIPT = `if application "Terminal" is running then
   tell application "Terminal"
     set ids to id of every window
     repeat with wid in ids
       set wid to contents of wid
-      if wid is not missing value then return custom title of selected tab of window id wid
+      if wid is not missing value and visible of window id wid then return custom title of selected tab of window id wid
     end repeat
   end tell
 end if
 return ""`;
 
 const TERMINAL_EVERY_MS = 1000;
+// Terminal reorders its windows for a moment while another app activates, so a change counts once it holds this long.
+const SETTLE_MS = 300;
 
 let target: FollowTarget = { source: "none" };
 // Read when /sidecar points, because no page may be listening to see the front tab switch after it.
@@ -90,8 +92,16 @@ async function frontKey(): Promise<Front | undefined> {
   return { key: entry && keyOf(entry.id) };
 }
 
+async function settledKey(seen?: Front): Promise<Front | undefined> {
+  const first = await frontKey();
+  if (!first || (seen && seen.key === first.key)) return first;
+  await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+  const again = await frontKey();
+  return again && again.key === first.key ? first : undefined;
+}
+
 async function tick(current: Watch): Promise<void> {
-  const front = await frontKey();
+  const front = await settledKey(current.seen);
   const from = await pointedFrom;
   if (watch !== current || !front) return;
   const before = current.seen;
