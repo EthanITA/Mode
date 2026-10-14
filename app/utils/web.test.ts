@@ -15,14 +15,14 @@ const thread = (id: string, page: string, updated: string, status: ReviewThread[
   updated,
 });
 
-test("each entry gets its own host under the sidecar's, except under an IP, which has no subdomain to give", () => {
-  const slug = "localhost-3000--abc123";
+test("each jar gets its own host under the sidecar's, except under an IP, which has no subdomain to give", () => {
+  const jar = "google-com";
   assert.equal(
-    Web.origin({ here: new URL("http://sidecar.localhost:4747/c/x"), port: 47481, slug }),
-    `http://${slug}.sidecar.localhost:47481`,
+    Web.origin({ here: new URL("http://sidecar.localhost:4747/c/x"), jar, port: 47481 }),
+    `http://${jar}.sidecar.localhost:47481`,
   );
-  assert.equal(Web.origin({ here: new URL("http://127.0.0.1:4747/"), port: 47481, slug }), "http://127.0.0.1:47481");
-  assert.equal(Web.origin({ here: new URL("http://[::1]:4747/"), port: 47481, slug }), "http://[::1]:47481");
+  assert.equal(Web.origin({ here: new URL("http://127.0.0.1:4747/"), jar, port: 47481 }), "http://127.0.0.1:47481");
+  assert.equal(Web.origin({ here: new URL("http://[::1]:4747/"), jar, port: 47481 }), "http://[::1]:47481");
 });
 
 test("a page inside the proxy maps back onto the site, and anything else is left alone", () => {

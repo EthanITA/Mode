@@ -3,8 +3,8 @@ import type { ReviewThread } from "../../shared/types/artifact.ts";
 export interface WebOriginOptions {
   /** The sidecar's own address, whose host the proxy's is named under. */
   here: URL;
+  jar: string;
   port: number;
-  slug: string;
 }
 
 export interface WebElsewhere {
@@ -14,9 +14,9 @@ export interface WebElsewhere {
 
 const isIp = (host: string): boolean => host.startsWith("[") || /^\d+(\.\d+){3}$/.test(host);
 
-// A host per entry keeps each site's cookies apart, which a port alone does not; an IP has no subdomain to give.
-function origin({ here, port, slug }: WebOriginOptions): string {
-  return `http://${isIp(here.hostname) ? here.hostname : `${slug}.${here.hostname}`}:${port}`;
+// A host per jar keeps sites' cookies apart, which a port alone does not; an IP has no subdomain to give.
+function origin({ here, jar, port }: WebOriginOptions): string {
+  return `http://${isIp(here.hostname) ? here.hostname : `${jar}.${here.hostname}`}:${port}`;
 }
 
 function pageOf(href: string): string {

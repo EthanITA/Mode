@@ -42,7 +42,7 @@ async function start(): Promise<void> {
   try {
     const got = await $fetch<WebServeReply>(`/api/web/${slug}/serve`, { method: "POST" });
     if (run !== started) return;
-    proxy.value = Web.origin({ here: new URL(location.href), port: got.port, slug });
+    proxy.value = Web.origin({ here: new URL(location.href), jar: got.jar, port: got.port });
     upstream.value = got.upstream;
     src.value = Web.srcOf({ proxy: proxy.value, url: web.page?.url ?? url });
   } catch {
@@ -124,7 +124,7 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
   const message = event.data as Envelope<AgentMessage>;
   switch (message.type) {
     case "away":
-      void links.open(message.url);
+      void links.open(message.url, { landed: true });
       return;
     case "down":
       web.state = "down";
