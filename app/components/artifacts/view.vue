@@ -159,10 +159,6 @@ async function openUrl(): Promise<void> {
               <span class="kind mono-meta" :data-kind="meta.kind">{{ KIND[meta.kind] }}</span>
               <span v-if="meta.kind === 'web'" class="age mono-meta">{{ hostOf(meta) }}</span>
               <span v-else-if="meta.updated" class="age mono-meta">{{ relativeAge(meta.updated) }}</span>
-              <span class="spacer" />
-              <span v-if="meta.threadCount" class="age threads mono-meta">{{
-                plural(meta.threadCount, "thread")
-              }}</span>
             </span>
             <span class="name">{{ nameOf(meta) }}</span>
           </button>
@@ -387,11 +383,6 @@ async function openUrl(): Promise<void> {
   }
 }
 
-.item:is([data-kind="web"], [data-kind="file"]):hover .threads,
-.item:is([data-kind="web"], [data-kind="file"]):focus-within .threads {
-  display: none;
-}
-
 .entry {
   border: 1px solid transparent;
   border-radius: 10px;
@@ -418,10 +409,6 @@ async function openUrl(): Promise<void> {
   align-items: center;
   display: flex;
   gap: 8px;
-}
-
-.spacer {
-  flex: 1;
 }
 
 .kind {
