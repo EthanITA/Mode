@@ -8,7 +8,7 @@ const follow = $follow();
 
 // Read off disk at build: an unbuilt face is unreachable, with no list kept by hand.
 const parts = import.meta.glob<Component>(
-  "../../../components/{artifacts/view,board/island,files/view,history/view,review/view}.vue",
+  "../../../components/{artifacts/view,files/view,history/view,review/view}.vue",
   { import: "default" },
 );
 
@@ -23,7 +23,6 @@ const built: Record<Face, Component | undefined> = {
   history: part("history/view"),
   review: part("review/view"),
 };
-const board = part("board/island");
 
 chrome.view.faces.value = FACES.filter((face) => built[face]);
 
@@ -68,10 +67,6 @@ follow.listen();
     <!-- Claude Code is the chat, so the dock carries only the notes waiting to go to it. -->
     <template #dock>
       <ComposerNotes v-if="!gone" />
-    </template>
-
-    <template #board>
-      <component :is="board" v-if="board && !gone" />
     </template>
 
     <UiSurface v-if="gone" class="gone" pad="md" shape="island" variant="raised">

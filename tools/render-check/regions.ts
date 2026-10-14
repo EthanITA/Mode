@@ -237,15 +237,6 @@ export const REGIONS: RegionSpec[] = [
     states: [...CONVERSATION, "comment"],
     quotes: true,
   },
-  {
-    id: "board-island",
-    label: "board island",
-    design: "Bottom left: the shared board, open or minimized to a pill.",
-    selectors: ['[data-region="board-island"]'],
-    demand: "required",
-    states: [...CONVERSATION],
-    quotes: true,
-  },
 
   {
     id: "jump-palette",

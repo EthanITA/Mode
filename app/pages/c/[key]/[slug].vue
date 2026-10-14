@@ -26,10 +26,6 @@ watchEffect(() => {
       <ComposerNotes />
     </template>
 
-    <template #board>
-      <BoardIsland />
-    </template>
-
     <main class="stage" :data-web="isWeb">
       <WebReader v-if="isWeb" :conversation="key" :slug="slug" />
       <ArtifactReader v-else :conversation="key" :slug="slug">
