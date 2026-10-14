@@ -17,13 +17,8 @@ const GAP: Record<DiffGap, string> = {
 
 const sc = useSidecar();
 const chrome = useChrome();
-const route = useRoute();
-const artifact = $artifact();
 const sides = $sideQuestion();
 const shown = useFaceShown();
-
-// The sheet on a face is too narrow for a second column; a routed page or a grown sheet has the room.
-const roomy = computed(() => artifact.isFull || !!route.params.slug);
 
 const frame = ref<{ clearPick: () => void }>();
 const marks = ref<FrameMark[]>([]);
@@ -36,7 +31,6 @@ const closedIds = new Set<string>();
 const heldScroll = ref(false);
 const heldTop = ref(0);
 const frameReady = ref(false);
-const noteCount = ref(0);
 const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
 
@@ -72,17 +66,6 @@ const gap = computed(() => {
   const got = versions.content.value;
   return got && !got.found ? GAP[got.reason] : "";
 });
-
-const hasNotes = computed(() => roomy.value && noteCount.value > 0);
-
-function tokenPx(name: string): number {
-  return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)) || 0;
-}
-
-// The frame's document cannot read the app's tokens, so the room the notes hold reaches it in pixels.
-const notesRoom = computed(() =>
-  hasNotes.value ? tokenPx("--notes-w") + tokenPx("--notes-gap") + tokenPx("--gutter") : 0,
-);
 
 function onMarks(next: FrameMark[]): void {
   marks.value = next;
@@ -260,10 +243,19 @@ onScopeDispose(() => {
       :unreachable="versions.unreachable.value"
     />
 
-    <div v-if="sc.artifact.value?.slug === slug" class="stack">
+    <CommentLayer
+      v-if="sc.artifact.value?.slug === slug"
+      v-slot="{ canAsk, inset }"
+      :file="path"
+      :live="live"
+      :marks="marks"
+      :ready="measured && !showDiff"
+      :slug="slug"
+      :threads="threads"
+      @reload="bump"
+    >
       <ArtifactDiff
         v-if="showDiff && stage === 'version'"
-        class="sheet-cell"
         data-region="artifact-page"
         :path="path!"
         :state="versions.diffState.value!"
@@ -272,12 +264,13 @@ onScopeDispose(() => {
       <ArtifactFrame
         v-else-if="stage === 'live' || stage === 'version'"
         ref="frame"
-        class="sheet-cell"
         data-region="artifact-page"
-        :can-ask="roomy && measured && live"
+        :can-ask="canAsk"
+        :can-edit="!markdown"
         :edition="edition"
+        :file="path"
         :html="markdown ? undefined : html"
-        :inset="notesRoom"
+        :inset="inset"
         :slug="slug"
         :src="versionSrc"
         :version="versions.at.value"
@@ -285,17 +278,6 @@ onScopeDispose(() => {
         @marks="onMarks"
         @pending="takePending"
         @ready="onReady"
-      />
-
-      <ArtifactGutter
-        v-if="roomy && measured && !showDiff"
-        class="notes-cell"
-        side="right"
-        :live="live"
-        :marks="marks"
-        :threads="threads"
-        @notes="noteCount = $event"
-        @reload="bump"
       />
 
       <div v-if="showDiff ? stage !== 'version' : !measured" class="gap" data-region="version-gap">
@@ -341,7 +323,7 @@ onScopeDispose(() => {
           Revert
         </UiIconButton>
       </UiSurface>
-    </div>
+    </CommentLayer>
 
     <div v-else class="blank">
       <UiStateMessage v-if="!sc.ready.value" align="center" kind="loading">Reading the page…</UiStateMessage>
@@ -359,32 +341,6 @@ onScopeDispose(() => {
   flex-direction: column;
   min-height: 100%;
   width: 100%;
-}
-
-.stack {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  position: relative;
-}
-
-/* Named rather than left to source order: the overlays between them are out of flow. */
-.sheet-cell,
-.gap {
-  grid-column: 1;
-}
-
-/* The notes share the page's cell and sit over its inline end, so the page's own ground runs under
-   them and the frame pads its content clear of them instead of the whole page narrowing. */
-.sheet-cell,
-.notes-cell {
-  grid-row: 1;
-}
-
-.notes-cell {
-  grid-column: 1;
-  justify-self: end;
-  margin-inline-end: var(--gutter);
-  width: var(--notes-w);
 }
 
 /* Only the artifact runs to the edges; its chrome insets itself. */

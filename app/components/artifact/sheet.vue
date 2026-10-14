@@ -104,7 +104,7 @@ watch([() => path, () => conversation], () => {
 // Post flush, so a face leaving on the same switch has already cleared it.
 watchEffect(
   () => {
-    if (shown.value) artifact.canGrow = !!(path && slug && conversation);
+    if (shown.value) artifact.canGrow = !!(path && conversation);
   },
   { flush: "post" },
 );
@@ -149,7 +149,9 @@ onBeforeUnmount(() => {
           <ArtifactReader v-else :conversation="conversation" :slug="slug" />
         </div>
       </template>
-      <slot v-else />
+      <div v-else ref="read" class="read" data-kind="file">
+        <slot />
+      </div>
     </UiSurface>
   </div>
 </template>
@@ -219,9 +221,17 @@ onBeforeUnmount(() => {
   padding: 16px 0 var(--float-clear);
 }
 
-/* A live page scrolls itself and runs to the sheet's edges, with its notes beside it. */
+/* A live page scrolls itself and runs to the sheet's edges, with its notes over it. */
 .read[data-kind="web"] {
   display: flex;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* A file brings its own bar and scrolls itself, so the sheet only lends it the room. */
+.read[data-kind="file"] {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   padding: 0;
 }

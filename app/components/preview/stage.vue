@@ -1,16 +1,45 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
+import type { FrameAnchor, FrameMark } from "~/types/frame";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { PreviewKind, PreviewScroll } from "~/utils/preview";
+import { measure, readAnchors } from "~~/lib/web/page/blocks";
 
-const { kind, src } = defineProps<{ kind: PreviewKind; src: string }>();
+const {
+  file,
+  inset = 0,
+  kind,
+  src,
+} = defineProps<{
+  /** Given only where notes on the rendering have somewhere to show, which turns block picking on. */
+  file?: string;
+  inset?: number;
+  kind: PreviewKind;
+  src: string;
+}>();
 const zoom = defineModel<number>("zoom", { required: true });
-const emit = defineEmits<{ engage: []; scrolled: [at: PreviewScroll] }>();
+const emit = defineEmits<{
+  anchors: [anchors: FrameAnchor[]];
+  engage: [];
+  marks: [marks: FrameMark[]];
+  scrolled: [at: PreviewScroll];
+}>();
 
 const look = useTheme();
 const scroller = useTemplateRef<HTMLElement>("scroller");
 const content = useTemplateRef<HTMLElement>("content");
-const frame = useTemplateRef<HTMLIFrameElement>("frame");
+const frame = ref<HTMLIFrameElement>();
+
+// The frame scrolls itself, so marks are measured where the blocks sit on screen.
+const pick = useCommentPick({
+  frame,
+  inset: () => inset,
+  measure: (doc, indexed) => {
+    emit("marks", measure(indexed, 0));
+    emit("anchors", readAnchors(doc, 0));
+  },
+  owner: () => ({ file }),
+});
 const { width: room } = useElementSize(scroller);
 const { height: tall } = useElementSize(content);
 const natural = ref(0);
@@ -89,6 +118,7 @@ function zoomFrame(): void {
 function unhook(): void {
   for (const off of teardown) off();
   teardown = [];
+  pick.detach();
 }
 
 function onFrameLoad(): void {
@@ -124,6 +154,7 @@ function onFrameLoad(): void {
     doc.removeEventListener("pointerdown", onEngage);
     doc.removeEventListener("click", onClick, true);
   });
+  if (file) pick.attach();
 }
 
 watch(

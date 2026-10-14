@@ -9,6 +9,7 @@ const unsaved = new Set<string>();
 <script lang="ts" setup>
 import { Eye, MessageSquarePlus } from "@lucide/vue";
 import type * as MonacoApi from "monaco-editor";
+import type { FrameAnchor, FrameMark } from "~/types/frame";
 import { EditorNotes, type NoteAt, type Notes } from "~/utils/monaco/notes";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { FileContent, FileSave, FileUnshown } from "~~/shared/types/files";
@@ -36,6 +37,8 @@ const isStale = ref(false);
 const isSaving = ref(false);
 const preview = $preview();
 const zoom = ref(1);
+const marks = ref<FrameMark[]>([]);
+const anchors = ref<FrameAnchor[]>([]);
 // Bumped on every read and save, so the rendering reloads whenever the disk may have moved.
 const version = ref(0);
 
@@ -274,7 +277,25 @@ onBeforeUnmount(() => {
     <div class="body">
       <div v-show="content && 'text' in content && !isPreviewing" ref="host" class="host" data-region="files-viewer" />
       <SideQuestionZones v-if="asking" :api="asking.api" :editor="asking.editor" :place="file" surface="files" />
-      <PreviewStage v-if="isPreviewing && kind" v-model:zoom="zoom" :kind="kind" :src="src" />
+      <CommentLayer
+        v-if="isPreviewing && (kind === 'markdown' || kind === 'page')"
+        v-slot="{ inset }"
+        :anchors="anchors"
+        :file="file"
+        :marks="marks"
+        scrolls
+      >
+        <PreviewStage
+          v-model:zoom="zoom"
+          :file="file"
+          :inset="inset"
+          :kind="kind"
+          :src="src"
+          @anchors="anchors = $event"
+          @marks="marks = $event"
+        />
+      </CommentLayer>
+      <PreviewStage v-else-if="isPreviewing && kind" v-model:zoom="zoom" :kind="kind" :src="src" />
       <UiStateMessage v-else-if="content && 'reason' in content" align="center" class="empty">
         {{ UNSHOWN[content.reason] }}
       </UiStateMessage>

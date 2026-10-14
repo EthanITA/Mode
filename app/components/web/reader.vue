@@ -18,7 +18,7 @@ const tray = useTray();
 
 const marks = ref<FrameMark[]>([]);
 const anchors = ref<FrameAnchor[]>([]);
-const noteCount = ref(0);
+const measured = ref(false);
 const fresh = ref<string[]>([]);
 const answered = new Map<string, number>();
 const isShown = useFaceShown();
@@ -118,6 +118,7 @@ async function removeEntry(): Promise<void> {
 
 function onMarks(next: FrameMark[]): void {
   marks.value = next;
+  measured.value = true;
   const text = next.map((mark) => mark.text).join("\n");
   if (shown && text !== shown && awaiting.value) void recheck();
   shown = text;
@@ -154,6 +155,7 @@ watch(
   (_, left) => {
     web.reset();
     marks.value = [];
+    measured.value = false;
     anchors.value = [];
     fresh.value = [];
     answered.clear();
@@ -221,48 +223,45 @@ onScopeDispose(() => {
         </div>
       </div>
 
-      <div v-show="!isDown" class="live">
-        <WebFrame
-          :can-ask="marks.length > 0"
-          :slug="slug"
-          :url="entry.url ?? ''"
-          @anchors="anchors = $event"
-          @load="refresh(true)"
-          @marks="onMarks"
-          @page="onPage"
-        />
-        <span
-          v-for="mark in changed"
-          :key="mark.key"
-          class="changed cela-spotlight"
-          :style="{
-            height: `${mark.height + 12}px`,
-            left: `${mark.left - 6}px`,
-            top: `${mark.top - 6}px`,
-            width: `${mark.width + 12}px`,
-          }"
-        >
-          <span class="tag mono-meta">Changed</span>
-        </span>
-      </div>
-
-      <aside class="notes" data-region="gutter" :data-open="noteCount > 0">
-        <header class="where mono-meta">
-          <span class="page">{{ page }}</span>
-          <span>{{ plural(noteCount, "thread") }}</span>
-        </header>
-        <ArtifactGutter
-          class="perches"
-          side="right"
-          :anchors="anchors"
-          :file="address && Web.addressOf(address)"
-          :marks="marks"
-          :notices="notices"
-          :threads="threads"
-          @notes="noteCount = $event"
-          @reload="web.reload()"
-        />
-      </aside>
+      <CommentLayer
+        v-show="!isDown"
+        v-slot="{ canAsk, inset }"
+        :anchors="anchors"
+        :file="address && Web.addressOf(address)"
+        :marks="marks"
+        :notices="notices"
+        :ready="measured"
+        scrolls
+        :slug="slug"
+        :threads="threads"
+        @reload="web.reload()"
+      >
+        <div class="live">
+          <WebFrame
+            :can-ask="canAsk"
+            :inset="inset"
+            :slug="slug"
+            :url="entry.url ?? ''"
+            @anchors="anchors = $event"
+            @load="refresh(true)"
+            @marks="onMarks"
+            @page="onPage"
+          />
+          <span
+            v-for="mark in changed"
+            :key="mark.key"
+            class="changed cela-spotlight"
+            :style="{
+              height: `${mark.height + 12}px`,
+              left: `${mark.left - 6}px`,
+              top: `${mark.top - 6}px`,
+              width: `${mark.width + 12}px`,
+            }"
+          >
+            <span class="tag mono-meta">Changed</span>
+          </span>
+        </div>
+      </CommentLayer>
     </template>
   </div>
 </template>
@@ -301,44 +300,6 @@ onScopeDispose(() => {
   right: 12px;
   top: -17px;
   white-space: nowrap;
-}
-
-.notes {
-  background: var(--canvas);
-  border-left: 1px solid var(--border);
-  box-sizing: border-box;
-  flex: none;
-  overflow: hidden;
-  position: relative;
-  width: 312px;
-}
-
-.notes[data-open="false"] {
-  display: none;
-}
-
-.where {
-  align-items: center;
-  color: var(--subtle);
-  display: flex;
-  gap: 8px;
-  left: 16px;
-  position: absolute;
-  right: 16px;
-  top: 14px;
-}
-
-.page {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.perches {
-  inset: 0 16px;
-  position: absolute;
 }
 
 .down,

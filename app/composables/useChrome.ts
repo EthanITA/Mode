@@ -49,8 +49,18 @@ export interface CommentHover {
 export interface CommentSpot extends CommentTarget {
   /** Set only by a surface that has somewhere to show the answer. */
   ask?: SideAnchor;
+  canEdit?: boolean;
+  slug?: string;
   x: number;
   y: number;
+}
+
+// Given by the surface, since the held slug is whichever face asserted it last.
+export interface CommentOwner {
+  canAsk?: boolean;
+  canEdit?: boolean;
+  file?: string;
+  slug?: string;
 }
 
 export interface CanvasHooks {
@@ -80,7 +90,7 @@ export interface Chrome {
     armed: Ref<boolean>;
     ask: (text: string) => void;
     close: () => void;
-    compose: (hit: FrameHit, canAsk?: boolean) => void;
+    compose: (hit: FrameHit, owner?: CommentOwner) => void;
     disarm: () => void;
     held: Ref<boolean>;
     hover: Maybe<CommentHover>;
@@ -210,10 +220,8 @@ export function useChrome(): Chrome {
   }
 
   // One step, because a picked block that then asks for a second click is the whole friction.
-  function compose(hit: FrameHit, canAsk = false): void {
+  function compose(hit: FrameHit, { canAsk = false, canEdit = false, file = hit.page, slug }: CommentOwner = {}): void {
     const label = hit.label || hit.path;
-    const slug = sc.slug.value;
-    const file = hit.page ?? sc.artifact.value?.path;
     pick.value = hit;
     hover.value = ringOf(hit);
     spot.value = {
@@ -234,6 +242,7 @@ export function useChrome(): Chrome {
             }
           : undefined,
       block: hit.text,
+      canEdit,
       excerpt: hit.text,
       file,
       kind: "block",
@@ -242,6 +251,7 @@ export function useChrome(): Chrome {
       page: hit.page,
       path: hit.path,
       quote: hit.text,
+      slug,
       tell: [hit.path, file].filter(Boolean).join(" · ") || "On this block",
       top: hit.top,
       x: clamp(hit.viewLeft, POPOVER_W),
@@ -260,7 +270,7 @@ export function useChrome(): Chrome {
       mark: at.mark,
       path: at.path,
       quote: at.quote ?? at.excerpt,
-      source: at.mark ? (sc.slug.value ?? at.tell) : at.excerpt ? `${at.tell} — “${at.excerpt}”` : at.tell,
+      source: at.mark ? (at.slug ?? at.file ?? at.tell) : at.excerpt ? `${at.tell} — “${at.excerpt}”` : at.tell,
       text: body,
       top: at.top,
     });
@@ -283,7 +293,7 @@ export function useChrome(): Chrome {
   }
 
   async function persist(at: CommentSpot, body: string, id?: string): Promise<void> {
-    const slug = sc.slug.value;
+    const { slug } = at;
     if (!slug || !at.mark) return;
     try {
       const got = await $fetch<ArtifactReviewReply>(`/api/artifacts/${slug}/review`, {
@@ -301,7 +311,7 @@ export function useChrome(): Chrome {
         method: "POST",
       });
       if (id && got.thread) tray.patch(id, { thread: got.thread.id });
-      if (sc.artifact.value) sc.artifact.value = { ...sc.artifact.value, threads: got.threads };
+      if (sc.artifact.value?.slug === slug) sc.artifact.value = { ...sc.artifact.value, threads: got.threads };
     } catch {
       // A page with no review seed stays tray-only; the card still resolves locally.
     }

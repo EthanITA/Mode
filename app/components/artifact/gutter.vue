@@ -11,6 +11,7 @@ const {
   marks = [],
   notices = {},
   side = "left",
+  slug,
   threads,
 } = defineProps<{
   anchors?: FrameAnchor[];
@@ -19,6 +20,7 @@ const {
   marks?: FrameMark[];
   notices?: Record<string, string>;
   side?: "left" | "right";
+  slug?: string;
   threads: ReviewThread[];
 }>();
 
@@ -30,12 +32,12 @@ const sides = $sideQuestion();
 
 const placed = computed(() => anchorThreads({ anchors, marks, threads }));
 
+// A file outside the catalogue has no slug, so its notes are told apart by the file alone.
 function isGutterNote(item: TrayItem): boolean {
   if (item.kind !== "comment") return false;
   if (!item.mark && !item.block && !item.quote) return false;
-  const here = file ?? sc.artifact.value?.path;
-  if (item.file && here && item.file !== here) return false;
-  return !item.source || item.source === sc.slug.value;
+  if (item.file && file && item.file !== file) return false;
+  return slug ? !item.source || item.source === slug : !!file && item.file === file;
 }
 
 function topOf(item: Pick<TrayItem, "block" | "mark" | "quote" | "top">): number {
@@ -60,9 +62,7 @@ const placedNotes = computed(() => {
 const linked = computed(() => new Set(placedNotes.value.map((row) => row.item.thread).filter(Boolean)));
 
 const asked = computed(() =>
-  sides
-    .at(sc.sessionKey.value, "artifact", sc.slug.value ?? "")
-    .map((thread) => ({ thread, top: topOf(thread.anchor) })),
+  sides.at(sc.sessionKey.value, "artifact", slug ?? "").map((thread) => ({ thread, top: topOf(thread.anchor) })),
 );
 
 const pageCards = computed(() => {
@@ -111,7 +111,7 @@ watchEffect(() =>
       <ArtifactNote
         :live="live"
         :notice="notices[row.thread.id]"
-        :slug="sc.slug.value ?? ''"
+        :slug="slug ?? ''"
         :thread="row.thread"
         @reload="emit('reload')"
       />
@@ -131,7 +131,7 @@ watchEffect(() =>
         </template>
 
         <template #default="{ close }">
-          <ArtifactThread adrift :pin="adrift" :slug="sc.slug.value ?? ''" @close="close" />
+          <ArtifactThread adrift :pin="adrift" :slug="slug ?? ''" @close="close" />
         </template>
       </UiPopover>
     </div>
@@ -146,7 +146,7 @@ watchEffect(() =>
         :item="row.item"
         :live="live"
         :notice="row.item.thread && notices[row.item.thread]"
-        :slug="sc.slug.value ?? ''"
+        :slug="slug ?? ''"
         :thread="threads.find((thread) => thread.id === row.item.thread)"
         @reload="emit('reload')"
       />

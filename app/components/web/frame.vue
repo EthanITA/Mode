@@ -4,7 +4,18 @@ import type { FrameAnchor, FrameHit, FrameMark, ViewBox } from "~/types/frame";
 import { type AgentMessage, CHANNEL, type Envelope, type SidecarMessage, type WebHit } from "~~/lib/web/page/protocol";
 import type { WebServeReply } from "~~/shared/types/web";
 
-const { canAsk = false, slug, url } = defineProps<{ canAsk?: boolean; slug: string; url: string }>();
+const {
+  canAsk = false,
+  inset = 0,
+  slug,
+  url,
+} = defineProps<{
+  canAsk?: boolean;
+  /** Room the notes hold at the inline end, taken by narrowing the frame since padding a live site's root breaks fixed layouts. */
+  inset?: number;
+  slug: string;
+  url: string;
+}>();
 
 const emit = defineEmits<{
   anchors: [anchors: FrameAnchor[]];
@@ -135,7 +146,7 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
     case "pick": {
       if (chrome.comment.spot.value) return;
       const hit = hitOf(message.hit);
-      if (hit) chrome.comment.compose(hit, canAsk);
+      if (hit) chrome.comment.compose(hit, { canAsk, slug });
       return;
     }
     case "ready":
@@ -175,7 +186,7 @@ watch(
 </script>
 
 <template>
-  <div class="web" data-region="web-frame">
+  <div class="web" data-region="web-frame" :style="{ paddingInlineEnd: inset ? `${inset}px` : undefined }">
     <iframe
       v-if="src && proxy"
       ref="frame"
