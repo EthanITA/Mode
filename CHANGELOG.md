@@ -250,6 +250,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   is, and only the followed conversation exiting sends it to Listening. A Terminal that could not be
   asked counts as no change. A conversation opened by hand or pointed at by `/sidecar` still stays put
   until another conversation comes to the front.
+- **Review leaves out `.claude` files.** Plans, job scratch, artifacts and config under a `.claude`
+  folder never show in the Review face, so Approve all and Reject all never touch them either.
 - **A sidecar that opens shows the conversation in front in Terminal.** Opening the app, reloading or
   coming back on a restored page reads Terminal's front tab first, and goes to Listening when no
   conversation is there. Whichever came last wins, a `/sidecar` point or the front tab switching after

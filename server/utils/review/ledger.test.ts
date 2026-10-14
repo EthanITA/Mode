@@ -19,11 +19,14 @@ before(() => {
   writeFileSync(join(root, "edited"), "one\nTWO\nthree\n");
   writeFileSync(join(root, "created"), "fresh\n");
   writeFileSync(join(root, "settled"), "kept\n");
+  mkdirSync(join(root, ".claude"));
+  writeFileSync(join(root, ".claude", "plan.md"), "scratch\n");
   const files = {
     [join(root, "edited")]: { turns: [1, 2], blob: "orig" },
     [join(root, "created")]: { turns: [2] },
     [join(root, "settled")]: { turns: [1], blob: "same" },
     [join(root, "gone")]: { turns: [2], blob: "orig" },
+    [join(root, ".claude", "plan.md")]: { turns: [2] },
   };
   const undo = [{ label: "approving a" }, { label: "rejecting line 2 of edited" }];
   writeFileSync(join(dir, "review.json"), JSON.stringify({ turn: 2, files, undo, redo: [] }));
@@ -34,7 +37,7 @@ after(() => {
   delete process.env.CLAUDE_CONFIG_DIR;
 });
 
-test("the snapshot pairs each file's original blob with the disk, and leaves out what already matches", () => {
+test("the snapshot pairs each file's original blob with the disk, and leaves out what matches or sits under .claude", () => {
   const snapshot = snapshotOf({ key: ID.slice(0, 8), live: true });
   const byName = new Map(snapshot.files.map((file) => [file.path.slice(root.length + 1), file]));
   assert.deepEqual([...byName.keys()].sort(), ["created", "edited", "gone"]);

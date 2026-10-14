@@ -49,6 +49,10 @@ export function ledgerDirOf(key: string): string | undefined {
   return undefined;
 }
 
+function isClaudeOwn(path: string): boolean {
+  return path.split("/").includes(".claude");
+}
+
 // Wrapped so an empty file stays distinct from a missing one.
 function readReviewable(path: string): { text: string } | undefined {
   try {
@@ -101,6 +105,7 @@ export function snapshotOf({ key, live }: { key: string; live: boolean }): Revie
   const ledger = dir ? ledgerOf(dir) : undefined;
   if (!dir || !ledger) return { key, live, turn: 0, files: [] };
   const files = Object.entries(ledger.files)
+    .filter(([path]) => !isClaudeOwn(path))
     .map(([path, tracked]) => fileOf(dir, path, tracked))
     .filter((file): file is ReviewFile => !!file && file.changes.length > 0);
   const undo = ledger.undo.at(-1)?.label;
