@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { EASE_CSS, MOTION_DURATION, prefersReducedMotion } from "@cela/design/utils/motion";
-import { Maximize2 } from "@lucide/vue";
+import { Maximize2, Minimize2 } from "@lucide/vue";
 import { useEventListener } from "@vueuse/core";
 import type { ComponentPublicInstance } from "vue";
 import { isTyping } from "~~/lib/web/page/blocks";
@@ -24,8 +24,9 @@ const shown = useFaceShown();
 const isExpanded = ref(false);
 const slot = useTemplateRef<HTMLElement>("slot");
 const preview = useTemplateRef<ComponentPublicInstance>("preview");
-const bar = useTemplateRef<HTMLElement>("bar");
+const bar = useTemplateRef<ComponentPublicInstance>("bar");
 const read = useTemplateRef<HTMLElement>("read");
+const isIsland = computed(() => isExpanded.value && kind === "web");
 let rest = { pad: 0, radius: "0px" };
 let growth: Animation | undefined;
 
@@ -52,7 +53,8 @@ async function expand(): Promise<void> {
   if (!(pane instanceof HTMLElement) || !slot.value) return;
   const from = boxOf(slot.value);
   const pad = read.value
-    ? Number.parseFloat(getComputedStyle(read.value).paddingTop) + (bar.value?.offsetHeight ?? 0)
+    ? Number.parseFloat(getComputedStyle(read.value).paddingTop) +
+      ((bar.value?.$el as HTMLElement | undefined)?.offsetHeight ?? 0)
     : 0;
   rest = { pad, radius: getComputedStyle(pane).borderRadius };
   isExpanded.value = true;
@@ -104,7 +106,9 @@ watch([() => path, () => conversation], () => {
 // Post flush, so a face leaving on the same switch has already cleared it.
 watchEffect(
   () => {
-    if (shown.value) artifact.canGrow = !!(path && conversation);
+    if (!shown.value) return;
+    artifact.canGrow = !!(path && conversation);
+    artifact.isSite = kind === "web";
   },
   { flush: "post" },
 );
@@ -117,6 +121,7 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
 onBeforeUnmount(() => {
   artifact.isFull = false;
   artifact.canGrow = false;
+  artifact.isSite = false;
 });
 </script>
 
@@ -131,11 +136,29 @@ onBeforeUnmount(() => {
       variant="raised"
     >
       <template v-if="path && slug && conversation">
-        <header ref="bar" class="bar">
+        <UiSurface
+          ref="bar"
+          as="header"
+          class="bar"
+          :data-island="isIsland"
+          pad="none"
+          :shape="isIsland ? 'pill' : undefined"
+          :variant="isIsland ? 'glass-liquid' : 'invisible'"
+        >
           <WebBar v-if="kind === 'web'" :conversation="conversation" :slug="slug" />
           <span v-else class="path">{{ homePath(path) }}</span>
           <ChromeCommentToggle shape="pill" />
           <ChromeAction
+            v-if="isIsland"
+            data-region="artifact-fullscreen"
+            :icon="Minimize2"
+            label="Exit fullscreen"
+            shape="pill"
+            tip="Shrink the page back · {F}"
+            @click="artifact.isFull = false"
+          />
+          <ChromeAction
+            v-else
             data-region="artifact-fullscreen"
             :icon="Maximize2"
             label="Fullscreen"
@@ -143,7 +166,7 @@ onBeforeUnmount(() => {
             tip="Grow the page over everything · {F}"
             @click="artifact.isFull = true"
           />
-        </header>
+        </UiSurface>
         <div ref="read" class="read" :data-kind="kind">
           <WebReader v-if="kind === 'web'" :conversation="conversation" :slug="slug" />
           <ArtifactReader v-else :conversation="conversation" :slug="slug" />
@@ -182,8 +205,15 @@ onBeforeUnmount(() => {
   z-index: 10;
 }
 
-.preview[data-expanded="true"] .bar {
+.preview[data-expanded="true"] .bar:not([data-island="true"]) {
   display: none;
+}
+
+.bar[data-island="true"] {
+  border-bottom: 0;
+  height: var(--island-row-h);
+  margin: var(--gutter) var(--gutter) 0;
+  padding: 0 8px 0 12px;
 }
 
 .preview[data-expanded="true"] .read {

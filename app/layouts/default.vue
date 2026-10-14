@@ -5,6 +5,7 @@ const sc = useSidecar();
 const chrome = useChrome();
 const route = useRoute();
 const islands = $islands();
+const artifact = $artifact();
 
 const dockEl = useTemplateRef<HTMLElement>("dockEl");
 const boardEl = useTemplateRef<HTMLElement>("boardEl");
@@ -46,7 +47,12 @@ useResizeObserver(boardEl, ([entry]) => {
 <template>
   <!-- Unset until measured, so the first frame takes the CSS fallback rather than
        reserving nothing and shifting the reading surface once the observer reports. -->
-  <div class="shell" :data-bare="islands.isHidden" :style="dockHeight ? { '--dock-h': `${dockHeight}px` } : undefined">
+  <div
+    class="shell"
+    :data-bare="islands.isHidden"
+    :data-site="artifact.isBare"
+    :style="dockHeight ? { '--dock-h': `${dockHeight}px` } : undefined"
+  >
     <!-- Covered rather than unmounted, so Listening keeps its stream and opens what is in front once the server is back. -->
     <div class="page" :inert="isDown">
       <slot />
@@ -148,6 +154,13 @@ useResizeObserver(boardEl, ([entry]) => {
 
 .shell[data-bare="true"] .foot :deep(*) {
   pointer-events: none;
+}
+
+/* Hidden outright, the corner toggle too, since the site's own header island carries what they did. */
+.shell[data-site="true"] .row,
+.shell[data-site="true"] .foot {
+  opacity: 0;
+  visibility: hidden;
 }
 
 /* Outranks the rule above on its own, rather than on source order: the row spans
