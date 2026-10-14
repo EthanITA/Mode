@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { MessageCircleQuestion, Send } from "@lucide/vue";
+import { Send } from "@lucide/vue";
 import type { AskClaudeTurn } from "~/utils/ask-claude";
 
 type Delivery = { delivered: true } | { delivered: false; reason: "no-live-session" | "refused-by-inbox" };
@@ -84,20 +84,8 @@ onMounted(() => {
 <template>
   <div v-if="sc.sessionKey.value" class="notes" data-region="composer-notes">
     <ComposerTray />
-    <ComposerAskClaude ref="island" v-model:open="isAsking" @send="sendAnswer" />
     <div class="pills">
-      <UiSurface v-if="!isAsking" class="pill" pad="none" shape="pill" variant="glass-liquid">
-        <button
-          v-press
-          class="open focusable"
-          type="button"
-          data-tip="Ask Claude on the side · {alt enter}"
-          @click="isAsking = true"
-        >
-          <UiIcon :icon="MessageCircleQuestion" size="sm" />
-          Ask Claude
-        </button>
-      </UiSurface>
+      <ComposerAskClaude ref="island" v-model:open="isAsking" @send="sendAnswer" />
       <UiSurface v-if="tray.count.value" class="pill" pad="none" shape="pill" variant="glass-liquid">
         <button
           v-press
@@ -123,9 +111,13 @@ onMounted(() => {
   gap: 8px;
 }
 
+/* Full width, so the island's percentage width resolves against the dock rather than its own content. */
 .pills {
+  align-items: flex-end;
   display: flex;
   gap: 8px;
+  justify-content: flex-end;
+  width: 100%;
 }
 
 .pill {
@@ -135,7 +127,6 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.open,
 .send {
   align-items: center;
   border: 0;
@@ -147,12 +138,6 @@ onMounted(() => {
   font-weight: 600;
   gap: 8px;
   height: 100%;
-}
-
-.open {
-  background: transparent;
-  color: var(--ink);
-  padding: 0 14px 0 12px;
 }
 
 .send {

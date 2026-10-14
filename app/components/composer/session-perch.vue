@@ -2,6 +2,8 @@
 import type { MascotState } from "~/components/claude/mascot.vue";
 import type { SessionState } from "~~/shared/types/session";
 
+const { tip } = defineProps<{ tip?: string }>();
+
 const { sessionState } = useScreen();
 const convo = useConversation();
 
@@ -32,7 +34,7 @@ const state = computed<MascotState>(() => {
     role="img"
     :aria-label="TIPS[sessionState]"
     :data-session="sessionState"
-    :data-tip="TIPS[sessionState]"
+    :data-tip="tip ?? TIPS[sessionState]"
   >
     <ClaudeMascot :size="40" :state="state" />
   </span>

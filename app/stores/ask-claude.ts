@@ -1,48 +1,32 @@
 import type { AskClaudeReply, AskClaudeRequest } from "~~/shared/types/ask-claude";
 import type { AskClaudeState, AskClaudeTurn } from "~/utils/ask-claude";
 
-interface Thread {
-  turns: AskClaudeTurn[];
-  shown?: string;
-}
-
 export interface AskClaudeView {
-  count: number;
-  position: number;
   state: AskClaudeState;
-  turn?: AskClaudeTurn;
+  turns: AskClaudeTurn[];
 }
 
 // Memory only, like /btw: the side questions never outlive the page.
 export const $askClaude = defineStore(() => {
-  const threads = ref<Record<string, Thread>>({});
+  const threads = ref<Record<string, AskClaudeTurn[]>>({});
   const inFlight = new Map<string, AbortController>();
 
-  function threadOf(key: string): Thread {
-    const fresh: Thread = { turns: [] };
-    if (!threads.value[key]) threads.value[key] = fresh;
-    return threads.value[key] ?? fresh;
-  }
-
   function view(key?: string): AskClaudeView {
-    const thread = key ? threads.value[key] : undefined;
-    const turns = thread?.turns ?? [];
-    const index = turns.findIndex((turn) => turn.id === thread?.shown);
-    const turn = turns[index];
-    return { count: turns.length, position: index + 1, state: askClaudeState(turn), turn };
+    const turns = (key && threads.value[key]) || [];
+    return { state: askClaudeState(turns.at(-1)), turns };
   }
 
   async function ask(key: string, question: string): Promise<void> {
     if (!question || inFlight.has(key)) return;
-    const thread = threadOf(key);
-    const history = askClaudeHistory(thread.turns);
+    const turns = threads.value[key] ?? [];
+    threads.value[key] = turns;
+    const history = askClaudeHistory(turns);
     const id = crypto.randomUUID();
-    thread.turns.push({ id, question });
-    thread.shown = id;
+    turns.push({ id, question });
     const abort = new AbortController();
     inFlight.set(key, abort);
     const settle = (patch: Pick<AskClaudeTurn, "answer" | "failure">): void => {
-      const turn = thread.turns.find((one) => one.id === id);
+      const turn = threads.value[key]?.find((one) => one.id === id);
       if (turn) Object.assign(turn, patch);
     };
     try {
@@ -62,33 +46,29 @@ export const $askClaude = defineStore(() => {
   // Hands the question back, so a cancelled ask returns to the field instead of vanishing.
   function cancel(key: string): string | undefined {
     const abort = inFlight.get(key);
-    const thread = threads.value[key];
-    if (!abort || !thread) return undefined;
+    if (!abort) return undefined;
     abort.abort();
     inFlight.delete(key);
-    const asked = thread.turns.pop();
-    thread.shown = undefined;
-    return asked?.question;
+    return threads.value[key]?.pop()?.question;
   }
 
-  function dismiss(key: string): void {
-    const thread = threads.value[key];
-    if (thread) thread.shown = undefined;
+  // Returns what went, so the toast's Undo can put it back.
+  function clear(key: string): AskClaudeTurn[] {
+    inFlight.get(key)?.abort();
+    inFlight.delete(key);
+    const gone = threads.value[key] ?? [];
+    delete threads.value[key];
+    return gone.filter((turn) => askClaudeState(turn) !== "asking");
   }
 
-  // Stepping back from a dismissed card reopens the newest answer.
-  function step(key: string, by: -1 | 1): void {
-    const thread = threads.value[key];
-    if (!thread) return;
-    const index = thread.turns.findIndex((turn) => turn.id === thread.shown);
-    const next = index < 0 ? (by < 0 ? thread.turns.at(-1) : undefined) : thread.turns[index + by];
-    if (next) thread.shown = next.id;
+  function restore(key: string, turns: AskClaudeTurn[]): void {
+    threads.value[key] = [...turns, ...(threads.value[key] ?? [])];
   }
 
   function markSent(key: string, id: string): void {
-    const turn = threads.value[key]?.turns.find((one) => one.id === id);
+    const turn = threads.value[key]?.find((one) => one.id === id);
     if (turn) turn.isSent = true;
   }
 
-  return { ask, cancel, dismiss, markSent, step, threads, view };
+  return { ask, cancel, clear, markSent, restore, threads, view };
 });

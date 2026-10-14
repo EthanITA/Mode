@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { ChevronLeft, ChevronRight, Copy, X } from "@lucide/vue";
-import { useClipboard } from "@vueuse/core";
+import { Trash2, X } from "@lucide/vue";
 import type { AskClaudeState, AskClaudeTurn } from "~/utils/ask-claude";
 
 const open = defineModel<boolean>("open", { required: true });
@@ -10,10 +9,10 @@ const sc = useSidecar();
 const chrome = useChrome();
 const { sessionState } = useScreen();
 const askClaude = $askClaude();
-const { copy } = useClipboard();
 
 const draft = ref("");
 const box = useTemplateRef<HTMLElement>("box");
+const list = useTemplateRef<HTMLElement>("list");
 
 const STATE_LINES: Record<AskClaudeState, string> = {
   idle: "",
@@ -34,9 +33,16 @@ const footLine = computed(() => {
   if (view.value.state === "asking") return "answers arrive whole";
   return view.value.state === "answered" ? "nothing written to the transcript" : "";
 });
+const isLast = (turn: AskClaudeTurn): boolean => view.value.turns.at(-1)?.id === turn.id;
 
 function focus(): void {
+  open.value = true;
   void nextTick(() => box.value?.querySelector("textarea")?.focus());
+}
+
+// The draft is kept through the fold, so clicking away to read loses nothing typed.
+function onFocusOut(event: FocusEvent): void {
+  if (!(event.relatedTarget instanceof Node && box.value?.contains(event.relatedTarget))) open.value = false;
 }
 
 function submit(text = question.value): void {
@@ -46,28 +52,33 @@ function submit(text = question.value): void {
   void askClaude.ask(key, text);
 }
 
-// One key walks back out: a running ask first, then the card, then the island itself.
+// One key walks back out: a running ask first, then the island itself.
 function escape(): void {
   const key = sc.sessionKey.value;
   if (!key) return;
   if (view.value.state === "asking") {
     draft.value = askClaude.cancel(key) ?? draft.value;
     focus();
-  } else if (view.value.turn) askClaude.dismiss(key);
-  else open.value = false;
+  } else if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+}
+
+function clear(): void {
+  const key = sc.sessionKey.value;
+  if (!key) return;
+  const gone = askClaude.clear(key);
+  focus();
+  if (!gone.length) return;
+  chrome.notify({
+    action: "Undo",
+    open: () => askClaude.restore(key, gone),
+    text: `Cleared ${plural(gone.length, "side question")}`,
+  });
 }
 
 function onKey(event: KeyboardEvent): void {
-  const key = sc.sessionKey.value;
   if (event.key === "Escape") {
     event.preventDefault();
     escape();
-    return;
-  }
-  // Arrows only step while the field is empty, so they still move the caret through a draft.
-  if (key && !draft.value && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
-    event.preventDefault();
-    askClaude.step(key, event.key === "ArrowLeft" ? -1 : 1);
     return;
   }
   if (event.key !== "Enter" || event.shiftKey || event.metaKey || event.ctrlKey) return;
@@ -75,13 +86,12 @@ function onKey(event: KeyboardEvent): void {
   submit();
 }
 
-async function copyAnswer(): Promise<void> {
-  if (!view.value.turn?.answer) return;
-  await copy(view.value.turn.answer);
-  chrome.toast("Answer copied", "success");
-}
-
 watch(open, (isOpen) => isOpen && focus(), { immediate: true });
+// The newest exchange is the one being read, so a new question or answer brings the thread to its foot.
+watch(
+  () => [open.value, view.value.turns.length, view.value.state],
+  () => void nextTick(() => list.value?.scrollTo({ top: list.value.scrollHeight })),
+);
 watch(
   () => sc.sessionKey.value,
   () => (draft.value = ""),
@@ -92,110 +102,113 @@ defineExpose({ focus });
 
 <template>
   <UiSurface
-    v-if="open"
     class="island"
     data-region="ask-claude"
     pad="none"
     shape="island"
     variant="glass-liquid"
+    :data-open="open"
     :responsive="{ axis: 'height', anchorY: 'end' }"
   >
-    <div ref="box" class="body" :data-tip="view.turn ? undefined : 'Close · {esc}'" @keydown="onKey">
-      <section v-if="view.turn" class="thread" data-region="ask-thread">
+    <div
+      ref="box"
+      class="body"
+      :data-tip="open && !view.turns.length ? 'Close · {esc}' : undefined"
+      @focusin="open = true"
+      @focusout="onFocusOut"
+      @keydown="onKey"
+    >
+      <section v-if="open && view.turns.length" class="thread" data-region="ask-thread">
         <header class="head">
           <span class="title">Ask Claude</span>
           <span class="state mono-meta" data-region="ask-state" :data-state="view.state">{{
             STATE_LINES[view.state]
           }}</span>
-          <template v-if="view.state === 'answered'">
-            <UiIconButton
-              :icon="ChevronLeft"
-              aria-label="Earlier answer"
-              data-tip="Earlier answer · {left}"
-              size="xs"
-              :disabled="view.position <= 1"
-              @click="askClaude.step(sc.sessionKey.value ?? '', -1)"
-            />
-            <span class="count mono-meta">{{ view.position }} / {{ view.count }}</span>
-            <UiIconButton
-              :icon="ChevronRight"
-              aria-label="Later answer"
-              data-tip="Later answer · {right}"
-              size="xs"
-              :disabled="view.position >= view.count"
-              @click="askClaude.step(sc.sessionKey.value ?? '', 1)"
-            />
-            <UiIconButton :icon="Copy" label="Copy answer" size="xs" @click="copyAnswer" />
-          </template>
+          <UiIconButton
+            :icon="Trash2"
+            aria-label="Clear the side questions"
+            data-region="ask-clear"
+            data-tip="Clear the side questions"
+            size="xs"
+            @click="clear"
+          />
           <button
             v-press
             class="dismiss focusable"
             type="button"
-            :aria-label="view.state === 'asking' ? 'Cancel' : 'Dismiss'"
-            :data-tip="view.state === 'asking' ? 'Cancel · {esc}' : 'Dismiss · {esc}'"
+            :aria-label="view.state === 'asking' ? 'Cancel' : 'Close'"
+            :data-tip="view.state === 'asking' ? 'Cancel · {esc}' : 'Close · {esc}'"
             @click="escape"
           >
             <UiIcon :icon="X" size="xs" />
           </button>
         </header>
 
-        <article class="asked">
-          <span class="mono-meta">you</span>
-          <p class="bubble">{{ view.turn.question }}</p>
-        </article>
+        <div ref="list" class="turns">
+          <div v-for="turn in view.turns" :key="turn.id" class="turn">
+            <article class="asked">
+              <span class="mono-meta">you</span>
+              <p class="bubble">{{ turn.question }}</p>
+            </article>
 
-        <div class="reply">
-          <span class="perch">
-            <ClaudeMascot :size="44" :state="view.state === 'asking' ? 'thinking' : 'idle'" />
-          </span>
-          <div class="words">
-            <p v-if="view.state === 'asking'" class="thinking shimmer">{{ thinking }}…</p>
-            <Prose v-else-if="view.turn.answer" :value="view.turn.answer" />
-            <p v-else class="failure" role="alert">{{ view.turn.failure }}</p>
+            <div class="reply">
+              <span class="perch">
+                <ClaudeMascot :size="44" :state="askClaudeState(turn) === 'asking' ? 'thinking' : 'idle'" />
+              </span>
+              <div class="words">
+                <p v-if="askClaudeState(turn) === 'asking'" class="thinking shimmer">{{ thinking }}…</p>
+                <Prose v-else-if="turn.answer" :value="turn.answer" />
+                <p v-else class="failure" role="alert">{{ turn.failure }}</p>
+              </div>
+            </div>
+
+            <footer class="foot">
+              <span class="mono-meta">{{ isLast(turn) ? footLine : "" }}</span>
+              <button
+                v-if="askClaudeState(turn) === 'answered'"
+                v-press
+                class="secondary focusable"
+                type="button"
+                :disabled="sessionState === 'gone' || turn.isSent"
+                :title="
+                  sessionState === 'gone'
+                    ? 'The session is gone, so nothing can be sent to it'
+                    : 'Send the question and answer as your next message'
+                "
+                @click="emit('send', turn)"
+              >
+                {{ turn.isSent ? "Sent" : "Send to session" }}
+              </button>
+              <button
+                v-else-if="askClaudeState(turn) === 'failed' && isLast(turn)"
+                v-press
+                class="secondary focusable"
+                type="button"
+                @click="submit(turn.question)"
+              >
+                Ask again
+              </button>
+            </footer>
           </div>
         </div>
-
-        <footer class="foot">
-          <span class="mono-meta">{{ footLine }}</span>
-          <button
-            v-if="view.state === 'answered'"
-            v-press
-            class="secondary focusable"
-            type="button"
-            :disabled="sessionState === 'gone' || view.turn.isSent"
-            :title="
-              sessionState === 'gone'
-                ? 'The session is gone, so nothing can be sent to it'
-                : 'Send the question and answer as your next message'
-            "
-            @click="emit('send', view.turn)"
-          >
-            {{ view.turn.isSent ? "Sent" : "Send to session" }}
-          </button>
-          <button
-            v-else-if="view.state === 'failed'"
-            v-press
-            class="secondary focusable"
-            type="button"
-            @click="submit(view.turn.question)"
-          >
-            Ask again
-          </button>
-        </footer>
       </section>
 
       <div class="row">
-        <ComposerSessionPerch />
+        <button class="wake plain-button focusable" type="button" aria-label="Ask Claude on the side" @click="focus">
+          <ComposerSessionPerch :tip="open ? undefined : 'Ask Claude on the side · {alt enter}'" />
+        </button>
         <UiTextarea
+          v-show="open"
           v-model="draft"
           auto-fit
           class="field focusable"
           variant="bare"
           :rows="1"
-          :placeholder="view.turn ? 'Ask a follow-up…' : 'Ask Claude about this conversation…'"
+          :placeholder="view.turns.length ? 'Ask a follow-up…' : 'Ask Claude about this conversation…'"
           aria-label="Ask Claude"
         />
         <button
+          v-show="open"
           v-press
           class="ask focusable"
           type="button"
@@ -213,7 +226,35 @@ defineExpose({ focus });
 <style scoped>
 .island {
   box-sizing: border-box;
+  transition: width var(--duration-base) var(--ease-out);
   width: min(600px, 100%);
+}
+
+/* At rest only the mascot shows, and the width it grows back into is what reveals the field. */
+.island[data-open="false"] {
+  border-radius: 999px;
+  width: 56px;
+}
+
+.island[data-open="false"] .body,
+.island[data-open="false"] .row {
+  min-height: 0;
+  padding: 0;
+}
+
+.island[data-open="false"] .row {
+  align-items: center;
+  height: 56px;
+  justify-content: center;
+}
+
+.wake {
+  align-items: center;
+  border-radius: 999px;
+  cursor: pointer;
+  display: flex;
+  flex: none;
+  justify-content: center;
 }
 
 /* Bounded like the rest of the dock, so a long answer scrolls instead of pushing the header off the top. */
@@ -233,9 +274,23 @@ defineExpose({ focus });
   gap: 10px;
   margin-bottom: 2px;
   min-height: 0;
-  overflow-y: auto;
   padding: 0 4px 8px 2px;
+}
+
+/* Only the exchanges scroll, so the header with Clear and Close stays put above them. */
+.turns {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  overflow-y: auto;
   scrollbar-width: thin;
+}
+
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .head {
@@ -264,10 +319,6 @@ defineExpose({ focus });
 
 .state[data-state="failed"] {
   color: var(--error);
-}
-
-.count {
-  color: var(--subtle);
 }
 
 .dismiss {
