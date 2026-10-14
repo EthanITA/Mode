@@ -210,7 +210,8 @@ describe("a .md outside the folder", () => {
 describe("web entries", () => {
   test("a URL becomes one entry per site, which keeps its port and remembers the last page opened", async () => {
     process.env.CLAUDE_CONFIG_DIR = config;
-    const { openRecord, parseTarget, webSlug } = await import("../lib/web/records.ts");
+    const { openRecord, webSlug } = await import("../lib/web/records.ts");
+    const { parseTarget } = await import("../lib/web/target.ts");
     assert.equal(parseTarget("localhost:3000/guide/hooks")?.href, "http://localhost:3000/guide/hooks");
     assert.equal(parseTarget("docs.mode.dev/guide")?.href, "https://docs.mode.dev/guide");
     assert.equal(parseTarget("ftp://files.dev"), undefined);

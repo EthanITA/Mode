@@ -6,6 +6,7 @@ import { stripTypeScriptTypes } from "node:module";
 import type { AddressInfo } from "node:net";
 import { after, test } from "node:test";
 import { runInNewContext } from "node:vm";
+import { isSameSite, landing } from "../../../lib/web/records.ts";
 import { isFencedOrigin, rewriteResponse, serve, stopAll } from "./proxy.ts";
 
 const PARENT = "http://sidecar.localhost:4747";
@@ -74,6 +75,7 @@ test("a page comes back framable, its cookies host-only and its own scripts firs
   assert.equal(page.status, 200);
   assert.equal(page.headers["x-frame-options"], undefined);
   assert.equal(page.headers["content-security-policy"], undefined);
+  assert.equal(page.headers["cache-control"], "no-store");
   assert.deepEqual(page.headers["set-cookie"], ["sid=1; Path=/; HttpOnly", "theme=dark; Path=/"]);
   assert.match(page.body, /^<!doctype html><html><head><script src="\/__sidecar\/bootstrap\.ts\?upstream=/);
   assert.ok(page.body.includes(`agent.ts?parent=${encodeURIComponent(PARENT)}`));
@@ -125,6 +127,31 @@ test("a site that isn't answering tells the sidecar, and only a page load gets t
   const asset = await get(port, "/app.js", { "sec-fetch-dest": "script" });
   assert.equal(asset.status, 502);
   assert.equal(asset.body, "");
+});
+
+test("a page that sends the frame to another site tells the sidecar where, and opening chases only www and https", async () => {
+  const upstream = createServer((req, res) => {
+    res.writeHead(302, { location: req.url === "/" ? "/home" : "https://www.example.com/consent" }).end();
+  });
+  const up = await listen(upstream);
+  const port = await freePort();
+  const site = `http://127.0.0.1:${up}`;
+  await serve({ parent: PARENT, port, upstream: site });
+
+  const page = await get(port, "/away", { "sec-fetch-dest": "iframe" });
+  assert.equal(page.status, 200);
+  assert.ok(page.body.includes(`type: "moved"`) && page.body.includes(`"https://www.example.com/consent"`));
+  assert.equal(
+    (await get(port, "/away", { "sec-fetch-dest": "empty" })).headers.location,
+    "https://www.example.com/consent",
+  );
+
+  assert.ok(isSameSite(new URL("https://google.com/"), new URL("https://www.google.com/")));
+  assert.ok(isSameSite(new URL("http://mode.dev/"), new URL("https://mode.dev/")));
+  assert.ok(!isSameSite(new URL("https://mode.dev/"), new URL("http://mode.dev/")));
+  assert.ok(!isSameSite(new URL("http://localhost:3000/"), new URL("https://auth.example.com/")));
+  assert.equal((await landing(new URL(`${site}/`))).href, `${site}/`);
+  assert.equal((await landing(new URL(`${site}/away`))).href, `${site}/away`);
 });
 
 test("a remote site is fenced off from local services and from the sidecar's API", async () => {

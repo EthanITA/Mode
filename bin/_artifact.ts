@@ -20,7 +20,8 @@ import {
 import { isFile } from "../lib/files.ts";
 import { Refusal } from "../lib/mode/refusal.ts";
 import { pyJson, pyStr } from "../lib/text.ts";
-import { openRecord, parseTarget } from "../lib/web/records.ts";
+import { landing, openRecord } from "../lib/web/records.ts";
+import { parseTarget } from "../lib/web/target.ts";
 
 type Parsed = {
   positionals: string[];
@@ -35,7 +36,7 @@ type Spec = {
   positionals: number;
   optionalPositional?: boolean;
   options?: Record<string, Shape>;
-  run: (args: Parsed) => string | void;
+  run: (args: Parsed) => Promise<string | void> | string | void;
 };
 
 class UsageError extends Error {}
@@ -145,10 +146,10 @@ const VERBS: Record<string, Spec> = {
     help: "open the artifact, or any URL live with comments, in the sidecar, or with --browser or --web in the browser",
     positionals: 1,
     options: { browser: "flag", web: "flag" },
-    run: ({ positionals: [slug = ""], flags }) => {
+    run: async ({ positionals: [slug = ""], flags }) => {
       const site = urlGiven(slug);
       if (site) {
-        const entry = openRecord({ url: site });
+        const entry = openRecord({ url: await landing(site) });
         record(entry.slug);
         if (flags.has("browser") || flags.has("web")) browse(entry.url);
         else
@@ -255,7 +256,7 @@ try {
     throw new UsageError(
       verb ? `argument cmd: invalid choice: '${verb}'` : "the following arguments are required: cmd",
     );
-  const out = spec.run(parse(rest, spec));
+  const out = await spec.run(parse(rest, spec));
   if (out) print(out);
 } catch (error) {
   if (error instanceof Refusal) {

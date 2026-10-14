@@ -18,8 +18,6 @@ export interface WebRecord {
 const FIRST_PORT = 47481;
 // The slug is the proxy's host label, and a DNS label past 63 characters never resolves.
 const LABEL_MAX = 63;
-const LOOPBACK_NAME = /^(localhost|127(\.\d{1,3}){3}|\[::1\])$|\.localhost$/i;
-
 export function webHome(): string {
   return join(sidecarHome(), "web");
 }
@@ -32,20 +30,30 @@ export function isWebRecord(path: string): boolean {
   return dirname(path) === webHome() && path.endsWith(".json");
 }
 
-/** A URL as typed, scheme optional: a name on this machine defaults to http and anything else to https. */
-export function parseTarget(raw: string): URL | undefined {
-  const typed = raw.trim();
-  if (!typed) return undefined;
-  const host = typed.replace(/^[a-z][a-z0-9+.-]*:\/\//i, "").split(/[/:?#]/)[0] ?? "";
-  const given = /^[a-z][a-z0-9+.-]*:\/\//i.test(typed)
-    ? typed
-    : `${LOOPBACK_NAME.test(host) ? "http" : "https"}://${typed}`;
+const HOPS = 5;
+const bare = (host: string): string => host.toLowerCase().replace(/^www\./, "");
+
+// Only the host with or without www, or its https upgrade, so an app that bounces to a login provider keeps its own entry.
+export function isSameSite(from: URL, to: URL): boolean {
+  if (bare(from.hostname) !== bare(to.hostname)) return false;
+  return from.protocol === to.protocol ? from.port === to.port : to.protocol === "https:" && !to.port;
+}
+
+/** Where the site really answers: google.com lives at www.google.com, and a frame can't follow it there itself. */
+export async function landing(url: URL): Promise<URL> {
+  let at = url;
   try {
-    const url = new URL(given);
-    return url.protocol === "http:" || url.protocol === "https:" ? url : undefined;
-  } catch {
-    return undefined;
-  }
+    for (let hop = 0; hop < HOPS; hop += 1) {
+      const response = await fetch(at, { redirect: "manual", signal: AbortSignal.timeout(4000) });
+      void response.body?.cancel();
+      const location = response.headers.get("location");
+      if (response.status < 300 || response.status >= 400 || !location) return at;
+      const next = new URL(location, at);
+      if (next.origin === at.origin || !isSameSite(at, next)) return at;
+      at = next;
+    }
+  } catch {}
+  return at;
 }
 
 export function webSlug(url: URL): string {

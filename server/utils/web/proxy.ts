@@ -111,7 +111,9 @@ export async function rewriteResponse({ here, isHead, response, running: held }:
   const isEncoded = !["", "identity"].includes(headers.get("content-encoding") ?? "");
   if (!isHtml || isEncoded || isHead || !response.body) return new Response(response.body, init);
   const html = inject(await response.text(), held);
-  headers.delete("content-length");
+  // The site's validators describe its page, not this one, and a cached copy would make Reload skip a site that's down.
+  for (const name of ["content-length", "etag", "last-modified"]) headers.delete(name);
+  headers.set("cache-control", "no-store");
   return new Response(html, init);
 }
 
@@ -122,12 +124,31 @@ function isNavigation(request: Request): boolean {
   );
 }
 
-function downPage(held: Running): Response {
+// A frame that followed it would leave the proxy for a site that refuses to be framed, so the sidecar is told instead.
+function movedTo(response: Response, upstream: string): string | undefined {
+  const location = response.headers.get("location");
+  if (response.status < 300 || response.status >= 400 || !location) return undefined;
+  const next = new URL(location, upstream);
+  return next.origin === upstream || !/^https?:$/.test(next.protocol) ? undefined : next.href;
+}
+
+function noticePage({
+  held,
+  status,
+  type,
+  url,
+}: {
+  held: Running;
+  status: number;
+  type: "down" | "moved";
+  url?: string;
+}): Response {
   const parents = JSON.stringify([...held.parents]).replace(/</g, "\\u003c");
-  const script = `for (const to of ${parents}) parent.postMessage({ channel: "${CHANNEL}", type: "down", url: location.href }, to);`;
-  return new Response(`<!doctype html><meta charset="utf-8"><title>Not answering</title><script>${script}</script>`, {
+  const to = JSON.stringify(url ?? "").replace(/</g, "\\u003c");
+  const script = `for (const to of ${parents}) parent.postMessage({ channel: "${CHANNEL}", type: "${type}", url: ${to} || location.href }, to);`;
+  return new Response(`<!doctype html><meta charset="utf-8"><title>${type}</title><script>${script}</script>`, {
     headers: { "cache-control": "no-store", "content-type": "text/html; charset=utf-8" },
-    status: 502,
+    status,
   });
 }
 
@@ -161,8 +182,11 @@ async function handle(event: H3Event, held: Running): Promise<void> {
       { changeOrigin: true, ssl: held.isLoopback ? { rejectUnauthorized: false } : undefined },
     );
   } catch {
-    return sendWebResponse(event, isNavigation(request) ? downPage(held) : new Response("", { status: 502 }));
+    const down = isNavigation(request) && noticePage({ held, status: 502, type: "down" });
+    return sendWebResponse(event, down || new Response("", { status: 502 }));
   }
+  const moved = isNavigation(request) && movedTo(response, held.upstream);
+  if (moved) return sendWebResponse(event, noticePage({ held, status: 200, type: "moved", url: moved }));
   const isHead = request.method === "HEAD";
   return sendWebResponse(event, await rewriteResponse({ here: url.origin, isHead, response, running: held }));
 }
