@@ -40,7 +40,7 @@ Sweep every relevant source, not the first plausible one, and fire the independe
 | Why a change was made                           | the repo history, then the merge request or pull request that carried it                                       |
 | Ticket state, acceptance criteria, who asked    | the tracker MCP connected in this session                                                                      |
 | A decision taken in writing outside the tracker | the mail and calendar MCPs                                                                                     |
-| Prior work on the same topic                    | `~/Notes/tasks/`, `~/Notes/standup/`, and the project's own `CLAUDE.md`                                        |
+| Prior work on the same topic                    | `~/.claude/sidecar/artifacts/`, `~/Notes/standup/`, and the project's own `CLAUDE.md`                          |
 | Runtime truth: volumes, latency, error rates    | whatever observability the project's `CLAUDE.md` names                                                         |
 
 That table names categories on purpose. Which servers are actually connected changes over time, so read the session's own tool list rather than trusting a hardcoded roster here. If a lookup fails because a source moved, find its new home and fix the project file that pointed at the old one.

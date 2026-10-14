@@ -1,6 +1,6 @@
 # Visual coherence: how a page holds together
 
-Reverse-engineered from `~/Notes/tasks/spacex-2026-analysis/`, which is this skill's own output at its best. Every mechanism below is stated so it transfers to any pack. None of it is about black and white.
+Reverse-engineered from the `spacex-2026` artifact, which is this skill's own output at its best. Every mechanism below is stated so it transfers to any pack. None of it is about black and white.
 
 **The thesis.** Coherence does not come from styling each component to match the others. It comes from **removing the axes along which they could differ**. Decide once, globally, and every component inherits the decision for free. A page whose panels, tables, chips, callouts, figures and tooltips all agree, without anyone having matched them by hand, is a page where the axes were closed early.
 
