@@ -1,7 +1,9 @@
 <script lang="ts" setup>
+import { useElementSize } from "@vueuse/core";
+import type { ComponentPublicInstance } from "vue";
 import type { ReviewThread } from "~~/shared/types/artifact";
 import type { TrayItem } from "~/composables/useTray";
-import type { FrameAnchor, FrameMark } from "~/types/frame";
+import type { FrameAnchor, FrameMark, NotesPlace } from "~/types/frame";
 import type { Pin } from "~/utils/anchors";
 
 const {
@@ -10,6 +12,7 @@ const {
   live = true,
   marks = [],
   notices = {},
+  place = "over",
   side = "left",
   slug,
   threads,
@@ -19,6 +22,7 @@ const {
   live?: boolean;
   marks?: FrameMark[];
   notices?: Record<string, string>;
+  place?: NotesPlace;
   side?: "left" | "right";
   slug?: string;
   threads: ReviewThread[];
@@ -26,9 +30,15 @@ const {
 
 const emit = defineEmits<{ reload: []; notes: [count: number] }>();
 
+const CLEAR = 8;
+const TETHER = 56;
+const LINE = 12;
+
 const sc = useSidecar();
 const tray = useTray();
 const sides = $sideQuestion();
+const root = useTemplateRef<ComponentPublicInstance>("root");
+const { width } = useElementSize(root);
 
 const placed = computed(() => anchorThreads({ anchors, marks, threads }));
 
@@ -40,42 +50,61 @@ function isGutterNote(item: TrayItem): boolean {
   return slug ? !item.source || item.source === slug : !!file && item.file === file;
 }
 
-function topOf(item: Pick<TrayItem, "block" | "mark" | "quote" | "top">): number {
-  const exact = marks.find((mark) => item.mark && mark.key === item.mark && (!item.block || mark.text === item.block));
-  if (exact) return exact.top;
-  const byBlock = marks.find((mark) => item.block && mark.text === item.block);
-  if (byBlock) return byBlock.top;
-  const byQuote = marks.find((mark) => item.quote && mark.text.includes(item.quote));
-  if (byQuote) return byQuote.top;
-  return item.top ?? 0;
+function markOf(item: Pick<TrayItem, "block" | "mark" | "quote">): FrameMark | undefined {
+  return (
+    marks.find((mark) => item.mark && mark.key === item.mark && (!item.block || mark.text === item.block)) ??
+    marks.find((mark) => item.block && mark.text === item.block) ??
+    marks.find((mark) => item.quote && mark.text.includes(item.quote))
+  );
 }
 
 const placedNotes = computed(() => {
   const pins = placed.value.pins;
   return tray.items.value.filter(isGutterNote).map((item) => {
-    const raw = topOf(item);
+    const mark = markOf(item);
+    const raw = mark?.top ?? item.top ?? 0;
     const clash = pins.some((pin) => Math.abs(pin.top - raw) < 20);
-    return { item, top: clash ? raw + 28 : raw };
+    return { item, mark, top: clash ? raw + 28 : raw };
   });
 });
 
 const linked = computed(() => new Set(placedNotes.value.map((row) => row.item.thread).filter(Boolean)));
 
 const asked = computed(() =>
-  sides.at(sc.sessionKey.value, "artifact", slug ?? "").map((thread) => ({ thread, top: topOf(thread.anchor) })),
+  sides.at(sc.sessionKey.value, "artifact", slug ?? "").map((thread) => {
+    const mark = markOf(thread.anchor);
+    return { mark, thread, top: mark?.top ?? thread.anchor.top ?? 0 };
+  }),
 );
 
 const pageCards = computed(() => {
   const used = linked.value;
-  const out: { top: number; thread: (typeof threads)[number] }[] = [];
+  const out: { mark?: FrameMark; top: number; thread: (typeof threads)[number] }[] = [];
   for (const pin of placed.value.pins) {
+    const mark = marks.find((one) => one.key === pin.key) ?? marks.find((one) => one.top === pin.top);
     for (const thread of pin.threads) {
       if (thread.status === "resolved" || used.has(thread.id)) continue;
-      out.push({ top: pin.top, thread });
+      out.push({ mark, top: pin.top, thread });
     }
   }
   return out;
 });
+
+const isFloating = computed(() => place === "float");
+
+function perchOf({ mark, top }: { mark?: FrameMark; top: number }): Record<string, string> {
+  if (!isFloating.value || !mark) return { top: `${top}px` };
+  const from = mark.left + mark.width + CLEAR;
+  const left = Math.min(from + TETHER, width.value - tokenPx("--notes-w") - tokenPx("--gutter"));
+  const line = mark.top + LINE;
+  const at = Math.max(line - TETHER, Math.min(CLEAR, line - LINE));
+  return {
+    "--tether": `${Math.max(0, left - from)}px`,
+    "--tether-y": `${line - at}px`,
+    left: `${left}px`,
+    top: `${at}px`,
+  };
+}
 
 // Threads the rewrite left behind still have to be reachable, so they collect under one chip.
 const adrift = computed<Pin | undefined>(() => {
@@ -101,13 +130,17 @@ watchEffect(() =>
 </script>
 
 <template>
-  <TransitionGroup tag="div" name="note" class="gutter" data-region="gutter-markers" :data-side="side">
-    <div
-      v-for="row in pageCards"
-      :key="`thread:${row.thread.id}`"
-      class="perch perch-note"
-      :style="{ top: `${row.top}px` }"
-    >
+  <TransitionGroup
+    ref="root"
+    tag="div"
+    name="note"
+    class="gutter"
+    data-region="gutter-markers"
+    :data-place="place"
+    :data-side="side"
+  >
+    <div v-for="row in pageCards" :key="`thread:${row.thread.id}`" class="perch perch-note" :style="perchOf(row)">
+      <span v-if="isFloating && row.mark" class="tether" aria-hidden="true" />
       <ArtifactNote
         :live="live"
         :notice="notices[row.thread.id]"
@@ -136,12 +169,8 @@ watchEffect(() =>
       </UiPopover>
     </div>
 
-    <div
-      v-for="row in placedNotes"
-      :key="`tray:${row.item.id}`"
-      class="perch perch-note"
-      :style="{ top: `${row.top}px` }"
-    >
+    <div v-for="row in placedNotes" :key="`tray:${row.item.id}`" class="perch perch-note" :style="perchOf(row)">
+      <span v-if="isFloating && row.mark" class="tether" aria-hidden="true" />
       <ArtifactNote
         :item="row.item"
         :live="live"
@@ -152,7 +181,8 @@ watchEffect(() =>
       />
     </div>
 
-    <div v-for="row in asked" :key="`ask:${row.thread.id}`" class="perch perch-ask" :style="{ top: `${row.top}px` }">
+    <div v-for="row in asked" :key="`ask:${row.thread.id}`" class="perch perch-ask" :style="perchOf(row)">
+      <span v-if="isFloating && row.mark" class="tether" aria-hidden="true" />
       <SideQuestionCard source="prose" :thread="row.thread" />
     </div>
   </TransitionGroup>
@@ -176,6 +206,28 @@ watchEffect(() =>
 
 .perch-foot {
   bottom: 16px;
+}
+
+.gutter[data-place="float"] .perch {
+  right: auto;
+  width: var(--notes-w);
+}
+
+.gutter[data-place="float"] .perch-foot {
+  left: auto;
+  right: var(--gutter);
+  width: auto;
+}
+
+.tether {
+  background: var(--primary);
+  border-radius: 999px;
+  height: 2px;
+  position: absolute;
+  right: 100%;
+  top: var(--tether-y);
+  translate: 0 -1px;
+  width: var(--tether);
 }
 
 .perch-note {

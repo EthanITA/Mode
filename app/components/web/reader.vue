@@ -235,6 +235,7 @@ onScopeDispose(() => {
         :file="address && Web.addressOf(address)"
         :marks="marks"
         :notices="notices"
+        :page="page"
         :ready="measured"
         scrolls
         :slug="slug"

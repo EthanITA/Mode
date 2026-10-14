@@ -2,6 +2,8 @@ import type { FrameMark } from "~~/lib/web/page/blocks";
 
 export type { FrameAnchor, FrameBlock, FrameMark, FramePending } from "~~/lib/web/page/blocks";
 
+export type NotesPlace = "dock" | "float" | "over";
+
 /** The part of the window the frame is actually seen through, after every clipping ancestor. */
 export interface ViewBox {
   bottom: number;
