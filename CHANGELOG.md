@@ -425,6 +425,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **Gmail and the Google Store open from google.com.** The proxy sent each request marked as a framed
+  page with the sidecar as its referrer, which Google's sign-in answers with a 401, and a form posted to
+  the site's own or another of its hosts, such as the consent page's, left the proxy for a 403. Requests
+  now go out as a browser tab's, forms and redirects stay on the proxy, a link clicked inside a site opens
+  where it points, and all of a remote site's hosts share one cookie jar. A remote entry opened before
+  this starts with fresh cookies once, because its proxy origin is now named after its site.
 - **Switching faces keeps a live page loaded.** Artifacts stays mounted behind Files, Review and History
   once opened, so a site comes back with its scroll and sign-in as you left it, and its F, ⌘R and Esc
   stay quiet while another face is up.
