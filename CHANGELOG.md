@@ -245,11 +245,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **comment-guard challenges every comment an Edit adds.** Two short notes per edit no longer pass
   quietly, and a comment the edit only carries over from `old_string` no longer counts, so a short
   one-liner that restates the code gets flagged the moment it lands.
-- **Leaving a conversation in Terminal sends the sidecar to Listening.** When Terminal's front tab
-  switches to one with no conversation in it, or the conversation in it exits, the page goes to
-  Listening, and coming back to the same conversation opens it again. A Terminal that could not be
+- **The sidecar goes to Listening when the conversation it follows exits.** Switching Terminal to a
+  window or tab with no conversation in its title, `claude agents` or a shell, leaves the page where it
+  is, and only the followed conversation exiting sends it to Listening. A Terminal that could not be
   asked counts as no change. A conversation opened by hand or pointed at by `/sidecar` still stays put
-  until the front tab switches.
+  until another conversation comes to the front.
 - **A sidecar that opens shows the conversation in front in Terminal.** Opening the app, reloading or
   coming back on a restored page reads Terminal's front tab first, and goes to Listening when no
   conversation is there. Whichever came last wins, a `/sidecar` point or the front tab switching after

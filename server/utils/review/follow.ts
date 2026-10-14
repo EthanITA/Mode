@@ -90,20 +90,30 @@ async function frontKey(): Promise<Front | undefined> {
   return { key: entry && keyOf(entry.id) };
 }
 
+function isRunning(key?: string): boolean {
+  return !!key && liveEntries().some((one) => keyOf(one.id) === key);
+}
+
 async function tick(current: Watch): Promise<void> {
   const front = await frontKey();
   const from = await pointedFrom;
   if (watch !== current || !front) return;
   const before = current.seen;
   current.seen = front;
-  if (before && before.key === front.key) return;
+  // `claude agents` shows a conversation under its own title, so only the followed one exiting means Listening.
+  const isLeft = !front.key && !isRunning(target.key);
+  if (before && before.key === front.key) {
+    if (isLeft && target.key) publish({ source: "terminal" });
+    return;
+  }
   if (!before && pointedFrom && (!from || from.key === front.key)) {
     publish(target);
     return;
   }
   pointedFrom = undefined;
-  if (!front.key) publish({ source: "terminal" });
-  else if (!before || front.key !== target.key) publish(targetAt({ key: front.key, source: "terminal" }));
+  if (isLeft) publish({ source: "terminal" });
+  else if (front.key && (!before || front.key !== target.key))
+    publish(targetAt({ key: front.key, source: "terminal" }));
 }
 
 // Polls only while a page listens, because one osascript call takes about a tenth of a second.
