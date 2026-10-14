@@ -161,19 +161,6 @@ function onApplied(): void {
   bump();
 }
 
-function settleMessage(error: unknown): string {
-  if (typeof error !== "object" || !error) return "That change could not be settled";
-  const rec = error as { data?: unknown; statusMessage?: unknown };
-  const data = rec.data;
-  if (typeof data === "object" && data) {
-    const body = data as { statusMessage?: unknown; message?: unknown };
-    if (typeof body.statusMessage === "string" && body.statusMessage) return body.statusMessage;
-    if (typeof body.message === "string" && body.message) return body.message;
-  }
-  if (typeof rec.statusMessage === "string" && rec.statusMessage) return rec.statusMessage;
-  return "That change could not be settled";
-}
-
 async function settle(action: "accept" | "revert", edit: FramePending): Promise<void> {
   const held = sc.slug.value;
   if (!held) return;
@@ -190,7 +177,7 @@ async function settle(action: "accept" | "revert", edit: FramePending): Promise<
   } catch (error) {
     heldScroll.value = false;
     frameReady.value = true;
-    chrome.toast(settleMessage(error), "destructive");
+    chrome.toast(failReason(error) ?? "That change could not be settled", "destructive");
   }
 }
 

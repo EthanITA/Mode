@@ -23,34 +23,6 @@ const panel = ref<HTMLElement>();
 const left = computed(() => Math.max(0, props.selection.left - PANEL_W / 2));
 const top = computed(() => props.selection.bottom + 8);
 
-function failStatus(error: unknown): number {
-  if (typeof error !== "object" || !error) return 0;
-  const rec = error as { response?: { status?: unknown }; status?: unknown; statusCode?: unknown };
-  if (typeof rec.statusCode === "number") return rec.statusCode;
-  if (typeof rec.status === "number") return rec.status;
-  if (typeof rec.response?.status === "number") return rec.response.status;
-  return 0;
-}
-
-function toastFail(error: unknown): void {
-  const status = failStatus(error);
-  if (status === 502) chrome.toast("Both models failed", "destructive");
-  else chrome.toast("The model could not finish that", "destructive");
-}
-
-function editMessage(error: unknown): string {
-  if (typeof error !== "object" || !error) return "The edit could not be applied";
-  const rec = error as { data?: unknown; statusMessage?: unknown };
-  const data = rec.data;
-  if (typeof data === "object" && data) {
-    const body = data as { statusMessage?: unknown; message?: unknown };
-    if (typeof body.statusMessage === "string" && body.statusMessage) return body.statusMessage;
-    if (typeof body.message === "string" && body.message) return body.message;
-  }
-  if (typeof rec.statusMessage === "string" && rec.statusMessage) return rec.statusMessage;
-  return "The edit could not be applied";
-}
-
 function contextOf(): string {
   return [props.selection.mark.text, props.selection.path, sc.artifact.value?.path].filter(Boolean).join("\n");
 }
@@ -83,12 +55,12 @@ async function ask(): Promise<void> {
         method: "POST",
       });
     } catch (error) {
-      chrome.toast(editMessage(error), "destructive");
+      chrome.toast(failReason(error) ?? "The edit could not be applied", "destructive");
       return;
     }
     emit("applied");
   } catch (error) {
-    toastFail(error);
+    chrome.toast(failReason(error) ?? "The model could not finish that", "destructive");
   } finally {
     pending.value = false;
   }

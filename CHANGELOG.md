@@ -394,7 +394,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **Edit on an artifact block and Ask AI on a note run through Claude Code.** They called the Anthropic
   API and failed without `ANTHROPIC_API_KEY` in the sidecar's environment, then fell back to Gemini
   through `agy`. Now both are `claude -p` on your own login, Haiku first and Sonnet when Haiku hands
-  the instruction over, so nothing outside Claude Code needs setting up.
+  the instruction over, so nothing outside Claude Code needs setting up. When neither answers, the toast
+  says why, such as not being logged in or Claude Code not being installed.
 - **Fenced code shows in answers, turns and notes.** Every fenced block rendered as an empty box,
   because the highlighter read the fence's text as a string while Vue holds it as an array.
 - **Artifacts and Files open what this conversation picked, not the last page opened anywhere.** Each

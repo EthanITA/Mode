@@ -34,19 +34,8 @@ const replies = computed<Array<{ at: string; by: string; id: string; text: strin
   return fromThread;
 });
 
-function failStatus(error: unknown): number {
-  if (typeof error !== "object" || !error) return 0;
-  const rec = error as { response?: { status?: unknown }; status?: unknown; statusCode?: unknown };
-  if (typeof rec.statusCode === "number") return rec.statusCode;
-  if (typeof rec.status === "number") return rec.status;
-  if (typeof rec.response?.status === "number") return rec.response.status;
-  return 0;
-}
-
 function toastFail(error: unknown): void {
-  const status = failStatus(error);
-  if (status === 502) chrome.toast("Both models failed", "destructive");
-  else chrome.toast("That note could not be sent", "destructive");
+  chrome.toast(failReason(error) ?? "That note could not be sent", "destructive");
 }
 
 function filePath(): string | undefined {
