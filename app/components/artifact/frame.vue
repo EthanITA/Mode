@@ -1,5 +1,17 @@
 <script lang="ts" setup>
 import type { FrameAnchor, FrameHit, FrameMark, FramePending, ViewBox } from "~/types/frame";
+import {
+  blockAt,
+  type Indexed,
+  indexBlocks,
+  indexedOf,
+  isTyping,
+  locate as locateIn,
+  measure,
+  pathOf,
+  readAnchors,
+  readPending,
+} from "~~/lib/web/page/blocks";
 
 const {
   canAsk = false,
@@ -28,24 +40,8 @@ const emit = defineEmits<{
   ready: [];
 }>();
 
-// Mirrors labelOf() in the review layer: the anchor label is the host section's own heading.
-const HOSTS = "section, article, figure, .panel, .stage";
-const HEADINGS = "h1, h2, h3, h4";
-// A block is whatever a container holds directly, so an unnamed div is as pickable as a <p>.
-const WALK = "body, main, section, article, .page, .panel, .stage";
-const OUTER = `html, ${WALK}`;
-const OWN = "li, tr, dt, dd, figcaption";
-const SKIP = "script, style, template, noscript";
-const LABEL_MAX = 44;
 const SUPPRESS_ID = "sidecar-suppress";
 const EDIT_ID = "sidecar-edit";
-
-interface Indexed {
-  el: Element;
-  key: string;
-  label: string;
-  text: string;
-}
 
 const chrome = useChrome();
 const look = useTheme();
@@ -61,112 +57,6 @@ let picked: Element | undefined;
 let armKey: string | undefined;
 let raf = 0;
 let loadGen = 0;
-
-function norm(text: string | undefined): string {
-  return (text || "").replace(/\s+/g, " ").trim();
-}
-
-function boxy(el: Element): boolean {
-  const display = el.ownerDocument?.defaultView?.getComputedStyle(el).display ?? "block";
-  return display !== "inline" && display !== "contents";
-}
-
-// A wrapper holding one block child with the same words is not a block of its own.
-function tighten(el: Element): Element {
-  let node = el;
-  for (;;) {
-    const [only] = node.children;
-    if (node.children.length !== 1 || !only || !boxy(only)) return node;
-    if (norm(node.textContent) !== norm(only.textContent)) return node;
-    node = only;
-  }
-}
-
-// An artifact is operated, so it owns real inputs; a letter typed into one is never a shortcut.
-function typing(target: unknown): boolean {
-  const node = target as Element | undefined;
-  return Boolean(node?.closest?.("input, textarea, select, [contenteditable]:not([contenteditable='false'])"));
-}
-
-// The frame is a second realm, so `instanceof Element` from here is always false; duck-typing is the only test.
-function blockAt(target: unknown): Element | undefined {
-  const node = target as Element | undefined;
-  if (!node?.closest) return undefined;
-  const own = node.closest(OWN);
-  if (own) return own;
-  let el: Element | undefined = node;
-  while (el?.parentElement && !el.parentElement.matches(OUTER)) el = el.parentElement;
-  return el && !el.matches(OUTER) && !el.matches(SKIP) ? tighten(el) : undefined;
-}
-
-function pathOf(node: Element): string {
-  const parts: string[] = [];
-  const doc = node.ownerDocument;
-  for (let n: Element | undefined = node; n && n !== doc?.body; n = n.parentElement ?? undefined) {
-    if (n.id) {
-      const id = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(n.id) : n.id;
-      parts.unshift(`#${id}`);
-      break;
-    }
-    const tag = n.tagName.toLowerCase();
-    const parent = n.parentElement;
-    const kin = parent ? [...parent.children].filter((c) => c.tagName === n.tagName) : [];
-    parts.unshift(kin.length > 1 ? `${tag}:nth-of-type(${kin.indexOf(n) + 1})` : tag);
-  }
-  return parts.join(" > ");
-}
-
-function labelOf(el: Element): string {
-  return norm(el.closest(HOSTS)?.querySelector(HEADINGS)?.textContent).slice(0, LABEL_MAX);
-}
-
-function readAnchors(doc: Document): FrameAnchor[] {
-  const out: FrameAnchor[] = [];
-  const seen = new Set<string>();
-  for (const host of doc.querySelectorAll<HTMLElement>(HOSTS)) {
-    const label = norm(host.querySelector(HEADINGS)?.textContent).slice(0, LABEL_MAX);
-    if (!label || seen.has(label)) continue;
-    seen.add(label);
-    out.push({ label, top: host.getBoundingClientRect().top + doc.documentElement.scrollTop });
-  }
-  return out;
-}
-
-// The mirror of blockAt(): a pick this walk misses has no key and cannot be anchored.
-function indexBlocks(doc: Document): void {
-  indexed = [];
-  const held = new Set<Element>();
-  const take = (el: Element): void => {
-    if (held.has(el) || el.matches(SKIP)) return;
-    const text = norm(el.textContent);
-    if (!text) return;
-    held.add(el);
-    indexed.push({
-      el,
-      key: `${indexed.length}:${el.tagName.toLowerCase()}`,
-      label: labelOf(el) || text.slice(0, LABEL_MAX),
-      text,
-    });
-  };
-  for (const host of doc.querySelectorAll(WALK)) {
-    for (const child of host.children) {
-      if (!child.matches(OUTER)) take(tighten(child));
-    }
-  }
-  for (const el of doc.querySelectorAll(OWN)) take(el);
-}
-
-function measure(doc: Document): FrameMark[] {
-  const scroll = doc.documentElement.scrollTop;
-  return indexed.map(({ el, key, label, text }) => {
-    const box = el.getBoundingClientRect();
-    return { height: box.height, key, label, text, top: box.top + scroll };
-  });
-}
-
-function indexedOf(el: Element): Indexed | undefined {
-  return indexed.find((one) => one.el === el) ?? indexed.find((one) => el.contains(one.el));
-}
 
 // The frame is as tall as its page and its pane scrolls, so only what every clipping ancestor leaves is on screen.
 function visibleBox(el: HTMLElement): ViewBox {
@@ -191,7 +81,7 @@ function visibleBox(el: HTMLElement): ViewBox {
 }
 
 function hitOf(el: Element): FrameHit | undefined {
-  const held = indexedOf(el);
+  const held = indexedOf(indexed, el);
   const box = el.getBoundingClientRect();
   const frameBox = frame.value?.getBoundingClientRect();
   const doc = el.ownerDocument;
@@ -214,20 +104,7 @@ function hitOf(el: Element): FrameHit | undefined {
 
 function locate(hit?: { path: string; text: string }): Element | undefined {
   const doc = frame.value?.contentDocument;
-  if (!doc || !hit) return undefined;
-  const want = hit.text.slice(0, 160);
-  if (want) {
-    const exact = indexed.filter((one) => one.text.slice(0, 160) === want);
-    if (exact[0]) return exact[0].el;
-    const head = want.slice(0, 60);
-    const near = indexed.filter((one) => one.text.startsWith(head));
-    if (near[0]) return near[0].el;
-  }
-  try {
-    return hit.path ? (doc.querySelector(hit.path) ?? undefined) : undefined;
-  } catch {
-    return undefined;
-  }
+  return doc ? locateIn(indexed, doc, hit) : undefined;
 }
 
 function teardown(): void {
@@ -257,14 +134,14 @@ function onLoad(): void {
   if (!doc) return;
   const gen = loadGen;
 
-  indexBlocks(doc);
+  indexed = indexBlocks(doc);
 
   // documentElement.scrollHeight floors at the viewport, so a tall boot frame would never shrink back.
   const remeasure = (): void => {
     height.value = doc.body?.scrollHeight || doc.documentElement.scrollHeight;
-    emit("anchors", readAnchors(doc));
-    emit("marks", measure(doc));
-    emit("pending", readPending(doc));
+    emit("anchors", readAnchors(doc, doc.documentElement.scrollTop));
+    emit("marks", measure(indexed, doc.documentElement.scrollTop));
+    emit("pending", readPending(doc, doc.documentElement.scrollTop));
   };
 
   syncTheme(doc);
@@ -343,7 +220,7 @@ function onLoad(): void {
       if (chrome.dismiss()) event.preventDefault();
       return;
     }
-    if (meta || event.altKey || typing(event.target)) return;
+    if (meta || event.altKey || isTyping(event.target)) return;
     if (event.key.toLowerCase() === "c" && !event.repeat) {
       armKey = "c";
       chrome.comment.arm(true);
@@ -393,9 +270,9 @@ function scheduleRepublish(): void {
     if (doc) {
       const next = doc.body?.scrollHeight || doc.documentElement.scrollHeight;
       if (next !== height.value) height.value = next;
-      emit("anchors", readAnchors(doc));
-      emit("marks", measure(doc));
-      emit("pending", readPending(doc));
+      emit("anchors", readAnchors(doc, doc.documentElement.scrollTop));
+      emit("marks", measure(indexed, doc.documentElement.scrollTop));
+      emit("pending", readPending(doc, doc.documentElement.scrollTop));
     }
     publish();
   });
@@ -434,29 +311,6 @@ function injectEditStyle(doc: Document): void {
   style.id = EDIT_ID;
   style.textContent = `del[data-sc-edit]{color:var(--error);text-decoration:line-through}ins[data-sc-edit]{background:color-mix(in oklch,var(--success) 16%,transparent);color:var(--success);text-decoration:none}`;
   doc.head?.append(style);
-}
-
-function readPending(doc: Document): FramePending[] {
-  const out: FramePending[] = [];
-  const seen = new Set<string>();
-  for (const del of doc.querySelectorAll("del[data-sc-edit]")) {
-    const id = del.getAttribute("data-sc-edit") ?? "";
-    if (!id || seen.has(id)) continue;
-    seen.add(id);
-    const ins = doc.querySelector(`ins[data-sc-edit="${CSS.escape(id)}"]`);
-    const host = del.parentElement;
-    if (!host) continue;
-    const box = (ins ?? del).getBoundingClientRect();
-    const scroll = doc.documentElement.scrollTop;
-    out.push({
-      id,
-      left: box.right,
-      path: pathOf(host),
-      replacement: norm(ins?.textContent || undefined),
-      top: box.top + scroll,
-    });
-  }
-  return out;
 }
 
 watch(look.theme, () => {
