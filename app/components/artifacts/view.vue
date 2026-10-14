@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { Globe } from "@lucide/vue";
+import { Globe, Trash2 } from "@lucide/vue";
+import { useEventListener } from "@vueuse/core";
 import type { ArtifactKind, ArtifactMeta } from "~~/shared/types/artifact";
 
 const KIND: Record<ArtifactKind, string> = { document: "Document", page: "Page", plan: "Plan", web: "Web" };
@@ -47,6 +48,32 @@ const isFocused = ref(false);
 const isOpening = ref(false);
 
 const hostOf = (meta: ArtifactMeta): string => (meta.url ? new URL(meta.url).host : "");
+const nameOf = (meta: ArtifactMeta): string => meta.title || deslug(meta.slug);
+
+const hovered = ref<string>();
+
+function removeTip({ threadCount = 0 }: ArtifactMeta): string {
+  if (!threadCount) return "Remove it · {cmd backspace}";
+  return threadCount === 1
+    ? "Remove it and its thread · {cmd backspace}"
+    : `Remove it and its ${threadCount} threads · {cmd backspace}`;
+}
+
+// The entry open in the sheet was removed, wherever that happened, so the sheet moves to the next one.
+watch(picked, (now, before) => {
+  if (before && !now && before.slug === selected.value) selected.value = entries.value[0]?.slug;
+});
+
+// The row under the pointer, or the one holding focus, is the one ⌘⌫ means.
+useEventListener(window, "keydown", (event: KeyboardEvent) => {
+  if (!(event.metaKey || event.ctrlKey) || event.key !== "Backspace") return;
+  if (event.target instanceof Element && event.target.closest("input, textarea, [contenteditable]")) return;
+  const focused = document.activeElement?.closest<HTMLElement>("[data-region='artifact-row']")?.dataset.slug;
+  const meta = entries.value.find((one) => one.kind === "web" && one.slug === (focused ?? hovered.value));
+  if (!meta) return;
+  event.preventDefault();
+  void web.remove(meta);
+});
 
 async function openUrl(): Promise<void> {
   const url = address.value.trim();
@@ -109,27 +136,50 @@ async function openUrl(): Promise<void> {
         <UiStateMessage v-else-if="!entries.length" class="empty">
           This conversation hasn't made a page or a plan yet.
         </UiStateMessage>
-        <button
+        <div
           v-for="meta in entries"
           :key="meta.slug"
-          v-press
-          class="entry focusable plain-button"
-          type="button"
-          :data-selected="meta.slug === selected"
-          data-cmt="artifact"
-          :data-cmt-label="meta.title || deslug(meta.slug)"
-          :data-cmt-tell="`On ${basename(meta.path)}`"
-          @click="selected = meta.slug"
+          class="slot"
+          data-region="artifact-row"
+          :data-kind="meta.kind"
+          :data-slug="meta.slug"
+          @mouseenter="hovered = meta.slug"
+          @mouseleave="hovered = undefined"
         >
-          <span class="head">
-            <span class="kind mono-meta" :data-kind="meta.kind">{{ KIND[meta.kind] }}</span>
-            <span v-if="meta.kind === 'web'" class="age mono-meta">{{ hostOf(meta) }}</span>
-            <span v-else-if="meta.updated" class="age mono-meta">{{ relativeAge(meta.updated) }}</span>
-            <span class="spacer" />
-            <span v-if="meta.threadCount" class="age mono-meta">{{ plural(meta.threadCount, "thread") }}</span>
-          </span>
-          <span class="name">{{ meta.title || deslug(meta.slug) }}</span>
-        </button>
+          <button
+            v-press
+            class="entry focusable plain-button"
+            type="button"
+            :data-selected="meta.slug === selected"
+            data-cmt="artifact"
+            :data-cmt-label="nameOf(meta)"
+            :data-cmt-tell="`On ${basename(meta.path)}`"
+            @click="selected = meta.slug"
+          >
+            <span class="head">
+              <span class="kind mono-meta" :data-kind="meta.kind">{{ KIND[meta.kind] }}</span>
+              <span v-if="meta.kind === 'web'" class="age mono-meta">{{ hostOf(meta) }}</span>
+              <span v-else-if="meta.updated" class="age mono-meta">{{ relativeAge(meta.updated) }}</span>
+              <span class="spacer" />
+              <span v-if="meta.threadCount" class="age threads mono-meta">{{
+                plural(meta.threadCount, "thread")
+              }}</span>
+            </span>
+            <span class="name">{{ nameOf(meta) }}</span>
+          </button>
+          <button
+            v-if="meta.kind === 'web'"
+            v-press
+            class="trash focusable"
+            type="button"
+            data-region="remove-entry"
+            :aria-label="`Remove ${nameOf(meta)} from Artifacts`"
+            :data-tip="removeTip(meta)"
+            @click="web.remove(meta)"
+          >
+            <UiIcon :icon="Trash2" size="xs" />
+          </button>
+        </div>
       </div>
     </UiSurface>
 
@@ -262,11 +312,51 @@ async function openUrl(): Promise<void> {
   padding: 6px 8px var(--float-clear);
 }
 
+.slot {
+  flex: none;
+  position: relative;
+}
+
+.trash {
+  align-items: center;
+  background: var(--error-soft);
+  border: 0;
+  border-radius: 8px;
+  color: var(--error);
+  cursor: pointer;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  opacity: 0;
+  padding: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 9px;
+  top: calc(50% - 14px);
+  transition: opacity var(--duration-fast) var(--ease-out);
+  width: 28px;
+}
+
+.slot:hover .trash,
+.slot:focus-within .trash {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.slot[data-kind="web"]:hover .entry,
+.slot[data-kind="web"]:focus-within .entry {
+  padding-right: 46px;
+}
+
+.slot[data-kind="web"]:hover .threads,
+.slot[data-kind="web"]:focus-within .threads {
+  display: none;
+}
+
 .entry {
   border: 1px solid transparent;
   border-radius: 10px;
   display: flex;
-  flex: none;
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px;

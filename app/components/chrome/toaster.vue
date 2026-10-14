@@ -75,7 +75,8 @@ function pin(el: Element): void {
       v-press
       class="one"
       type="button"
-      :title="row.open ? 'Open' : 'Dismiss'"
+      :data-tip="row.tip"
+      :title="row.tip ? undefined : row.open ? (row.action ?? 'Open') : 'Dismiss'"
       @click="press(row)"
       @focusin="hold(row.id)"
       @focusout="arm(row)"
@@ -84,7 +85,7 @@ function pin(el: Element): void {
     >
       <UiToast :variant="row.tone">
         {{ row.text }}
-        <span v-if="row.open" class="open">Open</span>
+        <span v-if="row.open" class="open">{{ row.action ?? "Open" }}</span>
       </UiToast>
     </button>
 

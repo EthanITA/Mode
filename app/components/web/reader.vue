@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ExternalLink, RotateCw } from "@lucide/vue";
+import { ExternalLink, RotateCw, Trash2 } from "@lucide/vue";
 import { useDebounceFn } from "@vueuse/core";
 import type { FrameAnchor, FrameMark } from "~/types/frame";
 import type { ArtifactDetail, ArtifactMeta, ReviewThread } from "~~/shared/types/artifact";
@@ -10,6 +10,7 @@ const RELOADED = "The page reloaded with the change";
 
 const sc = useSidecar();
 const chrome = useChrome();
+const route = useRoute();
 const web = $web();
 const follow = $follow();
 const sides = $sideQuestion();
@@ -29,11 +30,10 @@ const host = computed(() => (address.value ? new URL(address.value).host : slug)
 const threads = computed(() => Web.threadsOn(entry.value?.threads ?? [], page.value));
 const notices = computed(() => Object.fromEntries(fresh.value.map((id) => [id, RELOADED])));
 const isDown = computed(() => ["down", "moved", "unreachable"].includes(web.state));
-const movedHost = computed(() => (web.movedTo ? new URL(web.movedTo).host : ""));
 
 const downLine = computed(() => {
   if (web.state === "moved")
-    return `${host.value} sends this page on to ${movedHost.value}, a site of its own. Open that one here, or in a browser tab.`;
+    return `${host.value} keeps redirecting without ever showing a page, so it stopped here. Open it in a browser tab.`;
   if (web.state === "unreachable") return `The sidecar could not open ${host.value}. Reload to try again.`;
   return address.value && Web.isLocal(address.value)
     ? `Nothing answers on ${host.value}. Start the app, then reload.`
@@ -83,18 +83,27 @@ watch(
   },
 );
 
-async function openMoved(): Promise<void> {
-  const to = web.movedTo;
-  if (!to) return;
-  try {
-    follow.show({ key: conversation, slug: (await web.open(to)).slug });
-  } catch (error) {
-    chrome.toast(failReason(error) ?? `${movedHost.value} could not be opened here`, "destructive");
-  }
-}
+watch(
+  () => web.state,
+  async (state) => {
+    if (state !== "moved") return;
+    try {
+      const next = await web.follow(slug);
+      if (next && next !== slug) follow.show({ key: conversation, slug: next });
+    } catch {
+      web.state = "unreachable";
+    }
+  },
+);
 
 function openOut(): void {
   if (web.movedTo) window.open(web.movedTo, "_blank", "noopener");
+}
+
+async function removeEntry(): Promise<void> {
+  if (!entry.value) return;
+  await web.remove(entry.value);
+  if (route.params.slug) await navigateTo(`/c/${conversation}`);
 }
 
 function onMarks(next: FrameMark[]): void {
@@ -108,6 +117,7 @@ function onMarks(next: FrameMark[]): void {
 async function onPage(): Promise<void> {
   const at = web.page;
   if (!at) return;
+  web.shown(slug);
   void refresh(true);
   await $fetch("/api/web", {
     body: { landed: true, session: conversation, title: at.title, url: at.url },
@@ -163,25 +173,41 @@ onScopeDispose(() => {
     <template v-else>
       <div v-if="isDown" class="down" role="status">
         <p class="why">{{ downLine }}</p>
-        <div v-if="web.state === 'moved'" class="actions">
+        <div class="actions">
           <button
+            v-if="web.state === 'moved'"
             v-press
             class="retry focusable"
             type="button"
-            :data-tip="`Opens ${movedHost} as its own entry, with the comment layer`"
-            @click="openMoved"
+            data-tip="Open in a browser tab"
+            @click="openOut"
           >
-            Open {{ movedHost }} here
-          </button>
-          <button v-press class="retry focusable" type="button" data-tip="Open in a browser tab" @click="openOut">
             <UiIcon :icon="ExternalLink" size="xs" />
             Browser tab
           </button>
+          <button
+            v-else
+            v-press
+            class="retry focusable"
+            type="button"
+            data-tip="Reload · {cmd R}"
+            @click="web.reload()"
+          >
+            <UiIcon :icon="RotateCw" size="xs" />
+            Reload
+          </button>
+          <button
+            v-press
+            class="remove focusable"
+            type="button"
+            data-region="remove-entry"
+            data-tip="Remove from Artifacts. The app isn't touched"
+            @click="removeEntry"
+          >
+            <UiIcon :icon="Trash2" size="xs" />
+            Remove entry
+          </button>
         </div>
-        <button v-else v-press class="retry focusable" type="button" data-tip="Reload · {cmd R}" @click="web.reload()">
-          <UiIcon :icon="RotateCw" size="xs" />
-          Reload
-        </button>
       </div>
 
       <div v-show="!isDown" class="live">
@@ -343,6 +369,30 @@ onScopeDispose(() => {
 
 .retry:hover {
   border-color: var(--ink);
+}
+
+.remove {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.remove:hover {
+  background: var(--error-soft);
+  color: var(--error);
 }
 
 .actions {

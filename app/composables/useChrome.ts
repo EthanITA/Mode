@@ -11,9 +11,11 @@ export type Face = (typeof FACES)[number];
 export type ToastTone = "destructive" | "neutral" | "success" | "warning";
 
 export interface Toast {
+  action?: string;
   id: number;
   open?: () => void;
   text: string;
+  tip?: string;
   tone: ToastTone;
 }
 
@@ -97,7 +99,7 @@ export interface Chrome {
   };
   islands: { shelved: Ref<boolean> };
   jump: { close: () => void; open: Ref<boolean>; toggle: () => void };
-  notify: (notice: Notice) => void;
+  notify: (notice: Notice) => number;
   toast: (text: string, tone?: ToastTone) => void;
   toasts: Ref<Toast[]>;
   view: { current: ComputedRef<Face>; faces: Ref<Face[]>; set: (face: Face) => void };
@@ -181,8 +183,10 @@ export function useChrome(): Chrome {
   );
 
   // A colour asserts an outcome, and most of these only say a message left.
-  function notify({ tone = "neutral", ...notice }: Notice): void {
-    toasts.value = [...toasts.value, { id: ++toastSeq, tone, ...notice }];
+  function notify({ tone = "neutral", ...notice }: Notice): number {
+    const id = ++toastSeq;
+    toasts.value = [...toasts.value, { id, tone, ...notice }];
+    return id;
   }
 
   function toast(text: string, tone?: ToastTone): void {
