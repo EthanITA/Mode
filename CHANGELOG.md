@@ -20,11 +20,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   was left on, the address in the bar is editable, hovering a Web entry offers to remove it with Undo, and a
   remote site is fenced off from localhost and from the sidecar's API.
 
-- **Ask Claude, `/btw` from the sidecar.** ⌥↵ or the Ask Claude pill asks a side question with the
-  whole conversation as context, the running turn included, and nothing reaches the transcript. The
-  session's mascot perches by the field and acts out its status, hopping under a "!" while it waits on
-  you and asleep once it's gone, apart from the side chat's state. Asking works on a finished
-  conversation, and Send to session turns an answer into a real turn. `POST /api/sessions/<key>/ask` serves it.
+- **Ask Claude, `/btw` from the sidecar.** The session's mascot sits beside the notes, and ⌥↵ or a click
+  slides its field out to ask a side question with the whole conversation as context, the running turn
+  included, and nothing reaches the transcript. The mascot acts out the session's status, hopping under a
+  "!" while it waits on you and asleep once it's gone, apart from the side chat's state. The exchanges
+  stack in one scrolling thread that Clear empties with Undo, asking works on a finished conversation, and
+  Send to session turns an answer into a real turn. `POST /api/sessions/<key>/ask` serves it.
 
 - **Quick ask from a comment.** The comment popover on lines in Review's diff, lines in Files, and a
   block of an artifact gets Ask (⌘↵) beside Add to tray. A blank Claude answers in a side question card
