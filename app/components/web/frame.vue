@@ -100,7 +100,7 @@ function onKey(key: string): void {
   if (key === "comment") {
     if (chrome.comment.armed.value) chrome.comment.disarm();
     else chrome.comment.arm();
-  } else if (key === "escape") chrome.dismiss();
+  } else if (key === "escape" && !chrome.dismiss()) artifact.isFull = false;
   else if (key === "hold") chrome.comment.arm(true);
   else if (key === "release") chrome.comment.release();
   else if (key === "reload") web.reload();
@@ -115,7 +115,8 @@ function onKey(key: string): void {
 function onLayout(message: Extract<AgentMessage, { type: "layout" }>): void {
   emit("marks", message.marks);
   emit("anchors", message.anchors);
-  const picked = message.picked && hitOf(message.picked);
+  // A layout sent before the site heard the clear still carries the old pick, so it only moves a pick still held.
+  const picked = chrome.comment.pick.value && message.picked && hitOf(message.picked);
   if (picked) chrome.comment.select(picked);
   if (chrome.comment.spot.value) return;
   const hot = message.hot && hitOf(message.hot);

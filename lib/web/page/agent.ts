@@ -165,9 +165,12 @@ window.addEventListener(
       post({ type: "key", key: "remove" });
     } else if (meta && !event.shiftKey && !isTyping(event.target) && event.key.toLowerCase() === "z") {
       post({ type: "key", key: "undo" });
-    } else if (event.key === "Escape") {
-      if (armed) event.preventDefault();
+    } else if (event.key === "Escape" && armed) {
+      event.preventDefault();
       post({ type: "key", key: "escape" });
+    } else if (event.key === "Escape") {
+      // Read once the site has had the press, so closing its own dialog doesn't also leave fullscreen.
+      setTimeout(() => event.defaultPrevented || post({ type: "key", key: "escape" }));
     } else if (!meta && !event.altKey && !isTyping(event.target) && event.key.toLowerCase() === "c" && !event.repeat) {
       post({ type: "key", key: "hold" });
     } else if (!meta && !event.altKey && !isTyping(event.target) && event.key.toLowerCase() === "f" && !event.repeat) {
