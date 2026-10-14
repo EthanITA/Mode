@@ -27,7 +27,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   to switch without leaving fullscreen, the title in the middle, and Comment, the theme and Exit on the
   right. A live site's title island carries the arrows, its favicon, title and host, and open in a browser
   tab, and clicking the title edits the URL in place. The top bar, the board and the dock step aside, and
-  Esc closes comment mode before it leaves fullscreen.
+  Esc closes comment mode before it leaves fullscreen, from the sidecar or inside a live site.
+
+- **A live site's threads sit beside their blocks.** On the face they dock in a gutter at the sheet's
+  right edge headed by the page and its thread count, and the frame narrows to make room. Grown, each
+  card floats on its own beside its block on a short tether, and leaving fullscreen docks it again.
 
 - **Links open in Artifacts.** A link anywhere in the sidecar, in a page, a rendered file, a live site, a
   note, an answer or the code editor, opens there instead of in a browser tab: a web address as a Web entry,
