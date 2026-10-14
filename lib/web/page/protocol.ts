@@ -28,7 +28,8 @@ export type AgentMessage =
   | { type: "layout"; anchors: FrameAnchor[]; hot?: WebHit; marks: FrameMark[]; picked?: WebHit }
   | { type: "moved"; url: string }
   | { type: "page"; page: WebPage }
-  | { type: "pick"; hit: WebHit };
+  | { type: "pick"; hit: WebHit }
+  | { type: "ready" };
 
 export type SidecarMessage =
   { type: "arm"; armed: boolean } | { type: "clear" } | { type: "go"; path: string } | { type: "hello" };

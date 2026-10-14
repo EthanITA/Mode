@@ -65,12 +65,16 @@ function hitOf(hit: WebHit): FrameHit | undefined {
   };
 }
 
-function onLoad(): void {
-  if (!proxy.value) return;
-  // The down page says so while it parses, which lands before this load.
+// The down page says so while it parses, which lands before the agent is ready and before the load.
+function greet(): void {
   if (web.state === "starting") web.state = "live";
   post({ type: "hello" });
   post({ type: "arm", armed: chrome.comment.armed.value });
+}
+
+function onLoad(): void {
+  if (!proxy.value) return;
+  greet();
   emit("load");
 }
 
@@ -129,7 +133,10 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
       if (chrome.comment.spot.value) return;
       const hit = hitOf(message.hit);
       if (hit) chrome.comment.compose(hit, canAsk);
+      return;
     }
+    case "ready":
+      greet();
   }
 });
 
@@ -171,11 +178,14 @@ watch(
       ref="frame"
       :key="`${slug}:${web.edition}`"
       allow="clipboard-read; clipboard-write; fullscreen"
+      :data-state="web.state"
       :src="src"
       :title="`Live page ${slug}`"
       @load="onLoad"
     />
-    <UiStateMessage v-if="web.state === 'starting'" class="pending" kind="loading">Opening the page…</UiStateMessage>
+    <UiStateMessage v-if="web.state === 'starting'" align="center" class="pending" kind="loading">
+      Opening the page…
+    </UiStateMessage>
   </div>
 </template>
 
@@ -193,12 +203,17 @@ iframe {
   border: 0;
   display: block;
   height: 100%;
+  transition: opacity var(--duration-fast) var(--ease-out);
   width: 100%;
 }
 
+/* Held back until the agent is up, so a half-parsed page never shows under the loading line. */
+iframe[data-state="starting"] {
+  opacity: 0;
+}
+
 .pending {
-  left: 24px;
+  inset: 0;
   position: absolute;
-  top: 24px;
 }
 </style>

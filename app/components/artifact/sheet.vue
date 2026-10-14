@@ -173,6 +173,11 @@ onBeforeUnmount(() => {
   padding: var(--stage-top) 0 calc(var(--dock-h, var(--dock-rest-h)) + var(--gutter) * 2);
 }
 
+/* A live page runs to the window's edges, with the island and dock floating over it. */
+.preview[data-expanded="true"] .read[data-kind="web"] {
+  padding: 0;
+}
+
 .bar {
   align-items: center;
   border-bottom: 1px solid var(--border);

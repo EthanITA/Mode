@@ -191,3 +191,8 @@ window.addEventListener("message", (event: MessageEvent<Partial<Envelope<Sidecar
     location.assign(new URL(message.path, location.origin).href);
   }
 });
+
+// Said once the document is parsed, so the sidecar shows the page without waiting on every subresource and nested frame.
+if (window.parent !== window)
+  for (const to of parents)
+    window.parent.postMessage({ type: "ready", channel: CHANNEL } satisfies Envelope<AgentMessage>, to);
