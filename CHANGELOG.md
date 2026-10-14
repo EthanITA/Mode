@@ -392,6 +392,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **Listening opens the conversation it offers to resume.** Pointing the sidecar at the last
+  conversation, from Terminal, `/sidecar` or typing, left the page on Listening, because it took that
+  conversation for the one already on screen. Now it opens it like any other.
 - **Edit on an artifact block and Ask AI on a note run through Claude Code.** They called the Anthropic
   API and failed without `ANTHROPIC_API_KEY` in the sidecar's environment, then fell back to Gemini
   through `agy`. Now both are `claude -p` on your own login, Haiku first and Sonnet when Haiku hands

@@ -28,7 +28,8 @@ export const $follow = defineStore(() => {
     const face = FACES.find((one) => one === (place.slug ? "artifacts" : place.face));
     if (face) chrome.view.set(face);
     opening.value = place.slug;
-    if (!place.key || place.key === sc.sessionKey.value) return;
+    // The route, not sessionKey, because Listening keeps the last conversation's key while showing none.
+    if (!place.key || place.key === router.currentRoute.value.params.key) return;
     // Following leaves no trail, so Back never walks through every conversation Claude Code pointed at.
     void navigateTo(`/c/${place.key}`, { replace: true });
   }
