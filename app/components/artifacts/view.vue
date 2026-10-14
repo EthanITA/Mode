@@ -357,6 +357,9 @@ async function openUrl(): Promise<void> {
   border-radius: 999px;
   display: inline-flex;
   padding: 1px;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
 }
 
 .dot {
@@ -370,13 +373,18 @@ async function openUrl(): Promise<void> {
   height: 16px;
   justify-items: center;
   padding: 0;
+  transition: color var(--duration-fast) var(--ease-out);
   width: 20px;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .dot:hover {
-    background: var(--error-soft);
-    color: var(--error);
+  .pill:hover {
+    background: var(--error);
+    border-color: var(--error);
+  }
+
+  .pill:hover .dot {
+    color: var(--error-content);
   }
 }
 
