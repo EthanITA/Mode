@@ -23,6 +23,14 @@ const face = computed({
   set: (next: Face) => chrome.view.set(next),
 });
 
+// Hiding the islands belongs to a grown page, so shrinking it brings them back.
+watch(
+  () => artifact.isFull,
+  (full) => {
+    if (!full) islands.isHidden = false;
+  },
+);
+
 // A routed page is replaced on close so Back never walks through it; a grown one just shrinks back.
 function closePage(): void {
   if (artifact.isFull) artifact.isFull = false;
@@ -53,7 +61,7 @@ function closePage(): void {
       tip="Close the page"
       @click="closePage"
     />
-    <span class="corner" data-region="islands-toggle">
+    <span v-if="artifact.isFull" class="corner" data-region="islands-toggle">
       <span class="slide">
         <ChromeAction
           :icon="islands.isHidden ? Eye : EyeOff"
