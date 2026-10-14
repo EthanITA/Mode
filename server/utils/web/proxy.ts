@@ -78,8 +78,16 @@ function swapOrigin(value: string, from: string, to: string): string {
   return value === from || value.startsWith(`${from}/`) ? `${to}${value.slice(from.length)}` : value;
 }
 
-function hostOnly(cookie: string): string {
-  return cookie.replace(/;\s*domain=[^;]*/gi, "");
+// A session cookie dies with the browser, so a site's login would too; 400 days is the longest Chrome keeps one.
+const LASTING = "; Max-Age=34560000";
+
+function kept(cookie: string): string {
+  const own = cookie.replace(/;\s*domain=[^;]*/gi, "");
+  return /;\s*(expires|max-age)\s*=/i.test(own) ? own : `${own}${LASTING}`;
+}
+
+function cookiesOf(response: Response): string[] {
+  return response.headers.getSetCookie().map(kept);
 }
 
 function inject(html: string, { parents, upstream }: { parents: Set<string>; upstream: string }): string {
@@ -105,7 +113,7 @@ export async function rewriteResponse({ here, isHead, response, running: held }:
   const location = headers.get("location");
   if (location) headers.set("location", swapOrigin(location, held.upstream, here));
   headers.delete("set-cookie");
-  for (const cookie of response.headers.getSetCookie()) headers.append("set-cookie", hostOnly(cookie));
+  for (const cookie of cookiesOf(response)) headers.append("set-cookie", cookie);
   if (!held.isLoopback) headers.set("content-security-policy", FENCE);
   // A browser keeps a permanent redirect forever, so one passed on once would send the frame past the proxy for good.
   const status = PERMANENT[response.status] ?? response.status;
@@ -141,22 +149,22 @@ function movedTo(response: Response, upstream: string): string | undefined {
   return next.origin === upstream || !/^https?:$/.test(next.protocol) ? undefined : next.href;
 }
 
-function noticePage({
-  held,
-  status,
-  type,
-  url,
-}: {
+interface NoticeInput {
+  cookies?: string[];
   held: Running;
   status: number;
   type: "down" | "moved";
   url?: string;
-}): Response {
+}
+
+function noticePage({ cookies = [], held, status, type, url }: NoticeInput): Response {
   const parents = JSON.stringify([...held.parents]).replace(/</g, "\\u003c");
   const to = JSON.stringify(url ?? "").replace(/</g, "\\u003c");
   const script = `for (const to of ${parents}) parent.postMessage({ channel: "${CHANNEL}", type: "${type}", url: ${to} || location.href }, to);`;
+  const headers = new Headers({ "cache-control": "no-store", "content-type": "text/html; charset=utf-8" });
+  for (const cookie of cookies) headers.append("set-cookie", cookie);
   return new Response(`<!doctype html><meta charset="utf-8"><title>${type}</title><script>${script}</script>`, {
-    headers: { "cache-control": "no-store", "content-type": "text/html; charset=utf-8" },
+    headers,
     status,
   });
 }
@@ -199,7 +207,9 @@ async function handle(event: H3Event, held: Running): Promise<void> {
     return sendWebResponse(event, down || new Response("", { status: 502 }));
   }
   const moved = isNavigation(request) && movedTo(response, held.upstream);
-  if (moved) return sendWebResponse(event, noticePage({ held, status: 200, type: "moved", url: moved }));
+  // A sign-in often sets its session on the very redirect that leaves, so the cookies ride on the notice.
+  const cookies = moved ? cookiesOf(response) : [];
+  if (moved) return sendWebResponse(event, noticePage({ cookies, held, status: 200, type: "moved", url: moved }));
   const isHead = request.method === "HEAD";
   return sendWebResponse(event, await rewriteResponse({ here: url.origin, isHead, response, running: held }));
 }
@@ -298,6 +308,14 @@ export async function serve({ parent, port, upstream }: ProxyTarget): Promise<vo
   next.ready = start(next, port);
   running.set(port, next);
   return next.ready;
+}
+
+export async function stop(port: number): Promise<void> {
+  const held = running.get(port);
+  if (!held) return;
+  running.delete(port);
+  await held.ready.catch(() => undefined);
+  await close(held);
 }
 
 export async function stopAll(): Promise<void> {

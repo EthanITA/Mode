@@ -52,4 +52,51 @@
   };
   window.addEventListener("click", keep, true);
   window.addEventListener("submit", keep, true);
+
+  // The proxy makes the site's own session cookies last, and these are the ones its scripts set.
+  const jar = Object.getOwnPropertyDescriptor(Document.prototype, "cookie");
+  const { get: read, set: write } = jar ?? {};
+  if (read && write)
+    Object.defineProperty(Document.prototype, "cookie", {
+      configurable: true,
+      enumerable: true,
+      get(this: Document): string {
+        return read.call(this) as string;
+      },
+      set(this: Document, value: unknown): void {
+        const text = String(value);
+        write.call(this, /;\s*(expires|max-age)\s*=/i.test(text) ? text : `${text}; max-age=34560000`);
+      },
+    });
+
+  // sessionStorage ends with the tab, so a site that keeps its sign-in there gets it back from a copy in localStorage.
+  const COPY = "__sidecar:session";
+  let queued = false;
+  const save = (): void => {
+    queued = false;
+    const all: Record<string, string> = {};
+    for (let at = 0; at < sessionStorage.length; at += 1) {
+      const name = sessionStorage.key(at);
+      if (typeof name === "string") all[name] = sessionStorage.getItem(name) ?? "";
+    }
+    localStorage.setItem(COPY, JSON.stringify(all));
+  };
+  try {
+    const held = JSON.parse(localStorage.getItem(COPY) ?? "{}") as Record<string, string>;
+    if (!sessionStorage.length) for (const [name, value] of Object.entries(held)) sessionStorage.setItem(name, value);
+    for (const method of ["setItem", "removeItem", "clear"] as const) {
+      const native = Storage.prototype[method] as (...args: unknown[]) => unknown;
+      (Storage.prototype as unknown as Record<string, unknown>)[method] = function (this: Storage, ...args: unknown[]) {
+        const out = Reflect.apply(native, this, args);
+        if (this === sessionStorage && !queued) {
+          queued = true;
+          queueMicrotask(save);
+        }
+        return out;
+      };
+    }
+    window.addEventListener("pagehide", save);
+  } catch {
+    // storage turned off for the site leaves its sessionStorage as the browser keeps it
+  }
 }

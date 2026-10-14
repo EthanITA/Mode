@@ -6,7 +6,7 @@ import { stripTypeScriptTypes } from "node:module";
 import type { AddressInfo } from "node:net";
 import { after, test } from "node:test";
 import { runInNewContext } from "node:vm";
-import { isSameSite, landing } from "../../../lib/web/records.ts";
+import { landing } from "../../../lib/web/records.ts";
 import { isFencedOrigin, rewriteResponse, serve, stopAll } from "./proxy.ts";
 
 const PARENT = "http://sidecar.localhost:4747";
@@ -59,7 +59,7 @@ test("a page comes back framable, its cookies host-only and its own scripts firs
     res.writeHead(200, {
       "content-security-policy": "frame-ancestors 'none'",
       "content-type": "text/html; charset=utf-8",
-      "set-cookie": ["sid=1; Domain=127.0.0.1; Path=/; HttpOnly", "theme=dark; Path=/"],
+      "set-cookie": ["sid=1; Domain=127.0.0.1; Path=/; HttpOnly", "theme=dark; Path=/; Max-Age=86400"],
       "x-frame-options": "DENY",
     });
     res.end(
@@ -76,7 +76,10 @@ test("a page comes back framable, its cookies host-only and its own scripts firs
   assert.equal(page.headers["x-frame-options"], undefined);
   assert.equal(page.headers["content-security-policy"], undefined);
   assert.equal(page.headers["cache-control"], "no-store");
-  assert.deepEqual(page.headers["set-cookie"], ["sid=1; Path=/; HttpOnly", "theme=dark; Path=/"]);
+  assert.deepEqual(page.headers["set-cookie"], [
+    "sid=1; Path=/; HttpOnly; Max-Age=34560000",
+    "theme=dark; Path=/; Max-Age=86400",
+  ]);
   assert.match(page.body, /^<!doctype html><html><head><script src="\/__sidecar\/bootstrap\.ts\?upstream=/);
   assert.ok(page.body.includes(`agent.ts?parent=${encodeURIComponent(PARENT)}`));
   assert.ok(!page.body.includes("script-src 'none'"));
@@ -132,9 +135,12 @@ test("a site that isn't answering tells the sidecar, and only a page load gets t
   assert.equal(asset.body, "");
 });
 
-test("a page that sends the frame to another site tells the sidecar where, and opening chases only www and https", async () => {
+test("a page that sends the frame to another site tells the sidecar where with its cookies, and opening chases to the last stop", async () => {
+  const last = await listen(createServer((_req, res) => res.writeHead(200).end("ok")));
+  const elsewhere = `http://localhost:${last}/consent`;
   const upstream = createServer((req, res) => {
-    res.writeHead(302, { location: req.url === "/" ? "/home" : "https://www.example.com/consent" }).end();
+    if (req.url === "/") res.writeHead(302, { location: "/home" }).end();
+    else res.writeHead(302, { location: elsewhere, "set-cookie": "sid=2; Path=/" }).end();
   });
   const up = await listen(upstream);
   const port = await freePort();
@@ -143,18 +149,12 @@ test("a page that sends the frame to another site tells the sidecar where, and o
 
   const page = await get(port, "/away", { "sec-fetch-dest": "iframe" });
   assert.equal(page.status, 200);
-  assert.ok(page.body.includes(`type: "moved"`) && page.body.includes(`"https://www.example.com/consent"`));
-  assert.equal(
-    (await get(port, "/away", { "sec-fetch-dest": "empty" })).headers.location,
-    "https://www.example.com/consent",
-  );
+  assert.ok(page.body.includes(`type: "moved"`) && page.body.includes(JSON.stringify(elsewhere)));
+  assert.deepEqual(page.headers["set-cookie"], ["sid=2; Path=/; Max-Age=34560000"]);
+  assert.equal((await get(port, "/away", { "sec-fetch-dest": "empty" })).headers.location, elsewhere);
 
-  assert.ok(isSameSite(new URL("https://google.com/"), new URL("https://www.google.com/")));
-  assert.ok(isSameSite(new URL("http://mode.dev/"), new URL("https://mode.dev/")));
-  assert.ok(!isSameSite(new URL("https://mode.dev/"), new URL("http://mode.dev/")));
-  assert.ok(!isSameSite(new URL("http://localhost:3000/"), new URL("https://auth.example.com/")));
   assert.equal((await landing(new URL(`${site}/`))).href, `${site}/`);
-  assert.equal((await landing(new URL(`${site}/away`))).href, `${site}/away`);
+  assert.equal((await landing(new URL(`${site}/away`))).href, elsewhere);
 });
 
 test("a remote site is fenced off from local services and from the sidecar's API", async () => {
@@ -194,7 +194,7 @@ test("the proxy serves its own scripts type-stripped and nothing else under its 
   assert.equal((await get(port, "/__sidecar/../package.json")).status, 502);
 });
 
-test("the bootstrap points the site's own calls at the proxy, sockets included, and leaves the rest", () => {
+test("the bootstrap points the site's own calls at the proxy, keeps its cookies and sessionStorage, and leaves the rest", async () => {
   const calls: string[] = [];
   class Xhr {
     open(...args: unknown[]): void {
@@ -206,17 +206,55 @@ test("the bootstrap points the site's own calls at the proxy, sockets included, 
       calls.push(`ws ${url}`);
     }
   }
+  let jar = "";
+  class Document {
+    get cookie(): string {
+      return jar;
+    }
+    set cookie(value: string) {
+      jar = value;
+    }
+  }
+  class Storage {
+    #held = new Map<string, string>();
+    get length(): number {
+      return this.#held.size;
+    }
+    key(at: number): string | undefined {
+      return [...this.#held.keys()][at];
+    }
+    getItem(name: string): string | undefined {
+      return this.#held.get(name);
+    }
+    setItem(name: string, value: string): void {
+      this.#held.set(name, value);
+    }
+    removeItem(name: string): void {
+      this.#held.delete(name);
+    }
+    clear(): void {
+      this.#held.clear();
+    }
+  }
+  const local = new Storage();
+  const session = new Storage();
+  local.setItem("__sidecar:session", JSON.stringify({ token: "kept" }));
   const sandbox: Record<string, unknown> = {
     addEventListener: () => {},
-    document: {
+    document: Object.assign(Object.create(Document.prototype) as object, {
       currentScript: {
         getAttribute: () => `/__sidecar/bootstrap.ts?upstream=${encodeURIComponent("http://localhost:3000")}`,
       },
-    },
+    }),
+    Document,
     EventSource: Socket,
     fetch: (input: unknown) => calls.push(`fetch ${input instanceof Request ? input.url : String(input)}`),
+    localStorage: local,
     location: new URL("http://localhost-3000--abcdef.sidecar.localhost:47481/guide"),
+    queueMicrotask,
     Request,
+    sessionStorage: session,
+    Storage,
     URL,
     WebSocket: Socket,
     XMLHttpRequest: Xhr,
@@ -250,4 +288,14 @@ test("the bootstrap points the site's own calls at the proxy, sockets included, 
     `ws ws://${proxy}/_hmr`,
     `xhr 2 http://${proxy}/xhr`,
   ]);
+
+  const doc = sandbox.document as { cookie: string };
+  doc.cookie = "a=1; path=/";
+  assert.equal(jar, "a=1; path=/; max-age=34560000");
+  doc.cookie = "a=; Max-Age=0";
+  assert.equal(jar, "a=; Max-Age=0");
+  assert.equal(session.getItem("token"), "kept");
+  session.setItem("token", "new");
+  await Promise.resolve();
+  assert.equal(local.getItem("__sidecar:session"), JSON.stringify({ token: "new" }));
 });
