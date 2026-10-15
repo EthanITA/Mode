@@ -333,6 +333,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **Faces stay as you left them.** Artifacts, Review, Files and History each stay mounted behind the
   others once opened, so switching back fades the face in with nothing read again, and a list says it is
   reading until its data lands instead of saying it is empty.
+- **Loading shows a spinner, not the mascot.** The cover between Listening and a conversation spins the
+  favicon's loader once a switch runs slow, and the sidecar's first load shows the same loader on the
+  theme's own canvas, so a dark sidecar never starts white.
 - **Artifacts rows show their kind as an icon.** A Web artifact shows its site's favicon, a `.md` the VS
   Code Markdown mark and an `.html` page its `<>`, in place of the Web, Page and Plan chips, and a row's
   title and every toast stop at two lines.
