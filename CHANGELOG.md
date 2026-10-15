@@ -503,6 +503,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **The sidecar stops flooding `/api/why`.** Every five-second poll asked for the why of every listed
   conversation, close to 300 requests a tick, for a tab rail nothing renders anymore, so the poll and
   the screen's gate and ground rule counts it fed are gone. The endpoint stays for other callers.
+- **The five-second poll asks for live conversations only.** It fetched every conversation on disk, about
+  330 KB and 170ms of server work a tick with three hundred of them, and now asks for the running ones,
+  the jobs and the one on screen, about 28 KB in 16ms, while the full list loads once with the page.
 - **Gmail and the Google Store open from google.com.** The proxy sent each request marked as a framed
   page with the sidecar as its referrer, which Google's sign-in answers with a 401, and a form posted to
   the site's own or another of its hosts, such as the consent page's, left the proxy for a 403. Requests

@@ -52,13 +52,31 @@ export function useConversationPick(name: string): WritableComputedRef<string | 
 export function loadSidecar(): void {
   const sc = useSidecar();
 
+  function pick(): void {
+    const sessions = sc.sessions.value;
+    if (sc.sessionKey.value && sessions.some((s) => s.key === sc.sessionKey.value)) return;
+    const first = sessions.find((s) => s.live) ?? sessions.find((s) => s.artifacts.length) ?? sessions[0];
+    sc.sessionKey.value = first?.key;
+  }
+
   async function pullSessions(): Promise<void> {
-    const sessions = await $fetch<LiveSession[]>("/api/sessions");
-    sc.sessions.value = sessions;
-    if (!sc.sessionKey.value || !sessions.some((s) => s.key === sc.sessionKey.value)) {
-      const pick = sessions.find((s) => s.live) ?? sessions.find((s) => s.artifacts.length) ?? sessions[0];
-      sc.sessionKey.value = pick?.key;
-    }
+    sc.sessions.value = await $fetch<LiveSession[]>("/api/sessions");
+    pick();
+  }
+
+  // The full list grows with every conversation ever had, so the poll asks only for what can still change.
+  async function pullLive(): Promise<void> {
+    const fresh = await $fetch<LiveSession[]>("/api/sessions", {
+      query: { scope: "live", key: sc.sessionKey.value },
+    });
+    const byKey = new Map(fresh.map((s) => [s.key, s]));
+    const known = new Set(sc.sessions.value.map((s) => s.key));
+    // Left out of a live answer means its process has ended.
+    const kept = sc.sessions.value.map(
+      (s) => byKey.get(s.key) ?? (s.live ? { ...s, live: false, status: undefined } : s),
+    );
+    sc.sessions.value = [...fresh.filter((s) => !known.has(s.key)), ...kept].sort(sessionOrder);
+    pick();
   }
 
   async function pullOnce(): Promise<void> {
@@ -82,7 +100,7 @@ export function loadSidecar(): void {
   async function poll(): Promise<void> {
     if (sc.failure.value) return pullOnce();
     try {
-      await pullSessions();
+      await pullLive();
     } catch (error) {
       sc.failure.value = error instanceof Error ? error.message : String(error);
     }

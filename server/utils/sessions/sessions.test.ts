@@ -26,6 +26,12 @@ test("a session keyed by its artifact list is skipped when nothing on disk can i
   );
 });
 
+test("the live scope builds only processes and jobs, plus the key asked for", () => {
+  const keys = (key?: string): string[] => liveSessions({ scope: "live", key }).map((session) => session.key);
+  assert.deepEqual(keys(), ["aaaaaaaa", "cccccccc"]);
+  assert.deepEqual(keys("bbbbbbbb"), ["aaaaaaaa", "cccccccc", "bbbbbbbb"]);
+});
+
 test("a job identifies a session its artifact list alone could not, and supplies the name, cwd and detail", () => {
   const gamma = find(liveSessions(), "cccccccc");
   assert.equal(gamma.name, "Gamma, as the job knows it");

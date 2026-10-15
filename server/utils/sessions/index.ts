@@ -1,4 +1,5 @@
 import type { LiveSession } from "../../../shared/types/session.ts";
+import { sessionOrder } from "../../../shared/utils/sessions.ts";
 import { pipelineFor } from "../../../lib/mode/pipeline.ts";
 import { sessions as modeSessions, slotOf } from "../../../lib/mode/sessions.ts";
 import { agentsOf } from "./agents.ts";
@@ -52,28 +53,24 @@ function build(key: string, { entry, job, ref }: Sources): LiveSession | undefin
   };
 }
 
-// Live first because the design shows only those as tabs; then the conversations `claude agents`
-// owns, because the desk opens on those; the rest is history, newest first.
-function order(a: LiveSession, b: LiveSession): number {
-  if (a.live !== b.live) return a.live ? -1 : 1;
-  if (!!a.archived !== !!b.archived) return a.archived ? 1 : -1;
-  return (b.lastActive || 0) - (a.lastActive || 0);
+export interface SessionsQuery {
+  scope?: "all" | "live";
+  key?: string;
 }
 
-export function liveSessions(): LiveSession[] {
+// `live` is what a poll can see change: processes and jobs, plus the conversation on screen.
+export function liveSessions({ scope = "all", key }: SessionsQuery = {}): LiveSession[] {
   const entries = new Map(liveEntries().map((entry) => [keyOf(entry.id), entry]));
   const running = new Map(jobs().map((job) => [job.key, job]));
   const transcripts = transcriptIndex();
-  const keys = new Set<string>([
-    ...running.keys(),
-    ...entries.keys(),
-    ...keysWithArtifacts(),
-    ...modeSessions().map((session) => session.id),
-  ]);
+  const keys = new Set<string>([...running.keys(), ...entries.keys()]);
+  if (key) keys.add(key);
+  if (scope === "all")
+    for (const one of [...keysWithArtifacts(), ...modeSessions().map((session) => session.id)]) keys.add(one);
   const out: LiveSession[] = [];
-  for (const key of keys) {
-    const session = build(key, { entry: entries.get(key), job: running.get(key), ref: transcripts.get(key) });
+  for (const one of keys) {
+    const session = build(one, { entry: entries.get(one), job: running.get(one), ref: transcripts.get(one) });
     if (session) out.push(session);
   }
-  return out.sort(order);
+  return out.sort(sessionOrder);
 }
