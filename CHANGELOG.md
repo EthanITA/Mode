@@ -26,7 +26,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   Access draws it, so a remote site can't call localhost, the local network or the sidecar's API. Back and
   forward arrows, ⌘[ and ⌘], step through the artifact's own history across every site and never the
   sidecar's, each artifact keeps that history in its record so it survives a switch or a reload, and ⌘L
-  edits the address.
+  edits the address. A reCAPTCHA checkbox and its picture challenge work inside a Web artifact, so the
+  "unusual traffic" check Google gives a browser it doesn't know can be passed there.
 
 - **Fullscreen is three islands over the page.** F, from the sidecar or inside a live site, grows any artifact to the whole window
   under a strip of islands: the list button on the left, which lays Artifacts or Files over the left edge
