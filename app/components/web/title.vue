@@ -173,6 +173,7 @@ watch(
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 500;
+  margin-left: auto;
 }
 
 .edit {
