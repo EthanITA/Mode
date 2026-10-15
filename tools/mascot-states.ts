@@ -1,10 +1,12 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { compile } from "@tailwindcss/node";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APP = join(HERE, "..", "app");
 const SFC = join(APP, "components", "claude", "mascot.vue");
+const MAIN = join(APP, "assets", "css", "main.css");
 
 const STATES = ["idle", "thinking", "coding", "investigating", "running"] as const;
 
@@ -16,8 +18,11 @@ const dock = readFileSync(join(APP, "components", "composer", "dock.vue"), "utf8
 const convo = readFileSync(join(APP, "composables", "useConversation.ts"), "utf8");
 
 const template = sfc.match(/<template>([\s\S]*?)<\/template>/)?.[1]?.trim() ?? "";
-const style = sfc.match(/<style scoped>([\s\S]*?)<\/style>/)?.[1]?.trim() ?? "";
-if (!template || !style) throw new Error("could not read the component's template or style");
+const source = sfc.match(/<style scoped>([\s\S]*?)<\/style>/)?.[1]?.trim() ?? "";
+if (!template || !source) throw new Error("could not read the component's template or style");
+
+// The style @applies Tailwind, so the page inlines what Tailwind compiles from it, exactly as the app does.
+const style = (await compile(`@reference "${MAIN}";\n${source}`, { base: APP, onDependency: () => {} })).build([]);
 
 const tokenLines = sidecar.match(/^\s*--(?:mascot|prop|portal)(?:-[a-z0-9]+)*:[^;]+;$/gm) ?? [];
 if (!tokenLines.length) throw new Error("no mascot or prop tokens found in sidecar.css");
@@ -45,7 +50,7 @@ const SETS = Object.fromEntries(
 ) as Record<string, string[]>;
 
 const timings = [
-  ...style.matchAll(/\.mascot\[data-state="(\w+)"\] \.([\w.-]+) \{?\s*animation: ([\w-]+) ([\d.]+m?s)/g),
+  ...source.matchAll(/\.mascot\[data-state="(\w+)"\] \.([\w.-]+) \{[^}]*?\banimation: ([\w-]+) ([\d.]+m?s)/g),
 ].map((m) => ({
   state: m[1] as string,
   part: (m[2] as string).replace(/^\./, ""),
@@ -54,11 +59,19 @@ const timings = [
 }));
 
 const beam = {
-  leave: style.match(/\.beam-leave-active \{\s*transition: ([^;]+);/)?.[1]?.trim() ?? "",
-  enter: style.match(/\.beam-enter-active \{[\s\S]*?transition: ([^;]+);/)?.[1]?.trim() ?? "",
+  leave:
+    source
+      .match(/\.beam-leave-active \{\s*transition:\s*([^;]+);/)?.[1]
+      ?.replace(/\s+/g, " ")
+      .trim() ?? "",
+  enter:
+    source
+      .match(/\.beam-enter-active \{[\s\S]*?transition:\s*([^;]+);/)?.[1]
+      ?.replace(/\s+/g, " ")
+      .trim() ?? "",
   from:
-    style
-      .match(/\.beam-enter-from,\s*\.beam-leave-to \{([^}]+)\}/)?.[1]
+    source
+      .match(/\.beam-enter-from,\s*\.beam-leave-to \{\s*@apply ([^;}]+);?\s*\}/)?.[1]
       ?.replace(/\s+/g, " ")
       .trim() ?? "",
 };
@@ -220,7 +233,7 @@ ${style}
   <p class="note" style="margin:12px 0 0">
     The portal opens, Claude looks it over for half a second, steps through, and half a second later
     both portals shut. The whole hand-over is ${portMs}ms; the portal runs
-    <code>${style.match(/\.slot\[data-porting="true"\] \.portal \{\s*animation: ([^;]+);/)?.[1]?.trim() ?? ""}</code>.
+    <code>${source.match(/\.slot\[data-porting="true"\] \.portal \{\s*animation: ([^;]+);/)?.[1]?.trim() ?? ""}</code>.
   </p>
 </div>
 
