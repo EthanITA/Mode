@@ -131,6 +131,11 @@
           },
           {
             "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/delete-guard",
+            "timeout": 30
+          },
+          {
+            "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/pair-guard"
           }
         ]

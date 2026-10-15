@@ -9,8 +9,8 @@ import { strip } from "../../lib/text.ts";
 
 const WRITE_TOOLS = new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 
-const risky = ({ sub, rest }: GitCall): boolean =>
-  sub === "switch" || sub === "checkout" || (sub === "reset" && rest.includes("--hard"));
+// Discarding work is delete-guard's; this one stops a branch switch carrying someone else's edits along.
+const risky = ({ sub, rest }: GitCall): boolean => sub === "switch" || (sub === "checkout" && !rest.includes("--"));
 
 function git(repo: string, ...args: string[]): string | undefined {
   const done = spawnSync("git", ["-C", repo, ...args], { encoding: "utf8", timeout: 10000 });
@@ -31,21 +31,16 @@ function owned(transcript: string): Set<string> {
   return paths;
 }
 
-function foreign({ repo, rest }: GitCall, mine: Set<string>): string[] {
+function foreign({ repo }: GitCall, mine: Set<string>): string[] {
   const top = strip(git(repo, "rev-parse", "--show-toplevel") ?? "");
   const changed = top ? git(repo, "diff", "--name-only", "HEAD") : undefined;
   if (!changed) return [];
-  let paths = changed
+  return changed
     .split("\n")
     .filter(Boolean)
-    .map((path) => resolveDir(joinPath(top, path)));
-  // `checkout -- file` only touches the files it names, so edits elsewhere are not at stake.
-  const dash = rest.indexOf("--");
-  if (dash >= 0) {
-    const named = new Set(rest.slice(dash + 1).map((path) => resolveDir(joinPath(repo, path))));
-    paths = paths.filter((path) => named.has(path));
-  }
-  return paths.filter((path) => !mine.has(path)).map((path) => relative(top, path));
+    .map((path) => resolveDir(joinPath(top, path)))
+    .filter((path) => !mine.has(path))
+    .map((path) => relative(top, path));
 }
 
 if (armed()) {
@@ -59,10 +54,9 @@ if (armed()) {
         if (!theirs.length) continue;
         const shown = theirs.slice(0, 5).join(", ") + (theirs.length > 5 ? ` and ${theirs.length - 5} more` : "");
         deny(
-          `git-guard — \`git ${call.sub}\` in ${call.repo} would carry or discard uncommitted changes this session ` +
+          `git-guard — \`git ${call.sub}\` in ${call.repo} would carry uncommitted changes this session ` +
             `did not make: ${shown}.\n\nThe rule this guard enforces: a checkout can hold someone ` +
-            "else's work in progress. `git switch` and `git checkout` carry it onto another " +
-            "branch, and `git reset --hard` or `git checkout -- <file>` destroy it. Park it first " +
+            "else's work in progress, and `git switch` or `git checkout` carries it onto another branch. Park it first " +
             'with `git stash push -u -m "<whose work, why parked>"` and pop it back when you are ' +
             "done, or ask the user. Do not narrate the block.",
         );

@@ -271,9 +271,19 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **One guard can be turned off without the rest.** `"disarm": ["board-check"]` in
   `~/.claude/mode/config.json` silences only the guards it names, by file stem, where `"guards": "off"`
   still turns every one of them off.
-- **A git switch, checkout or `reset --hard` stops before it touches someone else's work.**
+- **A git switch or checkout stops before it carries someone else's work to another branch.**
   `git-guard` denies it while the checkout holds uncommitted changes to files the session never
   edited, and says to park them with a named stash first.
+- **A shell command can't destroy what the session doesn't own.** `delete-guard` reads each Bash command
+  the way the shell and the tool would, following `cd`, variables, loops, subshells and `bash -c`, and
+  denies `rm`, `rsync --delete`, `find -delete`, `git clean`, `reset --hard`, a `checkout` or `restore` of
+  paths, `mv`, `cp` or `ln` over a file, or a truncating redirect when it would take the filesystem or home
+  root, a whole git working tree, another session's job folder, more than 50 tracked files, or an untracked,
+  ignored or uncommitted file the session never wrote. It lists `find` and `git clean` matches with their own
+  dry runs, and reads rsync with openrsync's option grammar, so an option that swallows a path is caught
+  before a one-operand `--delete` mirrors a scratch folder onto the current directory. What it can't see,
+  such as an unknown variable or `xargs rm`, is denied too. The session's `$CLAUDE_JOB_DIR/tmp` and build
+  output like `node_modules` stay free.
 - **Following Claude Code switches pages under a loading veil.** When the sidecar moves on its own,
   from a conversation to Listening, from Listening to a conversation or between two conversations, a
   blurred veil fades over the page, the page changes underneath it and the veil lifts once the new one
