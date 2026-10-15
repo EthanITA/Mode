@@ -1,20 +1,6 @@
-import type { How } from "~~/shared/types/mode";
-
-// The prefix encodes how the slot was set, the vocabulary bin/mode already uses.
-const SIGILS: Record<How, string> = {
-  auto: "",
-  chosen: "~",
-  pinned: "=",
-  typed: "",
-};
-
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
-
-export function sigil(how: How): string {
-  return SIGILS[how];
-}
 
 export function homePath(cwd: string): string {
   const home = cwd.match(/^\/Users\/[^/]+/)?.[0];
