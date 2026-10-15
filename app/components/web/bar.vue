@@ -45,6 +45,7 @@ function goAway(): void {
     />
   </span>
   <form v-if="isEditing" class="address" data-region="web-address" @submit.prevent="commit">
+    <WebFavicon class="icon" :address="draft" :page="web.page" />
     <input
       ref="field"
       v-model="draft"
@@ -68,6 +69,7 @@ function goAway(): void {
     data-tip="Edit the address · {cmd L}"
     @click="edit"
   >
+    <WebFavicon class="icon" :address="address" :page="web.page" />
     <span class="host">{{ host }}</span>
     <span>{{ page }}</span>
   </button>
@@ -136,6 +138,11 @@ function goAway(): void {
   text-overflow: ellipsis;
 }
 
+.icon {
+  color: var(--muted);
+  margin-right: 6px;
+}
+
 .host {
   color: var(--muted);
   flex: none;
@@ -143,27 +150,32 @@ function goAway(): void {
 }
 
 .address {
-  display: flex;
-  flex: 1;
-  margin: 0 0 0 -6px;
-  min-width: 0;
-}
-
-.field {
+  align-items: center;
   background: var(--sunken);
   border: 1px solid var(--primary);
   border-radius: 8px;
   box-shadow: 0 0 0 2px var(--primary-soft);
   box-sizing: border-box;
+  display: flex;
+  flex: 1;
+  height: 26px;
+  margin: 0 0 0 -6px;
+  min-width: 0;
+  padding: 0 6px;
+}
+
+.field {
+  background: transparent;
+  border: 0;
   color: var(--ink);
   flex: 1;
   font-family: var(--mono);
   font-size: 12.5px;
   font-weight: 600;
-  height: 26px;
+  height: 100%;
   min-width: 0;
   outline: none;
-  padding: 0 6px;
+  padding: 0;
 }
 
 .elsewhere {

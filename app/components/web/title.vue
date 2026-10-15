@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ChevronLeft, ChevronRight, ExternalLink, Globe } from "@lucide/vue";
+import { ChevronLeft, ChevronRight, ExternalLink } from "@lucide/vue";
 
 const { slug } = defineProps<{ slug: string }>();
 
@@ -7,8 +7,7 @@ const sc = useSidecar();
 const web = $web();
 const field = useTemplateRef<HTMLInputElement>("field");
 const scrolled = ref(0);
-const isIconBroken = ref(false);
-const { cancel, commit, draft, edit, host, isEditing, openOut, page } = useWebAddress({
+const { address, cancel, commit, draft, edit, host, isEditing, openOut, page } = useWebAddress({
   focus: () => {
     field.value?.focus();
     field.value?.select();
@@ -16,7 +15,6 @@ const { cancel, commit, draft, edit, host, isEditing, openOut, page } = useWebAd
   slug: () => slug,
 });
 
-const icon = computed(() => (isIconBroken.value ? undefined : web.page?.icon));
 const title = computed(
   () => web.page?.title || (sc.artifact.value?.slug === slug ? sc.artifact.value.title : "") || page.value,
 );
@@ -27,11 +25,6 @@ const tail = computed(() => draft.value.slice(lead.value.length));
 function track(): void {
   requestAnimationFrame(() => (scrolled.value = field.value?.scrollLeft ?? 0));
 }
-
-watch(
-  () => web.page?.icon,
-  () => (isIconBroken.value = false),
-);
 </script>
 
 <template>
@@ -61,27 +54,30 @@ watch(
     />
     <span class="rule" />
     <form v-if="isEditing" class="edit" data-region="web-address" @submit.prevent="commit">
-      <input
-        ref="field"
-        v-model="draft"
-        aria-label="Address"
-        autocomplete="off"
-        class="field"
-        inputmode="url"
-        spellcheck="false"
-        type="text"
-        @blur="cancel"
-        @input="track"
-        @keydown.esc.prevent.stop="cancel"
-        @keyup="track"
-        @scroll="track"
-        @select="track"
-      />
-      <span class="mirror" aria-hidden="true">
-        <span class="line" :style="{ translate: `${-scrolled}px 0` }"
-          ><span class="lead">{{ lead }}</span
-          >{{ tail }}</span
-        >
+      <WebFavicon class="icon" :address="draft" :page="web.page" />
+      <span class="box">
+        <input
+          ref="field"
+          v-model="draft"
+          aria-label="Address"
+          autocomplete="off"
+          class="field"
+          inputmode="url"
+          spellcheck="false"
+          type="text"
+          @blur="cancel"
+          @input="track"
+          @keydown.esc.prevent.stop="cancel"
+          @keyup="track"
+          @scroll="track"
+          @select="track"
+        />
+        <span class="mirror" aria-hidden="true">
+          <span class="line" :style="{ translate: `${-scrolled}px 0` }"
+            ><span class="lead">{{ lead }}</span
+            >{{ tail }}</span
+          >
+        </span>
       </span>
     </form>
     <button
@@ -93,8 +89,7 @@ watch(
       data-tip="Show the URL · {cmd L}"
       @click="edit"
     >
-      <img v-if="icon" alt="" class="icon" :src="icon" @error="isIconBroken = true" />
-      <UiIcon v-else class="icon glyph" :icon="Globe" size="sm" />
+      <WebFavicon class="icon" :address="address" :page="web.page" />
       <span class="title">{{ title }}</span>
       <span class="host">{{ host }}</span>
     </button>
@@ -145,14 +140,6 @@ watch(
 }
 
 .icon {
-  border-radius: 4px;
-  flex: none;
-  height: 14px;
-  object-fit: contain;
-  width: 14px;
-}
-
-.glyph {
   color: var(--muted);
 }
 
@@ -176,10 +163,21 @@ watch(
   margin-left: auto;
 }
 
+/* The icon sits where it does unedited, so the typed address starts where the title did. */
 .edit {
+  align-items: center;
+  align-self: stretch;
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
+  padding-left: 4px;
+}
+
+.box {
   align-self: stretch;
   flex: 1;
-  margin: 0;
   min-width: 0;
   position: relative;
 }
@@ -201,7 +199,7 @@ watch(
   height: 100%;
   inset: 0;
   outline: none;
-  padding: 0 4px;
+  padding: 0 4px 0 0;
   position: absolute;
   width: 100%;
 }
@@ -215,7 +213,7 @@ watch(
   align-items: center;
   color: var(--ink);
   display: flex;
-  inset: 0 4px;
+  inset: 0 4px 0 0;
   overflow: hidden;
   pointer-events: none;
   position: absolute;

@@ -7,6 +7,7 @@ import type { AddressInfo } from "node:net";
 import { after, test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { WebHost } from "../../../lib/web/host.ts";
+import { siteIcon } from "./icon.ts";
 import { asTab, captchaFor, isAllowed, isFencedOrigin, keptCookie, rewriteResponse, serve, stopAll } from "./proxy.ts";
 
 const PARENT = "http://sidecar.localhost:4747";
@@ -441,4 +442,23 @@ test("the bootstrap keeps every call, socket, script, form and navigation inside
   session.setItem("token", "new");
   await Promise.resolve();
   assert.equal(local.getItem("__sidecar:session"), JSON.stringify({ token: "new" }));
+});
+
+test("a site's icon is the one its head links, read as an image by its bytes, and a page served for a missing favicon is none", async () => {
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+  const linking = await listen(
+    createServer((req, res) => {
+      if (req.url === "/") return res.end(`<head><link href="/b/i.png?v=1&amp;s=2" rel="shortcut icon"></head>`);
+      if (req.url === "/b/i.png?v=1&s=2")
+        return res.writeHead(200, { "content-type": "application/octet-stream" }).end(png);
+      res.writeHead(404).end();
+    }),
+  );
+  const linked = await siteIcon({ origin: `http://127.0.0.1:${linking}` });
+  assert.deepEqual([linked?.type, Buffer.from(linked?.body ?? []).equals(png)], ["image/png", true]);
+
+  const spa = await listen(
+    createServer((_req, res) => res.writeHead(200, { "content-type": "text/html" }).end("<head></head><div id=app>")),
+  );
+  assert.equal(await siteIcon({ origin: `http://127.0.0.1:${spa}` }), undefined);
 });

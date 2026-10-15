@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { Globe, Trash2 } from "@lucide/vue";
-import { parseTarget } from "~~/lib/web/target";
+import { Trash2 } from "@lucide/vue";
 import type { ArtifactKind, ArtifactMeta } from "~~/shared/types/artifact";
 
 const KIND: Record<ArtifactKind, string> = {
@@ -128,7 +127,7 @@ async function openUrl(): Promise<void> {
           :data-refused="!!refused"
           @submit.prevent="openUrl"
         >
-          <UiIcon class="globe" :icon="Globe" size="xs" />
+          <WebFavicon class="globe" :address="address" />
           <input
             v-model="address"
             aria-label="Open a URL"
@@ -146,9 +145,6 @@ async function openUrl(): Promise<void> {
           />
         </form>
         <p v-if="refused" class="hint" data-tone="error" role="alert">{{ refused }}</p>
-        <p v-else-if="isFocused && address.trim()" class="hint">
-          {{ parseTarget(address) ? "Opens live here, with the comment layer." : "Searches Google for it, live here." }}
-        </p>
       </header>
       <div class="scroll">
         <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
