@@ -478,6 +478,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Removed
 
+- **The board island.** Hidden on the conversation and artifact pages, the only ones that showed it, so its
+  components, the `/api/sessions/:key/board` routes and the board helpers behind them are gone.
 - **The delivery receipt.** `board-deliver` (the warning on ticking a delivery-shaped item), `board-done`
   (the stop check that re-opened an all-ticked board whose receipt failed), the `metadata.done` receipts
   they verified and the `delivery` config rows are gone, so ticking an item no longer runs `glab` or
