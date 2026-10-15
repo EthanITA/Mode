@@ -1,6 +1,6 @@
 import type { ComputedRef, Ref, WritableComputedRef } from "vue";
 import type { ArtifactDetail, ArtifactMeta } from "~~/shared/types/artifact";
-import type { Contracts, Why } from "~~/shared/types/mode";
+import type { Contracts } from "~~/shared/types/mode";
 import type { LiveSession } from "~~/shared/types/session";
 
 /** `?:` cannot express absence inside a generic, so every absent-by-default ref goes through here. */
@@ -20,7 +20,6 @@ export interface Sidecar {
   sessionKey: Maybe<string>;
   sessions: Ref<LiveSession[]>;
   slug: Maybe<string>;
-  whys: Ref<Record<string, Why>>;
 }
 
 const REFRESH_MS = 5000;
@@ -35,7 +34,6 @@ export function useSidecar(): Sidecar {
     sessionKey: maybeState<string>("sc:session-key"),
     sessions: useState<LiveSession[]>("sc:sessions", () => []),
     slug: maybeState<string>("sc:slug"),
-    whys: useState<Record<string, Why>>("sc:whys", () => ({})),
   };
 }
 
@@ -50,19 +48,6 @@ export function useConversationPick(name: string): WritableComputedRef<string | 
   });
 }
 
-async function readWhys(sessions: LiveSession[]): Promise<Record<string, Why>> {
-  const pairs = await Promise.all(
-    sessions.map(async (session): Promise<[string, Why] | undefined> => {
-      try {
-        return [session.key, await $fetch<Why>("/api/why", { query: { session: session.key } })];
-      } catch {
-        return undefined; // one unreadable session must not blank the whole rail
-      }
-    }),
-  );
-  return Object.fromEntries(pairs.filter((pair): pair is [string, Why] => Boolean(pair)));
-}
-
 /** Called once by the page. Loads everything, then keeps the live half fresh. */
 export function loadSidecar(): void {
   const sc = useSidecar();
@@ -70,7 +55,6 @@ export function loadSidecar(): void {
   async function pullSessions(): Promise<void> {
     const sessions = await $fetch<LiveSession[]>("/api/sessions");
     sc.sessions.value = sessions;
-    sc.whys.value = await readWhys(sessions);
     if (!sc.sessionKey.value || !sessions.some((s) => s.key === sc.sessionKey.value)) {
       const pick = sessions.find((s) => s.live) ?? sessions.find((s) => s.artifacts.length) ?? sessions[0];
       sc.sessionKey.value = pick?.key;

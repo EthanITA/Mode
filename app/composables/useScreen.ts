@@ -1,7 +1,7 @@
 import type { ComputedRef } from "vue";
 import type { MaybeComputed } from "~/composables/useSidecar";
 import type { ReviewThread } from "~~/shared/types/artifact";
-import type { How, Slot, Why } from "~~/shared/types/mode";
+import type { How, Slot } from "~~/shared/types/mode";
 import type { LiveSession, SessionState } from "~~/shared/types/session";
 import type { Tint } from "~/utils/tint";
 
@@ -29,16 +29,8 @@ export interface NoteGroup {
   threads: ReviewThread[];
 }
 
-export interface Waiting {
-  gates: number;
-  notes: number;
-  questions: number;
-  total: number;
-}
-
 export interface Screen {
   artifactRows: ComputedRef<ArtifactRow[]>;
-  ground: ComputedRef<{ told: number; total: number }>;
   liveState: ComputedRef<LiveState>;
   noteGroups: ComputedRef<NoteGroup[]>;
   openNotes: ComputedRef<number>;
@@ -47,18 +39,6 @@ export interface Screen {
   sessionState: ComputedRef<SessionState>;
   slots: ComputedRef<SlotView[]>;
   steps: ComputedRef<StepView[]>;
-  tabs: ComputedRef<TabView[]>;
-  waiting: ComputedRef<Waiting>;
-  why: MaybeComputed<Why>;
-}
-
-export interface TabView {
-  cwd: string;
-  key: string;
-  live: boolean;
-  name: string;
-  tint: Tint;
-  waiting: boolean;
 }
 
 export interface LiveState {
@@ -71,10 +51,6 @@ export function nameOf(session: LiveSession): string {
   return session.name || basename(session.cwd) || session.key;
 }
 
-function shutGates(why: Why | undefined): number {
-  return why?.gates.filter((gate) => gate.state === "shut").length ?? 0;
-}
-
 function slotLabel(slot: Slot): string {
   return slot.name ? `${sigil(slot.how)}${slot.name}` : "auto";
 }
@@ -83,24 +59,6 @@ export function useScreen(): Screen {
   const sc = useSidecar();
 
   const session = computed(() => sc.sessions.value.find((s) => s.key === sc.sessionKey.value));
-  const why = computed(() => (sc.sessionKey.value ? sc.whys.value[sc.sessionKey.value] : undefined));
-
-  // Tabs are live conversations; with none running, the last productive one beats a blank screen.
-  const railed = computed(() => {
-    const live = sc.sessions.value.filter((s) => s.live);
-    return live.length ? live : sc.sessions.value.filter((s) => s.artifacts.length).slice(0, 1);
-  });
-
-  const tabs = computed<TabView[]>(() =>
-    railed.value.map((s) => ({
-      cwd: homePath(s.cwd),
-      key: s.key,
-      live: s.live,
-      name: nameOf(s),
-      tint: tintOf(s.color, s.key),
-      waiting: shutGates(sc.whys.value[s.key]) > 0,
-    })),
-  );
 
   const liveState = computed<LiveState>(() => {
     const here = session.value;
@@ -158,12 +116,6 @@ export function useScreen(): Screen {
     }));
   });
 
-  const ground = computed(() => {
-    const rules = why.value?.rules;
-    const told = rules?.told.length ?? 0;
-    return { told, total: told + (rules?.waiting.length ?? 0) };
-  });
-
   const threads = computed(() => sc.artifact.value?.threads ?? []);
   const openNotes = computed(() => threads.value.filter((thread) => thread.status === "open").length);
 
@@ -178,16 +130,8 @@ export function useScreen(): Screen {
     return [...groups].map(([label, list]) => ({ label, threads: list }));
   });
 
-  const waiting = computed<Waiting>(() => {
-    const gates = shutGates(why.value);
-    // Questions need the streaming CLI, so this arm is always zero and is marked as such.
-    const questions = 0;
-    return { gates, notes: openNotes.value, questions, total: gates + openNotes.value + questions };
-  });
-
   return {
     artifactRows,
-    ground,
     liveState,
     noteGroups,
     openNotes,
@@ -196,8 +140,5 @@ export function useScreen(): Screen {
     sessionState,
     slots,
     steps,
-    tabs,
-    waiting,
-    why,
   };
 }
