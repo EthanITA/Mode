@@ -7,6 +7,7 @@ const unsaved = new Set<string>();
 </script>
 
 <script lang="ts" setup>
+import { MOTION_DURATION } from "@cela/design/utils/motion";
 import { Eye, MessageSquarePlus } from "@lucide/vue";
 import type * as MonacoApi from "monaco-editor";
 import type { FrameAnchor, FrameMark } from "~/types/frame";
@@ -96,6 +97,7 @@ async function pull(): Promise<void> {
     query: { path },
   }).catch((): FileContent => ({ path, reason: "missing" }));
   if (mine !== ticket) return;
+  clearTimeout(slow);
   content.value = got;
   version.value++;
   if ("text" in got) show(got);
@@ -218,11 +220,15 @@ onMounted(async () => {
 
 onMounted(() => window.addEventListener("beforeunload", onUnload));
 
+let slow: ReturnType<typeof setTimeout> | undefined;
+
+// The last file stays up while a quick read lands, so only a slow one blanks to the loading line.
 watch(
   () => [conversation, path] as const,
   () => {
-    content.value = undefined;
     zoom.value = 1;
+    clearTimeout(slow);
+    slow = setTimeout(() => (content.value = undefined), MOTION_DURATION.fast);
     void pull();
   },
 );
@@ -236,6 +242,7 @@ watch(
 watch(noted, paintNotes);
 
 onBeforeUnmount(() => {
+  clearTimeout(slow);
   window.removeEventListener("beforeunload", onUnload);
   pen?.dispose();
   const model = editor?.getModel();
