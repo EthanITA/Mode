@@ -14,11 +14,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **Open a URL live, with the comment layer.** The Open a URL field in Artifacts, or `artifact open <url>`,
   shows any local app or website in the sheet through a proxy on this machine that injects the comment
   agent, so a block takes a thread, Ask Claude and the tray the way an artifact's does, and Claude answers
-  with `artifact comments`. A Web artifact is a tab with a session of its own: Open a URL always makes a
-  new one, and inside it links, redirects, forms, scripts and the address bar go to any site in place.
-  Every site it visits gets its own host under the artifact's, so a site's cookies are shared by its other
-  hosts, its cross-site scripts and their CORS answers load, as reddit's did not before, and its cookies
-  and storage last across conversations and browser restarts. Text that isn't an address searches Google.
+  with `artifact comments`. A Web artifact is a tab, and every one is a tab of the same browser: Open a URL
+  always makes a new one, and inside it links, redirects, forms, scripts and the address bar go to any
+  site in place. Every site gets one host of its own under the sidecar's, the same in every artifact, so a
+  site's cookies are shared by its other hosts, its cross-site scripts and their CORS answers load, as
+  reddit's did not before, and a sign-in, a solved captcha or anything a site stores carries from one Web
+  artifact to the next and lasts across conversations and browser restarts. Text that isn't an address
+  searches Google.
   `artifact open <url>` and a link clicked in the sidecar reuse the conversation's artifact already on that
   address. A thread names the whole address it was left on, a thin bar under the header runs while a page
   loads, hovering a Web entry offers to remove it with Undo, no site can navigate the sidecar window

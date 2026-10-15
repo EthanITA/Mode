@@ -213,12 +213,13 @@ when you want to look at it, and `--browser` opens the file in the browser inste
 published URL. Claude never runs it for you. `artifact open localhost:3000/guide`, or any http or https
 address, does the same for a live site: the sidecar serves it through a local proxy that adds the comment
 layer, keeps the Web artifact in `~/.claude/sidecar/web/`, and `artifact comments <slug>` reads and
-answers its threads like a page's. A Web artifact is a browser tab with a session of its own. Open a URL
-always makes a new one, and inside it links, redirects, forms and the address bar go to any site in
-place, with back and forward walking through all of them. Every site it visits gets its own host under
-the artifact's, such as `www.reddit.com.https.reddit-3f9a2c.sidecar.localhost`, so a site's cookies are
-shared by its other hosts as in a tab, cross-site scripts and their CORS answers work, and no other Web
-artifact sees them. Cookies and storage last across conversations and restarts. Text that isn't an
+answers its threads like a page's. A Web artifact is a tab, and every Web artifact is a tab of the same
+browser. Open a URL always makes a new one, and inside it links, redirects, forms and the address bar go
+to any site in place, with back and forward walking through all of them. Every site gets one host of its
+own under the sidecar's, such as `www.reddit.com.https.sidecar.localhost`, the same in every artifact, so
+a site's cookies are shared by its other hosts as in a tab, cross-site scripts and their CORS answers
+work, and a sign-in, a solved captcha or anything a site stores carries from one Web artifact to the
+next. Cookies and storage last across conversations and restarts. Text that isn't an
 address searches Google, in Open a URL and in the address bar alike. `artifact open <url>` and a link
 clicked in the sidecar reuse the conversation's artifact already opened on or showing that address, so
 Claude opening localhost:3000 every turn doesn't pile up copies. The proxy sends each request as a
