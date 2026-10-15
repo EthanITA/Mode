@@ -98,9 +98,7 @@ onBeforeUnmount(() => clearTimeout(typing));
   @apply size-3.5 flex-none rounded-sm object-contain;
 }
 
-/* Tailwind's spin is a full second; the design system's spinner beat reads as quicker. */
 .favicon[data-favicon="loading"] {
-  @apply motion-safe:animate-spin;
-  animation-duration: var(--duration-spin);
+  @apply spinner;
 }
 </style>

@@ -176,6 +176,12 @@ body {
   }
 }
 
+/* Tailwind's spin is a full second; the design system's spinner beat reads as quicker. */
+@utility spinner {
+  @apply motion-safe:animate-spin;
+  animation-duration: var(--duration-spin);
+}
+
 /* Fades in when it mounts or stops being display none, so content that replaces a loading state never pops. */
 @utility settle {
   @apply transition-opacity duration-(--duration-fast) ease-out motion-reduce:transition-none starting:opacity-0;

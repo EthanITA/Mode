@@ -1,10 +1,12 @@
 <script lang="ts" setup>
+import { LoaderCircle } from "@lucide/vue";
+
 const follow = $follow();
 </script>
 
 <template>
   <div class="veil" aria-hidden="true" data-region="follow-veil" :data-on="follow.isSwitching">
-    <ClaudeMascot class="wait" :size="40" state="thinking" />
+    <UiIcon class="wait" :icon="LoaderCircle" size="xl" />
   </div>
 </template>
 
@@ -26,7 +28,7 @@ const follow = $follow();
 
 /* Only a slow page earns the loader, so a quick switch never flashes it. */
 .wait {
-  @apply opacity-0 transition-opacity duration-(--duration-fast) ease-out;
+  @apply spinner text-muted opacity-0 transition-opacity duration-(--duration-fast) ease-out;
 }
 
 .veil[data-on="true"] .wait {
