@@ -238,9 +238,7 @@ the sidecar serves only files someone opened. Three lookups are worth knowing:
 | Who a comment is from | The `user` key in that same config, defaulting to "User"                                                        |
 
 That config file holds the plugin's own settings too: `guards` turns every guard off at once,
-`disarm` turns off only the guards it lists by file stem, such as `["board-check"]`, and
-`delivery` maps a path fragment to the receipt a delivery in that tree owes, such as
-`[["acme", "mr-merged"]]`. It ships empty, because only you know which of your trees owes what.
+`disarm` turns off only the guards it lists by file stem, such as `["board-check"]`.
 `review-lines`, 30 when absent, is how many changed lines a `pair` commit may record before
 `pair-guard` wants the director to have answered after the last edit.
 `mode triage` reads its key from `OPENROUTER_API_KEY` or the Keychain item `openrouter`, and

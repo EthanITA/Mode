@@ -101,11 +101,6 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-cap"
-          },
-          {
-            "type": "command",
-            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-deliver",
-            "timeout": 90
           }
         ]
       },
@@ -201,11 +196,6 @@
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-check",
             "timeout": 15
-          },
-          {
-            "type": "command",
-            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/run\" guards/board-done",
-            "timeout": 60
           }
         ]
       }

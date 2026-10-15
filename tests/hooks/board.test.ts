@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmodSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 import { Board } from "../../lib/hook/transcript.ts";
@@ -253,80 +253,5 @@ describe("board-check, at the end of every turn", () => {
       ),
     );
     assert.ok(silent(stop(sid(), [user("go"), ...writes], { hook: "board-check", active: true })));
-  });
-});
-
-describe("the delivery receipt", () => {
-  const glab = (state: string): Env => {
-    const fake = write(join(tmp, `glab-${state}`), `#!/bin/sh\necho '{"state": "${state}"}'\n`);
-    chmodSync(fake, 0o755);
-    return env({ ...vars, DELIVER_GLAB: fake });
-  };
-  const tick = (session: string, metadata: object = {}, at: Env = vars) =>
-    fire(
-      "guards/board-deliver",
-      {
-        session_id: session,
-        hook_event_name: "PreToolUse",
-        tool_name: "TaskUpdate",
-        cwd: "/work/acme/repo",
-        tool_input: { taskId: "1", status: "completed", metadata },
-      },
-      at,
-    );
-
-  test("a delivery subject ticked with no receipt is warned about, or refused under DELIVER_MODE=deny", () => {
-    const session = sid();
-    seed(session, { id: "1", subject: "#1  [AI] Push the branch", status: "in_progress" });
-    assert.match(output(tick(session)).systemMessage ?? "", /board-deliver \(warn\): #1 reads as a delivery item/);
-    assert.match(denial(tick(session, {}, env({ ...vars, DELIVER_MODE: "deny" }))) ?? "", /declares no receipt/);
-    seed(session, { id: "1", subject: "#1  [AI] Fix the parser", status: "in_progress" });
-    assert.ok(silent(tick(session)));
-  });
-
-  test("a receipt is checked: the wrong kind for this tree, an MR not merged, a repo that is not one", () => {
-    const session = sid();
-    seed(session, { id: "1", subject: "#1  [AI] Ship it", status: "in_progress" });
-    const rows = write(join(config, "mode", "config.json"), JSON.stringify({ delivery: [["acme", "mr-merged"]] }));
-    try {
-      assert.match(
-        output(tick(session, { done: { kind: "pushed", repo: "/work/acme/repo" } })).systemMessage ?? "",
-        /demands 'mr-merged'/,
-      );
-      assert.match(
-        output(tick(session, { done: { kind: "mr-merged", project: "acme/repo", iid: 4 } }, glab("opened")))
-          .systemMessage ?? "",
-        /state is 'opened', not merged/,
-      );
-      assert.ok(silent(tick(session, { done: { kind: "mr-merged", project: "acme/repo", iid: 4 } }, glab("merged"))));
-    } finally {
-      rmSync(rows);
-    }
-    assert.match(
-      output(tick(session, { done: { kind: "pushed", repo: join(tmp, "nowhere") } })).systemMessage ?? "",
-      /is not a git work tree/,
-    );
-  });
-
-  test("board-done reopens an all-ticked board whose receipt fails, or that shipped with no receipt at all", () => {
-    const shipped = sid();
-    seed(shipped, { id: "1", subject: "#1  [AI] Fix it", status: "completed" });
-    assert.match(
-      zapped(stop(shipped, [user("go"), used("Bash", { command: "git push origin main" })], { hook: "board-done" })),
-      /no board item declares a delivery receipt/,
-    );
-    const failing = sid();
-    seed(failing, {
-      id: "1",
-      subject: "#1  [AI] Merge it",
-      status: "completed",
-      metadata: { done: { kind: "mr-merged", project: "acme/repo", iid: 4 } },
-    });
-    assert.match(
-      zapped(stop(failing, [user("go")], { hook: "board-done", at: glab("opened") })),
-      /#1's delivery receipt fails/,
-    );
-    seed(failing, { id: "1", subject: "#1  [AI] Merge it", status: "in_progress" });
-    assert.ok(silent(stop(failing, [user("go"), used("Bash", { command: "git push" })], { hook: "board-done" })));
   });
 });

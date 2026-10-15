@@ -470,6 +470,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Removed
 
+- **The delivery receipt.** `board-deliver` (the warning on ticking a delivery-shaped item), `board-done`
+  (the stop check that re-opened an all-ticked board whose receipt failed), the `metadata.done` receipts
+  they verified and the `delivery` config rows are gone, so ticking an item no longer runs `glab` or
+  `git`. A stale `delivery` key in `config.json` is ignored, as is `DELIVER_MODE`.
 - **The deliverable.** `mode deliverable` and `mode deliverables`, the `deliverable` ground rule,
   `deliverable-guard`, the `deliverables:` front matter key, the status-line chip and the
   `Deliverable:` line in the injection are gone, so an edit, a commit, a push or a post is no longer
