@@ -292,6 +292,14 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **The sidecar is styled with Tailwind and Cela's tokens.** Every component's scoped style `@apply`s
+  Tailwind and `@cela/design` utilities in place of about 3,700 hand-written declarations, and every size,
+  radius and colour is an existing token, so text sits on Cela's `typo-*` scale (12.5px text is 13px now),
+  radii on `rounded-field` and Tailwind's scale, and a Surface's own radius is no longer overridden.
+  `sidecar.css` registers the sidecar's colours and the faces' split layout in `@theme` and its shared
+  helpers as `@utility`, and what stays raw is what no token can say, such as keyframe animations and SVG
+  geometry. Prettier sorts the classes, `tools/mascot-states.ts` compiles the mascot's style before
+  inlining it, and `rules/code-style.md` asks the same of every Tailwind project.
 - **Pages, live sites and rendered files share one comment layer, the page artifact's.** A picked block
   opens the same popover everywhere, and its notes float over the page's inline end once the sheet is
   grown or the page has its own address, with the page kept clear of them. A live site drops its notes
