@@ -330,6 +330,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   where they land. Reduced motion still snaps.
 - **Tooltips draw above everything.** Every tip opens in the browser's top layer, so a live site's frame,
   the next button along or a clipping pane no longer covers it, and it goes once its control fades out.
+- **Faces stay as you left them.** Artifacts, Review, Files and History each stay mounted behind the
+  others once opened, so switching back fades the face in with nothing read again, and a list says it is
+  reading until its data lands instead of saying it is empty.
 - **Artifacts rows show their kind as an icon.** A Web artifact shows its site's favicon, a `.md` the VS
   Code Markdown mark and an `.html` page its `<>`, in place of the Web, Page and Plan chips, and a row's
   title and every toast stop at two lines.
