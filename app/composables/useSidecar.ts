@@ -1,6 +1,5 @@
 import type { ComputedRef, Ref, WritableComputedRef } from "vue";
 import type { ArtifactDetail, ArtifactMeta } from "~~/shared/types/artifact";
-import type { Contracts } from "~~/shared/types/mode";
 import type { LiveSession } from "~~/shared/types/session";
 
 /** `?:` cannot express absence inside a generic, so every absent-by-default ref goes through here. */
@@ -14,7 +13,6 @@ function maybeState<T>(key: string): Maybe<T> {
 export interface Sidecar {
   artifact: Maybe<ArtifactDetail>;
   catalogue: Ref<ArtifactMeta[]>;
-  contracts: Ref<Contracts>;
   failure: Maybe<string>;
   ready: Ref<boolean>;
   sessionKey: Maybe<string>;
@@ -28,7 +26,6 @@ export function useSidecar(): Sidecar {
   return {
     artifact: maybeState<ArtifactDetail>("sc:artifact"),
     catalogue: useState<ArtifactMeta[]>("sc:catalogue", () => []),
-    contracts: useState<Contracts>("sc:contracts", () => ({ modes: [], styles: [] })),
     failure: maybeState<string>("sc:failure"),
     ready: useState<boolean>("sc:ready", () => false),
     sessionKey: maybeState<string>("sc:session-key"),
@@ -81,12 +78,7 @@ export function loadSidecar(): void {
 
   async function pullOnce(): Promise<void> {
     try {
-      const [catalogue, contracts] = await Promise.all([
-        $fetch<ArtifactMeta[]>("/api/artifacts"),
-        $fetch<Contracts>("/api/contracts"),
-      ]);
-      sc.catalogue.value = catalogue;
-      sc.contracts.value = contracts;
+      sc.catalogue.value = await $fetch<ArtifactMeta[]>("/api/artifacts");
       await pullSessions();
       sc.failure.value = undefined;
     } catch (error) {

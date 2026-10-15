@@ -1,8 +1,8 @@
 import { join } from "node:path";
-import type { Axis, Contract, ContractLoop, PipelineStep } from "../../shared/types/mode.ts";
+import type { Axis, ContractLoop, PipelineStep } from "../../shared/types/mode.ts";
 import { isFile, listMd, readTextSafe } from "../files.ts";
 import { strip, WORD } from "../text.ts";
-import { AUTO, AXES, FALSEY, FOLDER } from "./constants.ts";
+import { AUTO, FALSEY, FOLDER } from "./constants.ts";
 import { splitFrontMatter, type Meta } from "./frontmatter.ts";
 import { contractDirs } from "./paths.ts";
 
@@ -113,13 +113,3 @@ function arcs(axis: Axis, name: string, drawn: PipelineStep[]): [number, number]
 
 // Named for the drawing a contract declares, not for the live position of one.
 export const Flow = { steps, loops, arcs } as const;
-
-export function contracts(): Contract[] {
-  return AXES.flatMap((axis) =>
-    names(axis).map((name) => {
-      const meta = metaOf(axis, name);
-      const drawn = steps(axis, name);
-      return { axis, name, summary: meta.summary, color: meta.color, steps: drawn, loops: loops(axis, name, drawn) };
-    }),
-  );
-}

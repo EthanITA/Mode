@@ -36,17 +36,3 @@ export type Why = {
   gates: Gate[];
   rules: { told: string[]; waiting: { name: string; until?: string }[] };
 };
-
-export type Contract = {
-  axis: Axis;
-  name: string;
-  summary?: string;
-  color?: string;
-  steps: PipelineStep[];
-  loops: ContractLoop[];
-};
-
-export interface Contracts {
-  modes: Contract[];
-  styles: Contract[];
-}
