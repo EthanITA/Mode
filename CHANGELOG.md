@@ -307,11 +307,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   file previewed in Files takes block comments too, kept in the tray against the file, with F growing the
   Files sheet so they show. Edit shows only on a page it can rewrite, and every pick carries the artifact
   it was made on, so a note no longer lands on whichever one another face held last.
-- **The sheet's header is the fullscreen title island before it grows too.** A page or a live site opens
+- **The sheet's header carries the fullscreen title before it grows too.** A page or a live site opens
   under the same centred title it has in fullscreen, a live site's with its arrows, favicon, title, host
   and open in a browser tab, and only Comment and Fullscreen sit at the right, so the path line, the
-  labelled buttons and the reload button leave the sheet and ⌘R still reloads. Growing and shrinking keep
-  the one header, so an address being typed in it survives the switch.
+  labelled buttons and the reload button leave the sheet and ⌘R still reloads. The title sits flat in the
+  header and turns into a glass island only once the sheet grows, so it never reads as one more of the
+  app's islands. Growing and shrinking keep the one header, so an address being typed in it survives the
+  switch.
 - **Artifacts rows show their kind as an icon.** A Web artifact shows its site's favicon, a `.md` the VS
   Code Markdown mark and an `.html` page its `<>`, in place of the Web, Page and Plan chips, and a row's
   title and every toast stop at two lines.
