@@ -124,140 +124,88 @@ const tell = computed(() => {
 
 <style scoped>
 .head {
-  align-items: center;
-  background: var(--ed-bar);
-  border-bottom: 1px solid var(--ed-border);
-  border-top: 1px solid var(--ed-border);
-  color: var(--ed-muted);
-  display: flex;
-  gap: 8px;
-  padding: 6px 10px 6px 14px;
-  position: sticky;
-  top: 0;
-  z-index: 2;
+  @apply sticky top-0 z-2 flex items-center gap-2 border-t border-b border-t-ed-border border-b-ed-border bg-ed-bar py-1.5 pr-2.5 pl-3.5 text-ed-muted;
 }
 
 .icon {
-  flex: none;
+  @apply flex-none;
 }
 
 .path {
-  color: var(--ed-ink);
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 truncate font-mono typo-caption-strong text-ed-ink;
 }
 
 .churn {
-  display: inline-flex;
-  flex: none;
-  gap: 6px;
+  @apply inline-flex flex-none gap-1.5;
 }
 
 [data-tone="add"] {
-  color: var(--ed-add-ink);
+  @apply text-ed-add-ink;
 }
 
 [data-tone="remove"] {
-  color: var(--ed-remove-ink);
+  @apply text-ed-remove-ink;
 }
 
 .chip {
-  border: 1px solid var(--ed-button);
-  border-radius: 999px;
-  color: var(--ed-muted);
-  flex: none;
-  padding: 0 6px;
-  text-transform: none;
+  @apply flex-none rounded-full border border-ed-button px-1.5 py-0 text-ed-muted normal-case;
 }
 
 .file[data-kind="deleted"] .chip {
-  color: var(--ed-remove-ink);
+  @apply text-ed-remove-ink;
 }
 
 .spacer {
-  flex: 1;
+  @apply flex-1;
 }
 
 .restore,
 .act {
-  background: var(--ed-button);
-  border: 1px solid var(--ed-button);
-  border-radius: 999px;
-  color: var(--ed-ink);
-  cursor: pointer;
-  flex: none;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 10px;
-  transition: border-color var(--duration-fast) var(--ease-out);
+  @apply flex-none cursor-pointer rounded-full border border-ed-button bg-ed-button px-2.5 py-0.75 typo-meta-semibold text-ed-ink transition-[border-color] duration-(--duration-fast) ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .restore:not([aria-disabled="true"]):hover,
   .act:hover {
-    border-color: var(--ed-muted);
+    @apply border-ed-muted;
   }
 }
 
 /* Still focusable and still tipped, so the reason it is off stays one hover away. */
 .restore[aria-disabled="true"] {
-  cursor: not-allowed;
-  opacity: 0.45;
+  @apply cursor-not-allowed opacity-45;
 }
 
 .restore:disabled,
 .act:disabled {
-  cursor: progress;
+  @apply cursor-progress;
 }
 
 .notice {
-  align-items: center;
+  @apply flex items-center gap-2.5 px-3.5 py-2 font-sans text-[12.5px] leading-normal text-ed-warn;
   background: color-mix(in oklch, var(--ed-warn) 14%, var(--ed-bg));
-  color: var(--ed-warn);
-  display: flex;
-  font-family: var(--sans);
-  font-size: 12.5px;
-  gap: 10px;
-  line-height: 1.5;
-  padding: 8px 14px;
 }
 
 .notice[data-kind="restored"],
 .notice[data-kind="undone"] {
+  @apply text-ed-add-ink;
   background: color-mix(in oklch, var(--ed-add-ink) 12%, var(--ed-bg));
-  color: var(--ed-add-ink);
 }
 
 .act {
-  margin-left: auto;
+  @apply ml-auto;
 }
 
 .act[data-tone="warn"] {
-  background: var(--ed-warn);
-  border-color: var(--ed-warn);
-  color: var(--ed-bg);
+  @apply border-ed-warn bg-ed-warn text-ed-bg;
 }
 
 .note {
-  color: var(--ed-muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  line-height: 1.5;
-  margin: 0;
-  padding: 10px 14px;
+  @apply m-0 px-3.5 py-2.5 font-mono text-[11px] leading-normal text-ed-muted;
 }
 
 /* A gap we could not fill never renders as a quiet nothing. */
 .note[data-tone="loud"] {
-  border-left: 3px solid var(--ed-warn);
-  color: var(--ed-warn);
-  font-family: var(--sans);
-  font-size: 12.5px;
+  @apply border-l-3 border-l-ed-warn font-sans text-[12.5px] text-ed-warn;
 }
 </style>

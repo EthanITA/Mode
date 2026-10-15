@@ -172,7 +172,7 @@ watch(
 
     <UiContextMenu ref="menuEl" data-region="canvas-menu" label="Canvas" width="w-64">
       <template #default="{ close }">
-        <p class="mono-meta canvas-menu-head">{{ target?.title ?? "this spot on the plane" }}</p>
+        <p class="canvas-menu-head mono-meta">{{ target?.title ?? "this spot on the plane" }}</p>
         <UiMenuItem
           v-if="target"
           :icon="Maximize2"
@@ -216,56 +216,33 @@ watch(
 
 <style scoped>
 .canvas-view {
-  height: 100%;
-  position: relative;
-  width: 100%;
+  @apply relative size-full;
 }
 
 /* One pixel anchored at the plane origin: the paths overflow it, so the links layer
    never enters the canvas's own content-bounds measurement as a giant box. */
 .canvas-links {
-  height: 1px;
-  left: 0;
-  overflow: visible;
-  pointer-events: none;
-  position: absolute;
-  top: 0;
-  width: 1px;
+  @apply pointer-events-none absolute top-0 left-0 size-px overflow-visible;
 }
 
 .canvas-links path {
-  fill: none;
-  stroke: var(--border-strong);
+  @apply fill-none stroke-border-strong stroke-[1.5];
   stroke-dasharray: 5 5;
-  stroke-width: 1.5;
 }
 
 .canvas-links circle {
-  fill: var(--border-strong);
+  @apply fill-border-strong;
 }
 
 .canvas-note {
-  background: var(--warning-soft);
+  @apply bg-warning-soft;
 }
 
 .canvas-empty {
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 12px;
-  left: 50%;
-  line-height: 1.8;
-  pointer-events: none;
-  position: absolute;
-  text-align: center;
-  top: 45%;
-  transform: translate(-50%, -50%);
+  @apply pointer-events-none absolute top-[45%] left-1/2 -translate-1/2 text-center font-mono text-[12px] leading-[1.8] text-muted;
 }
 
 .canvas-menu-head {
-  color: var(--subtle);
-  overflow: hidden;
-  padding: 6px 10px 4px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply truncate px-2.5 pt-1.5 pb-1 text-subtle;
 }
 </style>

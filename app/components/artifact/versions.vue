@@ -98,44 +98,32 @@ function tellOf(version: FileVersion, index: number): string {
 
 <style scoped>
 .strip {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 8px;
-  padding: 8px 0 10px;
+  @apply flex items-center gap-2 border-b border-b-border px-0 pt-2 pb-2.5;
 }
 
 .tabs {
-  align-items: center;
-  display: flex;
-  gap: 4px;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
+  @apply flex min-w-0 scrollbar-none items-center gap-1 overflow-x-auto;
 }
 
 .tab {
-  flex: none;
-  white-space: nowrap;
+  @apply flex-none whitespace-nowrap;
 }
 
 .turn {
-  opacity: 0.75;
+  @apply opacity-75;
 }
 
 .spacer {
-  flex: 1;
+  @apply flex-1;
 }
 
 .note {
-  color: var(--subtle);
-  flex: none;
-  white-space: nowrap;
+  @apply flex-none whitespace-nowrap text-subtle;
 }
 
 /* Loud is a warning, never an error: an honest gap is not a failure. */
 .note[data-tone="loud"] {
-  color: var(--warning);
+  @apply text-warning;
 }
 
 .reading {
@@ -143,40 +131,25 @@ function tellOf(version: FileVersion, index: number): string {
 }
 
 .version {
-  background: var(--ink);
-  border-radius: var(--radius-selector);
-  color: var(--canvas);
-  flex: none;
-  padding: 5px 10px;
+  @apply flex-none rounded-selector bg-fg px-2.5 py-1.25 text-canvas;
 }
 
 .version[data-head] {
-  background: var(--primary);
-  color: var(--primary-content);
+  @apply bg-primary text-primary-content;
 }
 
 .latest {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-selector);
-  color: var(--ink);
-  cursor: pointer;
-  flex: none;
-  font: inherit;
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 5px 11px;
-  transition: border-color var(--duration-fast) var(--ease-out);
+  @apply flex-none cursor-pointer rounded-selector border border-border bg-raised px-2.75 py-1.25 text-[11.5px] font-semibold text-fg transition-[border-color] duration-(--duration-fast) ease-out;
 }
 
 .latest:hover {
-  border-color: var(--ink);
+  @apply border-fg;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .tab,
   .latest {
-    transition: none;
+    @apply transition-none;
   }
 }
 </style>

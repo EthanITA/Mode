@@ -136,91 +136,51 @@ function onKey(event: KeyboardEvent): void {
 
 <style scoped>
 .scrim {
-  background: color-mix(in oklch, var(--ink) 12%, transparent);
-  inset: 0;
-  position: fixed;
-  z-index: 39;
+  @apply fixed inset-0 z-39 bg-fg/12;
 }
 
 /* The centring transform lives out here, because v-island-pop writes its own onto the element. */
 .at {
-  left: 50%;
-  position: fixed;
-  top: 88px;
-  transform: translateX(-50%);
-  z-index: 40;
+  @apply fixed top-22 left-1/2 z-40 -translate-x-1/2;
 }
 
 .palette {
-  display: flex;
-  flex-direction: column;
-  max-width: calc(100vw - 32px);
-  overflow: hidden;
-  width: 480px;
+  @apply flex w-120 max-w-[calc(100vw_-_32px)] flex-col overflow-hidden;
 }
 
 .field {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  height: 50px;
-  padding: 0 16px;
+  @apply flex h-12.5 items-center border-b border-b-border px-4 py-0;
 }
 
 .rows {
-  display: flex;
-  flex-direction: column;
-  max-height: 46vh;
-  overflow-y: auto;
-  padding: 6px;
+  @apply flex max-h-[46vh] flex-col overflow-y-auto p-1.5;
 }
 
 .row {
-  padding: 9px 10px;
+  @apply px-2.5 py-2.25;
 }
 
 .rows :deep([aria-selected="true"]) {
-  background: var(--primary-soft);
-  color: var(--ink);
+  @apply bg-primary-soft text-fg;
 }
 
 .dot {
-  background: var(--tint);
-  border-radius: 999px;
-  flex: none;
-  height: 8px;
-  opacity: 0.4;
-  width: 8px;
+  @apply size-2 flex-none rounded-full bg-tint opacity-40;
 }
 
 .dot[data-live="true"] {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 .name {
-  flex: 1;
-  font-size: 12.5px;
-  font-weight: 600;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate text-[12.5px] font-semibold;
 }
 
 .where {
-  color: var(--subtle);
-  flex: none;
-  max-width: 45%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-transform: none;
-  white-space: nowrap;
+  @apply max-w-[45%] flex-none truncate text-subtle normal-case;
 }
 
 .none {
-  color: var(--subtle);
-  font-size: 12.5px;
-  margin: 0;
-  padding: 10px;
+  @apply m-0 p-2.5 text-[12.5px] text-subtle;
 }
 </style>

@@ -81,7 +81,7 @@ function onKey(event: KeyboardEvent): void {
       <span v-if="pin.threads.length > 1" class="pager">
         <button
           v-press
-          class="plain-button focusable mono-meta"
+          class="plain-button mono-meta focusable"
           type="button"
           aria-label="Previous note"
           @click="step(-1)"
@@ -89,7 +89,7 @@ function onKey(event: KeyboardEvent): void {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 9 12l6-6" /></svg>
         </button>
         <span class="mono-meta">{{ at + 1 }}/{{ pin.threads.length }}</span>
-        <button v-press class="plain-button focusable mono-meta" type="button" aria-label="Next note" @click="step(1)">
+        <button v-press class="plain-button mono-meta focusable" type="button" aria-label="Next note" @click="step(1)">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
         </button>
       </span>
@@ -140,172 +140,108 @@ function onKey(event: KeyboardEvent): void {
 
 <style scoped>
 .thread {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
+  @apply flex flex-col gap-2.5 px-3.5 py-3;
 }
 
 .where {
-  color: var(--subtle);
-  margin: 0;
+  @apply m-0 text-subtle;
 }
 
 header {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 8px;
+  @apply flex flex-wrap items-center gap-x-2 gap-y-1.5;
 }
 
 .title {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  @apply text-[13px] font-bold tracking-[-0.01em];
 }
 
 .meta {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .spacer {
-  flex: 1;
+  @apply flex-1;
 }
 
 .pager {
-  align-items: center;
-  color: var(--muted);
-  display: inline-flex;
-  gap: 6px;
+  @apply inline-flex items-center gap-1.5 text-muted;
 }
 
 .pager svg {
-  fill: none;
-  height: 12px;
-  stroke: currentColor;
+  @apply size-3 fill-none stroke-current stroke-2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2;
-  width: 12px;
 }
 
 .resolve {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-selector);
-  color: var(--success);
-  cursor: pointer;
-  font: inherit;
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 4px 10px;
-  transition: border-color var(--duration-fast) var(--ease-out);
-  white-space: nowrap;
+  @apply cursor-pointer rounded-selector border border-border bg-raised px-2.5 py-1 text-[11.5px] font-semibold whitespace-nowrap text-success transition-[border-color] duration-(--duration-fast) ease-out;
 }
 
 .resolve:hover {
-  border-color: var(--success);
+  @apply border-success;
 }
 
 /* Queued is not resolved: it reads as pending until the turn that writes it lands. */
 .resolve[data-queued] {
-  border-style: dashed;
-  color: var(--primary);
+  @apply border-dashed text-primary;
 }
 
 .quote {
-  background: var(--sunken);
-  border-left: 2px solid var(--primary);
-  border-radius: 0 6px 6px 0;
-  color: var(--muted);
-  font-size: 12.5px;
-  font-style: italic;
-  line-height: 1.5;
-  margin: 0;
-  padding: 6px 10px;
+  @apply m-0 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 text-[12.5px] leading-normal text-muted italic;
 }
 
 .warn {
-  color: var(--warning);
-  margin: 0;
+  @apply m-0 text-warning;
 }
 
 .message {
-  display: flex;
-  gap: 10px;
+  @apply flex gap-2.5;
 }
 
 .who {
-  align-items: center;
-  background: var(--primary-soft);
-  border-radius: var(--radius-selector);
-  color: var(--primary);
-  display: grid;
-  flex: none;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  height: 18px;
-  margin-top: 2px;
-  place-items: center;
-  width: 18px;
+  @apply mt-0.5 grid size-4.5 flex-none place-items-center rounded-selector bg-primary-soft font-mono text-[10px] font-semibold text-primary;
 }
 
 .who[data-you] {
-  background: var(--warning-soft);
-  color: var(--warning);
+  @apply bg-warning-soft text-warning;
 }
 
 .said {
-  min-width: 0;
+  @apply min-w-0;
 }
 
 .body {
-  margin: 0;
+  @apply m-0;
 }
 
 .queued {
-  color: var(--primary);
-  margin: 0;
+  @apply m-0 text-primary;
 }
 
 footer {
-  align-items: center;
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
+  @apply flex items-center justify-end gap-2.5;
 }
 
 .ghost,
 .solid {
-  border-radius: var(--radius-field);
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 12px;
+  @apply cursor-pointer rounded-field px-3 py-1.5 typo-caption-strong;
 }
 
 .ghost {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--muted);
+  @apply border border-border bg-transparent text-muted;
 }
 
 .solid {
-  background: var(--ink);
-  border: 0;
-  color: var(--canvas);
+  @apply border-0 bg-fg text-canvas;
 }
 
 .solid:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+  @apply cursor-not-allowed opacity-50;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .resolve {
-    transition: none;
+    @apply transition-none;
   }
 }
 </style>

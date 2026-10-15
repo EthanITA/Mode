@@ -89,201 +89,127 @@ const gates = computed(() => contract.steps.filter((step) => step.gate).map((ste
 
 <style scoped>
 .diagram {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  text-align: left;
+  @apply flex flex-col gap-2 text-left;
 }
 
 .head {
-  align-items: center;
-  display: flex;
-  gap: 7px;
+  @apply flex items-center gap-1.75;
 }
 
 .dot {
-  background: var(--tint);
-  border-radius: 999px;
-  flex: none;
-  height: 8px;
-  width: 8px;
+  @apply size-2 flex-none rounded-full bg-tint;
 }
 
 .name {
-  font-size: 12px;
-  font-weight: 600;
+  @apply typo-caption-strong;
 }
 
 .count {
-  color: var(--muted);
-  margin-left: auto;
+  @apply ml-auto text-muted;
 }
 
 .summary {
-  color: var(--muted);
-  font-size: 11.5px;
-  line-height: 1.45;
-  margin: 0;
+  @apply m-0 text-[11.5px] leading-[1.45] text-muted;
 }
 
 .plot {
-  position: relative;
+  @apply relative;
 }
 
 .edges {
-  fill: none;
-  left: 0;
-  overflow: visible;
-  position: absolute;
+  @apply absolute top-0 left-0 w-8.5 overflow-visible fill-none;
   stroke-linecap: round;
   stroke-linejoin: round;
-  top: 0;
-  width: 34px;
 }
 
 .fwd {
-  stroke: var(--border-strong);
-  stroke-width: 1.5;
+  @apply stroke-border-strong stroke-[1.5];
 }
 
 .loop {
-  stroke: var(--warning);
+  @apply stroke-warning stroke-[1.5];
   stroke-dasharray: 3 3;
-  stroke-width: 1.5;
 }
 
 .steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  @apply m-0 list-none p-0;
 }
 
 .row {
-  align-items: center;
-  box-sizing: border-box;
-  display: flex;
-  height: 40px;
-  padding-left: 34px;
+  @apply flex h-10 items-center pl-8.5;
 }
 
 .step {
-  align-items: center;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  box-sizing: border-box;
-  display: flex;
-  flex: 1;
-  gap: 8px;
-  height: 26px;
-  min-width: 0;
-  padding: 0 9px;
+  @apply flex h-6.5 min-w-0 flex-1 items-center gap-2 rounded-lg border border-transparent px-2.25 py-0;
 }
 
 .step[data-gate="true"] {
-  border-color: var(--warning);
-  border-radius: 4px;
+  @apply rounded-sm border-warning;
 }
 
 .step[data-state="current"] {
-  background: var(--sunken);
-  border-color: var(--border-strong);
+  @apply border-border-strong bg-sunken;
 }
 
 .mark {
-  background: var(--border-strong);
-  border-radius: 2px;
-  display: block;
-  flex: none;
-  height: 3px;
-  width: 12px;
+  @apply block h-0.75 w-3 flex-none rounded-xs bg-border-strong;
 }
 
 .step[data-state="done"] .mark {
-  background: var(--ink);
+  @apply bg-fg;
 }
 
 .step[data-state="current"] .mark {
-  background: var(--tint);
+  @apply bg-tint;
 }
 
 .label {
-  color: var(--subtle);
-  flex: 1;
-  font-size: 12px;
-  font-weight: 500;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate typo-caption-medium text-subtle;
 }
 
 .step[data-state="done"] .label {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .step[data-state="current"] .label {
-  color: var(--ink);
-  font-weight: 600;
+  @apply font-semibold text-fg;
 }
 
 .gate {
-  align-items: center;
-  color: var(--warning);
-  display: inline-flex;
-  flex: none;
-  gap: 4px;
+  @apply inline-flex flex-none items-center gap-1 text-warning;
 }
 
 .gate svg {
-  fill: none;
-  height: 10px;
-  stroke: currentColor;
+  @apply size-2.5 fill-none stroke-current stroke-[2.4];
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.4;
-  width: 10px;
 }
 
 .tag {
-  color: var(--muted);
-  flex: none;
+  @apply flex-none text-muted;
 }
 
 .step[data-state="done"] .tag {
-  color: var(--success);
+  @apply text-success;
 }
 
 .none {
-  color: var(--subtle);
-  margin: 0;
+  @apply m-0 text-subtle;
 }
 
 .legend {
-  align-items: center;
-  color: var(--muted);
-  display: flex;
-  gap: 12px;
-  padding-top: 2px;
+  @apply flex items-center gap-3 pt-0.5 text-muted;
 }
 
 .key {
-  align-items: center;
-  display: inline-flex;
-  gap: 5px;
+  @apply inline-flex items-center gap-1.25;
 }
 
 .dash {
-  border-top: 1.5px dashed var(--warning);
-  display: block;
-  height: 0;
-  width: 14px;
+  @apply block h-0 w-3.5 border-t-[1.5px] border-dashed border-warning;
 }
 
 .gates {
-  color: var(--subtle);
-  margin-left: auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply ml-auto truncate text-subtle;
 }
 </style>

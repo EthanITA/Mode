@@ -175,209 +175,135 @@ watch(
 <style scoped>
 /* Shrinkable, so a squeezed island takes it out of the scroller rather than the header. */
 .transcript {
-  display: flex;
-  flex: 0 1 auto;
-  flex-direction: column;
-  min-height: 0;
+  @apply flex min-h-0 flex-initial flex-col;
 }
 
 .transcript[data-state="preview"],
 .transcript[data-state="expanded"] {
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 2px;
+  @apply mb-0.5 border-b border-b-border;
 }
 
 /* Never shrinks: it is the row that disappears first when the island is squeezed. */
 .head {
-  align-items: center;
-  display: flex;
-  flex: none;
-  gap: 2px;
-  padding: 5px 6px 7px;
+  @apply flex flex-none items-center gap-0.5 px-1.5 pt-1.25 pb-1.75;
 }
 
 .grow {
-  align-items: center;
-  background: none;
-  border: 0;
-  color: inherit;
-  cursor: pointer;
-  display: flex;
-  flex: 1;
-  font: inherit;
-  gap: 8px;
-  min-width: 0;
-  padding: 0;
-  text-align: left;
+  @apply flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-0 bg-transparent bg-none p-0 text-left text-inherit;
 }
 
 .dot {
-  background: var(--subtle);
-  border-radius: 999px;
-  flex: none;
-  height: 7px;
-  width: 7px;
+  @apply size-1.75 flex-none rounded-full bg-subtle;
 }
 
 .dot[data-role="assistant"] {
-  background: var(--primary);
+  @apply bg-primary;
 }
 
 .dot[data-role="user"] {
-  background: var(--warning);
+  @apply bg-warning;
 }
 
 .label {
-  color: var(--ink);
-  flex: none;
-  font-size: 11.5px;
-  font-weight: 600;
+  @apply flex-none text-[11.5px] font-semibold text-fg;
 }
 
 .meta {
-  color: var(--subtle);
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate text-subtle;
 }
 
 .chevron {
-  align-items: center;
-  color: var(--muted);
-  display: flex;
-  flex: none;
-  justify-content: center;
-  transition: transform var(--duration-moderate) var(--ease-out);
+  @apply flex flex-none items-center justify-center text-muted transition-transform duration-(--duration-moderate) ease-out;
 }
 
 .transcript[data-state="expanded"] .chevron {
-  transform: rotate(180deg);
+  @apply rotate-180;
 }
 
 /* The one scroller, and the head is not in it: the dock grows upward, so two stacked
-   scrollers here pushed the head off the top of the screen. */
+   scrollers here pushed the head off the top of the screen. It never grows past its
+   content and always shrinks below the cap when the island is squeezed. */
 .body {
-  display: flex;
-  /* Never grows past its content, always shrinks below the cap when the island is squeezed. */
-  flex: 0 1 auto;
-  flex-direction: column;
-  gap: 10px;
-  max-height: var(--transcript-max-h);
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 4px 8px 2px;
-  scrollbar-width: thin;
+  @apply flex max-h-(--transcript-max-h) min-h-0 flex-initial scrollbar-thin flex-col gap-2.5 overflow-y-auto pt-0 pr-1 pb-2 pl-0.5;
 }
 
 /* Preview is the ambient default (one turn, no history), so it gets the tighter cap. */
 .transcript[data-state="preview"] .body {
-  max-height: var(--transcript-preview-max-h);
+  @apply max-h-(--transcript-preview-max-h);
 }
 
 /* A row: the perch is a fixed-size sibling of the swapped text, so the mascot never changes the
    text's box when it teleports in or out. */
 .stage {
-  align-items: flex-start;
-  display: flex;
-  flex: none;
-  gap: 8px;
-  position: relative;
+  @apply relative flex flex-none items-start gap-2;
 }
 
 .stage-body {
-  flex: 1;
-  min-width: 0;
-  position: relative;
+  @apply relative min-w-0 flex-1;
 }
 
 .answer {
-  color: var(--ink);
-  font-size: 13px;
-  min-width: 0;
-  overflow-wrap: anywhere;
+  @apply min-w-0 text-[13px] wrap-anywhere text-fg;
 }
 
 .empty {
-  color: var(--subtle);
-  margin: 0;
+  @apply m-0 text-subtle;
 }
 
 .turns {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 10px;
+  @apply flex flex-none flex-col gap-2.5;
 }
 
 .turn {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 92%;
+  @apply flex max-w-[92%] flex-col gap-1;
 }
 
 .turn[data-role="assistant"] {
-  align-self: flex-start;
+  @apply self-start;
 }
 
 .turn[data-role="user"] {
-  align-items: flex-end;
-  align-self: flex-end;
+  @apply items-end self-end;
 }
 
 .who {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .text {
-  background: var(--sunken);
-  border-radius: var(--radius-box);
-  margin: 0;
-  padding: 8px 12px;
+  @apply m-0 rounded-box bg-sunken px-3 py-2;
 }
 
 .turn[data-role="user"] .text {
-  background: var(--primary-soft);
+  @apply bg-primary-soft;
 }
 
 /* Sent but not yet picked up, so it reads as pending rather than as part of the exchange. */
 .turn[data-queued="true"] .text {
-  background: none;
-  border: 1px dashed var(--border-strong);
+  @apply border border-dashed border-border-strong bg-transparent bg-none;
 }
 
 .beat {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
+  @apply flex min-w-0 flex-col gap-1.5;
 }
 
 /* Fixed, so the row keeps its shape through the gap between vanishing and arriving. Always
    mounted: the box never changes when the mascot teleports in or out. */
 .perch {
-  align-items: center;
-  display: flex;
-  flex: none;
-  height: 44px;
-  justify-content: center;
-  width: 50px;
+  @apply flex h-11 w-12.5 flex-none items-center justify-center;
 }
 
 .perch.small {
-  height: 34px;
-  width: 38px;
+  @apply h-8.5 w-9.5;
 }
 
 .beat-text[data-waiting="true"] {
-  font-style: italic;
+  @apply italic;
 }
 
 .dots::after {
+  @apply content-[''];
   animation: dots 1.4s steps(1, end) infinite;
-  content: "";
 }
 
 @keyframes dots {
@@ -397,66 +323,52 @@ watch(
 
 /* Wraps in full: neither the narration nor an action line may be clipped. */
 .beat-text {
-  color: var(--muted);
-  font-size: 12.5px;
-  line-height: 1.5;
-  margin: 0;
-  min-width: 0;
-  overflow-wrap: anywhere;
-  padding-top: 6px;
+  @apply m-0 min-w-0 pt-1.5 text-[12.5px] leading-normal wrap-anywhere text-muted;
 }
 
 /* Prose renders at the transcript's size, so it is scaled down to a narration's weight here. */
 .beat-text :deep(p),
 .beat-text :deep(li) {
-  font-size: 12.5px;
-  margin: 0;
+  @apply m-0 text-[12.5px];
 }
 
 .beat-text :deep(code) {
-  font-size: 11.5px;
+  @apply text-[11.5px];
 }
 
 .beat-text :deep(strong) {
-  color: var(--ink);
-  font-weight: 600;
+  @apply font-semibold text-fg;
 }
 
 .beat-text[data-thinking="true"] {
-  color: var(--subtle);
-  font-style: italic;
+  @apply text-subtle italic;
 }
 
 .acts {
-  padding-left: 52px;
+  @apply pl-13;
 }
 
 .note {
-  align-self: center;
-  color: var(--subtle);
-  margin: 0;
-  opacity: 0.85;
+  @apply m-0 self-center text-subtle opacity-85;
 }
 
 /* Held back until the outgoing one has gone, so two paragraphs never overlap mid-fade. */
 .swap-enter-active,
 .think-enter-active {
-  transition: opacity var(--duration-moderate) var(--ease-out) var(--duration-fast);
+  @apply transition-opacity delay-(--duration-fast) duration-(--duration-moderate) ease-out;
 }
 
 /* Out of flow, so the arriving text sets the height and the box tweens to it instead of snapping. */
 .swap-leave-active,
 .think-leave-active {
-  inset: 0 0 auto;
-  position: absolute;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  @apply absolute inset-x-0 top-0 bottom-auto transition-opacity duration-(--duration-fast) ease-out;
 }
 
 .swap-enter-from,
 .swap-leave-to,
 .think-enter-from,
 .think-leave-to {
-  opacity: 0;
+  @apply opacity-0;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -465,7 +377,7 @@ watch(
   .swap-leave-active,
   .think-enter-active,
   .think-leave-active {
-    transition: none;
+    @apply transition-none;
   }
 }
 </style>

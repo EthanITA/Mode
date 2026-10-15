@@ -311,179 +311,117 @@ function rejectFile(event: MouseEvent): void {
 <style scoped>
 /* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
 .review {
-  column-gap: 8px;
-  display: grid;
-  grid-template-columns: min(var(--side-w), 50%) 0 minmax(0, 1fr);
-  height: 100%;
-  min-height: 0;
+  @apply grid h-full min-h-0 grid-cols-[min(var(--side-w),50%)_0_minmax(0,1fr)] gap-x-2;
 }
 
 .pane {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
+  @apply flex min-h-0 flex-col overflow-hidden;
 }
 
 .bar {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex: none;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 14px;
+  @apply flex flex-none flex-wrap items-center gap-2 border-b border-b-border px-3.5 py-2.5;
 }
 
 .title {
-  font-size: 12.5px;
-  font-weight: 700;
+  @apply text-[12.5px] font-bold;
 }
 
 .bar[data-layout="stacked"] {
-  align-items: stretch;
-  flex-direction: column;
-  gap: 6px;
+  @apply flex-col items-stretch gap-1.5;
 }
 
 .line {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  min-width: 0;
+  @apply flex min-w-0 items-center gap-2;
 }
 
 .line[data-split] {
-  justify-content: space-between;
+  @apply justify-between;
 }
 
 /* One line however long the path, so the row of buttons under it never moves. */
 .path {
-  font-family: var(--mono);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 truncate font-mono;
 }
 
 .meta {
-  color: var(--muted);
-  text-transform: none;
+  @apply text-muted normal-case;
 }
 
 .spacer {
-  flex: 1;
+  @apply flex-1;
 }
 
 .group {
-  display: inline-flex;
-  flex: none;
-  gap: 4px;
+  @apply inline-flex flex-none gap-1;
 }
 
 .churn {
-  display: inline-flex;
-  gap: 6px;
-  text-transform: none;
+  @apply inline-flex gap-1.5 normal-case;
 }
 
 .churn [data-mark="add"] {
-  color: var(--success);
+  @apply text-success;
 }
 
 .churn [data-mark="remove"] {
-  color: var(--error);
+  @apply text-error;
 }
 
 .scroll {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
+  @apply min-h-0 flex-1 overflow-auto;
 }
 
 .scroll[data-scroll="files"] {
-  padding: 6px 8px var(--float-clear);
+  @apply px-2 pt-1.5 pb-(--float-clear);
 }
 
 /* The editor owns its scrolling, so this only gives it the pane's remaining height. */
 .diff {
-  flex: 1;
-  min-height: 0;
+  @apply min-h-0 flex-1;
 }
 
 .heads {
-  background: var(--ed-bar);
-  border-bottom: 1px solid var(--ed-border);
-  color: var(--ed-muted);
-  display: grid;
-  flex: none;
-  grid-template-columns: 1fr 1fr;
-  padding: 5px 0 5px 54px;
-  text-transform: none;
+  @apply grid flex-none grid-cols-[1fr_1fr] border-b border-b-ed-border bg-ed-bar py-1.25 pr-0 pl-13.5 text-ed-muted normal-case;
 }
 
 /* The rendered sides have no line-number gutter, so each label starts at its own half. */
 .heads[data-preview="true"] {
-  column-gap: 1px;
-  padding-left: 0;
+  @apply gap-x-px pl-0;
 }
 
 .heads[data-preview="true"] span {
-  padding-left: 14px;
+  @apply pl-3.5;
 }
 
 .all {
-  align-items: center;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex: none;
-  gap: 6px;
-  justify-content: flex-end;
-  padding: 8px 12px calc(8px + var(--float-clear));
+  @apply flex flex-none items-center justify-end gap-1.5 border-t border-t-border px-3 pt-2 pb-[calc(8px_+_var(--float-clear))];
 }
 
 .action {
-  background: var(--raised);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  color: var(--ink);
-  cursor: pointer;
-  flex: none;
-  font: inherit;
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 4px 11px;
+  @apply flex-none cursor-pointer rounded-full border border-border-strong bg-raised px-2.75 py-1 text-[11.5px] font-semibold text-fg;
 }
 
 .action:hover:not(:disabled) {
-  border-color: var(--ink);
+  @apply border-fg;
 }
 
 .action[data-tone="danger"] {
-  color: var(--error);
+  @apply text-error;
 }
 
 .action[data-tone="primary"] {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-content);
+  @apply border-primary bg-primary text-primary-content;
 }
 
 .action:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+  @apply cursor-not-allowed opacity-50;
 }
 
 .notice {
-  background: var(--warning-soft);
-  color: var(--warning);
-  flex: none;
-  font-size: 12.5px;
-  margin: 0;
-  padding: 9px 14px;
+  @apply m-0 flex-none bg-warning-soft px-3.5 py-2.25 text-[12.5px] text-warning;
 }
 
 .empty {
-  padding: 8px;
+  @apply p-2;
 }
 </style>

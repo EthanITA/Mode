@@ -85,68 +85,40 @@ function reject(event: MouseEvent, path: string): void {
 <style scoped>
 /* The hunk seam's pill, in the tree's light surface. */
 .pill {
-  align-items: center;
-  background: var(--raised);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  display: inline-flex;
-  gap: 1px;
-  padding: 1px;
+  @apply inline-flex items-center gap-px rounded-full border border-border-strong bg-raised p-px;
 }
 
 .pill[data-armed="true"] {
-  background: var(--error-soft);
-  border-color: var(--error);
+  @apply border-error bg-error-soft;
 }
 
 .count {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  padding: 0 4px 0 6px;
-  text-transform: none;
+  @apply py-0 pr-1 pl-1.5 text-muted normal-case tabular-nums;
 }
 
 .ask {
-  color: var(--error);
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 0 2px 0 4px;
-  white-space: nowrap;
+  @apply py-0 pr-0.5 pl-1 text-[10.5px] font-semibold whitespace-nowrap text-error;
 }
 
 .dot {
-  align-items: center;
-  background: none;
-  border: 0;
-  border-radius: 999px;
-  color: var(--muted);
-  cursor: pointer;
-  display: grid;
-  height: 16px;
-  justify-items: center;
-  padding: 0;
-  width: 20px;
+  @apply grid h-4 w-5 cursor-pointer items-center justify-items-center rounded-full border-0 bg-transparent bg-none p-0 text-muted;
 }
 
 .pill[data-armed="true"] .dot[data-tone="reject"] {
-  background: var(--error-soft);
-  color: var(--error);
+  @apply bg-error-soft text-error;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .dot[data-tone="accept"]:hover:not(:disabled) {
-    background: var(--success-soft);
-    color: var(--success);
+    @apply bg-success-soft text-success;
   }
 
   .dot[data-tone="reject"]:hover:not(:disabled) {
-    background: var(--error-soft);
-    color: var(--error);
+    @apply bg-error-soft text-error;
   }
 }
 
 .dot:disabled {
-  cursor: progress;
-  opacity: 0.5;
+  @apply cursor-progress opacity-50;
 }
 </style>

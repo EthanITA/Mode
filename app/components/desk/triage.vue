@@ -128,7 +128,7 @@ useShortcuts(
 
     <UiContextMenu ref="menuEl" data-region="desk-menu" label="Conversation" width="w-64">
       <template #default="{ close }">
-        <p class="mono-meta menu-head">{{ target?.title }}</p>
+        <p class="menu-head mono-meta">{{ target?.title }}</p>
         <template v-if="target">
           <UiMenuItem
             :icon="Maximize2"
@@ -150,116 +150,63 @@ useShortcuts(
 <style scoped>
 /* Margin auto centres the column and still lets a long desk scroll it from the top. */
 .stage {
-  display: grid;
-  inset: 0;
-  overflow-y: auto;
-  position: absolute;
+  @apply absolute inset-0 grid overflow-y-auto;
 }
 
 .column {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  margin: auto;
-  max-width: calc(100% - 2 * var(--gutter));
-  padding: var(--stage-top) 0;
-  width: 480px;
+  @apply m-auto flex w-120 max-w-[calc(100%_-_2_*_var(--gutter))] flex-col gap-6 px-0 py-(--stage-top);
 }
 
 .lead {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  @apply flex flex-col gap-2.5;
 }
 
 .title {
-  color: var(--ink);
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
-  margin: 0;
+  @apply m-0 text-[24px] leading-[1.2] font-extrabold tracking-[-0.03em] text-fg;
 }
 
 .hint {
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.55;
-  margin: 0;
+  @apply m-0 text-[14px] leading-[1.55] text-muted;
 }
 
 .rows {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  @apply flex flex-col gap-0.5;
 }
 
 .row {
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0 -8px;
-  padding: 8px;
+  @apply -mx-2 my-0 flex cursor-pointer flex-col gap-0.5 rounded-[10px] p-2;
 }
 
 .row[aria-selected="true"] {
-  background: var(--sunken);
+  @apply bg-sunken;
 }
 
 .row-head {
-  align-items: center;
-  display: flex;
-  font-size: 13px;
-  gap: 12px;
-  min-width: 0;
+  @apply flex min-w-0 items-center gap-3 text-[13px];
 }
 
 .dot {
+  @apply bg-tint opacity-40;
   --dot-size: 8px;
-  background: var(--tint);
-  opacity: 0.4;
 }
 
 .dot[data-live="true"] {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 .name {
-  color: var(--ink);
-  flex: 1;
-  font-weight: 600;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate font-semibold text-fg;
 }
 
 .ago {
-  color: var(--muted);
-  flex: none;
-  font-family: var(--mono);
-  font-size: 11px;
+  @apply flex-none font-mono text-[11px] text-muted;
 }
 
 .about {
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  color: var(--muted);
-  display: -webkit-box;
-  font-size: 12.5px;
-  line-height: 1.45;
-  margin: 0;
-  overflow: hidden;
-  padding-left: 20px;
+  @apply m-0 line-clamp-2 pl-5 text-[12.5px] leading-[1.45] text-muted;
 }
 
 .menu-head {
-  color: var(--subtle);
-  overflow: hidden;
-  padding: 6px 10px 4px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply truncate px-2.5 pt-1.5 pb-1 text-subtle;
 }
 </style>

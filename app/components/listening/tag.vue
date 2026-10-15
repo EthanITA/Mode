@@ -15,27 +15,23 @@ const { state = "listening" } = defineProps<{ state?: ListeningState }>();
 
 <style scoped>
 .tag {
-  align-items: center;
-  display: flex;
-  gap: 8px;
+  @apply flex items-center gap-2;
 }
 
 .dot {
-  @apply breathe;
+  @apply breathe bg-success;
   --dot-size: 10px;
-  background: var(--success);
 }
 
 .label {
-  color: var(--subtle);
-  white-space: nowrap;
+  @apply whitespace-nowrap text-subtle;
 }
 
 .tag[data-state="reconnecting"] .dot {
-  background: var(--warning);
+  @apply bg-warning;
 }
 
 .tag[data-state="reconnecting"] .label {
-  color: var(--warning);
+  @apply text-warning;
 }
 </style>

@@ -153,7 +153,7 @@ async function openUrl(): Promise<void> {
         >
           <button
             v-press
-            class="entry focusable plain-button"
+            class="entry plain-button focusable"
             type="button"
             :data-selected="meta.slug === selected"
             data-cmt="artifact"
@@ -197,138 +197,81 @@ async function openUrl(): Promise<void> {
 <style scoped>
 /* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
 .artifacts {
-  column-gap: 8px;
-  display: grid;
-  grid-template-columns: min(var(--side-w), 50%) 0 minmax(0, 1fr);
-  height: 100%;
-  min-height: 0;
+  @apply grid h-full min-h-0 grid-cols-[min(var(--side-w),50%)_0_minmax(0,1fr)] gap-x-2;
 }
 
 .pane {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
+  @apply flex min-h-0 flex-col overflow-hidden;
 }
 
 /* Over the grown sheet's left edge, under its islands, so another artifact opens without leaving fullscreen. */
 .pane[data-listed="true"] {
-  bottom: 8px;
-  left: 8px;
-  position: fixed;
-  top: 56px;
-  width: 320px;
-  z-index: 28;
+  @apply fixed top-14 bottom-2 left-2 z-28 w-80;
 }
 
 .bar {
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 10px;
-  padding: 10px 14px 12px;
+  @apply flex flex-none flex-col gap-2.5 border-b border-b-border px-3.5 pt-2.5 pb-3;
 }
 
 .row {
-  align-items: center;
-  display: flex;
-  gap: 8px;
+  @apply flex items-center gap-2;
 }
 
 .open {
-  align-items: center;
-  background: var(--sunken);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-sizing: border-box;
-  cursor: text;
-  display: flex;
-  gap: 8px;
-  height: 34px;
-  margin: 0;
-  padding: 0 12px;
-  transition:
-    border-color var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out);
+  @apply m-0 flex h-8.5 cursor-text items-center gap-2 rounded-2xl border border-border bg-sunken px-3 py-0 transition-[border-color,box-shadow] duration-(--duration-fast) ease-out;
 }
 
 .open[data-focused="true"] {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--primary-soft);
+  @apply border-primary ring-2 ring-primary-soft;
 }
 
 .open[data-refused="true"] {
-  border-color: var(--error);
-  box-shadow: 0 0 0 2px var(--error-soft);
+  @apply border-error ring-2 ring-error-soft;
 }
 
 .globe {
-  color: var(--subtle);
-  flex: none;
+  @apply flex-none text-subtle;
 }
 
 .open[data-focused="true"] .globe {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .open[data-refused="true"] .globe {
-  color: var(--error);
+  @apply text-error;
 }
 
 .field {
-  background: transparent;
-  border: 0;
-  color: var(--ink);
-  flex: 1;
-  font: inherit;
-  font-size: 13px;
-  min-width: 0;
-  outline: none;
-  padding: 0;
+  @apply min-w-0 flex-1 border-0 bg-transparent p-0 text-[13px] text-fg outline-none;
 }
 
 .field::placeholder {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .hint {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.45;
-  margin: -4px 0 0;
-  padding: 0 4px;
-  text-wrap: pretty;
+  @apply mx-0 -mt-1 mb-0 px-1 py-0 text-[12px] leading-[1.45] text-pretty text-muted;
 }
 
 .hint[data-tone="error"] {
-  color: var(--error);
+  @apply text-error;
 }
 
 .title {
-  font-size: 12.5px;
-  font-weight: 700;
+  @apply text-[12.5px] font-bold;
 }
 
 .meta {
-  color: var(--muted);
-  text-transform: none;
+  @apply text-muted normal-case;
 }
 
 .scroll {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 6px 8px var(--float-clear);
+  @apply flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 pt-1.5 pb-(--float-clear);
 }
 
 .item {
+  @apply relative flex-none;
   --row-bg: var(--raised);
-  flex: none;
-  position: relative;
 }
 
 .item:hover,
@@ -338,98 +281,57 @@ async function openUrl(): Promise<void> {
 
 /* Laid over the row's right end like the review tree's actions, so the text runs under it and never rewraps. */
 .actions {
-  align-items: center;
-  background: linear-gradient(to right, transparent, var(--row-bg) 18px);
-  border-radius: 0 9px 9px 0;
-  display: flex;
-  inset: 1px 1px 1px auto;
-  opacity: 0;
-  padding: 0 8px 0 18px;
-  pointer-events: none;
-  position: absolute;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  @apply pointer-events-none absolute inset-y-px right-px left-auto flex items-center rounded-l-none rounded-r-[9px] bg-linear-to-r from-transparent to-(--row-bg) to-[18px] py-0 pr-2 pl-4.5 opacity-0 transition-opacity duration-(--duration-fast) ease-out;
 }
 
 .item:hover .actions,
 .item:focus-within .actions {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 .item:hover .pill,
 .item:focus-within .pill {
-  pointer-events: auto;
+  @apply pointer-events-auto;
 }
 
 /* The review tree's approve and reject pill, so removing reads like the other row decisions. */
 .pill {
-  align-items: center;
-  background: var(--raised);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  display: inline-flex;
-  padding: 1px;
-  transition:
-    background var(--duration-fast) var(--ease-out),
-    border-color var(--duration-fast) var(--ease-out);
+  @apply inline-flex items-center rounded-full border border-border-strong bg-raised p-px transition-[background,border-color] duration-(--duration-fast) ease-out;
 }
 
 .dot {
-  align-items: center;
-  background: none;
-  border: 0;
-  border-radius: 999px;
-  color: var(--muted);
-  cursor: pointer;
-  display: grid;
-  height: 16px;
-  justify-items: center;
-  padding: 0;
-  transition: color var(--duration-fast) var(--ease-out);
-  width: 20px;
+  @apply grid h-4 w-5 cursor-pointer items-center justify-items-center rounded-full border-0 bg-transparent bg-none p-0 text-muted transition-[color] duration-(--duration-fast) ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .pill:hover {
-    background: var(--error);
-    border-color: var(--error);
+    @apply border-error bg-error;
   }
 
   .pill:hover .dot {
-    color: var(--error-content);
+    @apply text-error-content;
   }
 }
 
 .entry {
-  border: 1px solid transparent;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  text-align: left;
-  transition: background var(--duration-fast) var(--ease-out);
-  width: 100%;
+  @apply flex w-full flex-col gap-1.5 rounded-[10px] border border-transparent px-3 py-2.5 text-left transition-[background] duration-(--duration-fast) ease-out;
 }
 
 /* On the item, so the row keeps its hover while the pointer sits on the pill laid over it. */
 .item:hover .entry {
-  background: var(--sunken);
+  @apply bg-sunken;
 }
 
 .entry[data-selected="true"] {
-  background: var(--sunken);
-  border-color: var(--border-strong);
+  @apply border-border-strong bg-sunken;
 }
 
 .head {
-  align-items: center;
-  display: flex;
-  gap: 8px;
+  @apply flex items-center gap-2;
 }
 
 .age {
-  color: var(--subtle);
-  text-transform: none;
+  @apply text-subtle normal-case;
 }
 
 .name {
@@ -437,15 +339,14 @@ async function openUrl(): Promise<void> {
 }
 
 .entry[data-selected="true"] .name {
-  color: var(--primary);
+  @apply text-primary;
 }
 
 .empty {
-  padding: 2px;
+  @apply p-0.5;
 }
 
 .centered {
-  flex: 1;
-  padding: 16px;
+  @apply flex-1 p-4;
 }
 </style>

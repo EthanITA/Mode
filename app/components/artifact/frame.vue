@@ -143,39 +143,30 @@ defineExpose({ clearPick: pick.clearPick });
 /* No card: a border and a shadow here read as a document sitting on a surface, and what this
    is meant to read as is the file itself. */
 .sheet {
-  min-height: 240px;
-  overflow: hidden;
-  position: relative;
+  @apply relative min-h-60 overflow-hidden;
 }
 
 /* The frame boots taller than the page; clip it until the real height is measured. */
 .sheet:not([data-loaded]) {
-  max-height: 60vh;
+  @apply max-h-[60vh];
 }
 
 /* Boots tall so the artifact's own reveal observer sees the whole page in view, then shrinks to fit. */
 iframe {
-  border: 0;
-  display: block;
-  height: 2400px;
-  opacity: 0;
-  transition: opacity var(--duration-base) var(--ease-out);
-  width: 100%;
+  @apply block h-600 w-full border-0 opacity-0 transition-opacity duration-(--duration-base) ease-out;
 }
 
 .sheet[data-loaded] iframe {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 .pending {
-  left: 24px;
-  position: absolute;
-  top: 24px;
+  @apply absolute top-6 left-6;
 }
 
 @media (prefers-reduced-motion: reduce) {
   iframe {
-    transition: none;
+    @apply transition-none;
   }
 }
 </style>

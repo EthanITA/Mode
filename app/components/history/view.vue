@@ -275,7 +275,7 @@ useShortcuts(
           </div>
         </template>
         <div v-else class="quiet">
-          <span v-if="turn.state !== 'done'" class="dot pulse" :data-tone="turn.state" aria-hidden="true" />
+          <span v-if="turn.state !== 'done'" class="pulse dot" :data-tone="turn.state" aria-hidden="true" />
           <p>{{ quiet }}</p>
         </div>
       </template>
@@ -291,247 +291,138 @@ useShortcuts(
 <style scoped>
 /* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
 .history {
-  column-gap: 8px;
-  display: grid;
-  grid-template-columns: min(var(--side-w), 50%) 0 minmax(0, 1fr);
-  height: 100%;
-  min-height: 0;
+  @apply grid h-full min-h-0 grid-cols-[min(var(--side-w),50%)_0_minmax(0,1fr)] gap-x-2;
 }
 
 .pane {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
+  @apply flex min-h-0 flex-col overflow-hidden;
 }
 
 .bar {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex: none;
-  gap: 8px;
-  padding: 10px 10px 10px 14px;
+  @apply flex flex-none items-center gap-2 border-b border-b-border py-2.5 pr-2.5 pl-3.5;
 }
 
 .bar[data-layout="stacked"] {
-  align-items: stretch;
-  flex-direction: column;
-  padding: 12px 14px 10px;
+  @apply flex-col items-stretch px-3.5 pt-3 pb-2.5;
 }
 
 .line {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  min-height: 26px;
-  min-width: 0;
+  @apply flex min-h-6.5 min-w-0 items-center gap-2;
 }
 
 .title {
-  font-size: 12.5px;
-  font-weight: 700;
+  @apply text-[12.5px] font-bold;
 }
 
 .meta {
-  color: var(--muted);
-  text-transform: none;
+  @apply text-muted normal-case;
 }
 
 .spacer {
-  flex: 1;
+  @apply flex-1;
 }
 
 .group {
-  display: inline-flex;
-  flex: none;
-  gap: 4px;
+  @apply inline-flex flex-none gap-1;
 }
 
 .eyebrow {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .agent {
-  background: var(--primary-soft);
-  border-radius: 999px;
-  color: var(--primary-deep);
-  padding: 1px 7px;
-  text-transform: none;
+  @apply rounded-full bg-primary-soft px-1.75 py-px text-primary-deep normal-case;
 }
 
 .step:disabled {
-  cursor: default;
-  opacity: 0.35;
+  @apply cursor-default opacity-35;
 }
 
 /* Prompts run to 400 characters and replies have no bound, so both fold to three lines until asked. */
 .ask,
 .reply {
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  display: -webkit-box;
-  margin: 0;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  text-align: left;
-  text-wrap: pretty;
-  white-space: pre-line;
+  @apply m-0 line-clamp-3 text-left text-pretty wrap-anywhere whitespace-pre-line;
 }
 
 .ask[aria-expanded="true"],
 .reply[aria-expanded="true"],
 .ask[data-open="true"] {
-  -webkit-line-clamp: unset;
+  @apply line-clamp-none;
 }
 
 .ask {
-  color: var(--ink);
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.4;
+  @apply text-[16px] leading-[1.4] font-bold tracking-[-0.02em] text-fg;
 }
 
 p.ask {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .say {
-  display: flex;
-  gap: 8px;
-  max-width: 880px;
+  @apply flex max-w-220 gap-2;
 }
 
 .mark {
-  align-items: center;
-  background: var(--primary-soft);
-  border-radius: 999px;
-  color: var(--primary-deep);
-  display: flex;
-  flex: none;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 600;
-  height: 18px;
-  justify-content: center;
-  margin-top: 1px;
-  width: 18px;
+  @apply mt-px flex size-4.5 flex-none items-center justify-center rounded-full bg-primary-soft font-mono text-[10px] font-semibold text-primary-deep;
 }
 
 .reply {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.5;
+  @apply text-[13px] leading-normal text-muted;
 }
 
 .scroll {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 6px 8px var(--float-clear);
+  @apply flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 pt-1.5 pb-(--float-clear);
 }
 
 /* A column flex item shrinks by default, so long content squeezed every row instead of scrolling. */
 .scroll > * {
-  flex-shrink: 0;
+  @apply shrink-0;
 }
 
 .divider {
-  align-items: center;
-  color: var(--primary);
-  display: flex;
-  gap: 10px;
-  margin: 8px 0 6px;
-  text-transform: none;
+  @apply mx-0 mt-2 mb-1.5 flex items-center gap-2.5 text-primary normal-case;
 }
 
 .divider::before,
 .divider::after {
-  background: var(--primary);
-  content: "";
-  flex: 1;
-  height: 1px;
+  @apply h-px flex-1 bg-primary content-[''];
 }
 
 .empty {
-  padding: 2px;
+  @apply p-0.5;
 }
 
 .again {
-  background: var(--raised);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  color: var(--ink);
-  cursor: pointer;
-  font: inherit;
-  font-size: 11.5px;
-  font-weight: 600;
-  margin-top: 8px;
-  padding: 4px 11px;
+  @apply mt-2 cursor-pointer rounded-full border border-border-strong bg-raised px-2.75 py-1 text-[11.5px] font-semibold text-fg;
 }
 
 .notice {
-  background: var(--warning-soft);
-  color: var(--warning);
-  flex: none;
-  font-size: 12.5px;
-  line-height: 1.5;
-  margin: 0;
-  padding: 9px 14px;
+  @apply m-0 flex-none bg-warning-soft px-3.5 py-2.25 text-[12.5px] leading-normal text-warning;
 }
 
 .heads {
-  background: var(--ed-bar);
-  border-bottom: 1px solid var(--ed-border);
-  color: var(--ed-muted);
-  display: grid;
-  flex: none;
-  grid-template-columns: 1fr 1fr;
-  padding: 5px 0 5px 54px;
-  text-transform: none;
+  @apply grid flex-none grid-cols-[1fr_1fr] border-b border-b-ed-border bg-ed-bar py-1.25 pr-0 pl-13.5 text-ed-muted normal-case;
 }
 
 .changes {
-  background: var(--ed-bg);
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding-bottom: var(--float-clear);
-  position: relative;
+  @apply relative min-h-0 flex-1 overflow-y-auto bg-ed-bg pb-(--float-clear);
 }
 
 .quiet {
-  align-items: center;
-  color: var(--muted);
-  display: flex;
-  flex: 1;
-  font-size: 13px;
-  gap: 10px;
-  justify-content: center;
-  line-height: 1.55;
-  padding: 24px;
-  text-wrap: pretty;
+  @apply flex flex-1 items-center justify-center gap-2.5 p-6 text-[13px] leading-[1.55] text-pretty text-muted;
 }
 
 .quiet p {
-  margin: 0;
-  max-width: 360px;
-  text-align: center;
+  @apply m-0 max-w-90 text-center;
 }
 
 .pulse {
-  @apply breathe;
+  @apply breathe bg-primary;
   --dot-size: 8px;
-  background: var(--primary);
 }
 
 /* Waiting on a person is not work in progress, so it holds still. */
 .pulse[data-tone="waiting"] {
-  animation: none;
-  background: var(--warning);
+  @apply animate-none bg-warning;
 }
 </style>

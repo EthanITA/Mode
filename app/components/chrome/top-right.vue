@@ -57,23 +57,15 @@ function closePage(): void {
 
 <style scoped>
 .top-right {
-  align-items: center;
-  display: flex;
-  flex: none;
-  gap: 8px;
+  @apply flex flex-none items-center gap-2;
 }
 
 .pill {
-  align-items: center;
-  display: flex;
-  flex: none;
-  height: var(--island-row-h);
-  padding: 0 6px;
+  @apply flex h-(--island-row-h) flex-none items-center px-1.5 py-0;
 }
 
 /* The pill is the surface, so the segmented must not draw a second one. */
 .pill :deep(.segmented) {
-  background: none;
-  border: 0;
+  @apply border-0 bg-transparent bg-none;
 }
 </style>

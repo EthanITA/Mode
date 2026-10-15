@@ -139,41 +139,33 @@ onMounted(() => {
 
 <style scoped>
 .wrap {
-  max-width: calc(100% - 24px);
-  position: absolute;
-  width: 320px;
-  z-index: 31;
+  @apply absolute z-31 w-80 max-w-[calc(100%_-_24px)];
 }
 
 .panel {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
+  @apply flex flex-col gap-2 px-3 py-2.5;
 }
 
 .panel[data-pending="true"] {
-  opacity: 0.72;
+  @apply opacity-72;
 }
 
 footer {
-  align-items: center;
-  display: flex;
-  gap: 6px;
+  @apply flex items-center gap-1.5;
 }
 
 .hint {
-  margin-left: auto;
+  @apply ml-auto;
 }
 
 .working {
   @apply shimmer;
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .panel {
-    transition: none;
+    @apply transition-none;
   }
 }
 </style>

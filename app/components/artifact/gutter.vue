@@ -154,7 +154,7 @@ watchEffect(() =>
       <UiPopover :estimated-height="320" :placement="away" width="w-[380px]">
         <template #trigger="{ open }">
           <button
-            class="loose focusable plain-button mono-meta"
+            class="loose plain-button mono-meta focusable"
             type="button"
             :data-open="open ? '' : undefined"
             :title="`${plural(adrift.threads.length, 'note')} whose text is gone from this version`"
@@ -191,87 +191,59 @@ watchEffect(() =>
 <style scoped>
 /* Laid over the page's inline end, whose content the frame pads clear, so between notes the page stays reachable. */
 .gutter {
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-  position: relative;
+  @apply pointer-events-none relative h-full overflow-visible;
 }
 
 .perch {
-  left: 0;
-  pointer-events: auto;
-  position: absolute;
-  right: 0;
+  @apply pointer-events-auto absolute right-0 left-0;
 }
 
 .perch-foot {
-  bottom: 16px;
+  @apply bottom-4;
 }
 
 .gutter[data-place="float"] .perch {
-  right: auto;
-  width: var(--notes-w);
+  @apply right-auto w-(--notes-w);
 }
 
 .gutter[data-place="float"] .perch-foot {
-  left: auto;
-  right: var(--gutter);
-  width: auto;
+  @apply right-(--gutter) left-auto w-auto;
 }
 
 .tether {
-  background: var(--primary);
-  border-radius: 999px;
-  height: 2px;
-  position: absolute;
-  right: 100%;
-  top: var(--tether-y);
-  translate: 0 -1px;
-  width: var(--tether);
+  @apply absolute top-(--tether-y) right-full h-0.5 w-(--tether) -translate-y-px rounded-full bg-primary;
 }
 
 .perch-note {
-  z-index: 4;
+  @apply z-4;
 }
 
 .perch-ask {
-  z-index: 5;
+  @apply z-5;
 }
 
 /* A saved note lands beside its line; perches are absolute, so a leaving one shifts nothing. */
 .note-enter-active {
-  transition:
-    opacity var(--duration-snappy) var(--ease-out),
-    translate var(--duration-snappy) var(--ease-out);
+  @apply transition-[opacity,translate] duration-(--duration-snappy) ease-out;
 }
 
 .note-enter-from {
-  opacity: 0;
-  translate: 0 8px;
+  @apply translate-y-2 opacity-0;
 }
 
 .note-leave-active {
-  transition:
-    opacity var(--duration-fast) var(--ease-out),
-    scale var(--duration-fast) var(--ease-out);
+  @apply transition-[opacity,scale] duration-(--duration-fast) ease-out;
 }
 
 .note-leave-to {
-  opacity: 0;
-  scale: 0.96;
+  @apply scale-96 opacity-0;
 }
 
 .loose {
-  background: var(--raised);
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-selector);
-  color: var(--muted);
-  padding: 4px 8px;
-  white-space: nowrap;
+  @apply rounded-selector border border-dashed border-border-strong bg-raised px-2 py-1 whitespace-nowrap text-muted;
 }
 
 .loose[data-open] {
-  border-color: var(--primary);
-  color: var(--primary);
+  @apply border-primary text-primary;
 }
 </style>

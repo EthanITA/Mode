@@ -99,129 +99,62 @@ function track(): void {
 
 <style scoped>
 .island {
-  align-items: center;
-  box-sizing: border-box;
-  display: flex;
-  gap: 2px;
-  height: var(--island-row-h);
-  padding: 0 4px;
-  transition: box-shadow var(--duration-fast) var(--ease-out);
-  width: 100%;
+  @apply flex h-(--island-row-h) w-full items-center gap-0.5 px-1 py-0 transition-shadow duration-(--duration-fast) ease-out;
 }
 
 .island[data-editing="true"] {
-  box-shadow:
-    0 0 0 1px var(--primary),
-    0 0 0 4px var(--primary-soft);
+  @apply ring-3 ring-primary-soft ring-offset-1 ring-offset-primary;
 }
 
 .rule {
-  background: var(--border);
-  flex: none;
-  height: 18px;
-  margin: 0 4px;
-  width: 1px;
+  @apply mx-1 my-0 h-4.5 w-px flex-none bg-border;
 }
 
 .named {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  color: var(--ink);
-  cursor: text;
-  display: flex;
-  flex: 1;
-  gap: 8px;
-  height: 32px;
-  min-width: 0;
-  padding: 0 4px;
-  text-align: left;
+  @apply flex h-8 min-w-0 flex-1 cursor-text items-center gap-2 rounded-full border-0 bg-transparent px-1 py-0 text-left text-fg;
 }
 
 .icon {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .title {
-  flex: 0 1 auto;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-initial truncate text-[13px] font-bold tracking-[-0.01em];
 }
 
 .host {
-  color: var(--muted);
-  flex: none;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-  margin-left: auto;
+  @apply ml-auto flex-none font-mono typo-meta-strong text-muted;
 }
 
 /* The icon sits where it does unedited, so the typed address starts where the title did. */
 .edit {
-  align-items: center;
-  align-self: stretch;
-  display: flex;
-  flex: 1;
-  gap: 8px;
-  margin: 0;
-  min-width: 0;
-  padding-left: 4px;
+  @apply m-0 flex min-w-0 flex-1 items-center gap-2 self-stretch pl-1;
 }
 
 .box {
-  align-self: stretch;
-  flex: 1;
-  min-width: 0;
-  position: relative;
+  @apply relative min-w-0 flex-1 self-stretch;
 }
 
 .field,
 .mirror {
-  font-family: var(--mono);
-  font-size: 12.5px;
-  font-weight: 600;
+  @apply font-mono text-[12.5px] font-semibold;
 }
 
 /* Its text is drawn by the mirror above it, so only the caret and the selection show from here. */
 .field {
-  background: transparent;
-  border: 0;
-  box-sizing: border-box;
-  caret-color: var(--primary);
-  color: transparent;
-  height: 100%;
-  inset: 0;
-  outline: none;
-  padding: 0 4px 0 0;
-  position: absolute;
-  width: 100%;
+  @apply absolute inset-0 size-full border-0 bg-transparent py-0 pr-1 pl-0 text-transparent caret-primary outline-none;
 }
 
 .field::selection {
-  background: var(--primary-soft);
-  color: transparent;
+  @apply bg-primary-soft text-transparent;
 }
 
 .mirror {
-  align-items: center;
-  color: var(--ink);
-  display: flex;
-  inset: 0 4px 0 0;
-  overflow: hidden;
-  pointer-events: none;
-  position: absolute;
-  white-space: pre;
+  @apply pointer-events-none absolute inset-y-0 right-1 left-0 flex items-center overflow-hidden whitespace-pre text-fg;
 }
 
 /* Same weight as the field, or its glyphs would drift off the caret it draws. */
 .lead {
-  color: var(--muted);
+  @apply text-muted;
 }
 </style>

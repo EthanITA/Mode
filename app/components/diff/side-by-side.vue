@@ -319,73 +319,45 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .sbs {
-  background: var(--ed-bg);
-  max-height: var(--transcript-max-h);
-  overflow: hidden;
-  position: relative;
+  @apply relative max-h-(--transcript-max-h) overflow-hidden bg-ed-bg;
 }
 
 .sbs[data-fill="true"] {
-  height: 100%;
-  max-height: none;
+  @apply h-full max-h-none;
 }
 
 .host {
-  height: 100%;
-  width: 100%;
+  @apply size-full;
 }
 
 /* Pinned to the seam between the panes, over the original's right edge where its scrollbar would be. */
 .hunks {
-  inset: 0 auto 0 0;
-  pointer-events: none;
-  position: absolute;
-  width: 0;
+  @apply pointer-events-none absolute inset-y-0 right-auto left-0 w-0;
 }
 
 .hunk {
-  background: var(--ed-bar);
-  border: 1px solid var(--ed-button);
-  border-radius: 999px;
-  display: flex;
-  gap: 1px;
-  padding: 1px;
-  pointer-events: auto;
-  position: absolute;
-  right: 4px;
-  z-index: 5;
+  @apply pointer-events-auto absolute right-1 z-5 flex gap-px rounded-full border border-ed-button bg-ed-bar p-px;
 }
 
 .arrow {
-  align-items: center;
-  background: none;
-  border: 0;
-  border-radius: 999px;
-  color: var(--ed-muted);
-  cursor: pointer;
-  display: grid;
-  height: 16px;
-  justify-items: center;
-  padding: 0;
-  width: 20px;
+  @apply grid h-4 w-5 cursor-pointer items-center justify-items-center rounded-full border-0 bg-transparent bg-none p-0 text-ed-muted;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .arrow:hover:not(:disabled) {
-    background: var(--ed-button);
+    @apply bg-ed-button;
   }
 
   .arrow[data-tone="accept"]:hover:not(:disabled) {
-    color: var(--ed-add);
+    @apply text-ed-add;
   }
 
   .arrow[data-tone="reject"]:hover:not(:disabled) {
-    color: var(--ed-remove);
+    @apply text-ed-remove;
   }
 }
 
 .arrow:disabled {
-  cursor: progress;
-  opacity: 0.5;
+  @apply cursor-progress opacity-50;
 }
 </style>

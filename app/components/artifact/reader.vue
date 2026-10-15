@@ -337,81 +337,45 @@ onScopeDispose(() => {
 
 <style scoped>
 .page {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
-  width: 100%;
+  @apply flex min-h-full w-full flex-col;
 }
 
 /* Only the artifact runs to the edges; its chrome insets itself. */
 .page > :deep([data-region="version-tabs"]) {
-  box-sizing: border-box;
-  margin-inline: auto;
-  max-width: var(--page-w);
-  padding-inline: var(--gutter);
-  width: 100%;
+  @apply mx-auto w-full max-w-(--page-w) px-(--gutter);
 }
 
 .gap,
 .blank {
-  background: var(--raised);
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-box);
-  box-sizing: border-box;
-  color: var(--muted);
-  font-size: 14px;
-  margin-inline: auto;
-  max-width: var(--page-w);
-  padding: 40px 28px;
-  text-align: center;
-  width: 100%;
+  @apply mx-auto w-full max-w-(--page-w) rounded-box border border-dashed border-border-strong bg-raised px-7 py-10 text-center text-[14px] text-muted;
 }
 
 .gap p,
 .blank p {
-  margin: 0;
+  @apply m-0;
 }
 
 .gap p + p {
-  margin-top: 8px;
+  @apply mt-2;
 }
 
 .title {
-  color: var(--ink);
-  font-weight: 600;
+  @apply font-semibold text-fg;
 }
 
 .why {
-  text-wrap: pretty;
+  @apply text-pretty;
 }
 
 .back {
-  align-items: center;
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--ink);
-  cursor: pointer;
-  display: inline-flex;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  margin-top: 14px;
-  padding: 6px 12px;
-  text-decoration: none;
+  @apply mt-3.5 inline-flex cursor-pointer items-center rounded-full border border-border bg-raised px-3 py-1.5 typo-caption-strong text-fg no-underline;
 }
 
 .back:hover {
-  border-color: var(--ink);
+  @apply border-fg;
 }
 
 .settle {
-  align-items: center;
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px 4px;
-  position: absolute;
-  transform: translate(8px, -50%);
-  z-index: 28;
+  @apply absolute z-28 inline-flex translate-x-2 -translate-y-1/2 items-center gap-0.5 px-1 py-0.5;
 }
 </style>

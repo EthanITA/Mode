@@ -82,46 +82,33 @@ onScopeDispose(onUp);
 <style scoped>
 /* Sits in a zero-width grid track, so the hit area reaches into the gap on both sides. */
 .resizer {
-  cursor: col-resize;
-  height: 100%;
-  margin-inline: -6px;
-  position: relative;
-  touch-action: none;
-  width: 12px;
-  z-index: 2;
+  @apply relative z-2 -mx-1.5 h-full w-3 cursor-col-resize touch-none;
 }
 
 .resizer::after {
-  background: var(--primary);
-  border-radius: 999px;
-  content: "";
-  inset: 12px 5px;
-  opacity: 0;
-  position: absolute;
-  transition: opacity var(--duration-base) var(--ease-out);
+  @apply absolute inset-x-1.25 inset-y-3 rounded-full bg-primary opacity-0 transition-opacity duration-(--duration-base) ease-out content-[''];
 }
 
 .resizer:hover::after,
 .resizer:focus-visible::after,
 .resizer[data-dragging="true"]::after {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .resizer::after {
-    transition: none;
+    @apply transition-none;
   }
 }
 </style>
 
 <style>
 :root[data-pane-dragging] {
-  cursor: col-resize;
-  user-select: none;
+  @apply cursor-col-resize select-none;
 }
 
 :root[data-pane-dragging] iframe,
 :root[data-pane-dragging] .monaco-editor {
-  pointer-events: none;
+  @apply pointer-events-none;
 }
 </style>

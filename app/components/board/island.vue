@@ -189,194 +189,120 @@ function onEnter(event: KeyboardEvent): void {
 
 <style scoped>
 .panel {
-  display: flex;
-  flex-direction: column;
-  max-height: min(60vh, 520px);
-  overflow: hidden;
-  width: 340px;
+  @apply flex max-h-[min(60vh,520px)] w-85 flex-col overflow-hidden;
 }
 
 .head {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex: none;
-  gap: 8px;
-  padding: 10px 12px 10px 14px;
+  @apply flex flex-none items-center gap-2 border-b border-b-border py-2.5 pr-3 pl-3.5;
 }
 
 .title {
-  color: var(--ink);
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  @apply text-[14px] font-extrabold tracking-[-0.02em] text-fg;
 }
 
 .meta {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .spacer {
-  flex: 1;
+  @apply flex-1;
 }
 
 .list {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 4px 5px 3px;
+  @apply flex min-h-0 flex-col overflow-y-auto px-1.25 pt-1 pb-0.75;
 }
 
 .empty {
-  margin: 10px 4px;
+  @apply mx-1 my-2.5;
 }
 
 .add {
-  align-items: center;
-  border-top: 2px solid transparent;
-  display: flex;
-  gap: 8px;
-  padding: 4px 8px;
+  @apply flex items-center gap-2 border-t-2 border-t-transparent px-2 py-1;
 }
 
 .add[data-drop] {
-  border-top-color: var(--primary);
+  @apply border-t-primary;
 }
 
 .spacer-handle {
-  flex: none;
-  width: 12px;
+  @apply w-3 flex-none;
 }
 
 .add-input {
-  background: transparent;
-  border: 0;
-  color: var(--ink);
-  flex: 1;
-  font-size: 12.5px;
-  height: 24px;
-  outline: none;
-  padding: 0 4px;
+  @apply h-6 flex-1 border-0 bg-transparent px-1 py-0 text-[12.5px] text-fg outline-none;
 }
 
 .done-section {
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  margin-top: 6px;
-  padding-top: 4px;
+  @apply mt-1.5 flex flex-col border-t border-t-border pt-1;
 }
 
 .done-toggle {
-  align-items: center;
-  border-radius: 6px;
-  color: var(--muted);
-  display: flex;
-  gap: 6px;
-  padding: 6px 8px;
-  width: 100%;
+  @apply flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-muted;
 }
 
 .done-toggle:hover {
-  background: var(--sunken);
-  color: var(--ink);
+  @apply bg-sunken text-fg;
 }
 
 .done-chevron {
-  align-items: center;
-  color: var(--subtle);
-  display: inline-flex;
-  transition: transform var(--duration-fast) var(--ease-out);
+  @apply inline-flex items-center text-subtle transition-transform duration-(--duration-fast) ease-out;
 }
 
 .done-chevron[data-open] {
-  transform: rotate(90deg);
+  @apply rotate-90;
 }
 
 .done-title {
-  color: var(--muted);
-  font-size: 10.5px;
+  @apply text-[10.5px] text-muted;
 }
 
 .done-count {
-  background: var(--sunken);
-  border-radius: 999px;
-  color: var(--subtle);
-  font-size: 9.5px;
-  padding: 1px 6px;
+  @apply rounded-full bg-sunken px-1.5 py-px text-[9.5px] text-subtle;
 }
 
 .done-items {
-  display: flex;
-  flex-direction: column;
+  @apply flex flex-col;
 }
 
 /* Resting height must equal --island-row-h: shape="pill" only clips to a full
    circle when the box is no taller than that (see design-system/components/island.md). */
 .pill {
-  align-items: center;
-  background: none;
-  border: 0;
-  color: var(--ink);
-  cursor: pointer;
-  display: inline-flex;
-  font-size: 12.5px;
-  font-weight: 600;
-  gap: 10px;
-  height: var(--island-row-h);
-  padding: 0 14px;
+  @apply inline-flex h-(--island-row-h) cursor-pointer items-center gap-2.5 border-0 bg-transparent bg-none px-3.5 py-0 text-[12.5px] font-semibold text-fg;
 }
 
 .pill:hover {
-  color: var(--primary);
+  @apply text-primary;
 }
 
 .bar {
-  background: var(--sunken);
-  border-radius: 999px;
-  display: block;
-  flex: none;
-  height: 4px;
-  overflow: hidden;
-  width: 34px;
+  @apply block h-1 w-8.5 flex-none overflow-hidden rounded-full bg-sunken;
 }
 
 .fill {
-  background: var(--ink);
-  border-radius: 999px;
-  display: block;
-  height: 100%;
-  transition: width var(--duration-base) var(--ease-out);
+  @apply block h-full rounded-full bg-fg transition-[width] duration-(--duration-base) ease-out;
 }
 
 .count {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .waiting {
-  align-items: center;
-  color: var(--warning);
-  display: inline-flex;
-  gap: 5px;
+  @apply inline-flex items-center gap-1.25 text-warning;
 }
 
 .waiting .dot {
+  @apply bg-warning;
   --dot-size: 6px;
-
-  background: var(--warning);
 }
 
 .chevron {
-  align-items: center;
-  color: var(--muted);
-  display: inline-flex;
+  @apply inline-flex items-center text-muted;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .fill,
   .done-chevron {
-    transition: none;
+    @apply transition-none;
   }
 }
 </style>

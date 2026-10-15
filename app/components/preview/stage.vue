@@ -219,50 +219,31 @@ defineExpose({ follow });
 
 <style scoped>
 .stage {
-  background: var(--ed-bg);
-  display: flex;
-  flex: 1;
-  height: 100%;
-  min-height: 0;
-  min-width: 0;
-  position: relative;
+  @apply relative flex h-full min-h-0 min-w-0 flex-1 bg-ed-bg;
 }
 
 /* A page that paints no background of its own would show the editor's dark through it. */
 .frame {
-  background: #fff;
-  border: 0;
-  flex: 1;
-  min-width: 0;
-  opacity: 0;
-  transition: opacity var(--duration-base) var(--ease-out);
+  @apply min-w-0 flex-1 border-0 bg-white opacity-0 transition-opacity duration-(--duration-base) ease-out;
 }
 
 .scroller {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-  overflow: auto;
-  padding: 20px;
+  @apply flex min-h-0 min-w-0 flex-1 overflow-auto p-5;
   scrollbar-gutter: stable;
 }
 
 /* Auto margins centre the media while it fits and fall to zero once it overflows, so no edge is ever cut off. */
 .sizer {
-  flex: none;
-  margin: auto;
+  @apply m-auto flex-none;
 }
 
 .content {
-  opacity: 0;
-  transform-origin: 0 0;
-  transition: opacity var(--duration-base) var(--ease-out);
+  @apply origin-[0_0] opacity-0 transition-opacity duration-(--duration-base) ease-out;
 }
 
 .stage[data-loaded="true"] .frame,
 .stage[data-loaded="true"] .content {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 /* A checkerboard behind an image, so its transparent parts read as transparent. */
@@ -273,24 +254,20 @@ defineExpose({ follow });
 img,
 video,
 audio {
-  display: block;
-  height: auto;
-  width: 100%;
+  @apply block h-auto w-full;
 }
 
 .state {
+  @apply pointer-events-none absolute inset-0;
   --ink: var(--ed-ink);
   --muted: var(--ed-muted);
   --subtle: var(--ed-muted);
-  inset: 0;
-  pointer-events: none;
-  position: absolute;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .frame,
   .content {
-    transition: none;
+    @apply transition-none;
   }
 }
 </style>

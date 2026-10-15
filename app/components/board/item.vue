@@ -118,157 +118,90 @@ const commentLabel = computed(() => `${taskId.value} ${task.text}`);
 
 <style scoped>
 .row {
-  align-items: center;
-  border-radius: 8px;
-  border-top: 2px solid transparent;
-  display: flex;
-  gap: 7px;
-  padding: 2px 6px;
+  @apply flex items-center gap-1.75 rounded-lg border-t-2 border-t-transparent px-1.5 py-0.5;
 }
 
 .row[data-drop] {
-  border-top-color: var(--primary);
+  @apply border-t-primary;
 }
 
 .row:hover {
-  background: var(--sunken);
+  @apply bg-sunken;
 }
 
 .handle {
-  cursor: grab;
-  display: inline-grid;
-  flex: none;
-  gap: 2px;
-  grid-template-columns: repeat(2, 2px);
-  opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  @apply inline-grid flex-none cursor-grab grid-cols-[repeat(2,2px)] gap-0.5 opacity-0 transition-opacity duration-(--duration-fast) ease-out;
 }
 
 .row:hover .handle {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 .pip {
-  background: var(--subtle);
-  border-radius: 999px;
-  height: 2px;
-  width: 2px;
+  @apply size-0.5 rounded-full bg-subtle;
 }
 
 .box {
-  align-items: center;
-  border: 1.5px solid var(--border-strong);
-  border-radius: 4px;
-  box-sizing: border-box;
-  display: grid;
-  flex: none;
-  height: 13px;
-  justify-content: center;
-  width: 13px;
+  @apply grid size-3.25 flex-none items-center justify-center rounded-sm border-[1.5px] border-border-strong;
 }
 
 .box[aria-pressed="true"] {
-  background: var(--primary);
-  border-color: var(--primary);
+  @apply border-primary bg-primary;
 }
 
 .box[data-in-progress] {
-  border-color: var(--primary);
+  @apply border-primary;
 }
 
 .progress-dot {
-  background: var(--primary);
-  border-radius: 999px;
-  height: 4px;
-  width: 4px;
+  @apply size-1 rounded-full bg-primary;
 }
 
 .box svg {
-  fill: none;
-  height: 8px;
-  stroke: var(--primary-content);
+  @apply size-2 fill-none stroke-primary-content stroke-3;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 3;
-  width: 8px;
 }
 
 .id {
-  color: var(--muted);
-  flex: none;
-  font-variant-numeric: tabular-nums;
+  @apply flex-none text-muted tabular-nums;
 }
 
 .id[data-done] {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .tag {
-  color: var(--warning);
-  flex: none;
+  @apply flex-none text-warning;
 }
 
 .text {
-  color: var(--ink);
-  flex: 1;
-  font-size: 12.5px;
-  line-height: 1.3;
-  min-width: 0;
-  overflow: hidden;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate text-left text-[12.5px] leading-[1.3] text-fg;
 }
 
 .text[data-expanded="true"] {
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
+  @apply overflow-visible text-clip whitespace-normal;
 }
 
 .text[data-done] {
-  color: var(--muted);
-  text-decoration: line-through;
+  @apply text-muted line-through;
 }
 
 .owner-mark {
-  display: inline-flex;
-  flex: none;
+  @apply inline-flex flex-none;
 }
 
 .owner-mark :deep([data-size="xs"]) {
-  font-size: 7px;
-  height: 16px;
-  width: 16px;
+  @apply size-4 text-[7px];
 }
 
 .claude-avatar {
-  align-items: center;
-  background: var(--sunken);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  box-sizing: border-box;
-  display: inline-flex;
-  flex: none;
-  height: 16px;
-  justify-content: center;
-  width: 16px;
+  @apply inline-flex size-4 flex-none items-center justify-center rounded-full border border-border-strong bg-sunken;
 }
 
 /* mask-image, not an <img>: the source SVG's own fill can't reach a token, but the mask's alpha
    channel lets this element's background paint it, so the glyph follows the theme like everything else. */
 .claude-mark {
-  background-color: var(--muted);
-  display: block;
-  height: 9px;
-  width: 9px;
-  -webkit-mask-image: url(/assets/entity-static.svg);
-  -webkit-mask-position: center;
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: contain;
-  mask-image: url(/assets/entity-static.svg);
-  mask-position: center;
-  mask-repeat: no-repeat;
-  mask-size: contain;
+  @apply block size-2.25 bg-muted mask-[url(/assets/entity-static.svg)] mask-contain mask-center mask-no-repeat;
 }
 </style>

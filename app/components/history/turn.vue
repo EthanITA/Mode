@@ -23,7 +23,7 @@ const tell = computed(() => {
   <div class="row" :data-picked="isPicked" :data-open="turn.isOpen">
     <button
       v-press
-      class="turn focusable plain-button"
+      class="turn plain-button focusable"
       type="button"
       :aria-current="isPicked"
       data-cmt="turn"
@@ -44,7 +44,7 @@ const tell = computed(() => {
       <button
         v-for="file in turn.files"
         :key="file.path"
-        class="file focusable plain-button"
+        class="file plain-button focusable"
         type="button"
         :data-kind="file.kind"
         :data-in-view="file.path === inView"
@@ -64,155 +64,102 @@ const tell = computed(() => {
 
 <style scoped>
 .row {
-  border: 1px solid transparent;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  @apply flex flex-col gap-2 rounded-[10px] border border-transparent;
 }
 
 .row[data-picked="true"] {
-  background: var(--sunken);
-  border-color: var(--border-strong);
-  padding-bottom: 8px;
+  @apply border-border-strong bg-sunken pb-2;
 }
 
 .turn {
-  align-items: start;
-  border-radius: 10px;
-  column-gap: 8px;
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
-  padding: 10px 8px 10px 6px;
-  text-align: left;
-  transition: background-color var(--duration-fast) var(--ease-out);
-  width: 100%;
+  @apply grid w-full grid-cols-[28px_minmax(0,1fr)_auto] items-start gap-x-2 rounded-[10px] py-2.5 pr-2 pl-1.5 text-left transition-[background-color] duration-(--duration-fast) ease-out;
 }
 
 .row[data-picked="true"] .turn {
-  padding-bottom: 0;
+  @apply pb-0;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .row:not([data-picked="true"]) .turn:hover {
-    background: var(--sunken);
+    @apply bg-sunken;
   }
 }
 
 .number {
-  color: var(--subtle);
-  font-size: 11px;
-  letter-spacing: 0;
-  padding-top: 2px;
-  text-align: right;
+  @apply pt-0.5 text-right text-[11px] tracking-normal text-subtle;
 }
 
 .row[data-picked="true"] .number {
-  color: var(--primary);
-  font-weight: 600;
+  @apply font-semibold text-primary;
 }
 
 .body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
+  @apply flex min-w-0 flex-col gap-1.5;
 }
 
 .ask {
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  color: var(--ink);
-  display: -webkit-box;
-  font-size: 13px;
-  line-height: 1.45;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  white-space: pre-line;
+  @apply line-clamp-2 text-[13px] leading-[1.45] wrap-anywhere whitespace-pre-line text-fg;
 }
 
 .row[data-picked="true"] .ask {
-  -webkit-line-clamp: unset;
-  text-wrap: pretty;
+  @apply line-clamp-none text-pretty;
 }
 
 .row[data-open="true"] .ask {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .age {
-  color: var(--subtle);
-  padding-top: 2px;
-  text-transform: none;
-  white-space: nowrap;
+  @apply pt-0.5 whitespace-nowrap text-subtle normal-case;
 }
 
 .files {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  margin: 0 8px 0 36px;
+  @apply my-0 mr-2 ml-9 flex flex-col gap-px;
 }
 
 .file {
-  align-items: center;
-  border-radius: 6px;
-  display: flex;
-  gap: 6px;
-  min-height: 26px;
-  padding: 0 8px 0 6px;
-  text-align: left;
+  @apply flex min-h-6.5 items-center gap-1.5 rounded-md py-0 pr-2 pl-1.5 text-left;
 }
 
 .file[data-in-view="true"] {
-  background: var(--primary-soft);
+  @apply bg-primary-soft;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .file:hover {
-    background: var(--primary-soft);
+    @apply bg-primary-soft;
   }
 }
 
 .icon {
-  color: var(--subtle);
-  flex: none;
+  @apply flex-none text-subtle;
 }
 
 .name {
-  color: var(--info);
-  flex: 1;
-  font-family: var(--mono);
-  font-size: 12.5px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate font-mono text-[12.5px] text-info;
 }
 
 .file[data-kind="created"] .name {
-  color: var(--success);
+  @apply text-success;
 }
 
 .file[data-kind="deleted"] .name {
-  color: var(--error);
+  @apply text-error;
 }
 
 .file[data-kind="unchanged"] .name {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .churn {
-  display: inline-flex;
-  flex: none;
-  gap: 5px;
+  @apply inline-flex flex-none gap-1.25;
 }
 
 [data-tone="add"] {
-  color: var(--success);
+  @apply text-success;
 }
 
 [data-tone="remove"] {
-  color: var(--error);
+  @apply text-error;
 }
 </style>

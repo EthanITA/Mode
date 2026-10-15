@@ -230,258 +230,135 @@ defineExpose({ focus });
 
 <style scoped>
 .island {
-  box-sizing: border-box;
-  transition: width var(--duration-base) var(--ease-out);
-  width: min(600px, 100%);
+  @apply w-[min(600px,100%)] transition-[width] duration-(--duration-base) ease-out;
 }
 
 /* At rest only the mascot shows, and the width it grows back into is what reveals the field. */
 .island[data-open="false"] {
-  border-radius: 999px;
-  width: 56px;
+  @apply w-14 rounded-full;
 }
 
 .island[data-open="false"] .body,
 .island[data-open="false"] .row {
-  min-height: 0;
-  padding: 0;
+  @apply min-h-0 p-0;
 }
 
 .island[data-open="false"] .row {
-  align-items: center;
-  height: 56px;
-  justify-content: center;
+  @apply h-14 items-center justify-center;
 }
 
 .wake {
-  align-items: center;
-  border-radius: 999px;
-  cursor: pointer;
-  display: flex;
-  flex: none;
-  justify-content: center;
+  @apply flex flex-none cursor-pointer items-center justify-center rounded-full;
 }
 
 /* Bounded like the rest of the dock, so a long answer scrolls instead of pushing the header off the top. */
 .body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: calc(100vh - var(--stage-top) - var(--gutter));
-  min-height: 0;
-  padding: 6px 6px 6px 8px;
+  @apply flex max-h-[calc(100vh_-_var(--stage-top)_-_var(--gutter))] min-h-0 flex-col gap-1 py-1.5 pr-1.5 pl-2;
 }
 
 .thread {
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 2px;
-  min-height: 0;
-  padding: 0 4px 8px 2px;
+  @apply mb-0.5 flex min-h-0 flex-col gap-2.5 border-b border-b-border pt-0 pr-1 pb-2 pl-0.5;
 }
 
 /* Only the exchanges scroll, so the header with Clear and Close stays put above them. */
 .turns {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
+  @apply flex min-h-0 scrollbar-thin flex-col gap-4.5 overflow-y-auto;
 }
 
 .turn {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  @apply flex flex-col gap-2.5;
 }
 
 .head {
-  align-items: center;
-  display: flex;
-  gap: 2px;
-  padding: 5px 2px 0 4px;
+  @apply flex items-center gap-0.5 pt-1.25 pr-0.5 pb-0 pl-1;
 }
 
 .title {
-  color: var(--ink);
-  flex: none;
-  font-size: 11.5px;
-  font-weight: 600;
-  margin-right: 6px;
+  @apply mr-1.5 flex-none text-[11.5px] font-semibold text-fg;
 }
 
 .state {
-  color: var(--subtle);
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate text-subtle;
 }
 
 .state[data-state="failed"] {
-  color: var(--error);
+  @apply text-error;
 }
 
 .dismiss {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  color: var(--muted);
-  cursor: pointer;
-  display: inline-flex;
-  gap: 6px;
-  height: 26px;
-  padding: 0 8px;
+  @apply inline-flex h-6.5 cursor-pointer items-center gap-1.5 rounded-full border-0 bg-transparent px-2 py-0 text-muted;
 }
 
 .dismiss:hover {
-  background: var(--sunken);
-  color: var(--ink);
+  @apply bg-sunken text-fg;
 }
 
 .asked {
-  align-items: flex-end;
-  align-self: flex-end;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 92%;
+  @apply flex max-w-[92%] flex-col items-end gap-1 self-end;
 }
 
 .asked .mono-meta {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .bubble {
-  background: var(--primary-soft);
-  border-radius: var(--radius-box);
-  color: var(--ink);
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 0;
-  padding: 8px 12px;
-  white-space: pre-wrap;
+  @apply m-0 rounded-box bg-primary-soft px-3 py-2 text-[13px] leading-normal whitespace-pre-wrap text-fg;
 }
 
 .reply {
-  align-items: flex-start;
-  display: flex;
-  gap: 8px;
+  @apply flex items-start gap-2;
 }
 
 .perch {
-  align-items: center;
-  display: flex;
-  flex: none;
-  height: 44px;
-  justify-content: center;
-  width: 50px;
+  @apply flex h-11 w-12.5 flex-none items-center justify-center;
 }
 
 .words {
-  flex: 1;
-  font-size: 13px;
-  line-height: 1.55;
-  min-width: 0;
-  padding-top: 4px;
+  @apply min-w-0 flex-1 pt-1 text-[13px] leading-[1.55];
 }
 
 .thinking {
-  color: var(--muted);
-  font-size: 12.5px;
-  font-style: italic;
-  margin: 0;
-  padding-top: 2px;
+  @apply m-0 pt-0.5 text-[12.5px] text-muted italic;
 }
 
 .failure {
-  background: var(--error-soft);
-  border: 1px solid var(--error);
-  border-radius: var(--radius-field);
-  color: var(--error);
-  margin: 0;
-  padding: 8px 12px;
+  @apply m-0 rounded-field border border-error bg-error-soft px-3 py-2 text-error;
 }
 
 .foot {
-  align-items: center;
-  display: flex;
-  gap: 10px;
-  justify-content: space-between;
-  min-height: 28px;
-  padding-left: 58px;
+  @apply flex min-h-7 items-center justify-between gap-2.5 pl-14.5;
 }
 
 .foot .mono-meta {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .secondary {
-  background: var(--raised);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  color: var(--ink);
-  cursor: pointer;
-  flex: none;
-  font-family: var(--sans);
-  font-size: 11.5px;
-  font-weight: 600;
-  height: 26px;
-  padding: 0 11px;
+  @apply h-6.5 flex-none cursor-pointer rounded-full border border-border-strong bg-raised px-2.75 py-0 font-sans text-[11.5px] font-semibold text-fg;
 }
 
 .secondary:disabled {
-  cursor: default;
-  opacity: 0.45;
+  @apply cursor-default opacity-45;
 }
 
 .row {
-  align-items: flex-end;
-  display: flex;
-  flex: none;
-  gap: 8px;
-  min-height: 36px;
-  padding: 2px 4px 3px 2px;
+  @apply flex min-h-9 flex-none items-end gap-2 pt-0.5 pr-1 pb-0.75 pl-0.5;
 }
 
 /* auto-fit grows the box and hides its overflow; the cap is this call site's, so scrolling comes back with it. */
 .row :deep(.textarea[data-auto-fit="true"]) {
-  max-height: 112px;
-  overflow-y: auto;
-  scrollbar-width: thin;
+  @apply max-h-28 scrollbar-thin overflow-y-auto;
 }
 
 .field {
-  align-self: center;
-  flex: 1;
-  min-width: 0;
+  @apply min-w-0 flex-1 self-center;
 }
 
 .ask {
-  align-items: center;
-  background: var(--ink);
-  border: 0;
-  border-radius: 999px;
-  color: var(--canvas);
-  cursor: pointer;
-  display: inline-flex;
-  flex: none;
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
-  gap: 8px;
-  height: 30px;
-  padding: 0 12px;
-  white-space: nowrap;
+  @apply inline-flex h-7.5 flex-none cursor-pointer items-center gap-2 rounded-full border-0 bg-fg px-3 py-0 font-sans typo-caption-strong whitespace-nowrap text-canvas;
 }
 
 .ask:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
+  @apply cursor-not-allowed opacity-45;
 }
 </style>

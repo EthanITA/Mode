@@ -150,62 +150,24 @@ onMounted(() => {
 
 <style scoped>
 .armed {
-  inset: 0;
-  pointer-events: none;
-  position: fixed;
-  z-index: 34;
+  @apply pointer-events-none fixed inset-0 z-34;
 }
 
+/* The overlay lets the pointer through to pick, so the banner opts back in for its tip. */
 .banner {
-  align-items: center;
-  background: var(--primary);
-  border-radius: 999px;
-  box-shadow: var(--shadow-md);
-  color: var(--primary-content);
-  display: inline-flex;
-  font-size: 12px;
-  font-weight: 600;
-  gap: 10px;
-  height: 34px;
-  left: 50%;
-  margin: 0;
-  padding: 0 14px;
-  /* The overlay lets the pointer through to pick, so the banner opts back in for its tip. */
-  pointer-events: auto;
-  position: absolute;
-  top: 64px;
-  transform: translateX(-50%);
+  @apply pointer-events-auto absolute top-16 left-1/2 m-0 inline-flex h-8.5 -translate-x-1/2 items-center gap-2.5 rounded-full bg-primary px-3.5 py-0 typo-caption-strong text-primary-content shadow-md;
 }
 
 /* Drawn beside the element rather than on it: chrome never writes into a view's DOM. */
 .ring {
-  border: 2px solid var(--primary);
-  border-radius: 6px;
-  display: block;
-  margin: -2px;
-  position: absolute;
+  @apply absolute -m-0.5 block rounded-md border-2 border-primary;
 }
 
 .chip {
-  align-items: center;
-  background: var(--ink);
-  border-radius: 8px;
-  color: var(--canvas);
-  display: inline-flex;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-  height: 26px;
-  max-width: 340px;
-  overflow: hidden;
-  padding: 0 10px;
-  position: absolute;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply absolute inline-flex h-6.5 max-w-85 items-center truncate rounded-lg bg-fg px-2.5 py-0 font-mono typo-meta-strong text-canvas;
 }
 
 .ring[data-selected="true"] {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
+  @apply outline-2 outline-offset-2 outline-primary;
 }
 </style>

@@ -308,111 +308,64 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .editor {
-  background: var(--ed-bg);
-  color: var(--ed-ink);
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
+  @apply flex min-h-0 flex-1 flex-col bg-ed-bg text-ed-ink;
 }
 
 /* Stacked over the editor below, so a pill's tooltip is not painted under Monaco. */
 .bar {
+  @apply relative z-1 flex flex-none items-center gap-2 border-b border-b-ed-border bg-ed-bar px-3 py-2;
   --action-ink: var(--ed-ink);
   --action-line: var(--ed-button);
-  align-items: center;
-  background: var(--ed-bar);
-  border-bottom: 1px solid var(--ed-border);
-  display: flex;
-  flex: none;
-  gap: 8px;
-  padding: 8px 12px;
-  position: relative;
-  z-index: 1;
 }
 
 .path {
-  flex: 1;
-  font-family: var(--mono);
-  font-size: 12.5px;
-  font-weight: 600;
-  min-width: 0;
-  overflow-wrap: anywhere;
+  @apply min-w-0 flex-1 font-mono text-[12.5px] font-semibold wrap-anywhere;
 }
 
 .state {
-  color: var(--ed-muted);
-  flex: none;
-  text-transform: none;
+  @apply flex-none text-ed-muted normal-case;
 }
 
 .state.warn {
-  color: var(--ed-warn);
+  @apply text-ed-warn;
 }
 
 .ghost,
 .save {
-  align-items: center;
-  border-radius: 999px;
-  cursor: pointer;
-  display: inline-flex;
-  flex: none;
-  font-family: var(--sans);
-  font-size: 11.5px;
-  font-weight: 600;
-  gap: 5px;
-  height: 26px;
-  padding: 0 11px;
-  transition:
-    background-color var(--duration-press) ease,
-    border-color var(--duration-press) ease,
-    color var(--duration-press) ease;
+  @apply inline-flex h-6.5 flex-none cursor-pointer items-center gap-1.25 rounded-full px-2.75 py-0 font-sans text-[11.5px] font-semibold transition-[background-color,border-color,color] duration-(--duration-press) ease-[ease];
 }
 
 .ghost {
-  background: transparent;
-  border: 1px solid var(--ed-button);
-  color: var(--ed-muted);
+  @apply border border-ed-button bg-transparent text-ed-muted;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .ghost:hover {
-    background: var(--ed-button);
-    color: var(--ed-ink);
+    @apply bg-ed-button text-ed-ink;
   }
 }
 
 .save {
-  background: var(--ed-accent);
-  border: 0;
-  color: var(--ed-bg);
+  @apply border-0 bg-ed-accent text-ed-bg;
 }
 
 .save:disabled {
-  background: var(--ed-button);
-  color: var(--ed-muted);
-  cursor: default;
+  @apply cursor-default bg-ed-button text-ed-muted;
 }
 
 .body {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  position: relative;
+  @apply relative flex min-h-0 flex-1;
 }
 
 .host {
-  height: 100%;
-  min-height: 0;
-  width: 100%;
+  @apply size-full min-h-0;
 }
 
 /* The body is always One Dark, so the state line reads the editor's palette instead of the theme's. */
 .empty {
+  @apply flex-1 p-4;
   --ink: var(--ed-ink);
   --muted: var(--ed-muted);
   --subtle: var(--ed-muted);
-  flex: 1;
-  padding: 16px;
 }
 </style>

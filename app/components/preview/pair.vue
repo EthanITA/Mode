@@ -54,19 +54,13 @@ function onScrolled(side: Side, at: PreviewScroll): void {
 <style scoped>
 /* The 1px gap shows the border colour behind, as the seam between the two sides. */
 .pair {
-  background: var(--ed-border);
-  display: grid;
-  gap: 1px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  height: 100%;
-  min-height: 0;
+  @apply grid h-full min-h-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-px bg-ed-border;
 }
 
 .gap {
+  @apply bg-ed-bg p-4;
   --ink: var(--ed-ink);
   --muted: var(--ed-muted);
   --subtle: var(--ed-muted);
-  background: var(--ed-bg);
-  padding: 16px;
 }
 </style>

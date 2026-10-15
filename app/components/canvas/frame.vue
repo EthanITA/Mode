@@ -27,7 +27,7 @@ const style = computed(() => ({
       <button
         v-press
         :title="frame.open ? 'Collapse' : 'Expand'"
-        class="plain-button focusable frame-toggle"
+        class="frame-toggle plain-button focusable"
         type="button"
         @click="emit('toggle')"
       >
@@ -41,110 +41,58 @@ const style = computed(() => ({
 /* The box is decoration over the cards it groups; only the header takes the pointer,
    so a drag across a frame's empty interior still starts a marquee on the canvas. */
 .frame {
-  border: 1.5px dashed var(--border-strong);
-  border-radius: 16px;
-  box-sizing: border-box;
-  pointer-events: none;
-  position: absolute;
+  @apply pointer-events-none absolute rounded-2xl border-[1.5px] border-dashed border-border-strong;
 }
 
 .frame[data-status="working"] {
-  border-color: var(--primary);
+  @apply border-primary;
 }
 
 .frame[data-status="waiting"] {
-  border-color: var(--warning);
+  @apply border-warning;
 }
 
 .frame-head {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  height: 42px;
-  padding: 0 8px 0 12px;
-  pointer-events: auto;
+  @apply pointer-events-auto flex h-10.5 items-center gap-2 py-0 pr-2 pl-3;
 }
 
 .frame-pip {
-  align-items: center;
-  background: var(--sunken);
-  border-radius: 999px;
-  display: grid;
-  flex: none;
-  height: 18px;
-  place-items: center;
-  width: 18px;
+  @apply grid size-4.5 flex-none place-items-center rounded-full bg-sunken;
 }
 
 .frame[data-status="done"] .frame-pip {
-  color: var(--success);
+  @apply text-success;
 }
 
 .frame[data-status="working"] .frame-pip {
-  background: var(--primary);
+  @apply bg-primary;
 }
 
 .frame[data-status="waiting"] .frame-pip {
-  background: var(--warning);
+  @apply bg-warning;
 }
 
 .frame-turn {
-  color: var(--muted);
-  flex: none;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
+  @apply flex-none font-mono typo-meta-semibold text-muted;
 }
 
 .frame-title {
-  flex: 1;
-  font-family: var(--sans);
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate font-sans text-[12.5px] font-bold tracking-[-0.01em];
 }
 
 .frame-badge {
-  align-items: center;
-  background: var(--primary-soft);
-  border-radius: 999px;
-  color: var(--primary-deep);
-  display: inline-flex;
-  flex: none;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  font-weight: 500;
-  height: 20px;
-  padding: 0 8px;
-  white-space: nowrap;
+  @apply inline-flex h-5 flex-none items-center rounded-full bg-primary-soft px-2 py-0 font-mono text-[10.5px] font-medium whitespace-nowrap text-primary-deep;
 }
 
 .frame-count {
-  color: var(--subtle);
-  flex: none;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  font-weight: 500;
-  white-space: nowrap;
+  @apply flex-none font-mono text-[10.5px] font-medium whitespace-nowrap text-subtle;
 }
 
 .frame-toggle {
-  align-items: center;
-  border-radius: 999px;
-  color: var(--muted);
-  display: grid;
-  flex: none;
-  height: 24px;
-  place-items: center;
-  width: 24px;
+  @apply grid size-6 flex-none place-items-center rounded-full text-muted;
 }
 
 .frame-toggle:hover {
-  background: var(--sunken);
-  color: var(--ink);
+  @apply bg-sunken text-fg;
 }
 </style>

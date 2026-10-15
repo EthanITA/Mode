@@ -80,80 +80,53 @@ useResizeObserver(boardEl, ([entry]) => {
 /* Bounded and centred, so on a wide display the islands hug the content column
    instead of flying out to the viewport corners. */
 .shell {
-  background: var(--canvas);
-  height: 100vh;
-  margin: 0 auto;
-  max-width: var(--shell-max-w);
-  overflow: hidden;
-  position: relative;
+  @apply relative mx-auto my-0 h-screen max-w-(--shell-max-w) overflow-hidden bg-canvas;
 }
 
 .row {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  left: var(--gutter);
-  pointer-events: none;
-  position: absolute;
-  right: var(--gutter);
-  top: var(--gutter);
-  z-index: 30;
+  @apply pointer-events-none absolute top-(--gutter) right-(--gutter) left-(--gutter) z-30 flex items-center gap-2;
 }
 
 .foot {
-  align-items: flex-end;
-  bottom: var(--gutter);
-  display: flex;
-  gap: 8px;
-  left: var(--gutter);
-  pointer-events: none;
-  position: absolute;
-  right: var(--gutter);
-  z-index: 20;
+  @apply pointer-events-none absolute right-(--gutter) bottom-(--gutter) left-(--gutter) z-20 flex items-end gap-2;
 }
 
 .foot-dock {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
+  @apply flex min-w-0 flex-1 flex-col gap-2;
 }
 
 .foot-board {
-  flex: none;
+  @apply flex-none;
 }
 
 .foot-board:not(:has(*)) {
-  display: none;
+  @apply hidden;
 }
 
 .row > :deep(*),
 .foot-dock > :deep(*),
 .foot-board > :deep(*) {
-  pointer-events: auto;
+  @apply pointer-events-auto;
 }
 
 /* A grown sheet brings its own islands, and the notes wait in the dock until it shrinks back. */
 .shell[data-full="true"] .row,
 .shell[data-full="true"] .foot {
-  visibility: hidden;
+  @apply invisible;
 }
 
 /* Outranks the rule above on its own, rather than on source order: the row spans
    the full width, so a spacer that took clicks would deaden a strip of the canvas. */
 .row > .spacer {
-  flex: 1;
-  pointer-events: none;
+  @apply pointer-events-none flex-1;
 }
 
 .page {
-  display: contents;
+  @apply contents;
 }
 
 /* Over the page and the dock, under the island row so the theme toggle stays. */
 .down {
-  background: var(--canvas);
-  z-index: 25;
+  @apply z-25 bg-canvas;
 }
 </style>

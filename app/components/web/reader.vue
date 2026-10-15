@@ -237,109 +237,47 @@ onScopeDispose(() => {
 
 <style scoped>
 .web-page {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
+  @apply flex min-h-0 min-w-0 flex-1;
 }
 
 .live {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  position: relative;
+  @apply relative flex min-w-0 flex-1 overflow-hidden;
 }
 
 .changed {
-  border: 2px solid var(--success);
-  border-radius: 6px;
-  box-shadow: 0 0 0 4px var(--success-soft);
-  box-sizing: border-box;
-  pointer-events: none;
-  position: absolute;
+  @apply pointer-events-none absolute rounded-md border-2 border-success ring-4 ring-success-soft;
 }
 
 .tag {
-  background: var(--success-soft);
-  border-radius: 999px;
-  color: var(--success);
-  padding: 3px 8px;
-  position: absolute;
-  right: 12px;
-  top: -17px;
-  white-space: nowrap;
+  @apply absolute -top-4.25 right-3 rounded-full bg-success-soft px-2 py-0.75 whitespace-nowrap text-success;
 }
 
 .down,
 .blank {
-  align-items: center;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 14px;
-  justify-content: center;
-  padding: 0 40px;
-  text-align: center;
+  @apply flex flex-1 flex-col items-center justify-center gap-3.5 px-10 py-0 text-center;
 }
 
 .why {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.55;
-  margin: 0;
-  max-width: 360px;
-  text-wrap: pretty;
+  @apply m-0 max-w-90 text-[13px] leading-[1.55] text-pretty text-muted;
 }
 
 .retry {
-  align-items: center;
-  background: var(--raised);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  color: var(--ink);
-  cursor: pointer;
-  display: inline-flex;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  gap: 6px;
-  height: 28px;
-  padding: 0 12px;
+  @apply inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full border border-border-strong bg-raised px-3 py-0 typo-caption-strong text-fg;
 }
 
 .retry:hover {
-  border-color: var(--ink);
+  @apply border-fg;
 }
 
 .remove {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  color: var(--muted);
-  cursor: pointer;
-  display: inline-flex;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  gap: 6px;
-  height: 28px;
-  padding: 0 12px;
-  transition:
-    background var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
+  @apply inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full border-0 bg-transparent px-3 py-0 typo-caption-strong text-muted transition-[background,color] duration-(--duration-fast) ease-out;
 }
 
 .remove:hover {
-  background: var(--error-soft);
-  color: var(--error);
+  @apply bg-error-soft text-error;
 }
 
 .actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
+  @apply flex flex-wrap justify-center gap-2;
 }
 </style>

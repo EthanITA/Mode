@@ -37,53 +37,30 @@ const zoom = defineModel<number>({ required: true });
 <style scoped>
 /* Retinted through the same two variables as an action pill, so it sits on the dark editor bar too. */
 .zoom {
-  align-items: center;
-  border: 1px solid var(--action-line, var(--border-strong));
-  border-radius: 999px;
-  color: var(--action-ink, var(--ink));
-  display: inline-flex;
-  flex: none;
-  height: 26px;
-  padding: 0 1px;
+  @apply inline-flex h-6.5 flex-none items-center rounded-full border border-[color:var(--action-line,var(--border-strong))] px-px py-0 text-[color:var(--action-ink,var(--ink))];
 }
 
 .step,
 .level {
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  height: 22px;
-  transition: background-color var(--duration-press) ease;
+  @apply h-5.5 cursor-pointer rounded-full border-0 bg-transparent text-inherit transition-[background-color] duration-(--duration-press) ease-[ease];
 }
 
 .step {
-  display: grid;
-  padding: 0;
-  place-items: center;
-  width: 22px;
+  @apply grid w-5.5 place-items-center p-0;
 }
 
 .level {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  min-width: 44px;
-  padding: 0 4px;
+  @apply min-w-11 px-1 py-0 font-mono typo-meta-semibold tabular-nums;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .step:hover:not(:disabled),
   .level:hover {
-    background: var(--action-line, var(--border-strong));
+    @apply bg-[color:var(--action-line,var(--border-strong))];
   }
 }
 
 .step:disabled {
-  cursor: default;
-  opacity: 0.4;
+  @apply cursor-default opacity-40;
 }
 </style>

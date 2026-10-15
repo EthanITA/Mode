@@ -105,49 +105,23 @@ onMounted(() => {
 
 <style scoped>
 .notes {
-  align-items: flex-end;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  @apply flex flex-col items-end gap-2;
 }
 
 /* Full width, so the island's percentage width resolves against the dock rather than its own content. */
 .pills {
-  align-items: flex-end;
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  width: 100%;
+  @apply flex w-full items-end justify-end gap-2;
 }
 
 .pill {
-  align-items: center;
-  display: flex;
-  height: var(--island-row-h);
-  overflow: hidden;
+  @apply flex h-(--island-row-h) items-center overflow-hidden;
 }
 
 .send {
-  align-items: center;
-  border: 0;
-  border-radius: inherit;
-  cursor: pointer;
-  display: inline-flex;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  gap: 8px;
-  height: 100%;
-}
-
-.send {
-  background: var(--primary);
-  color: var(--primary-content);
-  padding: 0 16px;
+  @apply inline-flex h-full cursor-pointer items-center gap-2 rounded-[inherit] border-0 bg-primary px-4 py-0 text-[12.5px] font-semibold text-primary-content;
 }
 
 .send:disabled {
-  cursor: progress;
-  opacity: 0.7;
+  @apply cursor-progress opacity-70;
 }
 </style>

@@ -101,142 +101,75 @@ function onEdit(): void {
 
 <style scoped>
 .scrim {
-  background: color-mix(in oklch, var(--secondary) 18%, transparent);
-  inset: 0;
-  position: fixed;
-  z-index: 35;
+  @apply fixed inset-0 z-35 bg-secondary/18;
 }
 
 /* Padding is the surface's own, so nothing here can race the package's per-variant default. */
 .card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: calc(100vw - 32px);
-  position: fixed;
-  width: 420px;
-  z-index: 36;
+  @apply fixed z-36 flex w-105 max-w-[calc(100vw_-_32px)] flex-col gap-2.5;
 }
 
 .who {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  margin: 0;
-  min-width: 0;
+  @apply m-0 flex min-w-0 items-center gap-2;
 }
 
 .kind {
-  background: var(--primary-soft);
-  border-radius: 999px;
-  color: var(--primary-deep);
-  flex: none;
-  padding: 4px 8px;
+  @apply flex-none rounded-full bg-primary-soft px-2 py-1 text-primary-deep;
 }
 
 .label {
-  color: var(--ink);
-  flex: 1;
-  font-size: 12.5px;
-  font-weight: 700;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate text-[12.5px] font-bold text-fg;
 }
 
 .tell {
-  background: var(--sunken);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 8px 10px;
+  @apply flex flex-col gap-1.25 rounded-lg bg-sunken px-2.5 py-2;
 }
 
 .tell-head {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .tell-body {
-  color: var(--ink);
-  font-family: var(--mono);
-  font-size: 11.5px;
-  line-height: 1.5;
-  text-wrap: pretty;
+  @apply font-mono text-[11.5px] leading-normal text-pretty text-fg;
 }
 
 /* A long selection or block shows its opening only, so the card keeps its size. */
 .tell-quote {
-  border-left: 2px solid var(--border-strong);
-  color: var(--muted);
-  display: -webkit-box;
-  font-size: 11.5px;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  line-height: 1.5;
-  overflow: hidden;
-  padding-left: 8px;
-  text-wrap: pretty;
+  @apply line-clamp-3 border-l-2 border-l-border-strong pl-2 text-[11.5px] leading-normal text-pretty text-muted;
 }
 
 .foot {
-  align-items: center;
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin: 0;
+  @apply m-0 flex items-center justify-end gap-2.5;
 }
 
 .cancel,
 .ask,
 .save {
-  border-radius: 999px;
-  cursor: pointer;
-  flex: none;
-  font-family: var(--sans);
-  font-size: 11.5px;
-  font-weight: 600;
-  height: 28px;
+  @apply h-7 flex-none cursor-pointer rounded-full font-sans text-[11.5px] font-semibold;
 }
 
 .cancel {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  padding: 0 10px;
+  @apply border border-border bg-raised px-2.5 py-0 text-muted;
 }
 
 .cancel:hover {
-  border-color: var(--ink);
-  color: var(--ink);
+  @apply border-fg text-fg;
 }
 
 .save {
-  background: var(--ink);
-  border: 0;
-  color: var(--canvas);
-  padding: 0 12px;
+  @apply border-0 bg-fg px-3 py-0 text-canvas;
 }
 
 .ask {
-  align-items: center;
-  background: var(--raised);
-  border: 1px solid var(--border-strong);
-  color: var(--ink);
-  display: inline-flex;
-  gap: 8px;
-  padding: 0 12px;
+  @apply inline-flex items-center gap-2 border border-border-strong bg-raised px-3 py-0 text-fg;
 }
 
 .ask:hover:not(:disabled) {
-  border-color: var(--ink);
+  @apply border-fg;
 }
 
 .ask:disabled,
 .save:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
+  @apply cursor-not-allowed opacity-45;
 }
 </style>

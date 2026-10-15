@@ -21,10 +21,10 @@ const tell = computed(() =>
       @update:model-value="emit('text', $event ?? '')"
     />
     <footer class="sticky-foot">
-      <span class="mono-meta sticky-hint">note · rides your next turn</span>
+      <span class="sticky-hint mono-meta">note · rides your next turn</span>
       <button
         v-press
-        class="plain-button focusable sticky-drop"
+        class="sticky-drop plain-button focusable"
         title="Discard this note"
         type="button"
         @click="emit('remove')"
@@ -37,45 +37,26 @@ const tell = computed(() =>
 
 <style scoped>
 .sticky {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  @apply flex h-full flex-col overflow-hidden;
 }
 
 .sticky-text {
-  cursor: text;
-  flex: 1;
-  min-height: 0;
-  padding: 12px 14px 4px;
+  @apply min-h-0 flex-1 cursor-text px-3.5 pt-3 pb-1;
 }
 
 .sticky-foot {
-  align-items: center;
-  display: flex;
-  flex: none;
-  gap: 8px;
-  padding: 2px 8px 8px 14px;
+  @apply flex flex-none items-center gap-2 pt-0.5 pr-2 pb-2 pl-3.5;
 }
 
 .sticky-hint {
-  color: var(--warning);
-  flex: 1;
-  letter-spacing: 0.06em;
+  @apply flex-1 tracking-[0.06em] text-warning;
 }
 
 .sticky-drop {
-  border-radius: 999px;
-  color: var(--muted);
-  display: grid;
-  flex: none;
-  height: 22px;
-  place-items: center;
-  width: 22px;
+  @apply grid size-5.5 flex-none place-items-center rounded-full text-muted;
 }
 
 .sticky-drop:hover {
-  background: var(--sunken);
-  color: var(--error);
+  @apply bg-sunken text-error;
 }
 </style>

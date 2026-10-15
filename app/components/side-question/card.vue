@@ -254,142 +254,73 @@ onMounted(() => {
 
 <style scoped>
 .card {
-  box-sizing: border-box;
-  color: var(--ink);
-  display: flex;
-  flex-direction: column;
-  font-family: var(--sans);
-  gap: 10px;
-  padding: 12px 14px;
-  user-select: text;
-  width: 100%;
+  @apply flex w-full flex-col gap-2.5 px-3.5 py-3 font-sans text-fg select-text;
 }
 
 .head {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  min-width: 0;
+  @apply flex min-w-0 items-center gap-2;
 }
 
 .target {
-  color: var(--subtle);
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate text-subtle;
 }
 
 .only {
-  color: var(--subtle);
-  flex: none;
+  @apply flex-none text-subtle;
 }
 
 /* The shipped comment card's quote, so the two read as one family in the margin. */
 .quote {
-  background: var(--sunken);
-  border-left: 2px solid var(--primary);
-  border-radius: 0 6px 6px 0;
-  color: var(--muted);
-  display: -webkit-box;
-  font-size: 12.5px;
-  font-style: italic;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  line-height: 1.5;
-  margin: 0;
-  overflow: hidden;
-  padding: 6px 10px;
+  @apply m-0 line-clamp-3 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 text-[12.5px] leading-normal text-muted italic;
 }
 
 .sent {
-  background: var(--success-soft);
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 8px 10px;
+  @apply flex flex-col gap-0.75 rounded-[10px] bg-success-soft px-2.5 py-2;
 }
 
 .sent-title {
-  align-items: center;
-  display: flex;
-  font-size: 12.5px;
-  font-weight: 600;
-  gap: 7px;
+  @apply flex items-center gap-1.75 text-[12.5px] font-semibold;
 }
 
 .dot {
-  background: var(--success);
-  border-radius: 999px;
-  flex: none;
-  height: 7px;
-  width: 7px;
+  @apply size-1.75 flex-none rounded-full bg-success;
 }
 
 .sent-line {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.45;
-  text-wrap: pretty;
+  @apply text-[12px] leading-[1.45] text-pretty text-muted;
 }
 
 .thread {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  height: 172px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
+  @apply flex h-43 scrollbar-thin flex-col gap-2 overflow-y-auto overscroll-contain;
 }
 
 .asked {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 2px;
+  @apply flex flex-none flex-col gap-0.5;
 }
 
 .asked .mono-meta {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .asked-text {
-  color: var(--muted);
-  font-size: 12.5px;
-  line-height: 1.45;
-  white-space: pre-wrap;
+  @apply text-[12.5px] leading-[1.45] whitespace-pre-wrap text-muted;
 }
 
 .answer {
-  flex: none;
-  font-size: 13px;
-  line-height: 1.55;
-  text-wrap: pretty;
+  @apply flex-none text-[13px] leading-[1.55] text-pretty;
 }
 
 .failure {
-  color: var(--error);
-  flex: none;
-  font-size: 12.5px;
-  line-height: 1.5;
-  margin: 0;
+  @apply m-0 flex-none text-[12.5px] leading-normal text-error;
 }
 
 .thinking {
-  flex: none;
-  font-size: 12.5px;
-  line-height: 1.5;
-  margin: 0;
+  @apply m-0 flex-none text-[12.5px] leading-normal;
 }
 
 .dots::after {
+  @apply content-[''];
   animation: side-dots 1.4s steps(1, end) infinite;
-  content: "";
 }
 
 @keyframes side-dots {
@@ -408,157 +339,92 @@ onMounted(() => {
 }
 
 .bones {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 9px;
-  padding-top: 2px;
+  @apply flex flex-none flex-col gap-2.25 pt-0.5;
 }
 
 .bones span {
-  background: color-mix(in oklch, var(--ink) 7%, transparent);
-  border-radius: 999px;
-  height: 8px;
+  @apply h-2 rounded-full bg-fg/7;
 }
 
 .bones span:nth-child(2) {
-  width: 90%;
+  @apply w-[90%];
 }
 
 .bones span:nth-child(3) {
-  width: 56%;
+  @apply w-[56%];
 }
 
 .field {
-  align-items: center;
-  background: var(--sunken);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-sizing: border-box;
-  display: flex;
-  gap: 8px;
-  min-height: 32px;
-  padding: 4px 12px;
+  @apply flex min-h-8 items-center gap-2 rounded-2xl border border-border bg-sunken px-3 py-1;
 }
 
 .field[data-busy="true"] {
-  opacity: 0.5;
+  @apply opacity-50;
 }
 
 .field-box {
-  flex: 1;
-  font-size: 12.5px;
-  min-width: 0;
+  @apply min-w-0 flex-1 text-[12.5px];
 }
 
 .field :deep(.textarea[data-auto-fit="true"]) {
-  max-height: 96px;
-  overflow-y: auto;
+  @apply max-h-24 overflow-y-auto;
 }
 
 .actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: -4px 0 -6px -6px;
+  @apply -mt-1 mr-0 -mb-1.5 -ml-1.5 flex flex-wrap gap-1;
 }
 
 .act {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  color: var(--muted);
-  cursor: pointer;
-  display: inline-flex;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  gap: 6px;
-  padding: 6px;
+  @apply inline-flex cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent p-1.5 typo-caption-strong text-muted;
 }
 
 .act[data-tone="primary"] {
-  color: var(--primary-deep);
+  @apply text-primary-deep;
 }
 
 .act:disabled {
-  cursor: default;
-  opacity: 0.45;
+  @apply cursor-default opacity-45;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .act:hover:not(:disabled) {
-    background: var(--sunken);
-    color: var(--ink);
+    @apply bg-sunken text-fg;
   }
 
   .act[data-tone="primary"]:hover:not(:disabled) {
-    background: var(--primary-soft);
-    color: var(--primary-deep);
+    @apply bg-primary-soft text-primary-deep;
   }
 }
 
 .folded {
-  align-items: center;
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-box);
-  box-shadow: var(--shadow-sm);
-  box-sizing: border-box;
-  color: var(--ink);
-  display: flex;
-  font-family: var(--sans);
-  gap: 8px;
-  height: 44px;
-  padding: 0 8px 0 12px;
-  width: 100%;
+  @apply flex h-11 w-full items-center gap-2 rounded-box border border-border bg-raised py-0 pr-2 pl-3 font-sans text-fg shadow-sm;
 }
 
 .tick {
-  color: var(--success);
-  flex: none;
+  @apply flex-none text-success;
 }
 
 .folded-title {
-  flex: none;
-  font-size: 12.5px;
-  font-weight: 700;
+  @apply flex-none text-[12.5px] font-bold;
 }
 
 .folded-question {
-  color: var(--muted);
-  flex: 1;
-  font-size: 12px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate text-[12px] text-muted;
 }
 
 .undo {
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  color: var(--primary-deep);
-  cursor: pointer;
-  flex: none;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px;
+  @apply flex-none cursor-pointer rounded-lg border-0 bg-transparent p-1.5 typo-caption-strong text-primary-deep;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .undo:hover {
-    background: var(--sunken);
+    @apply bg-sunken;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dots::after {
-    animation: none;
-    content: "…";
+    @apply animate-none content-['…'];
   }
 }
 </style>

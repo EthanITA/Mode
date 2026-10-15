@@ -27,9 +27,8 @@ export default defineNuxtConfig({
       dirs: ["!server/utils/**/__fixtures__/**", "!server/utils/**/*.test.ts"],
     },
   },
-  css: ["~/assets/css/main.css", "~/assets/css/sidecar.css"],
-  // A scoped <style> block is its own Tailwind entry point, so every SFC needs an
-  // @reference to the theme before it can @apply anything from the package.
+  css: ["~/assets/css/main.css"],
+  // Each scoped <style> compiles alone, so it needs an @reference to main.css to @apply the theme.
   vite: {
     plugins: [tailwindAutoReference(["./assets/css/main.css"]), tailwindcss()],
   },

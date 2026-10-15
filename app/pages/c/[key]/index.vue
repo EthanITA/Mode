@@ -86,56 +86,31 @@ follow.listen();
 </template>
 
 <style scoped>
-.stage {
-  inset: 0;
-  position: absolute;
-}
-
 /* Every face owns its own scrolling panes, so the stage clips instead of scrolling them.
    The board and the notes float over the panes, so the faces run to the bottom gutter
    and a pane's last row pads by --float-clear to stay clickable above them. */
 .stage {
+  @apply absolute inset-0 overflow-hidden px-(--gutter) pt-(--stage-top) pb-(--gutter);
   --float-clear: calc(max(var(--dock-h, 0px), var(--island-row-h)) + var(--gutter));
-  box-sizing: border-box;
-  overflow: hidden;
-  padding: var(--stage-top) var(--gutter) var(--gutter);
 }
 
 .empty {
-  color: var(--subtle);
-  display: grid;
-  font-size: 13px;
-  height: 100%;
-  margin: 0;
-  place-items: center;
+  @apply m-0 grid h-full place-items-center text-[13px] text-subtle;
 }
 
 .gone {
-  align-items: center;
-  display: flex;
-  gap: 14px;
-  left: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  @apply absolute top-1/2 left-1/2 flex -translate-1/2 items-center gap-3.5;
 }
 
 .gone-line {
-  color: var(--muted);
-  font-size: 13px;
-  margin: 0;
+  @apply m-0 text-[13px] text-muted;
 }
 
 .gone-line code {
-  color: var(--ink);
-  font-family: var(--mono);
+  @apply font-mono text-fg;
 }
 
 .gone-back {
-  border-radius: 999px;
-  color: var(--primary-deep);
-  font-size: 12.5px;
-  font-weight: 600;
-  white-space: nowrap;
+  @apply rounded-full text-[12.5px] font-semibold whitespace-nowrap text-primary-deep;
 }
 </style>

@@ -40,8 +40,6 @@ defineExpose({ focus: (): void => box.value?.$el.focus() });
 
 <style scoped>
 .compose {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  @apply flex flex-col gap-2;
 }
 </style>

@@ -69,93 +69,62 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
 
 <style scoped>
 .island {
-  display: flex;
-  flex: none;
-  height: var(--island-row-h);
+  @apply flex h-(--island-row-h) flex-none;
 }
 
 .action {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  color: var(--ink);
-  cursor: pointer;
-  display: inline-flex;
-  flex: none;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  gap: 8px;
-  height: 100%;
-  justify-content: center;
-  padding: 0 14px;
-  transition:
-    background-color var(--duration-press) ease,
-    border-color var(--duration-press) ease,
-    color var(--duration-press) ease;
+  @apply inline-flex h-full flex-none cursor-pointer items-center justify-center gap-2 rounded-full border-0 bg-transparent px-3.5 py-0 text-[12.5px] font-semibold text-fg transition-[background-color,border-color,color] duration-(--duration-press) ease-[ease];
 }
 
 .action[data-labelled="false"] {
-  padding: 0;
-  width: var(--island-row-h);
+  @apply w-(--island-row-h) p-0;
 }
 
 /* A bar that is not the app's own, such as the dark editor's, retints the pill through these two. */
 .pill {
-  border: 1px solid var(--action-line, var(--border-strong));
-  color: var(--action-ink, var(--ink));
-  font-size: 11.5px;
-  gap: 6px;
-  height: 26px;
-  padding: 0 11px;
+  @apply h-6.5 gap-1.5 border border-[color:var(--action-line,var(--border-strong))] px-2.75 py-0 text-[11.5px] text-[color:var(--action-ink,var(--ink))];
 }
 
 .pill[data-labelled="false"] {
-  width: 26px;
+  @apply w-6.5;
 }
 
 .inset {
-  height: 32px;
+  @apply h-8;
 }
 
 .inset[data-labelled="false"] {
-  width: 32px;
+  @apply w-8;
 }
 
 .inset[data-quiet="true"] {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .inset[data-pressed="true"] {
-  background: var(--raised);
-  box-shadow: var(--shadow-sm);
+  @apply bg-raised shadow-sm;
 }
 
 .inset:disabled {
-  color: var(--subtle);
-  cursor: default;
+  @apply cursor-default text-subtle;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .pill:hover {
-    border-color: var(--action-ink, var(--ink));
+    @apply border-[color:var(--action-ink,var(--ink))];
   }
 
   .island .action:hover {
-    color: var(--primary);
+    @apply text-primary;
   }
 
   .inset:not(:disabled, [data-on="true"], [data-pressed="true"]):hover {
-    background: var(--canvas);
-    color: var(--ink);
+    @apply bg-canvas text-fg;
   }
 }
 
 .action[data-on="true"],
 .island .action[data-on="true"]:hover {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-content);
+  @apply border-primary bg-primary text-primary-content;
 }
 </style>

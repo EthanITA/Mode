@@ -62,26 +62,16 @@ onScopeDispose(() => clearTimeout(timer));
 <style scoped>
 /* Wraps rather than clipping: a path or a command is the whole point of showing the line. */
 .act {
-  color: var(--subtle);
-  display: block;
-  margin: 0;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
+  @apply m-0 block wrap-anywhere whitespace-pre-wrap text-subtle;
 }
 
 .caret {
-  color: var(--muted);
-  margin-right: 5px;
+  @apply mr-1.25 text-muted;
 }
 
 .cursor {
+  @apply ml-0.5 inline-block h-[1em] w-[0.45em] bg-subtle align-text-bottom;
   animation: blink-cursor 1s steps(1, end) infinite;
-  background: var(--subtle);
-  display: inline-block;
-  height: 1em;
-  margin-left: 2px;
-  vertical-align: text-bottom;
-  width: 0.45em;
 }
 
 @keyframes blink-cursor {
@@ -93,7 +83,7 @@ onScopeDispose(() => clearTimeout(timer));
 @media (prefers-reduced-motion: reduce) {
   .act,
   .cursor {
-    animation: none;
+    @apply animate-none;
   }
 }
 </style>

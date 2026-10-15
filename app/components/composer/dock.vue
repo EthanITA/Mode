@@ -187,151 +187,96 @@ onMounted(() => {
 /* Fills the foot row's flexible cell, so the prompt grows with the window and stops
    where the board begins. */
 .dock {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
+  @apply flex w-full flex-col gap-2;
 }
 
 .island {
-  box-sizing: border-box;
-  width: 100%;
+  @apply w-full;
 }
 
 /* Closed over the artifact by default: a slim pill, not a panel competing with the reading
    surface. Growing back to the full cell width is what "engaging with it" earns. */
 .dock[data-compact="true"][data-state="minimized"] .island {
-  max-width: 360px;
-  transition: max-width var(--duration-base) var(--ease-out);
+  @apply max-w-90 transition-[max-width] duration-(--duration-base) ease-out;
 }
 
 /* The island is bottom-anchored inside a clipping box, so whatever does not fit is cut
    off the top, where the header is. Bounding the measured content is what stops that. */
 .island-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: calc(100vh - var(--stage-top) - var(--gutter));
-  min-height: 0;
-  padding: 6px 6px 6px 8px;
+  @apply flex max-h-[calc(100vh_-_var(--stage-top)_-_var(--gutter))] min-h-0 flex-col gap-1 py-1.5 pr-1.5 pl-2;
 }
 
 /* Fixed, so the row keeps its shape through the gap between vanishing and arriving. */
 .perch {
-  align-items: center;
-  display: flex;
-  flex: none;
-  height: 40px;
-  justify-content: center;
-  width: 45px;
+  @apply flex h-10 w-11.25 flex-none items-center justify-center;
 }
 
 .row {
-  align-items: flex-end;
-  display: flex;
-  flex: none;
-  gap: 10px;
-  min-height: 36px;
-  padding: 2px 4px 3px 8px;
+  @apply flex min-h-9 flex-none items-end gap-2.5 pt-0.5 pr-1 pb-0.75 pl-2;
 }
 
 /* auto-fit grows the box and hides its overflow; the cap is this call site's, so scrolling comes back with it. */
 .row :deep(.textarea[data-auto-fit="true"]) {
-  max-height: 112px;
-  overflow-y: auto;
-  scrollbar-width: thin;
+  @apply max-h-28 scrollbar-thin overflow-y-auto;
 }
 
 .prompt {
-  flex: 1;
-  min-width: 0;
+  @apply min-w-0 flex-1;
 }
 
 .send {
-  align-items: center;
-  background: var(--ink);
-  border: 0;
-  border-radius: 999px;
-  color: var(--canvas);
-  cursor: pointer;
-  display: inline-flex;
-  flex: none;
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
-  gap: 8px;
-  height: 30px;
-  padding: 0 12px;
-  white-space: nowrap;
+  @apply inline-flex h-7.5 flex-none cursor-pointer items-center gap-2 rounded-full border-0 bg-fg px-3 py-0 font-sans typo-caption-strong whitespace-nowrap text-canvas;
 }
 
 .send:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
+  @apply cursor-not-allowed opacity-45;
 }
 
 .slots {
-  align-items: center;
-  display: flex;
-  flex: none;
-  gap: 6px;
-  height: 30px;
-  padding: 0 4px 0 2px;
+  @apply flex h-7.5 flex-none items-center gap-1.5 py-0 pr-1 pl-0.5;
 }
 
 .bars {
-  display: inline-flex;
-  gap: 3px;
-  margin-left: auto;
+  @apply ml-auto inline-flex gap-0.75;
 }
 
 .bar {
-  background: var(--border-strong);
-  border-radius: 2px;
-  display: block;
-  height: 3px;
-  width: 14px;
+  @apply block h-0.75 w-3.5 rounded-xs bg-border-strong;
 }
 
 .bar[data-state="done"] {
-  background: var(--ink);
+  @apply bg-fg;
 }
 
 .bar[data-state="current"] {
-  background: var(--primary);
+  @apply bg-primary;
 }
 
 .bar[data-gate="true"] {
-  background: var(--warning);
+  @apply bg-warning;
 }
 
 .live {
-  align-items: center;
-  color: var(--subtle);
-  display: flex;
-  flex: none;
-  gap: 5px;
-  margin-left: auto;
+  @apply ml-auto flex flex-none items-center gap-1.25 text-subtle;
 }
 
 .bars ~ .live {
-  margin-left: 0;
+  @apply ml-0;
 }
 
 .live .dot {
+  @apply bg-subtle;
   --dot-size: 6px;
-
-  background: var(--subtle);
 }
 
 .live[data-live="true"] {
-  color: var(--success);
+  @apply text-success;
 }
 
 /* No token is this slow — a breath at spotlight speed reads as anxious rather than alive. */
 .live[data-live="true"] .dot {
+  @apply bg-success;
   animation: breathe calc(var(--duration-spotlight) * 2) var(--ease-in-out) infinite;
-  background: var(--success);
 }
 
 @keyframes breathe {
@@ -341,18 +286,12 @@ onMounted(() => {
 }
 
 .failure {
-  background: var(--error-soft);
-  border: 1px solid var(--error);
-  border-radius: var(--radius-field);
-  color: var(--error);
-  font-size: 13px;
-  margin: 0;
-  padding: 9px 13px;
+  @apply m-0 rounded-field border border-error bg-error-soft px-3.25 py-2.25 text-[13px] text-error;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .live[data-live="true"] .dot {
-    animation: none;
+    @apply animate-none;
   }
 }
 </style>

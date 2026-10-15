@@ -88,80 +88,52 @@ const inset = computed(() =>
 /* The notes share the surface's cell and sit over its inline end, so the page's own ground runs under
    them and the surface pads its content clear of them instead of the whole page narrowing. */
 .layer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  position: relative;
+  @apply relative grid grid-cols-[minmax(0,1fr)];
 }
 
 .surface,
 .notes {
-  grid-area: 1 / 1;
+  @apply col-start-1 row-start-1;
 }
 
 .surface {
-  min-width: 0;
+  @apply min-w-0;
 }
 
 .notes {
-  justify-self: end;
-  margin-inline-end: var(--gutter);
-  pointer-events: none;
-  width: var(--notes-w);
+  @apply pointer-events-none me-(--gutter) w-(--notes-w) justify-self-end;
 }
 
 .layer[data-place="float"] .notes {
-  justify-self: stretch;
-  margin-inline-end: 0;
-  width: auto;
+  @apply me-0 w-auto justify-self-stretch;
 }
 
 /* Beside the site rather than over it, since a live page cannot be told to pad itself clear of a column. */
 .layer[data-place="dock"] {
-  grid-template-columns: minmax(0, 1fr) auto;
+  @apply grid-cols-[minmax(0,1fr)_auto];
 }
 
 .layer[data-place="dock"] .notes {
-  background: var(--canvas);
-  border-left: 1px solid var(--border);
-  box-sizing: border-box;
-  grid-area: 1 / 2;
-  margin: 0;
-  padding: 0 16px;
-  position: relative;
-  width: 312px;
+  @apply relative col-start-2 row-start-1 m-0 w-78 border-l border-l-border bg-canvas px-4 py-0;
 }
 
 .layer[data-place="dock"][data-noted="false"] .notes {
-  display: none;
+  @apply hidden;
 }
 
 .heading {
-  color: var(--subtle);
-  display: flex;
-  gap: 8px;
-  left: 16px;
-  position: absolute;
-  right: 16px;
-  top: 14px;
+  @apply absolute top-3.5 right-4 left-4 flex gap-2 text-subtle;
 }
 
 .where {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate;
 }
 
 .layer[data-scrolls="true"] {
-  flex: 1;
-  grid-template-rows: minmax(0, 1fr);
-  min-height: 0;
-  overflow: hidden;
+  @apply min-h-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden;
 }
 
 .layer[data-scrolls="true"] .surface {
-  display: flex;
-  min-height: 0;
+  @apply flex min-h-0;
 }
 </style>

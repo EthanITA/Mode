@@ -112,122 +112,82 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
 <style scoped>
 /* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
 .files {
-  column-gap: 8px;
-  display: grid;
-  grid-template-columns: min(var(--side-w), 50%) 0 minmax(0, 1fr);
-  height: 100%;
-  min-height: 0;
+  @apply grid h-full min-h-0 grid-cols-[min(var(--side-w),50%)_0_minmax(0,1fr)] gap-x-2;
 }
 
 .pane {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
+  @apply flex min-h-0 flex-col overflow-hidden;
 }
 
 /* Over the grown sheet's left edge, under its islands, so another file opens without leaving fullscreen. */
 .pane[data-listed="true"] {
-  bottom: 8px;
-  left: 8px;
-  position: fixed;
-  top: 56px;
-  width: 320px;
-  z-index: 28;
+  @apply fixed top-14 bottom-2 left-2 z-28 w-80;
 }
 
 .bar {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex: none;
-  gap: 8px;
-  padding: 8px 12px;
+  @apply flex flex-none items-center gap-2 border-b border-b-border px-3 py-2;
 }
 
 /* The scopes fill the row while their labels fit, and fall back to icons with the label as a tooltip below that. */
 .scopes {
-  container-type: inline-size;
+  @apply @container;
 }
 
 .scopes :deep(.segmented) {
-  display: flex;
-  width: 100%;
+  @apply flex w-full;
 }
 
 .scopes :deep(.segmented-option) {
-  flex: 1 1 auto;
-  justify-content: center;
-  padding-inline: 10px;
+  @apply flex-auto justify-center px-2.5;
 }
 
 .scopes :deep(.segmented-option svg) {
-  display: none;
+  @apply hidden;
 }
 
 @container (width < 280px) {
   .scopes :deep(.segmented-option) {
-    font-size: 0;
-    gap: 0;
+    @apply gap-0 text-[0px];
   }
 
   .scopes :deep(.segmented-option svg) {
-    display: block;
+    @apply block;
   }
 }
 
 .root {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex: none;
-  gap: 8px;
-  padding: 5px 8px 5px 14px;
+  @apply flex flex-none items-center gap-2 border-b border-b-border py-1.25 pr-2 pl-3.5;
 }
 
 .where {
-  color: var(--subtle);
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-transform: none;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate text-subtle normal-case;
 }
 
 .scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 6px 6px var(--float-clear);
+  @apply min-h-0 flex-1 overflow-y-auto px-1.5 pt-1.5 pb-(--float-clear);
 }
 
 .dot {
-  border: 1.5px solid currentColor;
-  border-radius: 999px;
-  flex: none;
-  height: 7px;
-  width: 7px;
+  @apply size-1.75 flex-none rounded-full border-[1.5px] border-current;
 }
 
 .dot[data-group="produced"] {
-  color: var(--success);
+  @apply text-success;
 }
 
 .dot[data-group="interacted"] {
-  color: var(--info);
+  @apply text-info;
 }
 
 .dot[data-latest="true"] {
-  background: currentColor;
+  @apply bg-current;
 }
 
 .empty {
-  padding: 8px;
+  @apply p-2;
 }
 
 .centered {
-  flex: 1;
-  padding: 16px;
+  @apply flex-1 p-4;
 }
 </style>

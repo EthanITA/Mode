@@ -1,7 +1,3 @@
-/* Screen-wide tokens for the sidecar shell. Everything here resolves out of the
-   vendored Cela tokens in cela.css — no literal colour, no literal duration. */
-@reference "./main.css";
-
 :root {
   --gutter-w: 44px;
   --notes-w: 300px;
@@ -64,6 +60,48 @@
   --tint-slate: var(--subtle);
 }
 
+/* The sidecar's own palette as Tailwind colours, so `text-tint` and `bg-ed-bar` resolve like `text-muted`. */
+@theme inline {
+  --color-primary-deep: var(--primary-deep);
+  --color-tint: var(--tint);
+  --color-tint-violet: var(--tint-violet);
+  --color-tint-amber: var(--tint-amber);
+  --color-tint-blue: var(--tint-blue);
+  --color-tint-green: var(--tint-green);
+  --color-tint-rose: var(--tint-rose);
+  --color-tint-cyan: var(--tint-cyan);
+  --color-tint-orange: var(--tint-orange);
+  --color-tint-slate: var(--tint-slate);
+  --color-mascot: var(--mascot);
+  --color-mascot-eye: var(--mascot-eye);
+  --color-prop-dark: var(--prop-dark);
+  --color-prop-screen: var(--prop-screen);
+  --color-prop-code: var(--prop-code);
+  --color-prop-deck: var(--prop-deck);
+  --color-prop-key: var(--prop-key);
+  --color-prop-glass: var(--prop-glass);
+  --color-prop-cloud: var(--prop-cloud);
+  --color-prop-alert: var(--prop-alert);
+  --color-prop-tweed: var(--prop-tweed);
+  --color-portal-1: var(--portal-1);
+  --color-portal-2: var(--portal-2);
+  --color-portal-3: var(--portal-3);
+  --color-portal-4: var(--portal-4);
+  --color-portal-spark: var(--portal-spark);
+  --color-ed-accent: var(--ed-accent);
+  --color-ed-add: var(--ed-add);
+  --color-ed-add-ink: var(--ed-add-ink);
+  --color-ed-bar: var(--ed-bar);
+  --color-ed-bg: var(--ed-bg);
+  --color-ed-border: var(--ed-border);
+  --color-ed-button: var(--ed-button);
+  --color-ed-ink: var(--ed-ink);
+  --color-ed-muted: var(--ed-muted);
+  --color-ed-remove: var(--ed-remove);
+  --color-ed-remove-ink: var(--ed-remove-ink);
+  --color-ed-warn: var(--ed-warn);
+}
+
 [data-tint="violet"] {
   --tint: var(--tint-violet);
 }
@@ -92,157 +130,135 @@
 html,
 body,
 #__nuxt {
-  height: 100%;
+  @apply h-full;
 }
 
+/* The stage owns the scroll, so the floating islands never drift. */
 body {
-  overflow: hidden; /* the stage owns the scroll, so the floating islands never drift */
+  @apply overflow-hidden;
 }
 
-/* --- shared vocabulary -----------------------------------------------------
-   Small primitives the whole screen reuses. Component-local rules stay scoped;
-   these are the ones repeated across four or more components. */
-
-.mono-meta {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  line-height: 1.4;
-  text-transform: uppercase;
+@utility mono-meta {
+  @apply font-mono text-[10px] leading-[1.4] font-medium tracking-[0.12em] uppercase;
 }
 
-.dot {
-  border-radius: 999px;
-  flex: none;
-  height: var(--dot-size, 7px);
-  width: var(--dot-size, 7px);
+@utility dot {
+  @apply size-[var(--dot-size,7px)] flex-none rounded-full;
+}
+
+@utility focusable {
+  &:focus-visible {
+    @apply focus-ring;
+  }
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+}
+
+/* Preflight already strips a button's chrome, so what is left is the pointer. */
+@utility plain-button {
+  @apply cursor-pointer;
+
+  &:disabled {
+    @apply cursor-not-allowed;
+  }
 }
 
 /* Marks a region drawn from the design that no data can fill yet, so a drawing is
    never read as a description. */
 [data-scaffold] {
-  position: relative;
+  @apply relative;
 }
 
 [data-scaffold] > .scaffold-body {
-  opacity: 0.55;
-}
-
-.focusable:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.plain-button {
-  background: none;
-  border: 0;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  padding: 0;
-}
-
-.plain-button:disabled {
-  cursor: not-allowed;
+  @apply opacity-55;
 }
 
 /* Global, not scoped: speed-highlight's spans arrive via v-html, which scoped CSS never reaches. */
 .shj-syn-kwd,
 .shj-syn-section {
-  color: var(--tint-violet);
+  @apply text-tint-violet;
 }
 
 .shj-syn-str,
 .shj-syn-insert {
-  color: var(--tint-green);
+  @apply text-tint-green;
 }
 
 .shj-syn-num,
 .shj-syn-esc {
-  color: var(--tint-orange);
+  @apply text-tint-orange;
 }
 
 .shj-syn-func {
-  color: var(--tint-blue);
+  @apply text-tint-blue;
 }
 
 .shj-syn-class,
 .shj-syn-type,
 .shj-syn-bool {
-  color: var(--tint-cyan);
+  @apply text-tint-cyan;
 }
 
 .shj-syn-cmnt {
-  color: var(--muted);
-  font-style: italic;
+  @apply text-muted italic;
 }
 
 .shj-syn-oper,
 .shj-syn-var {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .shj-syn-err,
 .shj-syn-deleted {
-  color: var(--tint-rose);
+  @apply text-tint-rose;
 }
 
 /* Monaco draws its gutter outside any component's scope; the --ed-* palette comes from OneDarkVivid.cssVars. */
 .monaco-note-add,
 .monaco-noted-glyph {
-  cursor: pointer;
+  @apply cursor-pointer;
 }
 
 /* Lucide's message-square-plus, the icon the Note pill wears, so the gutter and the pill read as one action. */
 .monaco-note-add::before {
-  background: var(--ed-accent);
-  content: "";
-  display: block;
-  height: 15px;
-  margin: 2px 0 0 3px;
+  @apply mt-0.5 ml-0.75 block size-3.75 bg-ed-accent content-[''];
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z'/%3E%3Cpath d='M12 8v6'/%3E%3Cpath d='M9 11h6'/%3E%3C/svg%3E")
     center / contain no-repeat;
-  width: 15px;
 }
 
 /* Monaco's hover keeps a bare <kbd> but strips its class, so the cap is styled from here. */
 .monaco-hover kbd {
-  @apply kbd-cap;
-  vertical-align: middle;
+  @apply kbd-cap align-middle;
 }
 
 .monaco-noted {
-  background: color-mix(in oklch, var(--ed-accent) 12%, transparent);
+  @apply bg-ed-accent/12;
 }
 
 .monaco-asked {
-  background: color-mix(in oklch, var(--primary) 16%, transparent);
-  box-shadow: inset 3px 0 0 var(--primary);
+  @apply bg-primary/16 inset-shadow-[3px_0_0_var(--primary)];
 }
 
 /* Stacked over .monaco-asked, so a line the answer names reads a step brighter than the selection. */
 .monaco-pointed {
-  background: color-mix(in oklch, var(--primary) 22%, transparent);
+  @apply bg-primary/22;
 }
 
 /* An overlay widget Monaco places, so no component's scoped style reaches it. */
 .side-zone {
-  box-sizing: border-box;
-  padding: 8px 12px 10px 0;
-  z-index: 5;
+  @apply z-5 pt-2 pr-3 pb-2.5 pl-0;
 }
 
 .side-zone[data-surface="files"] > * {
-  max-width: 460px;
+  @apply max-w-115;
 }
 
 .monaco-noted-glyph::before {
-  background: var(--ed-accent);
-  border-radius: 999px;
-  content: "";
-  display: block;
-  height: 7px;
-  margin: 6px 0 0 6px;
-  width: 7px;
+  @apply mt-1.5 ml-1.5 block size-1.75 rounded-full bg-ed-accent content-[''];
 }

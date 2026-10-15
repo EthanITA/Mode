@@ -98,30 +98,16 @@ function pin(el: Element): void {
 <style scoped>
 /* The transient lane, per design-system/components/island.md: top-center, empty at rest. */
 .toaster {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  left: 50%;
-  pointer-events: none;
-  position: fixed;
-  top: 68px;
-  transform: translateX(-50%);
-  transition: top var(--duration-base) var(--ease-out);
-  z-index: 50;
+  @apply pointer-events-none fixed top-17 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2 transition-[top] duration-(--duration-base) ease-out;
 }
 
 /* Comment mode puts its own banner in this lane, so the toasts move below it. */
 .toaster[data-armed="true"] {
-  top: 112px;
+  @apply top-28;
 }
 
 .one {
-  background: none;
-  border: 0;
-  cursor: pointer;
-  padding: 0;
-  pointer-events: auto;
+  @apply pointer-events-auto cursor-pointer border-0 bg-transparent bg-none p-0;
 }
 
 .body {
@@ -138,32 +124,25 @@ function pin(el: Element): void {
 }
 
 .queued {
-  background: var(--sunken);
-  border-radius: 999px;
-  color: var(--muted);
-  padding: 3px 9px;
+  @apply rounded-full bg-sunken px-2.25 py-0.75 text-muted;
 }
 
 /* New toasts arrive at the bottom and old ones leave off the top, faster than they came. */
 .toast-leave-active {
-  position: absolute;
-  transition:
-    opacity var(--duration-press) var(--ease-out),
-    translate var(--duration-press) var(--ease-out);
+  @apply absolute transition-[opacity,translate] duration-(--duration-press) ease-out;
 }
 
 .toast-leave-to {
-  opacity: 0;
-  translate: 0 -8px;
+  @apply -translate-y-2 opacity-0;
 }
 
 .toast-move {
-  transition: transform var(--duration-snappy) var(--ease-out);
+  @apply transition-transform duration-(--duration-snappy) ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .toaster {
-    transition: none;
+    @apply transition-none;
   }
 }
 </style>

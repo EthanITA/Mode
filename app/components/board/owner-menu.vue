@@ -30,10 +30,6 @@ function choose(owner: string, close: () => void): void {
 
 <style scoped>
 .menu {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 140px;
-  padding: 6px;
+  @apply flex min-w-35 flex-col gap-0.5 p-1.5;
 }
 </style>

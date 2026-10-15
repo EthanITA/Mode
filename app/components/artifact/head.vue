@@ -21,36 +21,18 @@ const { title } = defineProps<{ title: string }>();
 /* The island row anchors this; shrinking is what keeps a long title off the cell
    to its right instead of running underneath it. */
 .head {
-  align-items: center;
-  display: flex;
-  flex: 0 1 auto;
-  gap: 8px;
-  min-width: 0;
+  @apply flex min-w-0 flex-initial items-center gap-2;
 }
 
 .pill {
-  align-items: center;
-  display: flex;
-  flex: none;
-  gap: 10px;
-  height: var(--island-row-h);
-  padding: 0 14px;
+  @apply flex h-(--island-row-h) flex-none items-center gap-2.5 px-3.5 py-0;
 }
 
 .what {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
+  @apply min-w-0 flex-initial overflow-hidden;
 }
 
 .title {
-  color: var(--ink);
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 truncate text-[15px] font-extrabold tracking-[-0.02em] text-fg;
 }
 </style>

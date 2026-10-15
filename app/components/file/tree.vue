@@ -128,43 +128,21 @@ watchEffect(() => {
 
 <style scoped>
 .tree {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  @apply m-0 list-none p-0;
 }
 
 .tree[data-guides="true"] .row::before {
+  @apply pointer-events-none absolute top-0 bottom-0 left-3.25 w-[calc((var(--depth)_-_1)_*_14px_+_1px)] content-[''];
   background: repeating-linear-gradient(to right, var(--border) 0 1px, transparent 1px 14px);
-  bottom: 0;
-  content: "";
-  left: 13px;
-  pointer-events: none;
-  position: absolute;
-  top: 0;
-  width: calc((var(--depth) - 1) * 14px + 1px);
 }
 
 .row {
-  align-items: center;
-  background: none;
-  border: 0;
-  border-radius: 6px;
-  color: var(--ink);
-  cursor: pointer;
-  display: flex;
-  font: inherit;
-  font-size: 12.5px;
-  gap: 5px;
-  min-height: 26px;
-  padding: 0 8px 0 calc(6px + var(--depth) * 14px);
-  position: relative;
-  text-align: left;
-  width: 100%;
+  @apply relative flex min-h-6.5 w-full cursor-pointer items-center gap-1.25 rounded-md border-0 bg-transparent bg-none py-0 pr-2 pl-[calc(6px_+_var(--depth)_*_14px)] text-left text-[12.5px] text-fg;
 }
 
 .item {
+  @apply relative;
   --row-bg: var(--raised);
-  position: relative;
 }
 
 .item:hover {
@@ -177,57 +155,46 @@ watchEffect(() => {
 
 /* On the item, so the row keeps its hover while the pointer sits on the actions laid over it. */
 .item:hover > .row:not([data-selected="true"]) {
-  background: var(--sunken);
+  @apply bg-sunken;
 }
 
 .row[data-selected="true"] {
-  background: var(--primary-soft);
+  @apply bg-primary-soft;
 }
 
 /* Laid over the row's right end, so the slot takes no room at rest and the name runs under it. */
 .actions {
-  align-items: center;
-  background: linear-gradient(to right, transparent, var(--row-bg) 18px);
-  border-radius: 0 6px 6px 0;
-  bottom: 0;
-  display: flex;
-  opacity: 0;
-  padding: 0 4px 0 18px;
-  pointer-events: none;
-  position: absolute;
-  right: 0;
-  top: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  @apply pointer-events-none absolute top-0 right-0 bottom-0 flex items-center rounded-l-none rounded-r-md bg-linear-to-r from-transparent to-(--row-bg) to-[18px] py-0 pr-1 pl-4.5 opacity-0 transition-opacity duration-(--duration-fast) ease-out;
 }
 
 .item:hover > .actions,
 .item:focus-within > .actions,
 .actions[data-pinned="true"] {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 .item:hover > .actions > :slotted(*),
 .item:focus-within > .actions > :slotted(*),
 .actions[data-pinned="true"] > :slotted(*) {
-  pointer-events: auto;
+  @apply pointer-events-auto;
 }
 
 @media (hover: none) {
   .actions {
-    opacity: 1;
+    @apply opacity-100;
   }
 
   .actions > :slotted(*) {
-    pointer-events: auto;
+    @apply pointer-events-auto;
   }
 }
 
 .tree[data-actions="true"] .name {
-  text-overflow: clip;
+  @apply text-clip;
 }
 
 .row[data-ignored="true"] {
-  opacity: 0.55;
+  @apply opacity-55;
 }
 
 /* The sweep sits on the text, so the row's hover background can't erase it and the band spans only the words. */
@@ -236,48 +203,35 @@ watchEffect(() => {
 }
 
 .loading {
-  color: var(--subtle);
-  cursor: default;
-  padding-left: calc(26px + var(--depth) * 14px);
-  text-transform: none;
+  @apply cursor-default pl-[calc(26px_+_var(--depth)_*_14px)] text-subtle normal-case;
 }
 
 .chevron {
-  color: var(--subtle);
-  flex: none;
-  width: 14px;
+  @apply w-3.5 flex-none text-subtle;
 }
 
 .folder {
-  color: var(--warning);
-  flex: none;
+  @apply flex-none text-warning;
 }
 
 .icon {
-  color: var(--subtle);
-  flex: none;
+  @apply flex-none text-subtle;
 }
 
 .name {
-  flex: 1;
-  font-family: var(--mono);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate font-mono;
 }
 
 /* JetBrains' colours for a change: added green, modified blue, deleted grey. */
 .row[data-tone="added"] .name {
-  color: var(--success);
+  @apply text-success;
 }
 
 .row[data-tone="modified"] .name {
-  color: var(--info);
+  @apply text-info;
 }
 
 .row[data-tone="deleted"] .name {
-  color: var(--subtle);
-  text-decoration: line-through;
+  @apply text-subtle line-through;
 }
 </style>

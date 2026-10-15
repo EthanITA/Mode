@@ -42,11 +42,6 @@ const state = computed<MascotState>(() => {
 
 <style scoped>
 .perch {
-  align-items: center;
-  display: flex;
-  flex: none;
-  height: 40px;
-  justify-content: center;
-  width: 50px;
+  @apply flex h-10 w-12.5 flex-none items-center justify-center;
 }
 </style>

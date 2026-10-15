@@ -65,90 +65,54 @@ function answer(): void {
 
 <style scoped>
 .ask {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s3);
-  margin-block-start: var(--s3);
+  @apply mt-(--s3) flex flex-col gap-(--s3);
 }
 
 .q {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s1);
+  @apply flex flex-col gap-(--s1);
 }
 
 .head {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .question {
-  color: var(--ink);
-  margin: 0;
+  @apply m-0 text-fg;
 }
 
 .options {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s1);
+  @apply flex flex-col gap-(--s1);
 }
 
 .option {
-  background: var(--sunken);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-field);
-  color: var(--ink);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  font-family: var(--sans);
-  gap: 2px;
-  padding: var(--s2);
-  text-align: start;
+  @apply flex cursor-pointer flex-col gap-0.5 rounded-field border border-border bg-sunken p-(--s2) text-start font-sans text-fg;
 }
 
 .option[aria-pressed="true"] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--canvas);
+  @apply border-fg bg-fg text-canvas;
 }
 
 .label {
-  font-size: 13px;
-  font-weight: 600;
+  @apply text-[13px] font-semibold;
 }
 
 .why {
-  font-size: 12px;
-  opacity: 0.8;
+  @apply text-[12px] opacity-80;
 }
 
 .foot {
-  align-items: center;
-  display: flex;
-  gap: var(--s2);
-  justify-content: space-between;
+  @apply flex items-center justify-between gap-(--s2);
 }
 
 .note {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .send {
-  background: var(--ink);
-  border: 0;
-  border-radius: 999px;
-  color: var(--canvas);
-  cursor: pointer;
-  flex: none;
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
-  height: 30px;
-  padding: 0 12px;
+  @apply h-7.5 flex-none cursor-pointer rounded-full border-0 bg-fg px-3 py-0 font-sans typo-caption-strong text-canvas;
 }
 
 .send:disabled {
-  cursor: default;
-  opacity: 0.5;
+  @apply cursor-default opacity-50;
 }
 </style>

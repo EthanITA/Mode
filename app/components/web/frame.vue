@@ -249,51 +249,33 @@ watch(
 
 <style scoped>
 .web {
-  background: var(--raised);
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
-  position: relative;
+  @apply relative min-h-0 min-w-0 flex-1 overflow-hidden bg-raised;
 }
 
 iframe {
-  border: 0;
-  display: block;
-  height: 100%;
-  transition: opacity var(--duration-fast) var(--ease-out);
-  width: 100%;
+  @apply block size-full border-0 transition-opacity duration-(--duration-fast) ease-out;
 }
 
 /* Held back until the agent is up, so a half-parsed page never shows under the loading line. */
 iframe[data-state="starting"] {
-  opacity: 0;
+  @apply opacity-0;
 }
 
 .pending {
-  inset: 0;
-  position: absolute;
+  @apply absolute inset-0;
 }
 
 /* Done, it runs to the end before it fades, so a quick page still reads as finished rather than cut off. */
 .progress {
-  background: var(--primary);
-  height: 2px;
-  inset: 0 0 auto;
-  opacity: 0;
-  pointer-events: none;
-  position: absolute;
-  transform-origin: left;
+  @apply pointer-events-none absolute inset-x-0 top-0 bottom-auto z-1 h-0.5 origin-left bg-primary opacity-0;
   transition:
     transform var(--duration-fast) var(--ease-out),
     opacity var(--duration-base) var(--ease-out) var(--duration-fast);
-  z-index: 1;
 }
 
 .progress[data-busy="true"] {
+  @apply opacity-100 transition-none;
   animation: creep 12s cubic-bezier(0.1, 0.65, 0.2, 1) forwards;
-  opacity: 1;
-  transition: none;
 }
 
 @keyframes creep {
@@ -308,8 +290,7 @@ iframe[data-state="starting"] {
 
 @media (prefers-reduced-motion: reduce) {
   .progress[data-busy="true"] {
-    animation: none;
-    opacity: 0.6;
+    @apply animate-none opacity-60;
   }
 }
 </style>

@@ -233,29 +233,16 @@ onBeforeUnmount(() => {
 <style scoped>
 /* The slot keeps the grid track while the sheet inside it grows out, and is where it shrinks back to. */
 .slot {
-  display: flex;
-  min-height: 0;
-  min-width: 0;
+  @apply flex min-h-0 min-w-0;
 }
 
 .preview {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
+  @apply flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden;
 }
 
 /* Fixed, so it fills the window past the shell's max width; the header sits above the page, never over it. */
 .preview[data-expanded="true"] {
-  background: var(--canvas);
-  border: 0;
-  border-radius: 0;
-  box-shadow: var(--shadow-lg);
-  inset: 0;
-  position: fixed;
-  z-index: 10;
+  @apply fixed inset-0 z-10 rounded-none border-0 bg-canvas shadow-lg;
 }
 
 .preview[data-expanded="true"] .read {
@@ -293,42 +280,25 @@ onBeforeUnmount(() => {
 }
 
 .named {
-  box-sizing: border-box;
-  justify-content: center;
-  padding: 0 16px;
-  width: 100%;
+  @apply w-full justify-center px-4 py-0;
 }
 
 .name {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 truncate text-[13px] font-bold tracking-[-0.01em];
 }
 
 /* The reader sizes its frame to the page, so this pane owns the scroll. */
 .read {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 16px 0 var(--float-clear);
+  @apply min-h-0 flex-1 overflow-y-auto px-0 pt-4 pb-(--float-clear);
 }
 
 /* A live page scrolls itself and runs to the sheet's edges, with its notes over it. */
 .read[data-kind="web"] {
-  display: flex;
-  overflow: hidden;
-  padding: 0;
+  @apply flex overflow-hidden p-0;
 }
 
 /* A file brings its own bar and scrolls itself, so the sheet only lends it the room. */
 .read[data-kind="files"] {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 0;
+  @apply flex flex-col overflow-hidden p-0;
 }
 </style>

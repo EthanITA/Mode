@@ -24,14 +24,6 @@ const reveal = inject(revealLines, undefined);
 
 <style scoped>
 .line-ref {
-  background: var(--primary-soft);
-  border: 0;
-  border-radius: 999px;
-  color: var(--primary-deep);
-  cursor: pointer;
-  font-family: var(--mono);
-  font-size: 11px;
-  padding: 1px 6px;
-  white-space: nowrap;
+  @apply cursor-pointer rounded-full border-0 bg-primary-soft px-1.5 py-px font-mono text-[11px] whitespace-nowrap text-primary-deep;
 }
 </style>

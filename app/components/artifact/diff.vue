@@ -22,102 +22,66 @@ const highlighted = useHighlightedRows(rows, lang);
 
 <style scoped>
 .diff {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
+  @apply overflow-hidden rounded-xl border border-border bg-raised;
 }
 
 .rows {
-  display: flex;
-  flex-direction: column;
-  max-height: var(--transcript-max-h);
-  overflow-y: auto;
-  padding: 6px 0;
-  scrollbar-width: thin;
+  @apply flex max-h-(--transcript-max-h) scrollbar-thin flex-col overflow-y-auto px-0 py-1.5;
 }
 
 .row {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: 22px minmax(0, 1fr);
-  margin: 0;
-  padding: 1px 12px 1px 0;
+  @apply m-0 grid grid-cols-[22px_minmax(0,1fr)] gap-2 py-px pr-3 pl-0;
 }
 
 .mark {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.7;
-  text-align: center;
+  @apply text-center font-mono typo-meta-semibold leading-[1.7];
 }
 
 .code {
-  font-family: var(--mono);
-  font-size: 12px;
-  line-height: 1.7;
-  min-width: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
+  @apply min-w-0 font-mono text-[12px] leading-[1.7] break-normal wrap-anywhere whitespace-pre-wrap;
 }
 
 .row[data-kind="add"] {
-  background: var(--success-soft);
+  @apply bg-success-soft;
 }
 
 .row[data-kind="add"] .mark {
-  color: var(--success);
+  @apply text-success;
 }
 
 .row[data-kind="add"] .mark::before {
-  content: "+";
+  @apply content-['+'];
 }
 
 .row[data-kind="remove"] {
-  background: var(--error-soft);
+  @apply bg-error-soft;
 }
 
 .row[data-kind="remove"] .mark {
-  color: var(--error);
+  @apply text-error;
 }
 
 .row[data-kind="remove"] .mark::before {
-  content: "−";
+  @apply content-['−'];
 }
 
 .row[data-kind="context"] .code {
-  color: var(--muted);
+  @apply text-muted;
 }
 
 .row[data-kind="hunk"] {
-  border-top: 1px solid var(--border);
-  margin-top: 4px;
-  padding-top: 4px;
+  @apply mt-1 border-t border-t-border pt-1;
 }
 
 .row[data-kind="hunk"] .code {
-  color: var(--subtle);
-  font-size: 11px;
+  @apply text-[11px] text-subtle;
 }
 
 .note[data-tone="loud"] {
-  background: var(--warning-soft);
-  border-left: 3px solid var(--warning);
-  color: var(--warning);
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 1.5;
-  margin: 0;
-  padding: 10px 12px;
+  @apply m-0 border-l-3 border-l-warning bg-warning-soft px-3 py-2.5 text-[12.5px] leading-normal font-medium text-warning;
 }
 
 .note[data-tone="quiet"] {
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  line-height: 1.5;
-  margin: 0;
-  padding: 10px 12px;
+  @apply m-0 px-3 py-2.5 font-mono text-[11px] leading-normal text-muted;
 }
 </style>

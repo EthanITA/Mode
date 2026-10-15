@@ -253,45 +253,39 @@ onScopeDispose(() => clearTimeout(timer));
 
 <style scoped>
 .slot {
-  display: block;
-  flex: none;
-  position: relative;
+  @apply relative block flex-none;
 }
 
 .slot > * {
-  inset: 0;
-  position: absolute;
+  @apply absolute inset-0;
 }
 
 .mascot {
-  display: block;
-  overflow: visible;
-  transform-origin: 50% 72%;
+  @apply block origin-[50%_72%] overflow-visible;
 }
 
 /* Shut unless a hand-over is running; both perches are told to open on the same tick. */
 .portal {
-  opacity: 0;
-  pointer-events: none;
+  @apply pointer-events-none opacity-0;
 }
 
 .px {
   shape-rendering: crispEdges;
 }
 .p1 {
-  fill: var(--portal-1);
+  @apply fill-portal-1;
 }
 .p2 {
-  fill: var(--portal-2);
+  @apply fill-portal-2;
 }
 .p3 {
-  fill: var(--portal-3);
+  @apply fill-portal-3;
 }
 .p4 {
-  fill: var(--portal-4);
+  @apply fill-portal-4;
 }
 .spark {
-  fill: var(--portal-spark);
+  @apply fill-portal-spark;
 }
 
 .slot[data-porting="true"] .portal {
@@ -338,9 +332,7 @@ onScopeDispose(() => clearTimeout(timer));
 
 .beam-enter-from,
 .beam-leave-to {
-  opacity: 0;
-  scale: 0.18;
-  translate: 0 12%;
+  @apply translate-y-[12%] scale-18 opacity-0;
 }
 
 @keyframes portal {
@@ -399,71 +391,64 @@ onScopeDispose(() => clearTimeout(timer));
 
 .shell,
 .leg {
-  fill: var(--mascot);
+  @apply fill-mascot;
 }
 
 .brim,
 .crown {
-  fill: var(--prop-tweed);
+  @apply fill-prop-tweed;
 }
 
 .bezel,
 .neck,
 .rim,
 .caret {
-  fill: var(--prop-dark);
+  @apply fill-prop-dark;
 }
 
 .rim {
-  fill: none;
-  stroke: var(--prop-dark);
-  stroke-width: 1.3;
+  @apply fill-none stroke-prop-dark stroke-[1.3];
 }
 
 .glass {
-  fill: var(--prop-glass);
-  opacity: 0.22;
+  @apply fill-prop-glass opacity-22;
 }
 
 .grip {
-  fill: var(--prop-tweed);
+  @apply fill-prop-tweed;
 }
 
 .screen {
-  fill: var(--prop-screen);
+  @apply fill-prop-screen;
 }
 .code {
-  fill: var(--prop-code);
-  opacity: 0.75;
+  @apply fill-prop-code opacity-75;
 }
 .deck {
-  fill: var(--prop-deck);
+  @apply fill-prop-deck;
 }
 .key {
-  fill: var(--prop-key);
+  @apply fill-prop-key;
 }
 .cloud circle {
-  fill: var(--prop-cloud);
-  opacity: 0.9;
+  @apply fill-prop-cloud opacity-90;
 }
 .alert rect {
-  fill: var(--prop-alert);
+  @apply fill-prop-alert;
 }
 .snooze rect {
-  fill: var(--prop-cloud);
+  @apply fill-prop-cloud;
 }
 
 .rig,
 .head,
 .legs {
-  transform-box: view-box;
-  transform-origin: 12px 20px;
+  @apply origin-[12px_20px] transform-view;
 }
 
 /* From the hip, so a press drives the foot into the deck rather than sinking the whole body. */
 .leg {
-  transform-box: view-box;
-  transform-origin: 12px 17px;
+  @apply origin-[12px_17px] transform-view;
 }
 
 /* Everything optional is off by default; a state turns on only what it needs. */
@@ -475,9 +460,7 @@ onScopeDispose(() => clearTimeout(timer));
 .rig-desk,
 .alert,
 .snooze {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 190ms var(--ease-out, ease-out);
+  @apply pointer-events-none opacity-0 transition-opacity duration-190 ease-out;
 }
 
 /* Held back past the outgoing fade, so the old props clear before the new ones arrive. */
@@ -490,8 +473,7 @@ onScopeDispose(() => clearTimeout(timer));
 .mascot[data-state="running"] .prompt,
 .mascot[data-state="waiting"] .alert,
 .mascot[data-state="asleep"] .snooze {
-  opacity: 1;
-  transition-delay: 150ms;
+  @apply opacity-100 delay-150;
 }
 
 /* Dropping an animation mid-cycle reverts the transform at once; this eases that revert instead. */
@@ -505,7 +487,7 @@ onScopeDispose(() => clearTimeout(timer));
 .code,
 .key,
 .caret {
-  transition: transform 260ms var(--ease-out, ease-out);
+  @apply transition-transform duration-260 ease-out;
 }
 
 .mascot[data-state="coding"] .rig {
@@ -546,9 +528,8 @@ onScopeDispose(() => clearTimeout(timer));
 }
 
 .mascot[data-state="investigating"] .lens {
+  @apply origin-[24px_12px] transform-view;
   animation: sweep 2.6s ease-in-out infinite;
-  transform-box: view-box;
-  transform-origin: 24px 12px;
 }
 
 .mascot[data-state="investigating"] .head {
@@ -580,12 +561,12 @@ onScopeDispose(() => clearTimeout(timer));
 }
 
 .mascot[data-state="asleep"] .rig {
+  @apply opacity-60;
   animation: doze 3.2s ease-in-out infinite;
-  opacity: 0.6;
 }
 .mascot[data-state="asleep"] .eyes {
+  @apply scale-y-12;
   animation-name: none;
-  transform: scaleY(0.12);
 }
 .mascot[data-state="asleep"] .z {
   animation: snooze 3.2s ease-out infinite;
@@ -830,11 +811,10 @@ onScopeDispose(() => clearTimeout(timer));
 
 /* Always on, in every state: eyes that never close read as a dead sprite. */
 .eyes {
+  @apply origin-[12px_9.5px] transform-view;
   animation-iteration-count: infinite;
   animation-name: blink;
   animation-timing-function: ease-in-out;
-  transform-box: view-box;
-  transform-origin: 12px 9.5px;
 }
 
 @keyframes blink {
@@ -850,21 +830,19 @@ onScopeDispose(() => clearTimeout(timer));
 }
 
 .eye {
-  fill: var(--mascot-eye);
-  transform-box: view-box;
-  transform-origin: 12px 9.5px;
+  @apply origin-[12px_9.5px] fill-mascot-eye transform-view;
 }
 
 .cloud,
 .rig-desk,
 .keys,
 .lens {
-  transform-box: view-box;
+  @apply transform-view;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .mascot * {
-    animation: none !important;
+    @apply animate-none!;
   }
 }
 </style>

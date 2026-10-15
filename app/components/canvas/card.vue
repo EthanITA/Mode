@@ -11,13 +11,13 @@ const emit = defineEmits<{ act: []; open: [] }>();
 <template>
   <article :data-cmt-label="card.title" :data-cmt-tell="card.tell" class="card" data-cmt="artifact">
     <header class="card-head">
-      <span class="mono-meta card-kind">{{ card.kind }}</span>
+      <span class="card-kind mono-meta">{{ card.kind }}</span>
       <span class="card-file">{{ card.file }}</span>
-      <span v-if="card.fresh" class="dot card-fresh" title="new since you looked" />
+      <span v-if="card.fresh" class="card-fresh dot" title="new since you looked" />
       <span v-if="card.version" class="card-version">v{{ card.version }}</span>
       <button
         v-press
-        class="plain-button focusable card-open"
+        class="card-open plain-button focusable"
         title="Open · read, diff, comment"
         type="button"
         @click="emit('open')"
@@ -55,177 +55,93 @@ const emit = defineEmits<{ act: []; open: [] }>();
 
 <style scoped>
 .card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  @apply flex h-full flex-col overflow-hidden;
 }
 
 .card-head,
 .card-foot {
-  align-items: center;
-  display: flex;
-  flex: none;
-  gap: 8px;
-  height: 38px;
-  padding: 0 8px 0 14px;
+  @apply flex h-9.5 flex-none items-center gap-2 py-0 pr-2 pl-3.5;
 }
 
 .card-head {
-  border-bottom: 1px solid var(--border);
+  @apply border-b border-b-border;
 }
 
 .card-foot {
-  background: var(--canvas);
-  border-top: 1px solid var(--border);
+  @apply border-t border-t-border bg-canvas;
 }
 
 .card-kind {
-  color: var(--muted);
-  flex: none;
-  letter-spacing: 0.04em;
+  @apply flex-none tracking-[0.04em] text-muted;
 }
 
 .card-file {
-  color: var(--subtle);
-  flex: 1;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  font-weight: 500;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 flex-1 truncate font-mono text-[10.5px] font-medium text-subtle;
 }
 
 .card-fresh {
-  background: var(--primary);
+  @apply bg-primary;
   --dot-size: 6px;
 }
 
 .card-version {
-  align-items: center;
-  background: var(--sunken);
-  border-radius: 999px;
-  color: var(--muted);
-  display: inline-flex;
-  flex: none;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 500;
-  height: 20px;
-  padding: 0 7px;
+  @apply inline-flex h-5 flex-none items-center rounded-full bg-sunken px-1.75 py-0 font-mono typo-micro text-muted;
 }
 
 .card-open {
-  border-radius: 999px;
-  color: var(--muted);
-  display: grid;
-  flex: none;
-  height: 24px;
-  place-items: center;
-  width: 24px;
+  @apply grid size-6 flex-none place-items-center rounded-full text-muted;
 }
 
 .card-open:hover {
-  background: var(--sunken);
-  color: var(--ink);
+  @apply bg-sunken text-fg;
 }
 
 .card-body {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  padding: 12px 14px;
+  @apply min-h-0 flex-1 overflow-hidden px-3.5 py-3;
 }
 
 .card-title {
-  font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  text-wrap: balance;
+  @apply font-sans text-[14px] leading-tight font-bold tracking-[-0.02em] text-balance;
 }
 
 .card-meta,
 .card-done {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  font-weight: 500;
+  @apply font-mono text-[10.5px] font-medium;
 }
 
 .card-meta {
-  color: var(--muted);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 truncate text-muted;
 }
 
 .card-comments {
-  align-items: center;
-  background: var(--sunken);
-  border-radius: 999px;
-  color: var(--muted);
-  display: inline-flex;
-  flex: none;
-  font-family: var(--sans);
-  font-size: 10.5px;
-  font-weight: 600;
-  gap: 4px;
-  height: 20px;
-  padding: 0 7px;
+  @apply inline-flex h-5 flex-none items-center gap-1 rounded-full bg-sunken px-1.75 py-0 font-sans text-[10.5px] font-semibold text-muted;
 }
 
 .card-gap {
-  flex: 1;
+  @apply flex-1;
 }
 
 .card-done {
-  align-items: center;
-  color: var(--success);
-  display: inline-flex;
-  flex: none;
-  gap: 5px;
-  white-space: nowrap;
+  @apply inline-flex flex-none items-center gap-1.25 whitespace-nowrap text-success;
 }
 
 .card-act {
-  align-items: center;
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  display: inline-flex;
-  flex: none;
-  font-family: var(--sans);
-  font-size: 11.5px;
-  font-weight: 600;
-  gap: 6px;
-  height: 26px;
-  padding: 0 11px;
-  white-space: nowrap;
+  @apply inline-flex h-6.5 flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 px-2.75 py-0 font-sans text-[11.5px] font-semibold whitespace-nowrap;
 }
 
 .card-act[data-tone="primary"] {
-  background: var(--primary);
-  color: var(--primary-content);
+  @apply bg-primary text-primary-content;
 }
 
 .card-act[data-tone="neutral"] {
-  background: var(--ink);
-  color: var(--raised);
+  @apply bg-fg text-raised;
 }
 
 .card-act:disabled {
-  cursor: progress;
-  opacity: 0.6;
+  @apply cursor-progress opacity-60;
 }
 
 .card-act-hint {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  font-weight: 500;
-  opacity: 0.7;
+  @apply font-mono text-[9.5px] font-medium opacity-70;
 }
 </style>

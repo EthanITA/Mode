@@ -37,44 +37,26 @@ const others = computed(() => tray.items.value.filter((item) => item.kind !== "c
 
 <style scoped>
 .tray {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0 6px;
+  @apply flex flex-wrap gap-1.5 px-1.5 py-0;
 }
 
 .chip {
-  align-items: center;
-  background: var(--raised);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  box-shadow: var(--shadow-sm);
-  display: inline-flex;
-  font-size: 12px;
-  gap: 8px;
-  height: 30px;
-  max-width: 420px;
-  padding: 0 4px 0 12px;
+  @apply inline-flex h-7.5 max-w-105 items-center gap-2 rounded-full border border-border-strong bg-raised py-0 pr-1 pl-3 text-[12px] shadow-sm;
 }
 
 .kind {
-  color: var(--primary);
-  flex: none;
+  @apply flex-none text-primary;
 }
 
 .chip[data-kind="task"] .kind {
-  color: var(--warning);
+  @apply text-warning;
 }
 
 .what {
-  color: var(--ink);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 truncate text-fg;
 }
 
 .quote {
-  color: var(--muted);
+  @apply text-muted;
 }
 </style>

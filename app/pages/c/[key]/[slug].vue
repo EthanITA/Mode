@@ -40,34 +40,19 @@ watchEffect(() => {
 <style scoped>
 /* The page owns the scroll — the frame inside it is sized to its content and never scrolls itself. */
 .stage {
-  box-sizing: border-box;
-  inset: 0;
-  overflow-y: auto;
-  padding: var(--stage-top) 0 calc(var(--dock-h, var(--dock-rest-h)) + var(--gutter) * 2);
-  position: absolute;
+  @apply absolute inset-0 overflow-y-auto px-0 pt-(--stage-top) pb-[calc(var(--dock-h,var(--dock-rest-h))_+_var(--gutter)_*_2)];
 }
 
 /* A live page scrolls itself, so the stage only holds it. */
 .stage[data-web="true"] {
-  display: flex;
-  overflow: hidden;
+  @apply flex overflow-hidden;
 }
 
 .back {
-  align-items: center;
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--ink);
-  display: inline-flex;
-  font-size: 12px;
-  font-weight: 600;
-  margin-top: 14px;
-  padding: 6px 12px;
-  text-decoration: none;
+  @apply mt-3.5 inline-flex items-center rounded-full border border-border bg-raised px-3 py-1.5 typo-caption-strong text-fg no-underline;
 }
 
 .back:hover {
-  border-color: var(--ink);
+  @apply border-fg;
 }
 </style>

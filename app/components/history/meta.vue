@@ -9,7 +9,7 @@ const hasChurn = computed(() => turn.files.some((one) => !!one.churn));
 <template>
   <span class="meta mono-meta">
     <template v-if="turn.state === 'running'">
-      <span class="dot pulse" aria-hidden="true" />
+      <span class="pulse dot" aria-hidden="true" />
       <span data-tone="live">running</span>
     </template>
     <span v-else-if="turn.state === 'waiting'" data-tone="waiting">waiting on you</span>
@@ -29,40 +29,31 @@ const hasChurn = computed(() => turn.files.some((one) => !!one.churn));
 
 <style scoped>
 .meta {
-  align-items: center;
-  color: var(--subtle);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  text-transform: none;
+  @apply flex flex-wrap items-center gap-1.5 text-subtle normal-case;
 }
 
 .pulse {
-  @apply breathe;
+  @apply breathe bg-primary;
   --dot-size: 6px;
-  background: var(--primary);
 }
 
 [data-tone="live"] {
-  color: var(--primary);
+  @apply text-primary;
 }
 
 [data-tone="waiting"] {
-  color: var(--warning);
+  @apply text-warning;
 }
 
 [data-tone="add"] {
-  color: var(--success);
+  @apply text-success;
 }
 
 [data-tone="remove"] {
-  color: var(--error);
+  @apply text-error;
 }
 
 .agent {
-  background: var(--primary-soft);
-  border-radius: 999px;
-  color: var(--primary-deep);
-  padding: 1px 7px;
+  @apply rounded-full bg-primary-soft px-1.75 py-px text-primary-deep;
 }
 </style>

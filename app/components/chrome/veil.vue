@@ -11,37 +11,25 @@ const follow = $follow();
 <style scoped>
 /* Hidden only once the fade-out ends, so lifting it is as smooth as covering. Under the toaster, so a notice still reads. */
 .veil {
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  background: color-mix(in oklch, var(--canvas) 72%, transparent);
-  display: grid;
-  inset: 0;
-  opacity: 0;
-  place-items: center;
-  position: fixed;
+  @apply invisible fixed inset-0 z-45 grid place-items-center bg-canvas/72 opacity-0 backdrop-blur-md;
   transition:
     opacity var(--duration-base) var(--ease-out),
     visibility 0s linear var(--duration-base);
-  visibility: hidden;
-  z-index: 45;
 }
 
 .veil[data-on="true"] {
-  opacity: 1;
+  @apply visible opacity-100;
   transition:
     opacity var(--duration-fast) var(--ease-out),
     visibility 0s;
-  visibility: visible;
 }
 
 /* Only a slow page earns the loader, so a quick switch never flashes it. */
 .wait {
-  opacity: 0;
-  transition: opacity var(--duration-fast) var(--ease-out);
+  @apply opacity-0 transition-opacity duration-(--duration-fast) ease-out;
 }
 
 .veil[data-on="true"] .wait {
-  opacity: 1;
-  transition-delay: var(--duration-slow);
+  @apply opacity-100 delay-(--duration-slow);
 }
 </style>

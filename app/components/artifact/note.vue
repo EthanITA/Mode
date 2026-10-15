@@ -176,80 +176,47 @@ async function resolve(): Promise<void> {
 
 <style scoped>
 .card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
-  width: 280px;
+  @apply flex w-70 flex-col gap-2.5 px-3.5 py-3;
 }
 
 .card[data-busy] {
-  opacity: 0.72;
+  @apply opacity-72;
 }
 
 .where {
-  color: var(--subtle);
-  margin: 0;
+  @apply m-0 text-subtle;
 }
 
 .quote {
-  background: var(--sunken);
-  border-left: 2px solid var(--primary);
-  border-radius: 0 6px 6px 0;
-  color: var(--muted);
-  font-size: 12.5px;
-  font-style: italic;
-  line-height: 1.5;
-  margin: 0;
-  padding: 6px 10px;
+  @apply m-0 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 text-[12.5px] leading-normal text-muted italic;
 }
 
 .body {
-  margin: 0;
-  min-width: 0;
+  @apply m-0 min-w-0;
 }
 
 .reply {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  @apply flex min-w-0 flex-col gap-1;
 }
 
 /* Not a list of models, so a reply saved by one no longer used keeps its look. */
 .reply:not([data-by="user"]) {
-  border-left: 2px solid var(--success);
-  padding-left: 8px;
+  @apply border-l-2 border-l-success pl-2;
 }
 
 .who {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .notice {
-  align-items: center;
-  background: var(--success-soft);
-  border-radius: 10px;
-  display: flex;
-  font-size: 12px;
-  font-weight: 600;
-  gap: 7px;
-  margin: 0;
-  padding: 7px 10px;
+  @apply m-0 flex items-center gap-1.75 rounded-[10px] bg-success-soft px-2.5 py-1.75 typo-caption-strong;
 }
 
 .notice::before {
-  background: var(--success);
-  border-radius: 999px;
-  content: "";
-  flex: none;
-  height: 7px;
-  width: 7px;
+  @apply size-1.75 flex-none rounded-full bg-success content-[''];
 }
 
 footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  @apply flex flex-wrap gap-1;
 }
 </style>

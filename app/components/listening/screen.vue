@@ -96,149 +96,74 @@ function resume(key: string): void {
 <style scoped>
 /* Margin auto centres the column and still lets a short window scroll it from the top. */
 .stage {
-  display: grid;
-  inset: 0;
-  overflow-y: auto;
-  position: absolute;
+  @apply absolute inset-0 grid overflow-y-auto;
 }
 
 .column {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  margin: auto;
-  max-width: calc(100% - 2 * var(--gutter));
-  padding: var(--stage-top) 0;
-  width: 440px;
+  @apply m-auto flex w-110 max-w-[calc(100%_-_2_*_var(--gutter))] flex-col gap-6 px-0 py-(--stage-top);
 }
 
 .lead {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  @apply flex flex-col gap-2.5;
 }
 
 .title {
-  color: var(--ink);
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
-  margin: 0;
+  @apply m-0 text-[24px] leading-[1.2] font-extrabold tracking-[-0.03em] text-fg;
 }
 
 .hint {
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.55;
-  margin: 0;
-  text-wrap: pretty;
+  @apply m-0 text-[14px] leading-[1.55] text-pretty text-muted;
 }
 
 code {
-  background: var(--sunken);
-  border-radius: 6px;
-  color: var(--ink);
-  font-family: var(--mono);
-  font-size: 12px;
-  padding: 1px 6px;
+  @apply rounded-md bg-sunken px-1.5 py-px font-mono text-[12px] text-fg;
 }
 
 .last {
-  align-items: center;
-  border-radius: 20px;
-  display: flex;
-  gap: 14px;
-  padding: 16px;
+  @apply flex items-center gap-3.5 rounded-[20px] p-4;
 }
 
 .last-text {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  @apply flex min-w-0 flex-1 flex-col gap-1;
 }
 
 .eyebrow {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .last-name {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply truncate text-[16px] font-bold tracking-[-0.02em];
 }
 
 .last-place {
-  color: var(--subtle);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-transform: none;
-  white-space: nowrap;
+  @apply truncate text-subtle normal-case;
 }
 
 .resume {
-  align-items: center;
-  background: var(--primary);
-  border: 0;
-  border-radius: 999px;
-  color: var(--primary-content);
-  cursor: pointer;
-  display: inline-flex;
-  flex: none;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  gap: 6px;
-  height: 34px;
-  padding: 0 16px;
+  @apply inline-flex h-8.5 flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary px-4 py-0 text-[12.5px] font-semibold text-primary-content;
 }
 
 .ways {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  @apply flex flex-col gap-2.5;
 }
 
 .way {
-  align-items: center;
-  display: flex;
-  font-size: 13px;
-  gap: 12px;
+  @apply flex items-center gap-3 text-[13px];
 }
 
 .way-icon {
-  background: var(--sunken);
-  border-radius: 999px;
-  color: var(--muted);
-  display: grid;
-  flex: none;
-  height: 28px;
-  place-items: center;
-  width: 28px;
+  @apply grid size-7 flex-none place-items-center rounded-full bg-sunken text-muted;
 }
 
 .desk-link {
-  align-self: flex-start;
-  border-radius: 4px;
-  color: var(--primary-deep);
-  font-size: 12.5px;
-  font-weight: 600;
-  text-decoration: none;
+  @apply self-start rounded-sm text-[12.5px] font-semibold text-primary-deep no-underline;
 }
 
 .desk-link:hover {
-  color: var(--primary);
-  text-decoration: underline;
+  @apply text-primary underline;
 }
 
 .desk-link[aria-disabled="true"] {
-  color: var(--subtle);
-  cursor: not-allowed;
-  text-decoration: none;
+  @apply cursor-not-allowed text-subtle no-underline;
 }
 </style>

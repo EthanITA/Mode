@@ -31,95 +31,59 @@ const segments = computed(() => turnSegments(split.value.body));
 
 <style scoped>
 .turn-text {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
+  @apply flex min-w-0 flex-col gap-1.5;
 }
 
 .folded {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-field);
-  min-width: 0;
+  @apply min-w-0 rounded-field border border-border bg-raised;
 }
 
 .xyz {
-  background: var(--primary-soft);
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-field);
-  min-width: 0;
+  @apply min-w-0 rounded-field border border-primary bg-primary-soft;
 }
 
 summary {
-  align-items: center;
-  cursor: pointer;
-  display: flex;
-  gap: 6px;
-  list-style: none;
-  padding: 4px 8px;
+  @apply flex cursor-pointer list-none items-center gap-1.5 px-2 py-1;
 }
 
 summary::-webkit-details-marker {
-  display: none;
+  @apply hidden;
 }
 
 .caret {
-  border-bottom: 3.5px solid transparent;
-  border-left: 5px solid var(--subtle);
-  border-top: 3.5px solid transparent;
-  flex: none;
-  height: 0;
-  transition: transform var(--duration-fast) var(--ease-out);
-  width: 0;
+  @apply size-0 flex-none border-t-[3.5px] border-b-[3.5px] border-l-5 border-t-transparent border-b-transparent border-l-subtle transition-transform duration-(--duration-fast) ease-out;
 }
 
 .folded[open] .caret,
 .xyz[open] .caret {
-  transform: rotate(90deg);
+  @apply rotate-90;
 }
 
 .tag {
-  color: var(--muted);
-  flex: none;
+  @apply flex-none text-muted;
 }
 
 .xyz-label {
-  color: var(--primary-deep, var(--ink));
-  flex: none;
-  font-weight: 600;
+  @apply flex-none font-semibold text-primary-deep;
 }
 
 .gist {
-  color: var(--subtle);
-  font-size: 12px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply min-w-0 truncate text-[12px] text-subtle;
 }
 
 /* Folded, never dropped: the whole blob is still here, and it scrolls rather than widening the bubble. */
 pre {
-  border-top: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: 11.5px;
-  line-height: 1.5;
-  margin: 0;
-  max-height: 40vh;
-  max-width: 100%;
-  overflow: auto;
-  padding: 6px 8px;
+  @apply m-0 max-h-[40vh] max-w-full overflow-auto border-t border-t-border px-2 py-1.5 font-mono text-[11.5px] leading-normal;
 }
 
 /* Prose, not code: it wraps instead of scrolling sideways. */
 .xyz-body {
-  white-space: pre-wrap;
+  @apply whitespace-pre-wrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .caret {
-    transition: none;
+    @apply transition-none;
   }
 }
 </style>

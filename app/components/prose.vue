@@ -42,27 +42,23 @@ watch(
 
 <style scoped>
 .prose {
-  font-size: 13px;
-  line-height: 1.5;
-  min-width: 0;
-  overflow-wrap: anywhere;
+  @apply min-w-0 text-[13px] leading-normal wrap-anywhere;
 }
 
 .raw {
-  margin: 0;
-  white-space: pre-wrap;
+  @apply m-0 whitespace-pre-wrap;
 }
 
 .prose :deep(> :first-child) {
-  margin-top: 0;
+  @apply mt-0;
 }
 
 .prose :deep(> :last-child) {
-  margin-bottom: 0;
+  @apply mb-0;
 }
 
 .prose :deep(p) {
-  margin: 0 0 8px;
+  @apply mx-0 mt-0 mb-2;
 }
 
 .prose :deep(h1),
@@ -71,122 +67,81 @@ watch(
 .prose :deep(h4),
 .prose :deep(h5),
 .prose :deep(h6) {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.35;
-  margin: 12px 0 6px;
+  @apply mx-0 mt-3 mb-1.5 text-[13px] leading-[1.35] font-bold tracking-[-0.01em];
 }
 
 .prose :deep(h1) {
-  font-size: 15px;
+  @apply text-[15px];
 }
 
 .prose :deep(h2) {
-  font-size: 14px;
+  @apply text-[14px];
 }
 
 .prose :deep(ul),
 .prose :deep(ol) {
-  margin: 0 0 8px;
-  padding-left: 18px;
+  @apply mx-0 mt-0 mb-2 pl-4.5;
 }
 
 .prose :deep(li) {
-  margin: 0 0 3px;
+  @apply mx-0 mt-0 mb-0.75;
 }
 
 .prose :deep(li > p) {
-  margin: 0;
+  @apply m-0;
 }
 
 .prose :deep(.contains-task-list) {
-  list-style: none;
-  padding-left: 2px;
+  @apply list-none pl-0.5;
 }
 
 .prose :deep(.task-list-item-checkbox) {
-  accent-color: var(--primary);
-  margin-right: 6px;
-  pointer-events: none;
-  vertical-align: baseline;
+  @apply pointer-events-none mr-1.5 align-baseline accent-primary;
 }
 
 .prose :deep(a) {
-  color: var(--primary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  @apply text-primary underline underline-offset-2;
 }
 
 .prose :deep(a:hover) {
-  text-decoration-thickness: 2px;
+  @apply decoration-2;
 }
 
 .prose :deep(code) {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-selector);
-  font-family: var(--mono);
-  font-size: 0.88em;
-  padding: 1px 4px;
+  @apply rounded-selector border border-border bg-raised px-1 py-px font-mono text-[0.88em];
 }
 
 /* The bubble is width-capped, so a long line has to scroll here or it drags the layout wider. */
 .prose :deep(pre) {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-field);
-  margin: 0 0 8px;
-  max-width: 100%;
-  overflow-x: auto;
-  padding: 8px 10px;
+  @apply mx-0 mt-0 mb-2 max-w-full overflow-x-auto rounded-field border border-border bg-raised px-2.5 py-2;
 }
 
 .prose :deep(pre code) {
-  background: none;
-  border: 0;
-  padding: 0;
-  white-space: pre;
+  @apply border-0 bg-transparent bg-none p-0 whitespace-pre;
 }
 
 .prose :deep(blockquote) {
-  border-left: 2px solid var(--border-strong);
-  color: var(--muted);
-  margin: 0 0 8px;
-  padding: 2px 0 2px 10px;
+  @apply mx-0 mt-0 mb-2 border-l-2 border-l-border-strong py-0.5 pr-0 pl-2.5 text-muted;
 }
 
 .prose :deep(hr) {
-  border: 0;
-  border-top: 1px solid var(--border);
-  margin: 12px 0;
+  @apply mx-0 my-3 border-0 border-t border-t-border;
 }
 
 .prose :deep(table) {
-  border-collapse: collapse;
-  display: block;
-  margin: 0 0 8px;
-  max-width: 100%;
-  overflow-x: auto;
-  width: max-content;
+  @apply mx-0 mt-0 mb-2 block w-max max-w-full border-collapse overflow-x-auto;
 }
 
 .prose :deep(th),
 .prose :deep(td) {
-  border-bottom: 1px solid var(--border);
-  padding: 4px 10px 4px 0;
-  text-align: left;
-  vertical-align: top;
+  @apply border-b border-b-border py-1 pr-2.5 pl-0 text-left align-top;
 }
 
 .prose :deep(th) {
-  color: var(--subtle);
-  font-weight: 600;
-  white-space: nowrap;
+  @apply font-semibold whitespace-nowrap text-subtle;
 }
 
 .prose :deep(img) {
-  border-radius: var(--radius-field);
-  max-width: 100%;
+  @apply max-w-full rounded-field;
 }
 </style>

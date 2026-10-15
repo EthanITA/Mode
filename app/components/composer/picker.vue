@@ -100,149 +100,86 @@ function clear(close: () => void): void {
 
 <style scoped>
 .anchor {
-  display: inline-flex;
-  flex: none;
+  @apply inline-flex flex-none;
 }
 
 .pill {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  color: var(--ink);
-  cursor: pointer;
-  display: inline-flex;
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
-  gap: 7px;
-  height: 26px;
-  padding: 0 10px;
-  white-space: nowrap;
+  @apply inline-flex h-6.5 cursor-pointer items-center gap-1.75 rounded-full border-0 bg-transparent px-2.5 py-0 font-sans typo-caption-strong whitespace-nowrap text-fg;
 }
 
 .pill:hover {
-  background: color-mix(in oklch, var(--ink) 8%, transparent);
+  @apply bg-fg/8;
 }
 
 .dot {
-  background: var(--tint, var(--subtle));
-  border-radius: 999px;
-  flex: none;
-  height: 8px;
-  width: 8px;
+  @apply size-2 flex-none rounded-full bg-[color:var(--tint,var(--subtle))];
 }
 
 .origin {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .menu {
-  display: flex;
-  flex-direction: column;
-  max-width: 100%;
+  @apply flex max-w-full flex-col;
 }
 
 .head {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 8px;
-  padding: 10px 14px;
+  @apply flex items-center gap-2 border-b border-b-border px-3.5 py-2.5;
 }
 
 .title {
-  font-size: 12.5px;
-  font-weight: 700;
+  @apply text-[12.5px] font-bold;
 }
 
 .hint {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  min-height: 0;
+  @apply grid min-h-0 grid-cols-[minmax(0,1fr)_280px];
 }
 
 .list {
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  max-height: 44vh;
-  overflow-y: auto;
-  padding: 6px;
-  scrollbar-width: thin;
+  @apply flex max-h-[44vh] scrollbar-thin flex-col overflow-y-auto border-r border-r-border p-1.5;
 }
 
 .row {
-  align-items: baseline;
-  display: grid;
-  flex: 1;
-  gap: 10px;
-  grid-template-columns: 8px 72px minmax(0, 1fr);
-  min-width: 0;
+  @apply grid min-w-0 flex-1 grid-cols-[8px_72px_minmax(0,1fr)] items-baseline gap-2.5;
 }
 
 .row .dot {
-  align-self: center;
+  @apply self-center;
 }
 
 .who {
-  color: var(--ink);
-  font-size: 12.5px;
-  font-weight: 600;
+  @apply text-[12.5px] font-semibold text-fg;
 }
 
 .summary {
-  color: var(--muted);
-  font-size: 11.5px;
-  line-height: 1.45;
-  min-width: 0;
+  @apply min-w-0 text-[11.5px] leading-[1.45] text-muted;
 }
 
 .empty {
-  color: var(--subtle);
-  margin: 0;
-  padding: 10px;
+  @apply m-0 p-2.5 text-subtle;
 }
 
 .pane {
-  max-height: 44vh;
-  overflow-y: auto;
-  padding: 12px 14px;
-  scrollbar-width: thin;
+  @apply max-h-[44vh] scrollbar-thin overflow-y-auto px-3.5 py-3;
 }
 
 .foot {
-  align-items: center;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-  padding: 8px 14px;
+  @apply flex items-center gap-2.5 border-t border-t-border px-3.5 py-2;
 }
 
 .note {
-  color: var(--subtle);
+  @apply text-subtle;
 }
 
 .off {
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted);
-  cursor: pointer;
-  font-family: var(--sans);
-  font-size: 11.5px;
-  font-weight: 600;
-  height: 26px;
-  margin-left: auto;
-  padding: 0 10px;
+  @apply ml-auto h-6.5 cursor-pointer rounded-full border border-border bg-raised px-2.5 py-0 font-sans text-[11.5px] font-semibold text-muted;
 }
 
 .off:hover {
-  border-color: var(--ink);
-  color: var(--ink);
+  @apply border-fg text-fg;
 }
 </style>
