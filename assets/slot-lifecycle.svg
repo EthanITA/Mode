@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 228" width="660" height="228" role="img" aria-label="A slot moves between empty, held when you type a name, and auto. While on auto a matching pattern moves it to chosen, marked with a tilde in the status line, and its exit condition returns it to auto rather than to empty.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 246" width="660" height="246" role="img" aria-label="A slot moves between empty, held when you type a name, and auto. While on auto a matching pattern moves it to chosen, marked with a tilde in the status line, and its exit condition returns it to auto rather than to empty. A pinned default is taken only by a contract that opts in, named in the prompt's opening sentence.">
 <style>
   .t{font:600 12px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#1f2328}
   .s{font:10.5px ui-sans-serif,-apple-system,Segoe UI,Helvetica,Arial;fill:#656d76}
@@ -36,4 +36,5 @@
 <path class="lp" d="M358 74 V118" marker-end="url(#h)"/>
 <text class="s" x="366" y="100">off</text>
 <text class="s" x="20" y="212">A contract you typed is never overridden by a pattern. A message matching two picks neither.</text>
+<text class="s" x="20" y="230">A pinned default is taken only by a contract that opts in, named in the prompt's opening sentence.</text>
 </svg>

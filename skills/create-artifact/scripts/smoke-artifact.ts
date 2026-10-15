@@ -60,12 +60,27 @@ const node = (tag: string): Stub => {
     style: {},
     dataset: {},
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
-    setAttribute(k, v) { flag(tag, k, v); this.attrs[k] = v; },
-    getAttribute(k) { return this.attrs[k]; },
-    removeAttribute(k) { delete this.attrs[k]; },
-    appendChild(c) { this.children.push(c); return c; },
-    append(...c) { this.children.push(...c); },
-    insertAdjacentHTML(_pos, h) { flag(tag, "insertAdjacentHTML", h); html += h; },
+    setAttribute(k, v) {
+      flag(tag, k, v);
+      this.attrs[k] = v;
+    },
+    getAttribute(k) {
+      return this.attrs[k];
+    },
+    removeAttribute(k) {
+      delete this.attrs[k];
+    },
+    appendChild(c) {
+      this.children.push(c);
+      return c;
+    },
+    append(...c) {
+      this.children.push(...c);
+    },
+    insertAdjacentHTML(_pos, h) {
+      flag(tag, "insertAdjacentHTML", h);
+      html += h;
+    },
     addEventListener() {},
     removeEventListener() {},
     getBoundingClientRect: () => ({ left: 0, top: 0, width: 900, height: 400 }),
@@ -79,10 +94,20 @@ const node = (tag: string): Stub => {
     clientHeight: 400,
     hidden: false,
     tabIndex: 0,
-    get textContent() { return text; },
-    set textContent(v: string) { flag(tag, "textContent", v); text = v; },
-    get innerHTML() { return html; },
-    set innerHTML(v: string) { flag(tag, "innerHTML", v); html = v; }
+    get textContent() {
+      return text;
+    },
+    set textContent(v: string) {
+      flag(tag, "textContent", v);
+      text = v;
+    },
+    get innerHTML() {
+      return html;
+    },
+    set innerHTML(v: string) {
+      flag(tag, "innerHTML", v);
+      html = v;
+    },
   };
   return self;
 };
@@ -102,7 +127,7 @@ g.document = {
   querySelector: () => undefined,
   querySelectorAll: () => [],
   addEventListener: () => {},
-  dispatchEvent: () => true
+  dispatchEvent: () => true,
 };
 g.window = g;
 g.location = { hash: "#/", href: "file://local", search: "" };
@@ -116,7 +141,12 @@ g.cancelAnimationFrame = () => {};
 g.setTimeout = () => 0;
 g.matchMedia = () => ({ matches: false, addEventListener: () => {}, addListener: () => {} });
 g.performance = { now: () => 0 };
-g.CustomEvent = class { type: string; constructor(type: string) { this.type = type; } };
+g.CustomEvent = class {
+  type: string;
+  constructor(type: string) {
+    this.type = type;
+  }
+};
 g.IntersectionObserver = class {
   observe(): void {}
   unobserve(): void {}
@@ -126,7 +156,7 @@ g.IntersectionObserver = class {
 g.getComputedStyle = () => ({ getPropertyValue: () => "#000000", fontSize: "16px" });
 
 // only bare <script> blocks: a type="module" block uses import, which eval cannot resolve
-const blocks = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+const blocks = [...src.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
 
 let threw = 0;
 for (const [i, code] of blocks.entries()) {
@@ -139,22 +169,26 @@ for (const [i, code] of blocks.entries()) {
 }
 
 // an element shipped empty is a data hole the script is meant to fill
-const holes = [...src.matchAll(
-  /<(div|span|p|tbody|thead|ol|ul|section|table|figure|figcaption|strong|em|b|td|th|h[1-6]|main|aside|canvas)\b[^>]*\sid="([^"]+)"[^>]*>\s*<\/\1>/g
-)].map(m => m[2]);
+const holes = [
+  ...src.matchAll(
+    /<(div|span|p|tbody|thead|ol|ul|section|table|figure|figcaption|strong|em|b|td|th|h[1-6]|main|aside|canvas)\b[^>]*\sid="([^"]+)"[^>]*>\s*<\/\1>/g,
+  ),
+].map((m) => m[2]);
 
 let unfilled = 0;
 for (const id of holes) {
   const n = hosts[id];
   const filled = (n?.innerHTML?.length ?? 0) + (n?.textContent?.length ?? 0) + (n?.children.length ?? 0);
-  if (!filled) { console.log(`  EMPTY    ${id}`); unfilled++; }
-  else console.log(`  ok       ${id.padEnd(16)} ${String(filled).padStart(6)}`);
+  if (!filled) {
+    console.log(`  EMPTY    ${id}`);
+    unfilled++;
+  } else console.log(`  ok       ${id.padEnd(16)} ${String(filled).padStart(6)}`);
 }
 
 console.log(`\nscript blocks ${blocks.length}, nodes created ${created}, data holes ${holes.length}`);
 if (!holes.length) console.log("note: no empty id-bearing elements found, so only script errors were checked");
 if (bad.length) {
   console.log(`\nBAD VALUES (${bad.length}):`);
-  bad.slice(0, 20).forEach(b => console.log("   " + b));
+  bad.slice(0, 20).forEach((b) => console.log("   " + b));
 }
 process.exit(unfilled || bad.length || threw ? 1 : 0);

@@ -14,14 +14,14 @@ Run this before anything else, and reshape or split the ask if it fails.
 
 ## The six slots
 
-| Slot | What it buys | Worked example |
-|---|---|---|
-| **Architecture, and why** | Removes the worst decision from the critical path. The stated reason becomes the invariant every later choice has to preserve. | "Fetch the orbital elements once every two hours, then propagate in the browser, so real time comes from local physics rather than from polling." |
-| **Terms of art** | Retrieval keys into the expert region. Naming the real technique reaches better work than describing the desired effect. | Instanced meshes, Verlet integration, signed distance fields, ACES tonemapping, tabular numerals. Never "make it feel realistic". |
-| **Banned shortcut** | Closes the cheapest escape route before it gets taken under pressure. | "Never fake the depth with an image, a texture or a video." "Never narrate a number that belongs in a table." |
-| **Quantified acceptance** | Makes the bar enumerable, so scope cannot shrink quietly. | "Four presets, nine debug views, twenty-one live parameters, device pixel ratio capped at 2." "Three chapters, each with its own anchor visual." |
-| **Named references** | Sets the register far more efficiently than any adjective. | Name the two or three real things you are aiming at. A codename can import an entire aesthetic in one word. |
-| **Feasibility pre-clearance** | Kills the hedging reflex that produces placeholders and `TODO` where real content belongs. | "No registration, no API key, no rate limit. Frontend only. Difficulty: minimal." |
+| Slot                          | What it buys                                                                                                                   | Worked example                                                                                                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Architecture, and why**     | Removes the worst decision from the critical path. The stated reason becomes the invariant every later choice has to preserve. | "Fetch the orbital elements once every two hours, then propagate in the browser, so real time comes from local physics rather than from polling." |
+| **Terms of art**              | Retrieval keys into the expert region. Naming the real technique reaches better work than describing the desired effect.       | Instanced meshes, Verlet integration, signed distance fields, ACES tonemapping, tabular numerals. Never "make it feel realistic".                 |
+| **Banned shortcut**           | Closes the cheapest escape route before it gets taken under pressure.                                                          | "Never fake the depth with an image, a texture or a video." "Never narrate a number that belongs in a table."                                     |
+| **Quantified acceptance**     | Makes the bar enumerable, so scope cannot shrink quietly.                                                                      | "Four presets, nine debug views, twenty-one live parameters, device pixel ratio capped at 2." "Three chapters, each with its own anchor visual."  |
+| **Named references**          | Sets the register far more efficiently than any adjective.                                                                     | Name the two or three real things you are aiming at. A codename can import an entire aesthetic in one word.                                       |
+| **Feasibility pre-clearance** | Kills the hedging reflex that produces placeholders and `TODO` where real content belongs.                                     | "No registration, no API key, no rate limit. Frontend only. Difficulty: minimal."                                                                 |
 
 When you are building rather than prompting, the slots stop being lines of text and become notes you actually act on. Write them down anyway. A slot you only thought about is a slot you will quietly renegotiate at hour three.
 

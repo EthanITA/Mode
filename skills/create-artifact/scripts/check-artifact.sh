@@ -8,6 +8,7 @@ usage() {
 
 TARGET=b
 files=""
+case $0 in */*) here=${0%/*} ;; *) here=. ;; esac
 while [ $# -gt 0 ]; do
   case "$1" in
     --target) TARGET="${2:-b}"; shift 2 ;;
@@ -59,25 +60,7 @@ for f in $files; do
   # the same failure by two other routes: a pane hidden until script routes to it,
   # and a container left empty in the markup for script to fill
   report "content exists only once script runs: the page must read with JavaScript off" \
-    "$(printf '%s\n' "$clean" | python3 -c '
-import re, sys
-src = sys.stdin.read()
-style = "\n".join(re.findall(r"<style>([\s\S]*?)</style>", src))
-
-hidden  = set(re.findall(r"(?m)^\s*\.([A-Za-z][\w-]*)\s*\{[^}]*display:\s*none", style))
-reshown = set(re.findall(r"(?m)^\s*\.([A-Za-z][\w-]*)\.[\w-]+\s*\{[^}]*display:\s*(?!none)", style))
-guarded = set(re.findall(r"(?m)^\s*\.js\s+\.([A-Za-z][\w-]*)", style))
-for c in sorted((hidden & reshown) - guarded):
-    print(".%s is display:none by default and only script re-shows it; guard it with .js" % c)
-
-scripts = "\n".join(re.findall(r"<script[^>]*>([\s\S]*?)</script>", src))
-body    = re.sub(r"<script[\s\S]*?</script>", "", src)
-for tag, i in re.findall(r"<(\w+)[^>]*\bid=\"([^\"]+)\"[^>]*>\s*</\1>", body):
-    if tag.lower() == "canvas":   # a canvas has no HTML content to author; prose never depends on it
-        continue
-    if ("\"%s\"" % i) in scripts or ("%s" % i) in re.findall(r"[\x27]([^\x27]+)[\x27]", scripts):
-        print("#%s is empty in the markup and filled only by script; author it in HTML" % i)
-' 2>/dev/null || true)"
+    "$(printf '%s\n' "$clean" | node "$here/checks.ts" script-only)"
 
   if [ "$TARGET" = b ]; then
     report "document skeleton written by hand: the artifact wrapper owns these" \
@@ -105,36 +88,21 @@ for tag, i in re.findall(r"<(\w+)[^>]*\bid=\"([^\"]+)\"[^>]*>\s*</\1>", body):
     if [ -n "$cdn" ] && [ -z "$(scan -n 'catch')" ]; then
       report "CDN with no fallback: wrap init in try/catch or guard on the global" "offline would blank the page"
     fi
+
+    report "viewport unit: the page is read in a frame that sizes to its body, so vh feeds back on itself; use rem" \
+      "$(scan -nE '[0-9.]+vh\b')"
+  fi
+
+  if [ "$TARGET" = a ]; then
+    report "viewport unit: the page is read in a frame that sizes to its body, so vh feeds back on itself; use rem" \
+      "$(scan -nE '[0-9.]+vh\b')"
   fi
 
   report "table-wrap nested in a panel: a card inside a card, drop the panel" \
-    "$(printf '%s\n' "$clean" | python3 -c '
-import re, sys
-src = sys.stdin.read()
-depth, hits = [], []
-for m in re.finditer(r"<div class=\"([^\"]*)\"|<div|</div>", src):
-    if m.group(0) == "</div>":
-        if depth: depth.pop()
-    else:
-        cls = m.group(1) or ""
-        if "table-wrap" in cls and any("panel" in d for d in depth):
-            hits.append(src[:m.start()].count("\n") + 1)
-        depth.append(cls)
-for n in hits: print("%d: a table-wrap inside a panel" % n)
-' 2>/dev/null || true)"
+    "$(printf '%s\n' "$clean" | node "$here/checks.ts" nested-panel)"
 
   report "svg class used but never defined: the shape renders black" \
-    "$(printf '%s\n' "$clean" | python3 -c '
-import re, sys
-src = sys.stdin.read()
-used = set()
-for block in re.findall(r"<svg[\s\S]*?</svg>", src):
-    for c in re.findall(r"class=\"([^\"]+)\"", block):
-        used.update(c.split())
-style = "\n".join(re.findall(r"<style>([\s\S]*?)</style>", src))
-defined = set(re.findall(r"\.([A-Za-z][A-Za-z0-9_-]*)", style))
-for c in sorted(used - defined): print("  ." + c)
-' 2>/dev/null || true)"
+    "$(printf '%s\n' "$clean" | node "$here/checks.ts" svg-classes)"
 
   # a hex outside a custom-property declaration is a colour that escaped the token set
   report "hardcoded hex outside a token declaration" \

@@ -14,12 +14,14 @@ You are touching code. These rules apply to what you write.
 **Comment why, never what. Default: zero comments.** Every comment is LOC bloat until proven otherwise.
 
 Explicitly banned, no exceptions:
+
 - **File-header blurbs**: a comment block at the top of a file describing what the file does. Usage goes in the README or `package.json`, not the source.
 - **Usage / example blocks.**
 - **Docstrings that restate the signature.** `/** The full question. */` above `question: string` is noise. So is `/** True when the event comes from an editable field. */` above `isEditableTarget()`.
 - What the code does, types and signatures, section banners, PR/ticket context (that's the commit message), obvious idempotency or no-ops.
 
 Add a comment ONLY when one of these holds:
+
 - **(a)** The logic is genuinely complex or non-obvious and the comment saves real reading effort.
 - **(b)** The code intentionally diverges from what a reader would expect, for a specific reason: a hidden constraint or invariant the code can't express, a bug/quirk workaround (link it), or a deliberately-rejected obvious alternative.
 
@@ -41,9 +43,10 @@ This is the most commonly violated rule. Weight it accordingly.
 - **`<button>` always carries `type="button"`** unless it genuinely submits a form: HTML defaults to `submit`, so an unmarked button inside a form navigates instead of doing its job.
 - **`ref` is never nullable by default**: `ref<T>()` (implicitly `T | undefined`), not `ref<T | null>(null)`. Matches the `undefined`-over-`null` rule above.
 - **Vue classes**: reuse the project's stylesheet classes. Static styling goes in `class="..."`; a reactive override or append goes in `:class`. Lists via array `['c1', dyn]`; conditionals via object `{ 'c': cond }`, never ternaries inside arrays.
-- **`:data-*` bindings are the raw value; the CSS matches it explicitly.** `:data-floating="floating"` with `[data-floating="true"]`. Never coerce to make a presence selector work: `value || undefined`, `value ? '' : undefined` and friends hide both states behind a trick. A state whose *presence* is the whole meaning (no false case) may bind the value directly and be selected bare.
-- **Reach the design system through `@apply`, not a `:class` object.** A `:class="{ 'glass': variant === 'glass' }"` beside a `:data-variant` stamps the same state twice, once as styling in the template. Register the look as an `@utility` so the `[data-*]` rule can `@apply` it. In Tailwind 4 a class defined in a plain `@layer utilities` block is *not* `@apply`-able; only `@utility` registers it.
-- **Markup, style and behaviour stay in their own layer.** Script decides what is *true*, CSS decides what that *looks like*, template says where it goes. A computed returning a class string is styling that leaked into TypeScript: put the state on the element (`:data-status`, `:data-variant`) and let CSS select on it. A per-state `Record<State, string>` of Tailwind classes in `.ts` is the tell.
+- **`:data-*` bindings are the raw value; the CSS matches it explicitly.** `:data-floating="floating"` with `[data-floating="true"]`. Never coerce to make a presence selector work: `value || undefined`, `value ? '' : undefined` and friends hide both states behind a trick. A state whose _presence_ is the whole meaning (no false case) may bind the value directly and be selected bare.
+- **Style with Tailwind and the design system's tokens, never hand-written CSS or an arbitrary value.** A scoped `<style>` keeps semantic selectors whose bodies `@apply` existing tokens, not a template full of utilities, which sit in `@layer utilities` and lose to any scoped rule on the same element. Take the design system as the reference (`@cela/design` in a Cela product): type is a `typo-*` utility plus a `font-*` when the weight differs, radii are `rounded-box`, `-field`, `-selector` or Tailwind's scale, colours, durations and eases are the palette's, and a size is the spacing scale or a fraction, so `text-[12.5px]` or `rounded-[20px]` snaps to the nearest token, and an override of a radius the design system's own component already sets is deleted. A token a component needs goes into `@theme` so it has a utility, a helper several components share is an `@utility`, and a bracket or raw declaration stays only where no token can say it: a keyframe `animation`, SVG geometry such as a designed `stroke-width` or a transform origin, which keeps the design's value rather than snapping, `content`, a `calc()` over a runtime variable, a one-off grid template.
+- **Reach the design system through `@apply`, not a `:class` object.** A `:class="{ 'glass': variant === 'glass' }"` beside a `:data-variant` stamps the same state twice, once as styling in the template. Register the look as an `@utility` so the `[data-*]` rule can `@apply` it. In Tailwind 4 a class defined in a plain `@layer utilities` block is _not_ `@apply`-able; only `@utility` registers it.
+- **Markup, style and behaviour stay in their own layer.** Script decides what is _true_, CSS decides what that _looks like_, template says where it goes. A computed returning a class string is styling that leaked into TypeScript: put the state on the element (`:data-status`, `:data-variant`) and let CSS select on it. A per-state `Record<State, string>` of Tailwind classes in `.ts` is the tell.
 
 ## Domain namespaces: the autocomplete surface is designed, not incidental
 
@@ -56,6 +59,8 @@ Every top-level export is a tax on every keystroke, forever. `googleLogin`/`goog
 ## Nuxt
 
 - **SPA only: `ssr: false` in every Nuxt project's `nuxt.config.ts`.** All rendering is client-side; never add SSR or assume server-render. Content that must render **outside the running app** (offline preview, or publish-time pre-render of a document) uses a **standalone build script**: Vue `renderToString`, or a headless-Chromium snapshot for components that aren't SSR-safe. That's a build tool, not a change to `ssr: false`.
+
+- **Shared state is a Pinia store, never `useState`.** Anything two components read or write lives in `app/stores/<name>.ts`, setup-style `defineStore`, exported as `$<name>` with no id (`export const $artifact = defineStore(() => {...})`): the build takes the id from the variable. Use it whole, `const artifact = $artifact()` then `artifact.isFull = true` and `artifact.open()`, and never destructure its state, which cuts it off from the store. The `$` marks a store and `use` marks a composable, so never `use<Name>Store`. A composable is reusable logic, not a home for state.
 
 ## Typing
 
@@ -81,4 +86,4 @@ Type safety is a deliverable, not optional: consumer DX (autocomplete, type hint
 - **Reuse the design system before writing a component; this IS code style, not a nicety.** Inventory what exists and map each piece to a builtin. Reviewers keep flagging re-implementation. When a builtin misses the feature you need, **extend the builtin itself** (never fork it, never re-implement beside it); the per-project policy (approvals, breaking-change limits, comparison artifacts) lives in that project's `CLAUDE.md`.
 - **Commit by logical group**: separate behavioral change from pure structural refactor. Not one big commit, not one per file. Reconstruct intermediate file states if needed so each commit is clean.
 - **Commit message, one line, always**: `<type>(<scope>): <description>`, e.g. `feat(auth): add token refresh`. Scope is the file, function, package or area. **Never a body, bullet list or trailing paragraph**: reasoning, context and detail belong in the MR/PR description, which is the thing people actually read. No signature, no `Co-Authored-By`.
-- **Formatter scope: don't let `--write` balloon a diff.** Running `biome`/`prettier`/`eslint --fix` on a file that isn't *already* fully compliant reformats the **whole file** (arrow parens, trailing commas, quotes), burying a targeted change in unrelated churn. On a scoped edit only your own lines should move; if the formatter rewrote untouched lines, `git checkout -- <file>` and re-apply just your change by hand, leaving the pre-existing non-compliance for a separate cleanup.
+- **Formatter scope: don't let `--write` balloon a diff.** Running `biome`/`prettier`/`eslint --fix` on a file that isn't _already_ fully compliant reformats the **whole file** (arrow parens, trailing commas, quotes), burying a targeted change in unrelated churn. On a scoped edit only your own lines should move; if the formatter rewrote untouched lines, `git checkout -- <file>` and re-apply just your change by hand, leaving the pre-existing non-compliance for a separate cleanup.

@@ -16,40 +16,55 @@ Whenever you do load one: pin an exact version, load it with `defer` or at the e
 
 ## Fade in up: the default reveal on every artifact
 
+**On Target S the kit already runs this and the count-up below**, so put `.reveal` and `data-count` in the markup and stop. The code here is for a Target B page, which carries no kit.
+
 This is not optional garnish. Every artifact puts `.reveal` on its major blocks (each panel, figure, table wrapper, callout and section head) and lets them rise into place as the reader reaches them. The `js` class is added by the script itself, so the hiding rule cannot apply unless the script ran.
 
 ```css
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
-.js .reveal       { opacity: 0; }
-.js .reveal.is-in { animation: fadeInUp .55s cubic-bezier(.22, .61, .36, 1) both;
-                    animation-delay: calc(var(--d, 0) * 70ms); }
+.js .reveal {
+  opacity: 0;
+}
+.js .reveal.is-in {
+  animation: fadeInUp 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation-delay: calc(var(--d, 0) * 70ms);
+}
 ```
 
 An animation rather than a transition, because `animation-delay` staggers a group without the delay also applying when the property changes back, and because `both` leaves the element in its final state rather than snapping.
 
 ```js
 (function () {
-  var els = document.querySelectorAll('.reveal');
+  var els = document.querySelectorAll(".reveal");
   // bail BEFORE adding .js — otherwise a browser without IO hides the content forever
-  if (!els.length || !('IntersectionObserver' in window)) return;
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  document.documentElement.classList.add('js');
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) {
-      if (!e.isIntersecting) return;
-      e.target.classList.add('is-in');
-      io.unobserve(e.target);
-    });
-  }, { rootMargin: '0px 0px -12% 0px' });
+  if (!els.length || !("IntersectionObserver" in window)) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.documentElement.classList.add("js");
+  var io = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add("is-in");
+        io.unobserve(e.target);
+      });
+    },
+    { rootMargin: "0px 0px -12% 0px" },
+  );
   // stagger is derived from position among reveal siblings, so nothing is hand-numbered
   els.forEach(function (el) {
-    if (!el.style.getPropertyValue('--d')) {
-      var sibs = el.parentNode ? el.parentNode.querySelectorAll(':scope > .reveal') : [];
+    if (!el.style.getPropertyValue("--d")) {
+      var sibs = el.parentNode ? el.parentNode.querySelectorAll(":scope > .reveal") : [];
       var i = Array.prototype.indexOf.call(sibs, el);
-      el.style.setProperty('--d', Math.min(i < 0 ? 0 : i, 5));
+      el.style.setProperty("--d", Math.min(i < 0 ? 0 : i, 5));
     }
     io.observe(el);
   });
@@ -70,23 +85,30 @@ Write the real, formatted number in the HTML. If the script never runs, the read
 
 ```js
 (function () {
-  var els = document.querySelectorAll('[data-count]');
-  if (!els.length || !('IntersectionObserver' in window)) return;
-  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var els = document.querySelectorAll("[data-count]");
+  if (!els.length || !("IntersectionObserver" in window)) return;
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   els.forEach(function (el) {
     var to = Number(el.dataset.count);
-    if (!isFinite(to) || reduce) return;          // leave the authored text in place
+    if (!isFinite(to) || reduce) return; // leave the authored text in place
     var io = new IntersectionObserver(function (entries) {
       if (!entries[0].isIntersecting) return;
       io.disconnect();
-      var dur = 900, t0 = performance.now(), done = false;
-      var settle = function () { if (done) return; done = true; el.textContent = to.toLocaleString(); };
+      var dur = 900,
+        t0 = performance.now(),
+        done = false;
+      var settle = function () {
+        if (done) return;
+        done = true;
+        el.textContent = to.toLocaleString();
+      };
       requestAnimationFrame(function step(now) {
         var p = Math.min(1, (now - t0) / dur);
         el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))).toLocaleString();
-        if (p < 1) requestAnimationFrame(step); else settle();
+        if (p < 1) requestAnimationFrame(step);
+        else settle();
       });
-      setTimeout(settle, dur + 400);              // a backgrounded tab throttles rAF and would freeze mid-count
+      setTimeout(settle, dur + 400); // a backgrounded tab throttles rAF and would freeze mid-count
     });
     io.observe(el);
   });
@@ -115,19 +137,19 @@ Use real ARIA roles. A `<div>` with a click handler is invisible to a screen rea
     function show(tab) {
       tabs.forEach(function (t) {
         var on = t === tab;
-        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.setAttribute("aria-selected", on ? "true" : "false");
         t.tabIndex = on ? 0 : -1;
-        var panel = document.getElementById(t.getAttribute('aria-controls'));
+        var panel = document.getElementById(t.getAttribute("aria-controls"));
         if (panel) panel.hidden = !on;
       });
     }
-    list.addEventListener('click', function (e) {
+    list.addEventListener("click", function (e) {
       var tab = e.target.closest('[role="tab"]');
       if (tab) show(tab);
     });
-    list.addEventListener('keydown', function (e) {
+    list.addEventListener("keydown", function (e) {
       var i = tabs.indexOf(document.activeElement);
-      var step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      var step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
       if (i < 0 || !step) return;
       e.preventDefault();
       var next = tabs[(i + step + tabs.length) % tabs.length];
@@ -143,14 +165,29 @@ Use real ARIA roles. A `<div>` with a click handler is invisible to a screen rea
 ## Tooltip
 
 ```css
-[data-tip] { position: relative; }
-[data-tip]::after {
-  content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%;
-  transform: translateX(-50%); white-space: nowrap; padding: 4px 8px;
-  border-radius: var(--radius-sm); background: var(--ink); color: var(--bg);
-  font-size: .75rem; opacity: 0; pointer-events: none; transition: opacity .15s;
+[data-tip] {
+  position: relative;
 }
-[data-tip]:hover::after, [data-tip]:focus-visible::after { opacity: 1; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 0.75rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  opacity: 1;
+}
 ```
 
 Put it on something focusable, or add `tabindex="0"`, otherwise it is mouse-only. A tooltip is for a gloss a reader can live without. Anything load-bearing goes in the text, because generated content is unreliable for assistive technology and invisible on touch.
@@ -174,17 +211,26 @@ No build step is needed. `htm` gives the JSX-like syntax through a tagged templa
 ```
 
 ```js
-window.addEventListener('DOMContentLoaded', function () {
-  var root = document.getElementById('sim-root');
-  if (!root || !window.React || !window.ReactDOM || !window.htm) return;  // keep the authored fallback
+window.addEventListener("DOMContentLoaded", function () {
+  var root = document.getElementById("sim-root");
+  if (!root || !window.React || !window.ReactDOM || !window.htm) return; // keep the authored fallback
   try {
     var html = htm.bind(React.createElement);
     var useState = React.useState;
 
     function Sim() {
-      var s = useState(0), n = s[0], setN = s[1];
+      var s = useState(0),
+        n = s[0],
+        setN = s[1];
       return html`<div class="panel">
-        <button type="button" onClick=${function () { setN(n + 1); }}>Step</button>
+        <button
+          type="button"
+          onClick=${function () {
+            setN(n + 1);
+          }}
+        >
+          Step
+        </button>
         <span class="mono">${n}</span>
       </div>`;
     }
@@ -195,7 +241,7 @@ window.addEventListener('DOMContentLoaded', function () {
 });
 ```
 
-Three things that bite. Pin every version, because `latest` breaks the file months later. Guard on the globals *before* clearing the fallback, so an offline read still shows something. And keep the component's colours in CSS classes rather than inline styles, or the light and dark toggle stops reaching them.
+Three things that bite. Pin every version, because `latest` breaks the file months later. Guard on the globals _before_ clearing the fallback, so an offline read still shows something. And keep the component's colours in CSS classes rather than inline styles, or the light and dark toggle stops reaching them.
 
 ## The floor every artifact clears
 

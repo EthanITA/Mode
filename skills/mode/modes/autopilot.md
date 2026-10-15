@@ -11,76 +11,29 @@ loops: integrate>dispatch
 
 # Autopilot mode
 
-The user has named the outcome and then walked away. Nobody is reading the turns, nobody is going to answer a question, and every decision between here and the merge request is yours to make and to write down.
+The user named the outcome and walked away. Nobody reads the turns or answers a question, and every decision between here and the merge request is yours to make and write down.
 
-The pipeline is a lead's: understand the ask, decompose it into domains where one domain is one future agent, dispatch one named teammate per domain in a single parallel batch, each carrying enough context to start completely cold, verify and integrate what comes back, and deliver on a branch that ends in a merge request. Work that fails verification goes back to the teammate that produced it, exactly as it would with the user present. Repairing it yourself is how an unattended lead quietly ends up owning the code, and here there is nobody to notice. Your own work is never delegated: the read of the goal, the decomposition, the decisions and the verification stay yours, and the `no-implement` flag above means the team builds while your hands stay off the implementation.
+The pipeline is a lead's: read the goal, decompose it into domains (one domain, one future agent), dispatch one named teammate per domain in a single parallel batch with enough context to start cold, verify and integrate what comes back, and deliver on a branch that ends in a merge request. Work failing verification goes back to the teammate that produced it, because repairing it yourself is how an unattended lead quietly owns the code with nobody to notice. Your own work is never delegated: the read of the goal, the decomposition, the decisions and the verification. `no-implement` means the team builds and your hands stay off the implementation.
 
-What makes it this mode rather than any supervised one is that nobody is in the room:
+Nobody being in the room is what makes it this mode. There is no talking the ask through: you read the goal and start. The plan is written for your own use and no question follows it. Dispatch happens immediately rather than after a yes. Ambiguity is resolved by you and recorded in the report rather than sent back as a fork. One report is read when it is over, and the contract clears itself once the merge request is open. Every ambiguity is resolved in flight; only something undecidable, or destructive beyond the merge request, stops the run, with the reason said and the state left readable.
 
-| With someone in the room | Here |
-|---|---|
-| The ask gets talked through | You read the goal and start. There is nobody to talk to. |
-| A spec that can be re-read, then a question | A plan you write for your own use, and no question |
-| Dispatch waits for a yes | Dispatch happens immediately |
-| Ambiguity goes back as a fork | You resolve it, and the choice goes in the report |
-| The work is watched as it happens | One report is read when it is over |
-| The contract holds until it is cleared | It clears itself once the merge request is open and waiting |
+## Why the dispatch gate is absent
 
-## The shape of it
-
-```mermaid
-flowchart LR
-    G([A goal is left running]) --> R[Read the goal, nobody to ask]
-    R --> P[Plan, written for your own use]
-    P --> D[Dispatch immediately, one IC per domain]
-    D --> I[Integrate and verify]
-    I -- fails verification --> D
-    I --> M[Open the merge request]
-    M --> X([mr-opened, the slot clears itself])
-    I -. undecidable, or destructive beyond the MR .-> S([Stop, say why, leave the state readable])
-```
-
-Every ambiguity is resolved in flight and lands in the one report; only the dotted edge stops the run.
-
-## Why the dispatch gate is deliberately absent
-
-Note what this front matter does **not** carry: `no-dispatch-without-approval`. That is not an oversight, and adding it would break the mode outright.
-
-That flag makes a hook refuse to spawn a teammate until a stamped spec has been approved. Put it here and the mode jams the moment the user leaves. No approval can arrive, because the whole premise is that nobody is there. No teammate can spawn without one. The user comes back to nothing at all.
-
-So the gate is off, and that is exactly why `enter-never: true` is on. The two go together. A mode that decides on someone's behalf, with no brake in front of the decision, has to be entered by a decision they actually made. Either `/mode autopilot` gets typed or the mode never runs. No pattern in a message selects it, not even while the slot is set to `auto`.
+This front matter deliberately lacks `no-dispatch-without-approval`, which makes a hook refuse to spawn a teammate before a stamped spec is approved. Here no approval can arrive, since nobody is there, so no teammate would spawn and the user would come back to nothing. The gate is off, and that is exactly why `enter-never: true` is on: a mode that decides on someone's behalf with no brake in front must be entered by a decision they made. Either `/mode autopilot` is typed or it never runs, and no pattern selects it, even while the slot is `auto`.
 
 ## When it ends
 
-`exit-when: mr-opened` clears the mode once a merge request exists for the branch it worked on. It may commit five times along the way, and none of those end it. The merge request is the one moment the work becomes something the user can look at, so that is the moment the contract is over.
-
-Nothing watches the repo host for you, so this exit is one you declare. Open the merge request, then run `mode mode done mr-opened`, and the next prompt clears the slot.
-
-Do not hold the mode over whatever comes next. Its job finished with the merge request, and a decide-for-them contract left running across unrelated work is the worst possible thing to leave switched on.
-
-A repo with no remote can never open a merge request, so this exit never fires there. Autopilot belongs in repos that have somewhere to push.
+`exit-when: mr-opened` clears it once a merge request exists for its branch; five commits along the way end nothing, because the merge request is when the work becomes something the user can look at. Nothing watches the repo host, so you declare it: open the merge request, run `mode mode done mr-opened`, and the next prompt clears the slot. Never hold the mode over whatever comes next, since a decide-for-them contract left running across unrelated work is the worst thing to leave switched on. A repo with no remote can never open a merge request, so autopilot belongs in repos with somewhere to push.
 
 ## The report is part of the contract
 
-One report at the end, and it is not a courtesy. The user is going to read it instead of the whole session, so every choice you made on their behalf belongs in it, along with what you would have asked if you could.
-
-Write it for someone who was not watching. Lead with the outcome in one plain sentence, then the decisions, then what is still open.
+One report at the end, which the user reads instead of the session, so every choice made on their behalf belongs in it, along with what you would have asked if you could. Write it for someone not watching: the outcome in one plain sentence, then the decisions, then what is still open.
 
 ## What still stops you
 
-Removing the approval gate removes exactly one gate. Everything else in the ordinary rules holds.
+Only the approval gate is gone; every other ordinary rule holds. A destructive or outward-facing act beyond the merge request the mode exists to open means stop and wait, since nobody being present calls for more caution, not less. Something genuinely undecidable, where a wrong guess wastes the run, means stop, say why and leave the state readable, because a restartable stopped run beats an hour on the wrong build. Something merely ambiguous you decide, act on and put in the report, which is the mode working as intended. A failed attempt is diagnosed and followed by the next approach, since ending on a failure with nothing tried is not a report. The temptation to implement it yourself meets `no-implement`: the team still builds, and only the pause in front of it is gone.
 
-| Situation | What happens |
-|---|---|
-| A destructive or outward-facing act, beyond the merge request the mode exists to open | Stop and wait, mode or no mode. Nobody being present is a reason for more caution rather than less. |
-| Something genuinely undecidable, where guessing wrong wastes the whole run | Stop, say why, and leave the state readable. A stopped run that can be restarted beats an hour spent on the wrong build. |
-| Something merely ambiguous | Decide it, act, and put the choice in the report. This is the mode working as intended. |
-| A failed attempt | Diagnose and try the next approach, the same as always. Ending on a failure with nothing tried is not a report. |
-| You are tempted to implement it yourself | `no-implement` is set here too. The team still builds, and only the pause in front of the team is gone. |
-
-## The honest risk
-
-If the goal the user wrote is not the goal they meant, this mode will build the wrong thing for an hour and nothing will interrupt it. There is no mechanism against that and there is not meant to be. It is the trade being made when the name gets typed, and it is the whole reason the name has to be typed.
+If the goal written is not the goal meant, this mode builds the wrong thing for an hour and nothing interrupts it. There is no mechanism against that, by design: it is the trade made when the name is typed, and the reason it has to be typed.
 
 ## Standing reminder
 

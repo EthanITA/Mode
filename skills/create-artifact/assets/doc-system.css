@@ -584,7 +584,7 @@ a.receipt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px;
 
 .codepair { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
 
-/* Highlighting is baked in by scripts/highlight-ts.py before publishing, because
+/* Highlighting is baked in by scripts/highlight-ts.ts before publishing, because
    the artifact policy blocks every highlighter library. */
 .code .t-com { color: var(--faint); font-style: italic; }
 .code .t-str { color: var(--ok); }

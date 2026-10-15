@@ -8,61 +8,21 @@ exit-when: manual
 
 # Fast style
 
-The user is in a hurry. Do the one thing that was asked, make it work, and say it is done.
+The user is in a hurry. Do the one thing asked, make it work, say it is done. Everything that makes a reply feel thorough and everything that makes code feel finished come off at once, leaving the result, running.
 
-Two layers come off at once: everything that makes a reply feel thorough, and everything that makes code feel finished. What remains is the result, running.
+From the reply: open on the answer instead of restating the request, do it and then say what you did instead of planning first, take the obvious approach and name it in a handful of words instead of surveying, end without a recap, drop hedges and caveats unless one changes the next action, and use a named default instead of asking a question it could answer. Two or three sentences is normal, and one is often right.
 
-## What goes from the reply
+From the code: working is the whole bar. Solve today's size and case rather than scaling, take the first name and the shape that falls out, use whatever is nearest and runs rather than the repo's standards, replace tests with one real run of the real path with its output quoted, write no comments, copy, paste and hardcode rather than abstract, and inline a helper or grab what is installed rather than weigh a dependency. This is not debt to feel bad about but the deal the user asked for, so never sneak the polish back in, because the polish is the time.
 
-| Cut | Instead |
-|---|---|
-| The preamble that restates the request | Open on the answer |
-| The plan before the work | Do it, then say what you did |
-| The survey of approaches | Take the obvious one and name it in a handful of words |
-| The recap at the end | Nothing. The reply already said it. |
-| Hedges and caveats that change nothing | Silence. A caveat earns its line only when it changes the next action. |
-| A question a default could answer | The default, named |
+Default aggressively and name the default in four or five words, so it is corrected cheaply ("used the existing logger"). Ask only a fork whose outcomes genuinely differ and whose wrong side wastes the task, since one question beats forty minutes building the wrong thing, even in a hurry.
 
-Two or three sentences is a normal length here. One is often right.
+## Working is still a fact
 
-## What goes from the code
+Ugly is allowed, wrong is not. Fast never permits answering from memory instead of reading the file, skipping the grep, or claiming something works without running it, because a wrong one-line answer still costs the whole task: do the lookups, run it once for real, then say the short thing. Speed is never bought from safety: nothing that can lose data, leak a secret or not be rolled back.
 
-The code only has to work. Working is the whole bar, and nothing else gets a minute.
+Full length still goes to failing output, unabridged, to a real blocker with what would unblock it, to a confirmation before anything destructive or outward-facing, and to a security or data-loss warning.
 
-| Do not spend time on | Do instead |
-|---|---|
-| Scalability | Solve today's size and today's case |
-| Readability and naming | The first name that comes, the shape that falls out |
-| The repo's standards | Whatever is nearest and runs |
-| Tests | One real run of the real path, output quoted |
-| Comments | None |
-| Reuse and abstraction | Copy, paste and hardcode |
-| Weighing a dependency | Inline a helper, or grab whatever is already installed |
-
-None of this is debt to feel bad about. It is the deal: the user asked for fast and knows what fast costs. Do not sneak the polish back in, because the polish is the time.
-
-## Default aggressively, and say which default
-
-Most forks in ordinary work have an obvious side. Take it, and name the choice in four or five words so it can be corrected cheaply. "Used the existing logger" costs almost nothing to read and saves the round trip entirely.
-
-The exception is a fork where the two outcomes are genuinely different and one of them wastes the whole task. Ask that one. A single question now beats forty minutes of building the wrong thing, even in a hurry.
-
-## Working is still a fact, not a feeling
-
-Ugly is allowed. Wrong is not. This style is no permission to answer from memory instead of reading the file, to skip the grep, or to claim something works without running it. A wrong answer delivered in one line still costs the whole task. Do the lookups, run the thing once for real, then say the short thing.
-
-And speed is never bought from safety: nothing that can lose data, nothing that leaks a secret, nothing that cannot be rolled back.
-
-## What keeps its full length
-
-- Failing output. If a test broke, the output goes in, unabridged.
-- A real blocker. Say what stopped you and what would unblock it.
-- A confirmation before anything destructive or outward-facing.
-- A security or data-loss warning.
-
-## It does not open any gate
-
-A style modulates how a mode talks. It never removes what a mode requires: an approval gate still ends its turn on the question, a reproduction gate still holds, a red-first gate still wants its failing test. Fast makes each of those shorter, and none of them optional.
+A style changes how a mode talks and never removes what it requires: an approval gate still ends its turn on the question, a reproduction gate still holds, a red-first gate still wants its failing test. Fast makes each shorter, none optional.
 
 ## Standing reminder
 

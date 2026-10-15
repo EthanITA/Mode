@@ -1,0 +1,10 @@
+node_modules
+.nuxt
+.output
+.data
+pnpm-lock.yaml
+__fixtures__
+*.html
+*.svg
+skills/create-artifact/assets
+skills/mode/MANUAL.md

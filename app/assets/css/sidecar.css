@@ -1,0 +1,287 @@
+:root {
+  --gutter-w: 44px;
+  --notes-w: 300px;
+  --notes-gap: 12px;
+  --page-w: 880px;
+  --step: 8px;
+
+  /* The island geometry, in one place: the layout anchors its zones off these and
+     the stage derives the room it must leave, so moving a row moves the content. */
+  --gutter: 16px;
+  --island-row-h: 40px;
+  --dock-rest-h: 64px;
+  --shell-max-w: 1536px;
+  /* Half a 1080p panel: 60vh reaches 540px on the ~900px viewport such a screen leaves. Only
+     the expanded (full-history) transcript gets this much room. */
+  --transcript-max-h: clamp(160px, 50vh, 480px);
+  /* Preview shows one turn, not a history: it must not dominate the panel by default. */
+  --transcript-preview-max-h: clamp(100px, 26vh, 220px);
+
+  /* What a panelled face leaves clear to sit under the island row. The bottom is not a
+     token: the layout measures the dock and publishes --dock-h, with --dock-rest-h the
+     fallback for the frame before the observer has reported. The canvas opts out of
+     both and draws to the edges, with the islands floating over it. */
+  --stage-top: calc(var(--gutter) * 2 + var(--island-row-h));
+  --dot-size: 7px;
+
+  /* Session and contract colours arrive as terminal colour names. Cela carries four
+     of the hues outright; the rest are mixed from them so nothing here is a raw hex. */
+  --tint-violet: var(--primary);
+  --tint-amber: var(--warning);
+  --tint-blue: var(--info);
+  --tint-green: var(--success);
+  --tint-rose: var(--error);
+  --tint-cyan: color-mix(in oklch, var(--info) 62%, var(--success));
+  --tint-orange: color-mix(in oklch, var(--warning) 68%, var(--error));
+
+  /* The one literal colour here: the Claude Code mark is a brand mark, and recolouring it through
+     a token would be wrong in both themes. Same carve-out cela makes for ui/provider-icon.vue. */
+  --mascot: #d97757;
+  --mascot-eye: #ffffff;
+  /* VS Code's file icon colours, which make the marks recognisable at a glance; same carve-out as the mark. */
+  --file-html: #e37933;
+  --file-md: #519aba;
+
+  /* The props are objects, not the brand, so they carry object colours and only the body is coral. */
+  --prop-dark: color-mix(in oklch, var(--ink) 82%, var(--canvas));
+  --prop-screen: color-mix(in oklch, var(--info) 26%, var(--ink));
+  --prop-code: var(--info);
+  --prop-deck: var(--border-strong);
+  --prop-key: var(--canvas);
+  --prop-glass: var(--info);
+  --prop-cloud: var(--muted);
+  --prop-alert: var(--warning);
+  --prop-tweed: color-mix(in oklch, var(--warning) 34%, var(--ink));
+  /* A portal is an object with its own fixed colour, like the mark; no token can stand in. */
+  --portal-1: #5b1f96;
+  --portal-2: #7429b8;
+  --portal-3: #8f3fd4;
+  --portal-4: #ab5ce8;
+  --portal-spark: #d98cff;
+  --tint-slate: var(--subtle);
+}
+
+/* The sidecar's own palette as Tailwind colours, so `text-tint` and `bg-ed-bar` resolve like `text-muted`. */
+@theme inline {
+  --color-primary-deep: var(--primary-deep);
+  --color-tint: var(--tint);
+  --color-tint-violet: var(--tint-violet);
+  --color-tint-amber: var(--tint-amber);
+  --color-tint-blue: var(--tint-blue);
+  --color-tint-green: var(--tint-green);
+  --color-tint-rose: var(--tint-rose);
+  --color-tint-cyan: var(--tint-cyan);
+  --color-tint-orange: var(--tint-orange);
+  --color-tint-slate: var(--tint-slate);
+  --color-mascot: var(--mascot);
+  --color-mascot-eye: var(--mascot-eye);
+  --color-file-html: var(--file-html);
+  --color-file-md: var(--file-md);
+  --color-prop-dark: var(--prop-dark);
+  --color-prop-screen: var(--prop-screen);
+  --color-prop-code: var(--prop-code);
+  --color-prop-deck: var(--prop-deck);
+  --color-prop-key: var(--prop-key);
+  --color-prop-glass: var(--prop-glass);
+  --color-prop-cloud: var(--prop-cloud);
+  --color-prop-alert: var(--prop-alert);
+  --color-prop-tweed: var(--prop-tweed);
+  --color-portal-1: var(--portal-1);
+  --color-portal-2: var(--portal-2);
+  --color-portal-3: var(--portal-3);
+  --color-portal-4: var(--portal-4);
+  --color-portal-spark: var(--portal-spark);
+  --color-ed-accent: var(--ed-accent);
+  --color-ed-add: var(--ed-add);
+  --color-ed-add-ink: var(--ed-add-ink);
+  --color-ed-bar: var(--ed-bar);
+  --color-ed-bg: var(--ed-bg);
+  --color-ed-border: var(--ed-border);
+  --color-ed-button: var(--ed-button);
+  --color-ed-ink: var(--ed-ink);
+  --color-ed-muted: var(--ed-muted);
+  --color-ed-remove: var(--ed-remove);
+  --color-ed-remove-ink: var(--ed-remove-ink);
+  --color-ed-warn: var(--ed-warn);
+  --color-action-ink: var(--action-ink, var(--ink));
+  --color-action-line: var(--action-line, var(--border-strong));
+  /* Inline, so --side-w resolves on each face rather than once at the root. */
+  --grid-template-columns-pane: min(var(--side-w), 50%) 0 minmax(0, 1fr);
+}
+
+[data-tint="violet"] {
+  --tint: var(--tint-violet);
+}
+[data-tint="amber"] {
+  --tint: var(--tint-amber);
+}
+[data-tint="blue"] {
+  --tint: var(--tint-blue);
+}
+[data-tint="green"] {
+  --tint: var(--tint-green);
+}
+[data-tint="rose"] {
+  --tint: var(--tint-rose);
+}
+[data-tint="cyan"] {
+  --tint: var(--tint-cyan);
+}
+[data-tint="orange"] {
+  --tint: var(--tint-orange);
+}
+[data-tint="slate"] {
+  --tint: var(--tint-slate);
+}
+
+html,
+body,
+#__nuxt {
+  @apply h-full;
+}
+
+/* The stage owns the scroll, so the floating islands never drift. */
+body {
+  @apply overflow-hidden;
+}
+
+@utility mono-meta {
+  @apply typo-mono-micro leading-snug font-medium tracking-widest uppercase;
+}
+
+@utility dot {
+  @apply size-(--dot-size) flex-none rounded-full;
+}
+
+@utility focusable {
+  &:focus-visible {
+    @apply focus-ring;
+  }
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+}
+
+/* Preflight already strips a button's chrome, so what is left is the pointer. */
+@utility plain-button {
+  @apply cursor-pointer;
+
+  &:disabled {
+    @apply cursor-not-allowed;
+  }
+}
+
+/* Tailwind's spin is a full second; the design system's spinner beat reads as quicker. */
+@utility spinner {
+  @apply motion-safe:animate-spin;
+  animation-duration: var(--duration-spin);
+}
+
+/* Fades in when it mounts or stops being display none, so content that replaces a loading state never pops. */
+@utility settle {
+  @apply transition-opacity duration-(--duration-fast) ease-out motion-reduce:transition-none starting:opacity-0;
+}
+
+/* A loading line that waits a beat first, so a read that lands quickly never flashes it. */
+@utility settle-late {
+  @apply settle delay-(--duration-fast);
+}
+
+/* Marks a region drawn from the design that no data can fill yet, so a drawing is
+   never read as a description. */
+[data-scaffold] {
+  @apply relative;
+}
+
+[data-scaffold] > .scaffold-body {
+  @apply opacity-55;
+}
+
+/* Global, not scoped: speed-highlight's spans arrive via v-html, which scoped CSS never reaches. */
+.shj-syn-kwd,
+.shj-syn-section {
+  @apply text-tint-violet;
+}
+
+.shj-syn-str,
+.shj-syn-insert {
+  @apply text-tint-green;
+}
+
+.shj-syn-num,
+.shj-syn-esc {
+  @apply text-tint-orange;
+}
+
+.shj-syn-func {
+  @apply text-tint-blue;
+}
+
+.shj-syn-class,
+.shj-syn-type,
+.shj-syn-bool {
+  @apply text-tint-cyan;
+}
+
+.shj-syn-cmnt {
+  @apply text-muted italic;
+}
+
+.shj-syn-oper,
+.shj-syn-var {
+  @apply text-subtle;
+}
+
+.shj-syn-err,
+.shj-syn-deleted {
+  @apply text-tint-rose;
+}
+
+/* Monaco draws its gutter outside any component's scope; the --ed-* palette comes from OneDarkVivid.cssVars. */
+.monaco-note-add,
+.monaco-noted-glyph {
+  @apply cursor-pointer;
+}
+
+/* Lucide's message-square-plus, the icon the Note pill wears, so the gutter and the pill read as one action. */
+.monaco-note-add::before {
+  @apply mt-0.5 ml-0.75 block size-3.75 bg-ed-accent content-[''];
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z'/%3E%3Cpath d='M12 8v6'/%3E%3Cpath d='M9 11h6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+/* Monaco's hover keeps a bare <kbd> but strips its class, so the cap is styled from here. */
+.monaco-hover kbd {
+  @apply kbd-cap align-middle;
+}
+
+.monaco-noted {
+  @apply bg-ed-accent/12;
+}
+
+.monaco-asked {
+  @apply bg-primary/16 inset-shadow-[3px_0_0_var(--primary)];
+}
+
+/* Stacked over .monaco-asked, so a line the answer names reads a step brighter than the selection. */
+.monaco-pointed {
+  @apply bg-primary/22;
+}
+
+/* An overlay widget Monaco places, so no component's scoped style reaches it. */
+.side-zone {
+  @apply z-5 pt-2 pr-3 pb-2.5 pl-0;
+}
+
+.side-zone[data-surface="files"] > * {
+  @apply max-w-115;
+}
+
+.monaco-noted-glyph::before {
+  @apply mt-1.5 ml-1.5 block size-1.75 rounded-full bg-ed-accent content-[''];
+}

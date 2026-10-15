@@ -20,64 +20,77 @@ Pin `0.160.0`. Import map plus an ES module, all in one file.
 ```html
 <canvas id="scene"></canvas>
 <script type="importmap">
-{ "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-}}
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
 </script>
 <script type="module">
-try {
-  const T = await import('three');
-  const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
-  const css = getComputedStyle(document.documentElement);
-  const accent = new T.Color(css.getPropertyValue('--accent').trim() || '#6d28d9');
+  try {
+    const T = await import("three");
+    const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
+    const css = getComputedStyle(document.documentElement);
+    const accent = new T.Color(css.getPropertyValue("--accent").trim() || "#6d28d9");
 
-  const cv = document.getElementById('scene');
-  const r = new T.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
-  r.setPixelRatio(Math.min(devicePixelRatio, 2));          // retina otherwise renders 4x the pixels
+    const cv = document.getElementById("scene");
+    const r = new T.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
+    r.setPixelRatio(Math.min(devicePixelRatio, 2)); // retina otherwise renders 4x the pixels
 
-  const scene = new T.Scene();
-  const cam = new T.PerspectiveCamera(50, 1, 0.1, 100);
-  cam.position.z = 4;
-  scene.add(new T.AmbientLight(0xffffff, 0.6));
-  const key = new T.DirectionalLight(accent, 1.4);
-  key.position.set(3, 3, 4);
-  scene.add(key);
+    const scene = new T.Scene();
+    const cam = new T.PerspectiveCamera(50, 1, 0.1, 100);
+    cam.position.z = 4;
+    scene.add(new T.AmbientLight(0xffffff, 0.6));
+    const key = new T.DirectionalLight(accent, 1.4);
+    key.position.set(3, 3, 4);
+    scene.add(key);
 
-  const mesh = new T.Mesh(
-    new T.IcosahedronGeometry(1.3, 1),
-    new T.MeshStandardMaterial({ color: accent, roughness: 0.35, flatShading: true })
-  );
-  scene.add(mesh);
+    const mesh = new T.Mesh(
+      new T.IcosahedronGeometry(1.3, 1),
+      new T.MeshStandardMaterial({ color: accent, roughness: 0.35, flatShading: true }),
+    );
+    scene.add(mesh);
 
-  const controls = new OrbitControls(cam, cv);
-  controls.enableZoom = false;
-  controls.enablePan = false;
+    const controls = new OrbitControls(cam, cv);
+    controls.enableZoom = false;
+    controls.enablePan = false;
 
-  const resize = () => {                                    // size to the container, never the window
-    const w = cv.clientWidth, h = cv.clientHeight;
-    r.setSize(w, h, false);
-    cam.aspect = w / h;
-    cam.updateProjectionMatrix();
-  };
-  addEventListener('resize', resize); resize();
+    const resize = () => {
+      // size to the container, never the window
+      const w = cv.clientWidth,
+        h = cv.clientHeight;
+      r.setSize(w, h, false);
+      cam.aspect = w / h;
+      cam.updateProjectionMatrix();
+    };
+    addEventListener("resize", resize);
+    resize();
 
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let running = true;
-  document.addEventListener('visibilitychange', () => { running = !document.hidden; });
-  cv.addEventListener('webglcontextlost', e => { e.preventDefault(); running = false; });
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let running = true;
+    document.addEventListener("visibilitychange", () => {
+      running = !document.hidden;
+    });
+    cv.addEventListener("webglcontextlost", (e) => {
+      e.preventDefault();
+      running = false;
+    });
 
-  (function loop() {
-    requestAnimationFrame(loop);
-    if (!running) return;
-    if (!reduce) { mesh.rotation.y += 0.004; mesh.rotation.x += 0.002; }
-    controls.update();
-    r.render(scene, cam);
-  })();
-} catch (e) {
-  console.warn('three.js unavailable, static hero shown', e);
-  document.getElementById('scene')?.classList.add('gl-fallback');
-}
+    (function loop() {
+      requestAnimationFrame(loop);
+      if (!running) return;
+      if (!reduce) {
+        mesh.rotation.y += 0.004;
+        mesh.rotation.x += 0.002;
+      }
+      controls.update();
+      r.render(scene, cam);
+    })();
+  } catch (e) {
+    console.warn("three.js unavailable, static hero shown", e);
+    document.getElementById("scene")?.classList.add("gl-fallback");
+  }
 </script>
 ```
 
@@ -93,14 +106,20 @@ Pin `3.12.5`. Best for scroll-driven narrative and orchestrated reveals.
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
 <script defer>
-addEventListener('load', () => {
-  if (!window.gsap) return;                       // content is visible already, so nothing to undo
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  gsap.registerPlugin(ScrollTrigger);
-  gsap.utils.toArray('.reveal').forEach(el =>
-    gsap.from(el, { opacity: 0, y: 24, duration: 0.6, ease: 'power2.out',
-                    scrollTrigger: { trigger: el, start: 'top 82%' } }));
-});
+  addEventListener("load", () => {
+    if (!window.gsap) return; // content is visible already, so nothing to undo
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.utils.toArray(".reveal").forEach((el) =>
+      gsap.from(el, {
+        opacity: 0,
+        y: 24,
+        duration: 0.6,
+        ease: "power2.out",
+        scrollTrigger: { trigger: el, start: "top 82%" },
+      }),
+    );
+  });
 </script>
 ```
 
@@ -113,22 +132,29 @@ For a count-up, the dependency-free version in `interaction.md` is better, and i
 Pin `10.9.0`. A published artifact renders mermaid natively and needs none of this; a local file does.
 
 ```html
-<pre class="mermaid">flowchart LR
+<pre class="mermaid">
+flowchart LR
   A[Client] --> B[Service] --> C[(Store)]
 </pre>
 <script type="module">
-try {
-  const m = (await import('https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.esm.min.mjs')).default;
-  const c = getComputedStyle(document.documentElement);
-  // a dynamic import resolves after DOMContentLoaded, so startOnLoad would never fire
-  m.initialize({ startOnLoad: false, theme: 'base', themeVariables: {
-    fontFamily: c.getPropertyValue('--sans').trim(),
-    primaryColor: c.getPropertyValue('--surface-2').trim(),
-    primaryTextColor: c.getPropertyValue('--ink').trim(),
-    lineColor: c.getPropertyValue('--accent').trim()
-  }});
-  await m.run();
-} catch (e) { console.warn('mermaid unavailable', e); }
+  try {
+    const m = (await import("https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.esm.min.mjs")).default;
+    const c = getComputedStyle(document.documentElement);
+    // a dynamic import resolves after DOMContentLoaded, so startOnLoad would never fire
+    m.initialize({
+      startOnLoad: false,
+      theme: "base",
+      themeVariables: {
+        fontFamily: c.getPropertyValue("--sans").trim(),
+        primaryColor: c.getPropertyValue("--surface-2").trim(),
+        primaryTextColor: c.getPropertyValue("--ink").trim(),
+        lineColor: c.getPropertyValue("--accent").trim(),
+      },
+    });
+    await m.run();
+  } catch (e) {
+    console.warn("mermaid unavailable", e);
+  }
 </script>
 ```
 
@@ -139,11 +165,14 @@ Re-run it on theme change, or the diagram keeps the palette it was born with. Fo
 Pin `0.16.9`.
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+<script
+  defer
+  src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
   onload="renderMathInElement(document.body, { delimiters: [
-    {left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}]})"></script>
+    {left:'$$', right:'$$', display:true}, {left:'$', right:'$', display:false}]})"
+></script>
 ```
 
 ## Charts

@@ -9,6 +9,7 @@ case $self in
 esac
 PLUGIN_ROOT=$(cd "$(dirname "$self")" && pwd -P)
 MODE_BIN=$PLUGIN_ROOT/bin/mode
+INSTALL_TS=$PLUGIN_ROOT/bin/_install.ts
 
 NAME=""
 CONFIG_DIR=""
@@ -90,16 +91,23 @@ ask_yes_no() {
 # ---------------------------------------------------------------- dependencies
 
 missing=""
-command -v python3 >/dev/null 2>&1 || missing="${missing}
-  python3   reads and rewrites settings.json without disturbing the rest of it"
-command -v jq >/dev/null 2>&1 || missing="${missing}
-  jq        pulls the session id out of the JSON Claude Code pipes into a status line"
+node_version=$(node -v 2>/dev/null) || node_version=""
+node_major=${node_version#v}
+node_major=${node_major%%.*}
+case $node_major in
+  ''|*[!0-9]*)
+    missing="${missing}
+  node      Node 24 or newer, the current LTS, which the hooks, this installer and the status line run on" ;;
+  *)
+    [ "$node_major" -ge 24 ] || missing="${missing}
+  node      Node 24 or newer, the current LTS. Found $node_version" ;;
+esac
 
 if [ -n "$missing" ]; then
   warn "Cannot install. These are missing:"
   warn "$missing"
   warn ""
-  warn "On macOS: brew install jq   (python3 ships with the Xcode command line tools)"
+  warn "On macOS: brew install node, or nvm install --lts"
   exit 1
 fi
 
@@ -177,108 +185,27 @@ if [ -d "$PLUGIN_RULES" ]; then
   done
 fi
 
-# ---------------------------------------------------------------- 2. the status line
+# ---------------------------------------------------------------- 2. the node the hooks fall back to
 
-read_statusline() {
-  python3 -c '
-import json, os, sys
-p = sys.argv[1]
-if not os.path.exists(p) or os.path.getsize(p) == 0:
-    print("MISSING"); raise SystemExit(0)
-try:
-    with open(p) as f:
-        d = json.load(f)
-except Exception:
-    print("INVALID"); raise SystemExit(0)
-if not isinstance(d, dict):
-    print("INVALID"); raise SystemExit(0)
-sl = d.get("statusLine")
-if sl is None:
-    print("ABSENT")
-else:
-    print("PRESENT")
-    print(json.dumps(sl))
-' "$1"
-}
+step "2. The node the hooks fall back to"
 
-# Truncates in place: an atomic write would swap a symlinked settings.json for a regular file.
-write_statusline_key() {
-  python3 -c '
-import json, os, sys
-p, cmd = sys.argv[1], sys.argv[2]
-d = {}
-if os.path.exists(p) and os.path.getsize(p) > 0:
-    with open(p) as f:
-        d = json.load(f)
-d["statusLine"] = {"type": "command", "command": cmd}
-with open(p, "w") as f:
-    f.write(json.dumps(d, indent=2) + "\n")
-with open(p) as f:
-    json.load(f)
-' "$1" "$2"
-}
+NODE_POINTER=$USER_CONTRACTS/node
+NODE_BIN=$(command -v node)
+if [ "$(cat "$NODE_POINTER" 2>/dev/null)" = "$NODE_BIN" ]; then
+  say "Already there: $NODE_POINTER"
+else
+  printf '%s\n' "$NODE_BIN" > "$NODE_POINTER"
+  say "Recorded: $NODE_POINTER"
+  touched "$NODE_POINTER: $NODE_BIN, the node a hook runs when Claude Code starts without one on PATH"
+fi
+say "The node on PATH still wins, so switching versions with nvm works. Re-run this if you remove $NODE_BIN."
 
-script_from_command() {
-  python3 -c '
-import os, shlex, sys
+# ---------------------------------------------------------------- 3. the status line
 
-# Interpreters are files, and they come first in a statusLine command, so taking
-# the first existing path used to append a shell block to node itself.
-SKIP = {
-    "env", "nice", "nohup", "sudo", "time",
-    "node", "nodejs", "bun", "deno", "tsx", "ts-node",
-    "python", "python2", "python3", "pypy", "pypy3",
-    "ruby", "perl", "php", "lua",
-    "bash", "sh", "zsh", "ksh", "dash", "fish", "awk", "gawk",
-}
-
-def is_interpreter(arg):
-    base = os.path.basename(arg).lower()
-    if base in SKIP:
-        return True
-    for prefix in ("python", "node", "pypy", "ruby", "perl", "php"):
-        rest = base[len(prefix):]
-        if base.startswith(prefix) and (not rest or not rest[0].isalpha()):
-            return True
-    return False
-
-try:
-    parts = shlex.split(sys.argv[1])
-except ValueError:
-    parts = sys.argv[1].split()
-for a in parts:
-    if os.path.isfile(a) and not is_interpreter(a):
-        print(a)
-        break
-' "$1"
-}
-
-is_shell_script() {
-  python3 -c '
-import os, sys
-path = sys.argv[1]
-try:
-    with open(path, "rb") as f:
-        head = f.read(8192)
-except OSError:
-    raise SystemExit(1)
-if b"\0" in head:
-    raise SystemExit(1)
-try:
-    text = head.decode("utf-8")
-except UnicodeDecodeError:
-    raise SystemExit(1)
-line = text.lstrip().split("\n", 1)[0]
-if path.endswith(".sh"):
-    raise SystemExit(0)
-if line.startswith("#!") and any(
-    token in line
-    for token in ("/sh", "/bash", "/zsh", " env sh", " env bash", " env zsh")
-):
-    raise SystemExit(0)
-raise SystemExit(1)
-' "$1"
-}
+read_statusline() { node "$INSTALL_TS" statusline "$1"; }
+write_statusline_key() { node "$INSTALL_TS" set-statusline "$1" "$2"; }
+script_from_command() { node "$INSTALL_TS" script-of "$1"; }
+is_shell_script() { node "$INSTALL_TS" is-shell "$1"; }
 
 backup_settings() {
   # Copy the contents, never the link, so restoring by hand puts bytes back where they belong.
@@ -296,7 +223,8 @@ emit_chips_resolver() {
 #!/usr/bin/env bash
 # $CHIPS_MARKER  Prints the mode and style chips for one session, or nothing at all.
 session_id=\${1:-\${CLAUDE_CODE_SESSION_ID:-}}
-[ -n "\$session_id" ] || exit 0
+# With no id, bin/mode reads it from the status-line JSON on stdin, so a terminal there means nothing to read.
+[ -n "\$session_id" ] || [ ! -t 0 ] || exit 0
 
 # Resolved on every render: a plugin update moves bin/mode to a new path and a baked one would rot.
 config_dir=\${CLAUDE_CONFIG_DIR:-\$HOME/.claude}
@@ -311,11 +239,11 @@ if [ -r "\$pointer" ]; then
   if [ -n "\$root" ] && [ -x "\$root/bin/mode" ]; then mode_bin=\$root/bin/mode; fi
 fi
 
-if [ -z "\$mode_bin" ] && [ -r "\$manifest" ] && command -v jq >/dev/null 2>&1; then
+if [ -z "\$mode_bin" ] && [ -r "\$manifest" ] && command -v node >/dev/null 2>&1; then
   old_ifs=\$IFS
   IFS='
 '
-  for p in \$(jq -r '.plugins | to_entries[] | select(.key | startswith("mode@")) | .value[] | .installPath // empty' "\$manifest" 2>/dev/null); do
+  for p in \$(node -e 'const m = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); for (const [key, rows] of Object.entries(m.plugins || {})) if (key.startsWith("mode@")) for (const row of [].concat(rows)) if (row && row.installPath) console.log(row.installPath)' "\$manifest" 2>/dev/null); do
     if [ -x "\$p/bin/mode" ]; then mode_bin=\$p/bin/mode; break; fi
   done
   IFS=\$old_ifs
@@ -325,7 +253,11 @@ fi
 if [ -z "\$mode_bin" ] && [ -x "$MODE_BIN" ]; then mode_bin="$MODE_BIN"; fi
 [ -n "\$mode_bin" ] || exit 0
 
-chips=\$("\$mode_bin" chips --session "\$session_id" 2>/dev/null) || exit 0
+if [ -n "\$session_id" ]; then
+  chips=\$("\$mode_bin" chips --session "\$session_id" 2>/dev/null) || exit 0
+else
+  chips=\$("\$mode_bin" chips --stdin 2>/dev/null) || exit 0
+fi
 
 # %b, not %s, so it renders whether bin/mode emits real escape bytes or backslash escapes.
 [ -n "\$chips" ] && printf '%b' "\$chips"
@@ -338,9 +270,8 @@ emit_statusline_script() {
 #!/usr/bin/env bash
 # $CHIPS_MARKER  Written by the mode plugin installer. Add your own segments around the chips call.
 input=\$(cat)
-session_id=\$(printf '%s' "\$input" | jq -r '.session_id // empty')
 
-"$CHIPS_RESOLVER" "\$session_id"
+printf '%s' "\$input" | "$CHIPS_RESOLVER"
 exit 0
 EOF
 }
@@ -429,8 +360,8 @@ handle_existing_statusline() {
     say ""
     emit_chips_block
     say ""
-    say "It expects a session id in \$session_id. If your line does not have one, read it from"
-    say "the JSON on stdin with: jq -r '.session_id // empty'"
+    say "It expects a session id in \$session_id. If your line does not have one, pipe it the"
+    say "status-line JSON instead: printf '%s' \"\$input\" | \"$CHIPS_RESOLVER\""
     return 0
   fi
 
@@ -490,7 +421,7 @@ handle_existing_statusline() {
   touched "$host_script: chips block appended at the end"
 }
 
-step "2. The status line"
+step "3. The status line"
 
 if [ "$SKIP_STATUSLINE" -eq 1 ]; then
   say "Skipped, because --no-status-line was given."
@@ -504,7 +435,7 @@ else
 
   if [ -L "$SETTINGS" ]; then
     WAS_SYMLINK=1
-    real=$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$SETTINGS")
+    real=$(node "$INSTALL_TS" realpath "$SETTINGS")
     say "Note: $SETTINGS is a symlink to"
     say "  $real"
     say "Anything written goes through the link rather than over it, so it stays a link."
@@ -524,17 +455,7 @@ else
       install_fresh_statusline || true
       ;;
     PRESENT)
-      cmd=$(printf '%s' "$sl_value" | python3 -c '
-import json, sys
-try:
-    v = json.load(sys.stdin)
-except Exception:
-    v = None
-if isinstance(v, dict):
-    print(v.get("command", ""))
-elif isinstance(v, str):
-    print(v)
-')
+      cmd=$sl_value
       if [ -n "$cmd" ]; then
         handle_existing_statusline "$cmd"
       else
@@ -556,7 +477,7 @@ elif isinstance(v, str):
   fi
 fi
 
-# ---------------------------------------------------------------- 3. bare command aliases
+# ---------------------------------------------------------------- 4. bare command aliases
 
 # Greppable ownership mark, so a re-run can refresh a file it wrote and must leave yours alone.
 ALIAS_MARKER="mode-plugin:alias"
@@ -676,7 +597,7 @@ write_alias() {
   touched "$target: the bare /$1 command"
 }
 
-step "3. The bare commands: /mode, /style, /approve and /why"
+step "4. The bare commands: /mode, /style, /approve and /why"
 
 say "A plugin cannot register an un-namespaced command, so these four live as small files in"
 say "your own commands directory. Without them the bare names do not exist."
@@ -694,9 +615,9 @@ else
   write_skill_alias showpiece-prompt "Author a one-shot generative prompt using the six-slot anatomy."
 fi
 
-# ---------------------------------------------------------------- 4. the per-contract shortcuts
+# ---------------------------------------------------------------- 5. the per-contract shortcuts
 
-step "4. The per-contract shortcuts"
+step "5. The per-contract shortcuts"
 
 say "mode sync writes one palette entry per contract: /mode:<name> for a mode inside the plugin,"
 say "and style:<name>.md in your commands directory, so a style arrives bare as /style:<name>."

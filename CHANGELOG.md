@@ -7,6 +7,658 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.17.0
+
+### Added
+
+- **Open a URL live, with the comment layer.** The Open a URL field in Artifacts, or `artifact open <url>`,
+  shows any local app or website in the sheet through a proxy on this machine that injects the comment
+  agent, so a block takes a thread, Ask Claude and the tray the way an artifact's does, and Claude answers
+  with `artifact comments`. A Web artifact is a tab, and every one is a tab of the same browser: Open a URL
+  always makes a new one, and inside it links, redirects, forms, scripts and the address bar go to any
+  site in place. Every site gets one host of its own under the sidecar's, the same in every artifact, so a
+  site's cookies are shared by its other hosts, its cross-site scripts and their CORS answers load, as
+  reddit's did not before, and a sign-in, a solved captcha or anything a site stores carries from one Web
+  artifact to the next and lasts across conversations and browser restarts. Text that isn't an address
+  searches Google. Open a URL and the address bar show the typed site's favicon, with a spinner while it
+  is fetched, Google's G for a search, or a globe when the site has none.
+  `artifact open <url>` and a link clicked in the sidecar reuse the conversation's artifact already on that
+  address. A thread names the whole address it was left on, a thin bar under the header runs while a page
+  loads, hovering a Web entry offers to remove it with Undo, no site can navigate the sidecar window
+  itself, and a page reaches no host closer to this machine than its own, as Chrome's Private Network
+  Access draws it, so a remote site can't call localhost, the local network or the sidecar's API. Back and
+  forward arrows, ⌘[ and ⌘], step through the artifact's own history across every site and never the
+  sidecar's, each artifact keeps that history in its record so it survives a switch or a reload, and ⌘L
+  edits the address. A reCAPTCHA checkbox and its picture challenge work inside a Web artifact, so the
+  "unusual traffic" check Google gives a browser it doesn't know can be passed there.
+
+- **Fullscreen is three islands over the page.** F, from the sidecar or inside a live site, grows any artifact to the whole window
+  under a strip of islands: the list button on the left, which lays Artifacts or Files over the left edge
+  to switch without leaving fullscreen, the title in the middle, and Comment, the theme and Exit on the
+  right. A live site's title island carries the arrows, its favicon, title and host, and open in a browser
+  tab, and clicking the title edits the URL in place. The top bar, the board and the dock step aside, and
+  Esc closes comment mode before it leaves fullscreen, from the sidecar or inside a live site.
+
+- **A live site's threads sit beside their blocks.** On the face they dock in a gutter at the sheet's
+  right edge headed by the page and its thread count, and the frame narrows to make room. Grown, each
+  card floats on its own beside its block on a short tether, and leaving fullscreen docks it again.
+
+- **Links open in Artifacts.** A link anywhere in the sidecar, in a page, a rendered file, a live site, a
+  note, an answer or the code editor, opens there instead of in a browser tab: a web address as a Web entry,
+  a local `.md` or `.html` as a File entry listed beside the pages, with its threads kept beside the file
+  rather than in it, and any other file in Files. A relative link reads against the file it sits in, a mail
+  link still leaves, and the href stays real so Copy link gives it.
+
+- **A live site follows the sidecar's theme.** Light or dark reaches the page through the frame's
+  `color-scheme`, so `prefers-color-scheme` answers with the sidecar's choice, and a `data-theme` on its root.
+
+- **Ask Claude, `/btw` from the sidecar.** The session's mascot sits beside the notes, hovering it slides its
+  field out without taking focus, and ⌥↵ or a click puts the cursor there to ask a side question with the whole conversation as context, the running turn
+  included, and nothing reaches the transcript. The mascot acts out the session's status, hopping under a
+  "!" while it waits on you and asleep once it's gone, apart from the side chat's state. The exchanges
+  stack in one scrolling thread that Clear empties with Undo, asking works on a finished conversation, and
+  Send to session turns an answer into a real turn. `POST /api/sessions/<key>/ask` serves it.
+
+- **Quick ask from a comment.** The comment popover on lines in Review's diff, lines in Files, and a
+  block of an artifact gets Ask (⌘↵) beside Add to tray. A blank Claude answers in a side question card
+  under the lines or in the margin: a bare `claude -p` with none of your configuration that can only
+  read files, so it looks at the code instead of quoting your rules. It has follow-ups, Resolve (⌘⌫, with Undo) and Send to conversation (⌘↵),
+  which also carries what is still in the field, and the lines an answer names light up as chips you
+  can click. Asks never enter the tray.
+
+- **Claude reaches the sidecar through events, and a new artifact raises a notification.** Producers
+  append typed events to `~/.claude/sidecar/events.jsonl`, and `/api/events/stream` streams them to every
+  open sidecar with Kafka's offsets, so a consumer resumes where it stopped. The first topic,
+  `artifact.created`, is published by `artifact new` and by the observe hook when Write creates a page in
+  the artifacts folder; the sidecar shows "New artifact" with an Open that takes you to it, and the
+  Artifacts list picks the page up without a reload. `sidecar publish <topic> <json>` publishes from a
+  shell and `useEvents().on(topic, handler)` consumes in the app.
+- **create-artifact builds pages from a component kit.** `artifact new <slug> --ds <key>` scaffolds a
+  local page with the pack's stylesheets, the kit and the review layer in it, and `artifact kit <slug>`
+  refreshes the kit in place. The kit is one runtime keyed on `data-cx`: a figure whose named controls
+  drive steps, panes, outputs, bars and a verdict through attribute expressions, a table the reader
+  searches, filters and sorts, a verdict band, folded detail, a chapter rail, the theme toggle, reveal and count-up.
+  `references/components.md` is the contract and `references/components.html` runs every piece.
+  `templates/interactive.html` is rebuilt on it, which also fixes its `--color-*` tokens that no pack
+  defined, and `templates/showpiece.html` drops its own reveal, count-up and toggle for it.
+- **A Review face, side by side, for what Claude changed since your last approval.** It reads the
+  ledger the `sidecar` mod keeps in `~/.claude/turn-diff/<session>/`, a job the `turn-diff` mod did
+  before it folded into `sidecar` with no window of its own in Claude Code: the original on the left, the
+  disk on the right, in Monaco's diff editor with the One Dark theme the Files editor uses, Compact
+  hiding unchanged regions and Wrap wrapping both sides. The files sit in a folder tree like JetBrains'
+  commit view, coloured by status, with single-folder chains merged. Take a whole hunk with the check
+  or the x on the seam between the sides, or approve and reject files, while selecting text in a pane
+  stays a plain selection. Each press is relayed into the session, where the mod applies it and tells
+  Claude about a reject, so the mod stays the only writer, and a reject of a hunk or a file opens the
+  composer on it to say why. ⌘Z undoes the last approve or reject and ⌘⇧Z redoes it,
+  up to 50 back, with the same pair as buttons whose tooltip names the step; the mod refuses one whose
+  file Claude edited since, and tells Claude when an undo or redo rewrites a file. Comments go to the
+  tray, and the comment icon in either gutter or ⌘K notes a line the way it does in Files.
+  `/c/<key>?face=review` opens on it.
+- **Review approves or rejects a whole folder, or one file, from its row in the tree.** Hovering or
+  focusing a row lays the hunk seam's check and cross over its right end, so the row keeps its full
+  width at rest and its name runs under the pill with no ellipsis. A folder's pill opens on how many
+  files it decides and sends their paths in one press, which ⌘Z takes back as one step. Reject arms
+  first and asks Reject 8?, the second press opens the composer to say why, and Esc disarms it. The
+  sidecar mod labels a step over several files by their count and shared folder, `approving 8 files in
+  .claude/hooks/`, so the undo tooltip stays one line.
+- **The chat island is hidden; Claude Code is the chat.** The prompt, the transcript and the mode and
+  style pickers no longer show in a conversation or on an artifact page. Notes left on a page or a line
+  still collect in the tray, which shows bottom right with one button that sends them to Claude.
+- **An Artifacts face lists what a conversation made: its pages and its plans.** A page is one in the artifacts
+  folder and a plan is one Claude Code wrote to `~/.claude/plans/`, both newest first and each opening in the
+  reader beside the list. A conversation opens on it, after Review in the switcher, and `artifact open`,
+  `?artifact=<slug>` and a followed slug land here. Any other `.md` the conversation wrote stays in Files.
+- **A Files face replaces the Canvas.** All is the conversation's whole folder as a tree that follows `.gitignore`,
+  with a toggle that brings the ignored files back dimmed, and two narrower scopes: Produced, the
+  files Claude created, and Interacted, the ones it read or changed. A dot marks every file the
+  conversation touched, solid for what its latest turn read or edited. Any page the artifact catalogue
+  holds, every `.html` and `.md` in the artifacts folder included, opens in `<ArtifactReader>`, the
+  reader the artifact route now shares, with comments and the tray working as they do there. Its
+  header carries Comment and Fullscreen, which grows the same sheet over the whole face, its shadow
+  deepening as it goes and the frame never reloading, with Comment as an island beside an X, or Esc,
+  that shrinks it back. A page opened at its own address carries the same islands, its X in place of the
+  back arrow. A comment ring on a block
+  the pane has scrolled half away stops at the pane's edge. Every other file opens in an editable
+  Monaco: ⌘S saves through
+  `PUT /api/sessions/:key/files/content`, which refuses a save over text that changed on disk since it
+  was opened, an unsaved draft survives switching files, ⌘K, the comment icon in the gutter or
+  "Note for Claude" in the context menu drops a line note into the tray, and the Note pill notes the
+  whole file. The editor is always dark, in One Dark Pro with its `vivid` and `italic` options
+  on, and its header takes the same palette. `.vue`, `.svelte`, `.astro`, `.jsonc`, `.toml`, `.zsh` and
+  the usual dotfiles highlight through the nearest language Monaco ships, and type errors from imports
+  it cannot resolve are off. The scope pills fill the sidebar's top row and drop to icons when the pane
+  is too narrow for their labels, and Ignored sits on the folder's own row. The canvas face and its
+  zoom control are gone from conversations; the desk still uses the canvas.
+- **The left pane of Files, Review and History resizes.** Drag its edge, or focus the edge and use the
+  arrow keys, and double-click to reset. Every face shares one width (340 by default), so resizing it in
+  Files carries over to Review, History and Artifacts, capped at half the face so a width kept from a
+  wider window never squeezes the other pane.
+- **Review's right pane is editable, and the left stays read-only.** ⌘S saves through the same hash-guarded
+  endpoint as Files, so a turn that changed the file in the meantime is never overwritten; the diff
+  refreshes after a save, an unsaved edit survives switching files, and while one is open ⌘Z undoes
+  the edit and the hunk arrows wait. A deleted file and History stay read-only.
+- **History diffs between turns, side by side.** Pick a turn to see what it did, shift-click another
+  to see what the turns between did together, or read through to the newest version. Each file draws
+  in `<DiffSideBySide>`, the same Monaco diff Review uses, read-only here, as tall as its lines up to a
+  cap and built only once its card scrolls near, from a `pair` the version store hands over whole
+  (`GET /api/sessions/:key/versions/pair`).
+- **One file tree for every face.** `<FileTree>` draws any `TreeSource`: `useFolderTree` lists a folder
+  a directory at a time as it opens, with git deciding what is ignored, and `usePathsTree` lays out a
+  fixed set of files with single-folder chains merged. Files uses the first, Review the second.
+- **The sidecar listens to Claude Code.** Home no longer shows the desk: it says it is listening to a
+  Claude Code session and jumps to the one Claude Code points it at, and every conversation page
+  follows the next point. The `sidecar` mod points it: `/sidecar` in a conversation, which starts the
+  sidecar when it is down and opens it only when no page is listening, and typing in a conversation's
+  prompt. `POST /api/follow` takes the point, with an optional `face` to show there, and
+  `/api/follow/stream` carries it. While a page listens the sidecar also reads Terminal's front tab
+  title once a second and moves when that tab switches to another conversation, so a `/sidecar` point
+  holds until you switch. Following and the jump palette replace the page rather than push it, so Back
+  never walks through every conversation the sidecar followed. The head carries only the conversation's
+  name, where the link back to the desk was, and the desk itself moved to `/desk`. ⌘K means comment
+  everywhere: an editor notes its selection, a picked block opens its edit, and anywhere else it arms
+  the comment picker, so it no longer opens the jump palette.
+- **The sidecar installs as an app, at an address of its own.** `nuxt dev` serves it on port 4747, read
+  at `http://sidecar.localhost:4747`, which Chrome resolves to this machine with no hosts file, so it
+  shares neither a port nor an origin with whatever else runs on `localhost:3000`. A web app
+  manifest, icons and a title bar colour that follows the sidecar's theme make it installable from Chrome
+  as a standalone window with its own Dock icon, and `/sidecar` launches that app when it is installed,
+  else a Chrome app window, else the default browser. `node tools/icons/render.ts` redraws the PNG
+  icons from their SVGs.
+- **`bin/sidecar` opens, starts, stops, restarts and installs the sidecar, and `/sidecar` is that
+  CLI.** Bare `sidecar` opens it the way `/sidecar` always did: started when down and pointed at the
+  conversation, then a sidecar window already open in Chrome comes to the front, even one still
+  reconnecting after a restart, and a new window opens only when there is none. A page whose follow
+  stream a restart closed opens it again by itself. `status` says whether it is up. `stop` takes
+  down a sidecar wherever it was started, a terminal's `pnpm dev` included, and leaves another app on
+  the port alone. `install` makes it a launchd agent that starts at login. `/sidecar <args>` runs
+  `sidecar <args>` in the session and shows what it printed.
+- **"you are dispatcher." takes a pinned default, and the dispatcher runs in `fast`.** A contract that
+  sets `enter-over-pin` may take a slot that only holds a pin, judged on the prompt's opening sentence
+  so a prompt that merely talks about it never switches, and a slot typed by hand stays out of reach.
+  A mode's `style:` puts its own style in place whenever it is entered unless the conversation typed
+  one. `dispatcher` carries both, with role phrases such as `you are dispatcher` in place of the bare
+  word `dispatcher`, which fired on any prompt that mentioned it.
+- **Every ask has a north star.** Each mode declares in its front matter what it can deliver, `pair`
+  and `ic` anything, `studio` and `tester` an artifact, `dispatcher` nothing, and the ask in hand
+  narrows it with `mode deliverable change "the retry fix merged"`, or Jev reads it from the prompt when
+  nothing is named. How far a change ships is the project's `delivery` row, a commit when none matches,
+  overridable per ask with `--ship`. The hook restates it every turn, a third status chip shows it, and
+  `deliverable-guard` refuses an edit before one is named and any edit, commit, push, MR, publish or
+  post outside it. Opening an MR and stamping an artifact mark their part delivered. `mode deliverables`
+  prints every mode against how a change ships where you stand, then every project's row. A mode that
+  declares nothing is untouched by all of it.
+- **`dispatcher`, an eleventh mode for a batch of requests.** It splits the batch, grounds each request
+  just far enough to triage it, and every request ends as one of three outcomes: a new conversation in
+  `~/Notes` on Sonnet at xhigh effort, told to spawn an Opus medium `director`, a relay to the live
+  session that already holds it, or an answer here when a look settles it. `mode triage` gives each
+  request Jev's reading first, two yes-or-no questions and a match against every live session, in one
+  line and one 3 s call, silent without an OpenRouter key. It writes every prompt itself
+  in the user's voice, never waits on a reply, delivers nothing of its own, and titles its conversation as
+  the dispatcher rather than after any request. It is read-only, and
+  `router-guard` now denies `Write`, `Edit` and `NotebookEdit` for it as it does for `swarm`, with a
+  subagent call left alone. It needed an eleventh chip colour, so `violet` joins the palette. Nothing can
+  switch a running session's model or effort, so when the lead is not on Sonnet at high effort the line
+  confirming the switch asks the user to type `/model sonnet` and `/effort high`.
+- **`pair`, a tenth mode and the new default.** Claude keeps its hands on the whole loop and hears two
+  views built to differ. A teammate named `director`, spawned once per conversation on Opus,
+  whatever model Claude runs on, with no edit tools, owns the outcome as design director,
+  product director or tech lead, and is briefed with pointers rather than conclusions so it forms its
+  view from the work itself. Claude Code's `advisor` tool, when the session has one, reads the whole
+  transcript and checks the method against the evidence. What to build, scope, taste and the sign-off
+  go to the director; approach, evidence, being stuck and receipts go to the advisor. Both weigh in at
+  `plan?` and at `review?`, after verification and before any commit, with the director's brief never
+  carrying the advisor's view. On a split over direction the director's answer stands, and a sign-off
+  never stands in for the user's yes. `ic` is now the same loop without the director and no longer
+  calls itself the default. A fresh slot still starts empty, so making `pair` the default is
+  `cd ~ && mode mode pin pair`.
+- **Two guards hold `pair` to its own contract.** `director-guard` denies the director any write, spawn,
+  board item or git write over Bash, keyed on the name it was spawned under, read from its meta file
+  beside the lead's transcript, since a named teammate can keep tools its type would drop.
+  `pair-guard` denies the lead a commit over 30 changed lines, or `review-lines` in the config, until
+  the director has answered after the lead's last edit.
+- **Human prose outranks every mode, style and skill.** A contract's reminder is restated every turn
+  while a ground rule is told once, so a contract that asked for another register won by repetition.
+  A rules file can now declare `outranks: contracts`, and its own `## Standing reminder` is restated
+  on every turn, last, after the mode's and the style's, under a line saying it wins wherever they
+  disagree. `prose` carries the flag and a four-line reminder, and `mode why` lists it.
+- **A tenth chip colour, `orange`.** ANSI 256-colour 208, the first code outside the sixteen, because
+  the unused brights (91, 92, 93, 96, 97) sit too close to red, green, yellow, cyan and grey to read
+  apart, and the sidecar already paints `orange` in a tint no other mode holds. The ten modes hold
+  all ten colours again, so an eleventh mode means an eleventh colour.
+- **The sidecar's home page shows the conversations `claude agents` shows, and deletes them the same
+  way.** The list used to be built from whichever sessions had left an artifact list behind, which on
+  this machine meant 89 rows against the agent view's 9. It now takes its set from
+  `claude agents --json --all`, cached for one poll, so the names and the lane each conversation sits
+  in are the CLI's own rather than something re-derived; reading the job files directly is a fallback
+  for a machine with no CLI, and a lane that came from there is marked as derived. Everything the
+  sidecar kept but no background job owns is still returned and still reachable by link, flagged
+  archived and folded behind a toggle in the header.
+- **The home page is a canvas.** Conversations are cards on the same pannable, zoomable plane the
+  session canvas uses, arranged where you drop them, with the layout held in this browser rather than
+  in the conversation. Each card carries a thumbnail of that conversation's own canvas, drawn from the
+  placement it saved, or nothing when it never saved one. Double-click opens it.
+- **A conversation can be deleted from the sidecar.** The card's context menu asks a second time in
+  place, the way `claude agents` wants ctrl+x twice. It stops the worker before it removes anything,
+  and gives up rather than escalating if the worker will not stop, so a live one is never stranded.
+  It removes the job directory and the six places the sidecar keeps per-session state. It never
+  touches the transcript, the file history, or a document that a conversation's artifact list merely
+  points at, and it refuses outright on a job running in worktree isolation.
+
+- **The sidecar's board writes Claude Code's task store directly.** Ticking a task complete, adding
+  one, or reassigning it in the Board panel now writes the task file itself, stamped
+  `#id [CATEGORY] subject` exactly as a `TaskCreate` would be, and sends nothing to the chat. The
+  agent learns what moved from one line of injected context on its next `PostToolUse`,
+  `UserPromptSubmit` or `SessionStart`, so a board edit costs it no turn and never arrives looking
+  like something the user typed. Ids are claimed the way the harness claims them, highest plus one
+  and written only if absent, so the two writers cannot collide. The drag order is a webapp-only
+  preference kept outside the task store, where the agent never reads it.
+
+- **`board-cap` bounds open USER work on the board.** It guards `TaskCreate` and `TaskUpdate`, denying
+  past the cap and naming the alternative: fold the work in, or take the default and proceed.
+- **The chat panel parses an assistant turn's X/Y/Z read into its own panel**, tinted apart from the
+  rest of the answer and open by default, so the read Marco actually wants first is not buried inside
+  the prose. A turn without one renders exactly as before.
+- **The chat panel takes a `compact` mode.** Over the artifact page it now starts as a narrow closed
+  pill instead of a full-width, half-height block; focusing the prompt or new assistant activity opens
+  it, and it never auto-closes once open.
+- **Code is syntax highlighted**, in History's and the artifact page's diff rows (by the file's own
+  extension), in a `.md` artifact's fenced code blocks (by the fence's language), and now in the chat
+  panel's own fenced code blocks too. One shared util, `Syntax` (`shared/utils/highlight.ts`,
+  re-exported from `app/utils/highlight.ts` for the client), wraps `@speed-highlight/core` and maps
+  its token classes onto the app's own light/dark theme colours rather than a bundled theme, so it
+  reads like the rest of the sidecar in either mode.
+- **One guard can be turned off without the rest.** `"disarm": ["board-check"]` in
+  `~/.claude/mode/config.json` silences only the guards it names, by file stem, where `"guards": "off"`
+  still turns every one of them off.
+- **A git switch or checkout stops before it carries someone else's work to another branch.**
+  `git-guard` denies it while the checkout holds uncommitted changes to files the session never
+  edited, and says to park them with a named stash first.
+- **A shell command can't destroy what the session doesn't own.** `delete-guard` reads each Bash command
+  the way the shell and the tool would, following `cd`, variables, loops, subshells and `bash -c`, and
+  denies `rm`, `rsync --delete`, `find -delete`, `git clean`, `reset --hard`, a `checkout` or `restore` of
+  paths, `mv`, `cp` or `ln` over a file, or a truncating redirect when it would take the filesystem or home
+  root, a whole git working tree, another session's job folder, more than 50 tracked files, or an untracked,
+  ignored or uncommitted file the session never wrote. It lists `find` and `git clean` matches with their own
+  dry runs, and reads rsync with openrsync's option grammar, so an option that swallows a path is caught
+  before a one-operand `--delete` mirrors a scratch folder onto the current directory. What it can't see,
+  such as an unknown variable or `xargs rm`, is denied too. The session's `$CLAUDE_JOB_DIR/tmp` and build
+  output like `node_modules` stay free.
+- **Following Claude Code switches pages under a loading veil.** When the sidecar moves on its own,
+  from a conversation to Listening, from Listening to a conversation or between two conversations, a
+  blurred veil fades over the page, the page changes underneath it and the veil lifts once the new one
+  has rendered. Claude shows up on it only when the new page is slow, and a switch you start yourself
+  stays instant.
+- **Select any text to ask Claude about it.** Selecting words in an artifact, a Files preview, a live Web
+  page, the code editor, a Review or History diff or a past version's diff shows an Ask Claude chip at the
+  end of the selection, and clicking it or pressing ⌘K opens the comment popover quoting exactly those
+  words. Where the surface has nowhere to show an answer the chip reads Note for Claude and adds to the
+  tray. In comment mode a drag selects and a click still picks the block.
+
+### Changed
+
+- **Comment mode lights the paragraph under the pointer, not its whole wrapper.** A pick is the
+  innermost block that owns the words, holding ⌥ takes the box around it such as a whole card, and
+  crossing the gap between two paragraphs keeps the last one lit. Blocks inside an artifact's or a Web
+  page's own iframes pick and select too, and an embed from another origin picks as one block. Wrappers
+  are still indexed, so a thread left on one before this keeps its place. The banner says ⌥ widens, and
+  pressing or releasing ⌥, or holding C to arm, re-lights the block under a resting pointer at once, with
+  no need to move the mouse.
+- **The sidecar is styled with Tailwind and Cela's tokens.** Every component's scoped style `@apply`s
+  Tailwind and `@cela/design` utilities in place of about 3,700 hand-written declarations, and every size,
+  radius and colour is an existing token, so text sits on Cela's `typo-*` scale (12.5px text is 13px now),
+  radii on `rounded-field` and Tailwind's scale, and a Surface's own radius is no longer overridden.
+  `sidecar.css` registers the sidecar's colours and the faces' split layout in `@theme` and its shared
+  helpers as `@utility`, and what stays raw is what no token can say, such as keyframe animations and SVG
+  geometry. Prettier sorts the classes, `tools/mascot-states.ts` compiles the mascot's style before
+  inlining it, and `rules/code-style.md` asks the same of every Tailwind project.
+- **Pages, live sites and rendered files share one comment layer, the page artifact's.** A picked block
+  opens the same popover everywhere, and its notes float over the page's inline end once the sheet is
+  grown or the page has its own address, with the page kept clear of them. A live site drops its notes
+  column for it and narrows its frame rather than padding a site it doesn't own, and a Markdown or HTML
+  file previewed in Files takes block comments too, kept in the tray against the file, with F growing the
+  Files sheet so they show. Edit shows only on a page it can rewrite, and every pick carries the artifact
+  it was made on, so a note no longer lands on whichever one another face held last.
+- **The sheet's header carries the fullscreen title before it grows too.** A page or a live site opens
+  under the same centred title it has in fullscreen, a live site's with its arrows, favicon, title, host
+  and open in a browser tab, and only Comment and Fullscreen sit at the right, so the path line, the
+  labelled buttons and the reload button leave the sheet and ⌘R still reloads. The title sits flat in the
+  header and turns into a glass island only once the sheet grows, so it never reads as one more of the
+  app's islands. Growing and shrinking keep the one header, so an address being typed in it survives the
+  switch.
+- **Growing and shrinking the sheet move as one.** The app's islands and dock fade out of the way, the
+  header's buttons fade and scale into the fullscreen islands and back, the title's flat fill crossfades
+  into glass and the sheet's border eases away, all while the sheet travels, and a page's notes fade in
+  where they land. Reduced motion still snaps.
+- **Tooltips draw above everything.** Every tip opens in the browser's top layer, so a live site's frame,
+  the next button along or a clipping pane no longer covers it, and it goes once its control fades out.
+- **Faces stay as you left them.** Artifacts, Review, Files and History each stay mounted behind the
+  others once opened, so switching back fades the face in with nothing read again, and a list says it is
+  reading until its data lands instead of saying it is empty.
+- **Loading shows a spinner, not the mascot.** The cover between Listening and a conversation spins the
+  favicon's loader once a switch runs slow, and the sidecar's first load shows the same loader on the
+  theme's own canvas, so a dark sidecar never starts white.
+- **Picking another page, file or turn never flashes.** A loading line waits a beat before fading in,
+  so a quick read never shows it. Another artifact no longer blinks "could not be read" or the last
+  page's versions while it loads, Files keeps the last file up until the next one lands, and History's
+  diffs fade in where "Reading…" was while turns already read stay instant.
+- **Artifacts rows show their kind as an icon.** A Web artifact shows its site's favicon, a `.md` the VS
+  Code Markdown mark and an `.html` page its `<>`, in place of the Web, Page and Plan chips, and a row's
+  title and every toast stop at two lines.
+- **The sidecar opened at plain localhost moves to sidecar.localhost.** A site in it opens on a
+  subdomain of the sidecar's host, and under plain localhost that frame is cross-site, so no login stuck.
+  Theme, pane width and the other settings the sidecar keeps in the browser start over once.
+- **comment-guard challenges every comment an Edit adds.** Two short notes per edit no longer pass
+  quietly, and a comment the edit only carries over from `old_string` no longer counts, so a short
+  one-liner that restates the code gets flagged the moment it lands.
+- **Leaving a conversation in Terminal sends the sidecar to Listening.** When Terminal's front tab
+  switches to one with no conversation in it, or the conversation in it exits, the page goes to
+  Listening, and coming back to the same conversation opens it again. A Terminal that could not be
+  asked counts as no change. A conversation opened by hand or pointed at by `/sidecar` still stays put
+  until the front tab switches.
+- **Review leaves out `.claude` files.** Plans, job scratch, artifacts and config under a `.claude`
+  folder never show in the Review face, so Approve all and Reject all never touch them either.
+- **A sidecar that opens shows the conversation in front in Terminal.** Opening the app, reloading or
+  coming back on a restored page reads Terminal's front tab first, and goes to Listening when no
+  conversation is there. Whichever came last wins, a `/sidecar` point or the front tab switching after
+  it, so the app `/sidecar` launches opens on what it pointed at, and a switch made while the sidecar
+  was closed still counts because the front tab is read when the point is made. Before, an opening page
+  went to whatever was pointed at last.
+- **A session waiting on a permission prompt or a question reports `waiting`.** `/api/sessions` used to
+  drop that status to nothing, so a client reading `status` sees a third value beside `busy` and `idle`.
+- **Every key the sidecar shows is a keycap, and only in the one tooltip under the pointer.** A tip
+  writes its shortcut as `{cmd K}` so it shows inverse caps, as in "Comment on anything · ⌘K or hold C",
+  and no screen draws a cap inline anymore. A key sits in the tip of the button it presses, and a key
+  with no button, such as ↑↓ in a list, ↵ in a field or esc on the comment banner, sits in a tip on that
+  list, field or surface, which opens on hover and never while you type. The key legends under the Desk,
+  the jump palette, Ask Claude, the comment popover, the edit panel and an adrift thread are gone, and
+  `app/utils/keycaps.test.ts` fails when a component mounts `UiKbd` again.
+- **Listening and the Desk follow the Sidecar design.** Home waits for Claude Code under a breathing
+  Listening tag, offers to resume the last conversation, lists the three ways to point the sidecar and
+  links to the Desk, a link that goes quiet with a tooltip when no other conversation exists. The Desk at
+  `/desk` is a centred list instead of a canvas of cards: the conversations `claude agents` lists, the
+  ones ready for review or needing input first, each with its tint, its age and the job's one-line status
+  (`detail` on `/api/sessions`, read off the job's state file). ↑↓ and ↵ open one, esc or the Back island
+  returns, and right-click still deletes. The archive toggle, card previews, badges and Tidy up are gone,
+  so a conversation `claude agents` no longer lists is reached through the jump palette, and
+  `/api/sessions` no longer carries the `preview` the cards drew. When the server
+  stops answering, every route shows the Reconnecting screen over a page that stays mounted underneath,
+  in place of the banner by the composer, and it offers no conversation, Desk link or way to point it,
+  since none of them work without the server.
+- **Every mode and style contract keeps every rule in about two thirds of the words.** The eleven modes
+  went from 113k to 75k characters and the six styles from 33k to 25k, each body small enough to share
+  one hook with a switch line, the pipeline position, the deliverable and an outranking reminder, which
+  a contract test now enforces. Front matter and standing reminders are unchanged.
+- **A mode and a style switched on one prompt never spill to a file.** When the two whole contracts
+  would outgrow one hook, the mode's goes now and the style's arrives with the next prompt, under a
+  line saying so. Entering `dispatcher`, which also sets `fast`, is the case that needed it.
+- **The ground rules and the held contracts arrive at session start, each part under the hook cap.** Four
+  new `SessionStart` hooks, `start/rules-1`, `start/rules-2`, `start/mode` and `start/style`, each carry
+  one part with Claude Code's whole 10,000-character budget, so the first prompt no longer runs over the
+  cap and hands Claude a file to read. They fire again on a resume, a clear or a compact, which re-arms
+  everything before the next prompt instead of on it, so `resume` no longer clears the announced markers.
+  A session whose start hooks never ran still gets the ground rules on its first prompt.
+- **A held contract goes out once, and again only when it changes.** The prompt hook no longer restates a
+  mode's or a style's standing reminder every turn: an unchanged turn carries only a pipeline position or
+  deliverable that moved, plus the outranking rule's reminder. A switch arrives as "The mode switched from X
+  to Y. The X contract no longer applies", then the whole new contract, and a slot turned off arrives as a
+  line saying so. A resume or a compact still re-arms the whole contract. In measured sessions the
+  per-prompt repeat was about 800 tokens, and every copy stayed in context until the next compaction.
+- **A ground rule already loaded as memory is not injected again.** List its stem under `memory` in
+  `~/.claude/mode/config.json`, such as `"memory": ["prose"]` for a prose rule a CLAUDE.md imports, and the
+  first prompt skips its body while its `outranks` reminder still comes from the file every turn.
+- **The notes column shows only on a routed page or a fullscreen sheet, and ⌘↵ sends the notes.** On a face
+  the sheet is too narrow for it, so notes stay in the tray until the page grows. ⌘↵ does what Send notes to
+  Claude does, unless a note box already took the keystroke to save.
+- **The sidecar app keeps shared state in Pinia.** Stores are `$<name>()` and composables stay `use<Name>()`.
+  A store in `app/stores` is written `export const $artifact = defineStore(() => {...})` and the build
+  (`app/utils/define-store/`) injects the id `artifact` from the variable, so the name is written once; an explicit id still wins.
+  It is used as a plain Pinia store: `const artifact = $artifact()`, then `artifact.isFull = true` and `artifact.open()`.
+  The first is `$artifact`, holding the fullscreen flag and replacing the `useArtifactFullscreen` composable;
+  the other `useState` flags move as they are touched.
+- **`artifact open` shows the page in the sidecar, not the browser.** `artifact open <slug>` points the
+  sidecar at the conversation and shows the page in Artifacts. The browser is still `artifact open <slug> --browser`,
+  or `--web` for the published URL, and `sidecar open --artifact <slug>` and `POST /api/follow` with a `slug`
+  do the same from outside.
+- **create-artifact no longer opens the page it built.** It hands over the path and stops, and the artifact
+  rule says the same, so a finished page opens only when you run `artifact open <slug>` yourself.
+- **What the sidecar sends a session opens on `[[sidecar]]`, and a Review press is just its JSON under it.**
+  `[[cc-sidecar]]` and the inner `[[turn-diff v1]]` are no longer sent, and `[[cc-sidecar]]` and
+  `[[mode-relay v1]]` are still read in older transcripts. A conversation started before this update runs the
+  old sidecar mod, which reads neither, so restart it before pressing anything in Review.
+- **The Review file tree drops its trailing labels.** The `T3 T5` turn tags on files and the file count
+  on folders are gone, and a line down the left of each open folder wraps its children instead.
+- **The sidecar keeps its data under `~/.claude/sidecar/`.** The server log is `server.log` there, History's
+  versions moved from `~/.claude/mode/versions/` to `versions/`, and the Review ledger is written to `review/`.
+  A review already begun in `~/.claude/turn-diff/` is still read from there and carries on in it, and the
+  existing versions were moved by hand, so a machine with older ones needs
+  `mv ~/.claude/mode/versions ~/.claude/sidecar/versions`.
+- **Artifacts live in `~/.claude/sidecar/artifacts` by default, instead of `~/artifacts`.** `NOTES_ARTIFACTS`
+  and the `artifacts` key in `~/.claude/mode/config.json` still override it, and the CLI and the sidecar now
+  resolve it in one place. A machine on the old default either runs `mv ~/artifacts ~/.claude/sidecar/artifacts`
+  or sets the key to `~/artifacts`.
+- **The deliverable guard only counts a page directly inside an `artifacts/` folder as an artifact.** Code
+  under a folder of that name, such as `server/api/artifacts/`, is an ordinary change.
+- **Mode runs on Node alone.** python3 and jq are no longer needed, and Node 24 or newer is. Every
+  hook, `bin/mode`, `bin/artifact` and the create-artifact scripts are TypeScript run by node, and a
+  hook reads mode state in process instead of starting `bin/mode`, so the prompt hook went from about
+  330ms to about 35ms. The installer edits `settings.json` through `bin/_install.ts`, the generated
+  `statusline.sh` pipes its JSON into `chips.sh`, which hands it to `bin/mode chips --stdin`, and
+  `chips.sh` finds the plugin in `installed_plugins.json` with node. A `statusline.sh` written by an
+  older installer still calls jq, so re-run `./install.sh --force` if you remove jq. The plugin's
+  own suite is `pnpm test:plugin` and its typecheck `pnpm typecheck:plugin`.
+- **The theme switch is one island in the top right of every route and face,** beside the other
+  islands, and no view carries its own copy. It themes the whole sidecar, and the page inside the
+  frame follows it. Comment sits with the page, as a pill in its Files header and as an island when it
+  is fullscreen or open on its own. Comment, the theme switch, Fullscreen and X are one
+  `<ChromeAction>`, a pill in a bar or an island in the top row, so each keeps one icon, one tooltip
+  and one motion wherever it shows.
+- **The board and the notes float over the faces,** which now run to the bottom of the window, the
+  counter above Send notes is gone, every island is liquid glass, and the faces read Files, Review,
+  History.
+- **A delivery from the sidecar reads as what Marco wrote.** The sidecar marks what it sends
+  `[[cc-sidecar]]` instead of `[[mode-relay v1]]`, and the `sidecar` mod takes it out of Claude Code's
+  peer envelope before it lands, so the "Another Claude session sent a message" lines never reach
+  the conversation. `hooks/relay.ts` still reads both markers, for a session running without the mod.
+- **A note sends Claude a short quote.** The lines or block it is about travel cut to one line of 160
+  characters, since Claude reads the file itself, and the composer shows only the first three lines
+  of a long selection.
+- **`edu` explains things the way a friend who knows the subject would.** It used to call prose the
+  expensive medium, gloss every term, and close every explanation on a three-to-five-line recap, all
+  of which its reminder repeated every turn against the prose rule. It now talks in the first person
+  and in connected sentences, keeps the top-down order without the labelled skeleton, explains a new
+  term in passing, draws what has shape, and ends on the one thing to keep, said once. `debug`'s
+  explainer and `studio`'s register lost their gloss-every-term lines for the same reason.
+- **The `prose` ground rule is written from how colleagues type to each other at work.** It came out of
+  setting human messages beside an agent's in the same threads. It now asks for the fact that settles a
+  question and nothing after it, a quote of the words it disagrees with, agreement kept to one word,
+  yes or no first on a yes-or-no question, your own take unfiltered when you are convincing someone or
+  saying how something feels, thoughts joined with "because" and "so" under light punctuation, one
+  word kept for one thing, the user's own voice on anything sent under their name, chat replies to
+  the user laid out to scan with spacing, bold and small tables and bullets only for parallel items,
+  while messages to others stay plain paragraphs, and
+  no colon or parentheses standing in for a banned dash. The
+  `prose-check` hook's rewrite hint stopped suggesting those two as the substitute.
+- **Parentheses can hold an aside again, and the `evidence` rule says confidence the way `prose` does.**
+  The prose rule had limited parentheses to an id or a path, which the artifact register's own good
+  example broke. A dash still can't become a colon or parentheses. The evidence rule listed confidence
+  as four categories that read as the labels the prose rule bans, so it now asks for the verb on the
+  claim itself.
+- **Files fullscreen shrinks back faster than it grows,** and every transition timing on a mounted
+  surface reads a `@cela/design` token instead of a number.
+- **Tooltips come from `@cela/design`.** Once one has shown, the next along a row opens at once, and
+  each opens away from the nearest window edge.
+- **Every face says empty, loading and failed the same way,** through `@cela/design`'s
+  `StateMessage`: one sentence-case line where uppercase mono and sentence case used to mix, and a
+  failure is announced.
+- **Lines that are still working sweep, and the desk's running bar and the listening dot breathe.**
+  Both come from `@cela/design` and go still under reduced motion.
+- **Toasts leave upward and the lane closes up behind them.** A toast used to vanish in one frame and
+  the ones below it jumped. The lane stays mounted while empty, so the first toast is announced too.
+- **A saved note lands beside its line, and the notes column snaps open.** The column used to tween its
+  width, which re-wrapped the page and moved every mark on every frame.
+
+### Removed
+
+- **The board island.** Hidden on the conversation and artifact pages, the only ones that showed it, so its
+  components, the `/api/sessions/:key/board` routes, the board helpers behind them and the `board-island`
+  render-check region are gone.
+- **The Canvas face.** The Files face replaced it, so its components, the `/api/sessions/:key/canvas`
+  routes and the canvas types are gone.
+- **The chat island.** Hidden since Claude Code became the chat, so the dock, the mode picker, the
+  transcript and the question options are gone, and the session perch keeps only its mascot.
+- **`/api/why` and `/api/contracts`.** Nothing has called them since the tab rail and the pipeline strip
+  went, and `mode why` on the CLI is unchanged.
+- **The delivery receipt.** `board-deliver` (the warning on ticking a delivery-shaped item), `board-done`
+  (the stop check that re-opened an all-ticked board whose receipt failed), the `metadata.done` receipts
+  they verified and the `delivery` config rows are gone, so ticking an item no longer runs `glab` or
+  `git`. A stale `delivery` key in `config.json` is ignored, as is `DELIVER_MODE`.
+- **The deliverable.** `mode deliverable` and `mode deliverables`, the `deliverable` ground rule,
+  `deliverable-guard`, the `deliverables:` front matter key, the status-line chip and the
+  `Deliverable:` line in the injection are gone, so an edit, a commit, a push or a post is no longer
+  held to a named north star. The `delivery` config rows stay, since `board-deliver` still reads them.
+- **`artifact wait` and the page's local sink.** The review layer sends Send and Approve to the
+  sidecar relay, and with no sidecar running it downloads `<slug>.comments.json` for
+  `artifact comments` to pick up. `artifact review --sink` goes with it, and a page built by an
+  older layer still pings port 7391, which now just fails and falls through to the download.
+- **The python hooks.** `hooks/*.py`, `hooks/guards/*.py` and `hooks/sync.sh` are gone, since every
+  hook runs from its `.ts` beside them. A session opened before 0.17.0 still calls the python files
+  and has every guarded tool call blocked once they are missing, so restart it after updating.
+
+### Fixed
+
+- **The sidecar stops flooding `/api/why`.** Every five-second poll asked for the why of every listed
+  conversation, close to 300 requests a tick, for a tab rail nothing renders anymore, so the poll and
+  the screen's gate and ground rule counts it fed are gone.
+- **The five-second poll asks for live conversations only.** It fetched every conversation on disk, about
+  330 KB and 170ms of server work a tick with three hundred of them, and now asks for the running ones,
+  the jobs and the one on screen, about 28 KB in 16ms, while the full list loads once with the page.
+- **Gmail and the Google Store open from google.com.** The proxy sent each request marked as a framed
+  page with the sidecar as its referrer, which Google's sign-in answers with a 401, and a form posted to
+  the site's own or another of its hosts, such as the consent page's, left the proxy for a 403. Requests
+  now go out as a browser tab's, forms and redirects stay on the proxy, a link clicked inside a site opens
+  where it points, and all of a remote site's hosts share one cookie jar. A remote entry opened before
+  this starts with fresh cookies once, because its proxy origin is now named after its site.
+- **Google's cookie consent sticks.** A site's calls to its other hosts, such as consent.google.com, go
+  through its proxy, so the cookies they set land where the site reads them.
+- **A live page shows as soon as it is parsed.** The sidecar held a site behind its full load, which on
+  Storybook meant its own slow preview, and the loading line now sits centred instead of over the page.
+- **Switching faces keeps a live page loaded.** Artifacts stays mounted behind Files, Review and History
+  once opened, so a site comes back with its scroll and sign-in as you left it, and its F, ⌘R and Esc
+  stay quiet while another face is up.
+- **Switching apps no longer sends the sidecar to Listening.** While another app activates, Terminal
+  reports a hidden tabless window, or another of its windows, as the front one for a moment, and a read
+  landing there left the conversation. The read now skips hidden windows, and a front tab change counts
+  only once it still holds 300ms later.
+- **Listening opens the conversation it offers to resume.** Pointing the sidecar at the last
+  conversation, from Terminal, `/sidecar` or typing, left the page on Listening, because it took that
+  conversation for the one already on screen. Now it opens it like any other.
+- **Edit on an artifact block and Ask AI on a note run through Claude Code.** They called the Anthropic
+  API and failed without `ANTHROPIC_API_KEY` in the sidecar's environment, then fell back to Gemini
+  through `agy`. Now both are `claude -p` on your own login, Haiku first and Sonnet when Haiku hands
+  the instruction over, so nothing outside Claude Code needs setting up. When neither answers, the toast
+  says why, such as not being logged in or Claude Code not being installed.
+- **Fenced code shows in answers, turns and notes.** Every fenced block rendered as an empty box,
+  because the highlighter read the fence's text as a string while Vue holds it as an array.
+- **Artifacts and Files open what this conversation picked, not the last page opened anywhere.** Each
+  conversation keeps its own pick, so switching to one that never made a page opens its own first page
+  or nothing. Before, the page last opened in any conversation stayed open in every other one.
+- **A restarted sidecar opens a conversation only when one is in front in Terminal.** When the server
+  goes down the page now leaves for Listening and shows Reconnecting there, so once the server is back
+  it opens whatever conversation is in front and otherwise stays on Listening. Before, the page waited
+  under the Reconnecting cover and came back on the conversation it was showing.
+- **Notes beside an artifact push its content, not the page.** The page keeps its full width and its own
+  background runs under the notes column, while its content reflows clear of the notes. Before, the
+  whole page narrowed and the notes sat on the sidecar's background beside it.
+- **`artifact review` and `artifact kit` no longer list a page as the conversation's own.** Refreshing
+  the layer or the kit is upkeep, so a conversation that refreshes many pages no longer shows them all
+  in its Artifacts face. `artifact new` and `artifact stamp` still record the pages a conversation builds.
+- **Review shows the folder its files share, so files from one folder get a tree too.** The shared
+  folder used to be left off the top, which made a review of files from a single folder a flat list.
+  The switcher now reads Review, Files, History.
+- **A Claude Code started without node on PATH no longer turns every hook off.** The hooks, `bin/mode`,
+  `bin/artifact` and `bin/sidecar` use the node on PATH first and otherwise the one `install.sh` now
+  records in `~/.claude/mode/node`, so run `./install.sh` once after updating.
+- **A pipeline step reads what the call printed, not only how it exited.** A suite piped into `tail`
+  that went red counts as red, one that could not load its tests counts as nothing, a `git commit` that
+  had nothing to commit is not a commit, and `git -C <dir> commit`, `node --test`, mocha and python test
+  files are recognised. `/approve` now passes an `@approve` step, which nothing recorded before.
+- **Buttons at the bottom of Review, Files and History clear the floating Board and Send pills.**
+  Undo, Redo and Reject all sat under the glass once the islands began floating
+  over the faces.
+- **The server banner follows every poll.** It used to show only when the first load failed and then
+  stay; now it appears when the server stops answering, says it is retrying, and clears with
+  everything reloaded once the server answers.
+- **The tray copy says what happens.** Toasts and threads promised a note "sends with your next
+  turn", but only Send notes sends it, and they now say so. The thread's queued resolve reads "Ask
+  Claude to resolve".
+- **A comment already sent to Claude never rides the next send.** It used to stay in the tray after
+  sending and go out again with every later note; now it is marked sent, keeps its pin on the page,
+  and leaves the count and the handover. Answering a comment's thread queues the answer on its own,
+  so Send notes comes up for it.
+- **Line notes from Review reach Claude with their file and lines.** The tray's handover only carried
+  the quoted text before.
+- **An artifact fetch that resolves late no longer replaces the one picked after it.**
+- **The version store keeps what a turn writes after the store last looked.** A build in the middle
+  of a turn counted that turn as done, so its later writes never reached History; each build now
+  writes the last turn it saw again, which adds versions only for what changed since.
+- **A `.gitignore` the conversation wrote no longer hides its other files from the version store.**
+  The store mirrors every touched file into its own git repository, the ignore file included, so a
+  rule like `/projects/*` dropped whole folders from History. The store now adds past ignore rules.
+- **A conversation that has written nothing no longer breaks the version store.** Its first build
+  read the log of a repository with no commit and failed.
+- **History's panes scroll instead of squeezing.** Each pane is a flex column, so a turn whose files
+  overflowed shrank every card to fit; the cards now keep their height and the pane scrolls.
+- **`board-check` no longer points at an X/Y/Z read that may not be there.** Its message said the board
+  goes up straight after the read, which only happens while the `xyz` style is held. It now says the
+  board goes up before the first action.
+- **The artifact prose register points at the live `prose` rule.** It named `~/.claude/rules/prose.md`,
+  a path that stopped existing when the rule moved into this plugin.
+- **The chat panel no longer replays a flash of "thinking" on reload.** A page load replayed a
+  finished exchange through the same timers a live stream uses, so a reload showed the mascot land on
+  the answer, flip back to "thinking" for a couple of seconds, then show the answer again at a
+  different width. The composable now settles a dangling turn immediately when the session is not
+  busy, so a reload renders the final state once.
+- **The mascot's reserved space no longer collapses when it teleports.** Its perch in the transcript
+  was mounted only while a beat was active, so settling could tear down the whole row — including the
+  answer's layout — for the ~2s hand-over animation. The perch is now a permanent sibling of the
+  swapped text; only the mascot's own opacity toggles.
+- **The transcript panel is shorter by default.** Its cap only ever grew with the conversation; the
+  ambient single-turn preview now caps well below the full-history view, which still gets the old
+  room when expanded.
+- **The panel's open/closed state survives navigating between the conversation, the artifact page and
+  history.** It lived in a local ref that reset to the same state on every page mount, so switching
+  views always landed back on the same view regardless of what was open before. It is now shared
+  state, defaulting to minimized.
+- **History's default view now shows what a turn actually changed.** Selecting the latest turn
+  compared its own result against itself, so "vs head" always read as unchanged even when the turn
+  wrote real content; it now diffs from just before that turn's edit. A past version of a `.md` that
+  already existed renders that diff too, instead of the whole document — a `.md` a turn created still
+  shows the full page, since there is nothing to diff against. The rendered changes, in History and on
+  the artifact page alike, now sit in the same capped, scrollable height as the chat transcript instead
+  of growing without limit. A file whose baseline had to be reconstructed from git no longer shows every
+  turn after its first as a full deletion: the reconstructed content only patched that first turn, so a
+  later edit folded from nothing and the store read it as removing the whole file. Every turn for such a
+  file now replays the full chain from that same baseline.
+- **Picking a block on an open artifact opens the composer again.** The app disarmed comment mode on
+  every window blur, so a held C could not leave the page swallowing clicks, but clicking into the
+  artifact frame moves focus into it and blurs the app window too. The mousedown on a block turned the
+  mode off and the click that followed found nothing armed. Focus entering the frame no longer counts
+  as leaving the app, and a hold of C that began in the app window now ends when C comes up inside the
+  frame.
+- **Comment mode has something to pick in the chat and in a diff.** Arming it and clicking the reply in
+  the dock, the narration of a running turn, or a changed file in History did nothing at all: only the
+  board rows, the mode and style chips, the pipeline strip, canvas cards and blocks inside an artifact
+  carried a target, so most of the screen ignored the click without saying so. The settled answer and
+  the live beat now describe themselves the way an expanded turn already did, and a file in History's
+  Changes pane picks as a whole, with its path and its churn in what Claude gets told.
+- **A home canvas card no longer spills past its own box.** The card slot forced a fixed height that
+  ignored its content, so a card with many badges or artifact chips overflowed onto the row below;
+  the slot now grows with the card the way the canvas primitive already does for every other item.
+  A card with no saved spot on first load could still land close enough to overlap its neighbour once
+  it grew past that guess; the unplaced ones now settle the same way "Tidy up" packs a selection, by
+  their real measured height.
+
 ## 0.16.0
 
 ### Added
@@ -64,7 +716,7 @@ it, and the catalogue is smaller and sharper than it was.
   the blast radius, and the restraint on bumping a dependency.
 - **`enter-when` phrases that misfired on ordinary asks are dropped**: `why is` and `why does` from
   `debug`, `end to end` and bare `regression` and `qa` from `tester`, bare `explore` and `think
-  about` from `studio`, and `make it work` from `fast`.
+about` from `studio`, and `make it work` from `fast`.
 - **The delivery bar is read from config rather than compiled in.** It used to name one person's
   repositories.
 - **`artifact open` uses `xdg-open` off macOS.**
@@ -258,7 +910,7 @@ The artifact rule becomes a contract about interactivity.
 
 - **An artifact is operated, not read.** The `artifact` ground rule grew from a theming note into
   the full contract, folding in the method from a vendor artifact skill and two of our own best
-  pages. It now fixes what the reader must be able to *do* per subject: reproduce the bug, switch
+  pages. It now fixes what the reader must be able to _do_ per subject: reproduce the bug, switch
   the mockup variants, run the backend scenario, explore the real rows. Two tests decide whether it
   shipped: strip every control and see whether the page still says the same thing, then ask whether
   a reader can reach a conclusion nobody wrote into it.

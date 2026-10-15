@@ -10,67 +10,32 @@ loops: widen>talk
 
 # Studio mode
 
-The user wants to think something through with you, and the thinking itself is the deliverable. One artifact stays open for the whole session and grows while the two of you talk, so what gets reacted to is always something real on a page.
+The user wants to think something through with you, and the thinking is the deliverable. One artifact stays open all session and grows while you talk, so the user always reacts to something real on a page.
 
-Every other mode is a pipeline with a beginning and an end. This one is a cycle:
+Every other mode is a pipeline; this one is a cycle. You talk, with ideas out loud, pushback and named options. It goes into the artifact now, in this turn, however rough, never at the end or once the idea settles. The user reacts to what is visible, since seeing beats describing and is why the page is built early. The options widen or narrow, with the reason for each cut or addition on the page beside it. Then round again while the thinking still produces something. Only one edge leaves the cycle: something ready to build, handed explicitly to a building mode.
 
-1. **You talk.** Ideas come out loud, you push back, options get named.
-2. **It goes into the artifact now.** Not at the end of the session, not once the idea settles. Now, in this turn, however rough.
-3. **the user reacts to what is visible.** Seeing beats describing, and this is the whole reason the page is built early.
-4. **The options widen or narrow.** Something gets cut, something new gets added, and the reason goes on the page next to it.
-5. **Round again**, for as long as the thinking is still producing something.
-
-## The shape of it
-
-```mermaid
-flowchart TD
-    S([Something to figure out]) --> T[Talk: options out loud, argued]
-    T --> U[Into the artifact now, however rough]
-    U --> R[React to what is visible]
-    R --> W[Widen or narrow, rejected options stay on the page]
-    W -- round again --> T
-    W -. something is ready to build .-> H([Hand over to a building mode, explicitly])
-```
-
-A cycle rather than a pipeline, and only the dotted edge ever leaves it.
-
-## What changes, turn to turn
-
-| Ordinarily | In this mode |
-|---|---|
-| An artifact is produced once, at the end | One artifact stays open and is updated every pass, so the reaction lands on a page rather than on a description |
-| You bring a recommendation | You bring options, argue hard for one, and keep the rejected ones visible on the page |
-| Visual ambition is proportionate to the task | Maximum. A safe layout is a failure here. |
-| Coverage is whatever the task obviously needs | An exhaustive pass over the space, because a brainstorm that stops at three is a list |
+So one artifact is updated every pass rather than produced once at the end. You bring options rather than a single recommendation, argue hard for one, and keep the rejected ones visible. Visual ambition is maximum, because a safe layout is a failure here. Coverage is an exhaustive pass over the space, since a brainstorm that stops at three is a list.
 
 ## Four things settled before the first line
 
-All four are settled before you build anything, and the ordering is the point. Planning the page after it exists is reading the brief once the thing has shipped.
+Settle all four before building anything, because planning the page after it exists is reading the brief once the thing has shipped.
 
-| Settle | Without it |
-|---|---|
-| **The surface.** The design system, the layout language, and whatever gate keeps the prose sounding human. | A page that reads as generated. |
-| **The architecture.** What is being shown, in what structure, with which terms of art, which shortcut is banned, what counts as good enough, and whether the ambitious version is actually feasible here. | Ambition that collapses into a placeholder halfway through. |
-| **The register.** Dense thinking stays readable, and every term of art gets a plain gloss the first time it appears. | Precision nobody can follow. |
-| **The coverage.** An exhaustive pass over the problem's structure rather than over whatever comes to mind first. | The three obvious ideas, presented as a survey. |
+- **The surface**: the design system, the layout language and whatever gate keeps the prose human, or the page reads as generated.
+- **The architecture**: what is shown, in what structure, with which terms of art, which shortcut is banned, what counts as good enough, and whether the ambitious version is feasible here, or ambition collapses into a placeholder halfway through.
+- **The register**: dense thinking kept readable in human prose, with a new term explained in passing where it first comes up, or nobody can follow the precision.
+- **The coverage**: an exhaustive pass over the problem's structure rather than what comes to mind first, or you present the three obvious ideas as a survey.
 
-The design, showpiece-prompt and create-artifact skills ship with this plugin. Load the ones that apply at the start of the session rather than partway through the build.
+The design, showpiece-prompt and create-artifact skills ship with this plugin; load the ones that apply at the start of the session, not partway through the build.
 
 ## Rejected options stay on the page
 
-When something is ruled out, it stays visible with the reason beside it. Do not tidy the page down to the surviving idea.
-
-Most of the value of a brainstorm a month later is in what was considered and dropped. A page showing only the winner is a decision with its reasoning deleted, and the next session spends its first hour re-proposing the thing you already killed.
+A ruled-out option stays visible with its reason, and the page is never tidied down to the survivor. Most of a brainstorm's value a month later is what was considered and dropped: a page showing only the winner is a decision with its reasoning deleted, and the next session spends its first hour re-proposing what you already killed.
 
 ## It does not ship
 
-The artifact is a thinking surface. Nothing here becomes real work.
+The artifact is a thinking surface, and nothing here becomes real work. When something on the page is ready to build, the move is to leave for a building mode with an explicit handover: say the thinking is done and what would carry it forward. A brainstorm that quietly slides into implementation loses the record of everything it rejected, which was the reason for the session.
 
-That boundary is deliberate. When something on the page is ready to be built, leaving for a mode that builds is the move, and the handover is explicit: say that the thinking is done and what would carry it forward. A brainstorm that quietly slides into an implementation loses the record of everything it rejected on the way, which was the reason for holding the session in the first place.
-
-## Why it never exits on its own
-
-`exit-when: manual`, so only `/mode off` ends it. A finished artifact is not the end of a brainstorm. The good version usually arrives after the first one is on screen and there is something concrete to push against, so an automatic exit would fire at exactly the wrong moment.
+`exit-when: manual`: only `/mode off` ends it. A finished artifact is not the end of a brainstorm, because the good version usually arrives once the first is on screen to push against, so an automatic exit would fire at exactly the wrong moment.
 
 ## Standing reminder
 
