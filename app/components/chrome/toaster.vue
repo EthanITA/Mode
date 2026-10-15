@@ -84,8 +84,10 @@ function pin(el: Element): void {
       @mouseleave="arm(row)"
     >
       <UiToast :variant="row.tone">
-        {{ row.text }}
-        <span v-if="row.open" class="open">{{ row.action ?? "Open" }}</span>
+        <span class="body">
+          <span class="text">{{ row.text }}</span>
+          <span v-if="row.open" class="open">{{ row.action ?? "Open" }}</span>
+        </span>
       </UiToast>
     </button>
 
@@ -122,10 +124,17 @@ function pin(el: Element): void {
   pointer-events: auto;
 }
 
+.body {
+  @apply inline-flex items-center gap-1.5 text-left;
+}
+
+/* Its own box, so the clamp's ellipsis can never swallow the action beside it. */
+.text {
+  @apply line-clamp-2 min-w-0 wrap-break-word;
+}
+
 .open {
-  font-weight: 600;
-  margin-left: 6px;
-  opacity: 0.72;
+  @apply flex-none font-semibold opacity-72;
 }
 
 .queued {
