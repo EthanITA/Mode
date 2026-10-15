@@ -7,12 +7,10 @@ const sc = useSidecar();
 
 const LABELS: Record<Face, string> = { artifacts: "Artifacts", files: "Files", history: "History", review: "Review" };
 
-const artifact = $artifact();
-
 // With the server down every route shows the reconnecting screen, which has nothing to switch.
 const inSession = computed(() => !sc.failure.value && route.path.startsWith("/c/"));
-// The faces belong to the conversation; an artifact on its own, routed or grown over the face, has nothing to switch.
-const onArtifact = computed(() => inSession.value && (!!route.params.slug || artifact.isFull));
+// A routed artifact has no faces to switch; a grown one keeps the row as it was, so the row fades out and back unchanged.
+const onArtifact = computed(() => inSession.value && !!route.params.slug);
 const onFaces = computed(() => inSession.value && !onArtifact.value);
 
 const faces = computed(() => chrome.view.faces.value.map((face) => ({ label: LABELS[face], value: face })));
@@ -22,10 +20,9 @@ const face = computed({
   set: (next: Face) => chrome.view.set(next),
 });
 
-// A routed page is replaced on close so Back never walks through it; a grown one just shrinks back.
+// Replaced on close so Back never walks through it.
 function closePage(): void {
-  if (artifact.isFull) artifact.isFull = false;
-  else void navigateTo(`/c/${String(route.params.key ?? "")}`, { replace: true });
+  void navigateTo(`/c/${String(route.params.key ?? "")}`, { replace: true });
 }
 </script>
 

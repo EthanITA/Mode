@@ -84,11 +84,11 @@ useResizeObserver(boardEl, ([entry]) => {
 }
 
 .row {
-  @apply pointer-events-none absolute top-(--gutter) right-(--gutter) left-(--gutter) z-30 flex items-center gap-2;
+  @apply pointer-events-none absolute top-(--gutter) right-(--gutter) left-(--gutter) z-30 flex items-center gap-2 transition-[opacity,visibility] duration-(--duration-fast) ease-out;
 }
 
 .foot {
-  @apply pointer-events-none absolute right-(--gutter) bottom-(--gutter) left-(--gutter) z-20 flex items-end gap-2;
+  @apply pointer-events-none absolute right-(--gutter) bottom-(--gutter) left-(--gutter) z-20 flex items-end gap-2 transition-[opacity,visibility] duration-(--duration-fast) ease-out;
 }
 
 .foot-dock {
@@ -112,7 +112,7 @@ useResizeObserver(boardEl, ([entry]) => {
 /* A grown sheet brings its own islands, and the notes wait in the dock until it shrinks back. */
 .shell[data-full="true"] .row,
 .shell[data-full="true"] .foot {
-  @apply invisible;
+  @apply invisible opacity-0 duration-(--duration-press);
 }
 
 /* Outranks the rule above on its own, rather than on source order: the row spans
@@ -128,5 +128,12 @@ useResizeObserver(boardEl, ([entry]) => {
 /* Over the page and the dock, under the island row so the theme toggle stays. */
 .down {
   @apply z-25 bg-canvas;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row,
+  .foot {
+    @apply transition-none;
+  }
 }
 </style>

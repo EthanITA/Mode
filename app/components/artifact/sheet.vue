@@ -26,12 +26,14 @@ const chrome = useChrome();
 const artifact = $artifact();
 const shown = useFaceShown();
 const isExpanded = ref(false);
+// Where the sheet is headed, set as either motion starts, while isExpanded holds the fixed layout until a shrink lands.
+const isGrown = ref(false);
 const slot = useTemplateRef<HTMLElement>("slot");
 const preview = useTemplateRef<ComponentPublicInstance>("preview");
 const read = useTemplateRef<HTMLElement>("read");
 const hasBar = computed(() => !!(path && slug && conversation));
 // Glass only when grown, since a raised pill in the sheet's header reads as one more of the app's islands.
-const pill = computed<SurfaceVariant>(() => (isExpanded.value ? "glass-liquid" : "sunken"));
+const pill = computed<SurfaceVariant>(() => (isGrown.value ? "glass-liquid" : "sunken"));
 const list = computed(() => LIST[chrome.view.current.value] ?? "Artifacts");
 const title = computed(() => {
   const meta = slug ? sc.catalogue.value.find((one) => one.slug === slug) : undefined;
@@ -74,6 +76,7 @@ async function expand(): Promise<void> {
     radius: getComputedStyle(pane).borderRadius,
   };
   isExpanded.value = true;
+  isGrown.value = true;
   await nextTick();
   if (prefersReducedMotion()) return;
   growth?.cancel();
@@ -85,6 +88,7 @@ async function expand(): Promise<void> {
 }
 
 async function collapse(): Promise<void> {
+  isGrown.value = false;
   const pane = preview.value?.$el;
   if (!(pane instanceof HTMLElement) || !slot.value || !isExpanded.value || prefersReducedMotion()) {
     isExpanded.value = false;
@@ -154,6 +158,7 @@ onBeforeUnmount(() => {
       class="preview"
       data-region="artifact-sheet"
       :data-expanded="isExpanded"
+      :data-grown="isGrown"
       pad="none"
       variant="raised"
     >
@@ -161,17 +166,11 @@ onBeforeUnmount(() => {
       <header
         v-if="isExpanded || hasBar"
         class="head"
-        :data-expanded="isExpanded"
-        :data-region="isExpanded ? 'full-island' : 'sheet-bar'"
+        :data-bare="!hasBar"
+        :data-grown="isGrown"
+        :data-region="isGrown ? 'full-island' : 'sheet-bar'"
       >
-        <UiSurface
-          v-if="isExpanded"
-          class="island"
-          data-region="nav-island"
-          pad="none"
-          shape="pill"
-          variant="glass-liquid"
-        >
+        <UiSurface class="island nav" data-region="nav-island" pad="none" shape="pill" variant="glass-liquid">
           <ChromeAction
             data-region="open-list"
             :icon="PanelLeft"
@@ -188,30 +187,32 @@ onBeforeUnmount(() => {
           </UiSurface>
         </div>
         <span class="spacer" />
-        <UiSurface v-if="isExpanded" class="island" pad="none" shape="pill" variant="glass-liquid">
-          <ChromeCommentToggle v-if="hasBar" shape="inset" />
-          <ChromeThemeToggle shape="inset" />
-          <ChromeAction
-            data-region="artifact-fullscreen"
-            :icon="Minimize2"
-            shape="inset"
-            tip="Exit fullscreen · {esc}"
-            @click="artifact.isFull = false"
-          />
-        </UiSurface>
-        <template v-else>
-          <WebElsewhere v-if="kind === 'web'" />
-          <span class="actions">
-            <ChromeCommentToggle shape="inset" />
-            <ChromeAction
-              data-region="artifact-fullscreen"
-              :icon="Maximize2"
-              shape="inset"
-              tip="Fullscreen · {F}"
-              @click="artifact.isFull = true"
-            />
+        <span class="ends">
+          <span v-if="hasBar" class="face">
+            <WebElsewhere v-if="kind === 'web'" />
+            <span class="actions">
+              <ChromeCommentToggle shape="inset" />
+              <ChromeAction
+                data-region="artifact-grow"
+                :icon="Maximize2"
+                shape="inset"
+                tip="Fullscreen · {F}"
+                @click="artifact.isFull = true"
+              />
+            </span>
           </span>
-        </template>
+          <UiSurface class="island grown" pad="none" shape="pill" variant="glass-liquid">
+            <ChromeCommentToggle v-if="hasBar" shape="inset" />
+            <ChromeThemeToggle shape="inset" />
+            <ChromeAction
+              data-region="artifact-shrink"
+              :icon="Minimize2"
+              shape="inset"
+              tip="Exit fullscreen · {esc}"
+              @click="artifact.isFull = false"
+            />
+          </UiSurface>
+        </span>
       </header>
       <template v-if="path && slug && conversation">
         <div ref="read" class="read" :data-kind="kind">
@@ -238,7 +239,12 @@ onBeforeUnmount(() => {
 
 /* Fixed, so it fills the window past the shell's max width; the header sits above the page, never over it. */
 .preview[data-expanded="true"] {
-  @apply fixed inset-0 z-10 rounded-none border-0 bg-canvas shadow-lg;
+  @apply fixed inset-0 z-10 rounded-none shadow-lg;
+}
+
+/* On the grown flag, not the fixed one, so a shrink turns the sheet back into a card while it travels. */
+.preview[data-grown="true"] {
+  @apply border-transparent bg-canvas;
 }
 
 .preview[data-expanded="true"] .read {
@@ -246,11 +252,11 @@ onBeforeUnmount(() => {
 }
 
 .head {
-  @apply relative flex h-14 flex-none items-center gap-1.5 border-b border-b-border px-2 whitespace-nowrap;
+  @apply relative flex h-14 flex-none items-center gap-2 border-b border-b-border px-2 whitespace-nowrap;
 }
 
-.head[data-expanded="true"] {
-  @apply z-30 gap-2;
+.preview[data-expanded="true"] .head {
+  @apply z-30;
 }
 
 .island {
@@ -259,11 +265,11 @@ onBeforeUnmount(() => {
 
 /* Centred on the sheet rather than between its neighbours, and narrowed before it reaches them. */
 .middle {
-  @apply absolute top-2 left-1/2 w-150 max-w-[calc(100%_-_300px)] -translate-x-1/2;
+  @apply absolute top-2 left-1/2 w-150 max-w-[calc(100%_-_300px)] -translate-x-1/2 transition-[opacity,visibility] duration-(--duration-fast) ease-out;
 }
 
 /* The design measures the grown one inside an 8px inset, so its 320px is 336px of the window. */
-.head[data-expanded="true"] .middle {
+.head[data-grown="true"] .middle {
   @apply max-w-[calc(100%_-_336px)];
 }
 
@@ -271,12 +277,48 @@ onBeforeUnmount(() => {
   @apply flex-1;
 }
 
+/* One cell, so the face's buttons and the grown island trade places at the same right edge. */
+.ends {
+  @apply grid items-center justify-items-end;
+}
+
+.ends > * {
+  @apply col-start-1 row-start-1;
+}
+
+.face {
+  @apply flex items-center gap-1.5;
+}
+
 .actions {
   @apply flex items-center gap-0.5;
 }
 
+/* Mounted in both states and crossfaded, since a v-if swap lands in a single frame. */
+.nav,
+.face,
+.grown {
+  @apply transition-[opacity,scale,visibility] duration-(--duration-fast) ease-out;
+}
+
+.nav {
+  @apply origin-top-left;
+}
+
+.face,
+.grown {
+  @apply origin-top-right;
+}
+
+.head[data-grown="false"] .nav,
+.head[data-grown="false"] .grown,
+.head[data-grown="true"] .face,
+.head[data-grown="false"][data-bare="true"] .middle {
+  @apply invisible scale-95 opacity-0 duration-(--duration-press);
+}
+
 .named {
-  @apply w-full justify-center px-4 py-0;
+  @apply w-full justify-center px-4 py-0 transition-[background-color,box-shadow,backdrop-filter] duration-(--duration-base) ease-in-out;
 }
 
 .name {
@@ -296,5 +338,15 @@ onBeforeUnmount(() => {
 /* A file brings its own bar and scrolls itself, so the sheet only lends it the room. */
 .read[data-kind="files"] {
   @apply flex flex-col overflow-hidden p-0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .middle,
+  .nav,
+  .face,
+  .grown,
+  .named {
+    @apply transition-none;
+  }
 }
 </style>

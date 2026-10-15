@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { EASE_CSS, MOTION_DURATION, prefersReducedMotion } from "@cela/design/utils/motion";
 import type { FrameAnchor, FrameMark, NotesPlace } from "~/types/frame";
 import type { ReviewThread } from "~~/shared/types/artifact";
 
@@ -33,6 +34,7 @@ const emit = defineEmits<{ reload: [] }>();
 const route = useRoute();
 const artifact = $artifact();
 const noteCount = ref(0);
+const notesEl = useTemplateRef<HTMLElement>("notesEl");
 
 // The sheet on a face is too narrow for a second column; a routed page or a grown sheet has the room.
 const isRoomy = computed(() => artifact.isFull || !!route.params.slug);
@@ -41,6 +43,16 @@ const canAsk = computed(() => hasNotes.value && live);
 const place = computed<NotesPlace>(() => {
   if (!page) return "over";
   return artifact.isFull ? "float" : "dock";
+});
+
+// Faded in where they land rather than remounted, so an open draft survives the sheet growing or shrinking.
+watch(place, async () => {
+  await nextTick();
+  if (prefersReducedMotion()) return;
+  notesEl.value?.animate([{ opacity: 0 }, { opacity: 1 }], {
+    duration: MOTION_DURATION.moderate,
+    easing: EASE_CSS.out,
+  });
 });
 
 // The surface's document cannot read the app's tokens, so the room the notes hold reaches it in pixels.
@@ -62,7 +74,7 @@ const inset = computed(() =>
     <div class="surface">
       <slot :can-ask="canAsk" :inset="inset" />
     </div>
-    <aside v-if="hasNotes" class="notes" data-region="gutter">
+    <aside v-if="hasNotes" ref="notesEl" class="notes" data-region="gutter">
       <div v-if="place === 'dock'" class="heading mono-meta">
         <span class="where">{{ page }}</span>
         <span>{{ plural(noteCount, "thread") }}</span>

@@ -99,12 +99,13 @@ function track(): void {
 </template>
 
 <style scoped>
+/* Named in full, since the surface's own transition gives way to this rule and the flat fill would snap into glass. */
 .island {
-  @apply flex h-(--island-row-h) w-full items-center gap-0.5 px-1 py-0 transition-shadow duration-(--duration-fast) ease-out;
+  @apply flex h-(--island-row-h) w-full items-center gap-0.5 px-1 py-0 transition-[background-color,box-shadow,backdrop-filter] duration-(--duration-base) ease-in-out;
 }
 
 .island[data-editing="true"] {
-  @apply ring-3 ring-primary-soft ring-offset-1 ring-offset-primary;
+  @apply ring-3 ring-primary-soft ring-offset-1 ring-offset-primary duration-(--duration-fast) ease-out;
 }
 
 .rule {
@@ -157,5 +158,11 @@ function track(): void {
 /* Same weight as the field, or its glyphs would drift off the caret it draws. */
 .lead {
   @apply text-muted;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .island {
+    @apply transition-none;
+  }
 }
 </style>
