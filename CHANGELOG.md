@@ -20,8 +20,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   site's cookies are shared by its other hosts, its cross-site scripts and their CORS answers load, as
   reddit's did not before, and a sign-in, a solved captcha or anything a site stores carries from one Web
   artifact to the next and lasts across conversations and browser restarts. Text that isn't an address
-  searches Google. Open a URL and the address bar show the typed site's favicon, Google's G for a search,
-  or a globe when the site has none.
+  searches Google. Open a URL and the address bar show the typed site's favicon, with a spinner while it
+  is fetched, Google's G for a search, or a globe when the site has none.
   `artifact open <url>` and a link clicked in the sidecar reuse the conversation's artifact already on that
   address. A thread names the whole address it was left on, a thin bar under the header runs while a page
   loads, hovering a Web entry offers to remove it with Undo, no site can navigate the sidecar window
