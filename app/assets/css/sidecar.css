@@ -187,6 +187,11 @@ body {
   @apply transition-opacity duration-(--duration-fast) ease-out motion-reduce:transition-none starting:opacity-0;
 }
 
+/* A loading line that waits a beat first, so a read that lands quickly never flashes it. */
+@utility settle-late {
+  @apply settle delay-(--duration-fast);
+}
+
 /* Marks a region drawn from the design that no data can fill yet, so a drawing is
    never read as a description. */
 [data-scaffold] {

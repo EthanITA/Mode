@@ -203,7 +203,7 @@ watchEffect(() => {
 }
 
 .loading {
-  @apply cursor-default pl-[calc(26px_+_var(--depth)_*_14px)] text-subtle normal-case;
+  @apply cursor-default pl-[calc(26px_+_var(--depth)_*_14px)] text-subtle normal-case settle-late;
 }
 
 .chevron {
