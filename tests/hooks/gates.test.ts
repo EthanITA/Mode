@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 import { approve, done, setSlot } from "../../lib/mode/slots.ts";
@@ -79,6 +79,11 @@ describe("every hook, fed something that is not a payload", () => {
     );
     assert.ok(stems.length > 20);
     assert.deepEqual(loud, []);
+    // The runner skips a missing script for sessions holding an older manifest, so a typo here would pass silently.
+    assert.deepEqual(
+      stems.filter((stem) => !existsSync(join(PLUGIN, "hooks", `${stem}.ts`))),
+      [],
+    );
   });
 });
 
