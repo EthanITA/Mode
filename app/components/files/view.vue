@@ -147,7 +147,11 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
 
 @container (width < 280px) {
   .scopes :deep(.segmented-option) {
-    @apply gap-0 typo-mono-pico font-sans;
+    @apply gap-0;
+  }
+
+  .scopes :deep(.segmented-label) {
+    @apply hidden;
   }
 
   .scopes :deep(.segmented-option svg) {
