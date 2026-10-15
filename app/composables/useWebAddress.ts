@@ -19,7 +19,6 @@ export interface WebAddress {
   page: ComputedRef<string>;
 }
 
-// One address for the sheet's bar and the grown page's title island, so ⌘L and a typed address behave the same in both.
 export function useWebAddress({ focus, slug }: WebAddressOptions): WebAddress {
   const sc = useSidecar();
   const web = $web();

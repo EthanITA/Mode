@@ -154,8 +154,21 @@ onBeforeUnmount(() => {
       pad="none"
       variant="raised"
     >
-      <div v-if="isExpanded" class="strip" data-region="full-island">
-        <UiSurface class="island" data-region="nav-island" pad="none" shape="pill" variant="glass-liquid">
+      <!-- One header grown or not, so the title island and an address being typed in it survive the switch. -->
+      <header
+        v-if="isExpanded || hasBar"
+        class="head"
+        :data-expanded="isExpanded"
+        :data-region="isExpanded ? 'full-island' : 'sheet-bar'"
+      >
+        <UiSurface
+          v-if="isExpanded"
+          class="island"
+          data-region="nav-island"
+          pad="none"
+          shape="pill"
+          variant="glass-liquid"
+        >
           <ChromeAction
             data-region="open-list"
             :icon="PanelLeft"
@@ -178,7 +191,8 @@ onBeforeUnmount(() => {
             <span class="name">{{ title }}</span>
           </UiSurface>
         </div>
-        <UiSurface class="island" pad="none" shape="pill" variant="glass-liquid">
+        <span class="spacer" />
+        <UiSurface v-if="isExpanded" class="island" pad="none" shape="pill" variant="glass-liquid">
           <ChromeCommentToggle v-if="hasBar" shape="inset" />
           <ChromeThemeToggle shape="inset" />
           <ChromeAction
@@ -189,21 +203,21 @@ onBeforeUnmount(() => {
             @click="artifact.isFull = false"
           />
         </UiSurface>
-      </div>
+        <template v-else>
+          <WebElsewhere v-if="kind === 'web'" />
+          <span class="actions">
+            <ChromeCommentToggle shape="inset" />
+            <ChromeAction
+              data-region="artifact-fullscreen"
+              :icon="Maximize2"
+              shape="inset"
+              tip="Fullscreen · {F}"
+              @click="artifact.isFull = true"
+            />
+          </span>
+        </template>
+      </header>
       <template v-if="path && slug && conversation">
-        <header v-if="!isExpanded" class="bar">
-          <WebBar v-if="kind === 'web'" :slug="slug" />
-          <span v-else class="path">{{ homePath(path) }}</span>
-          <ChromeCommentToggle shape="pill" />
-          <ChromeAction
-            data-region="artifact-fullscreen"
-            :icon="Maximize2"
-            label="Fullscreen"
-            shape="pill"
-            tip="Grow the page over everything · {F}"
-            @click="artifact.isFull = true"
-          />
-        </header>
         <div ref="read" class="read" :data-kind="kind">
           <WebReader v-if="kind === 'web'" :conversation="conversation" :slug="slug" />
           <ArtifactReader v-else :conversation="conversation" :slug="slug" />
@@ -233,59 +247,49 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-/* Fixed, so it fills the window past the shell's max width; the islands' strip sits above the page, never over it. */
+/* Fixed, so it fills the window past the shell's max width; the header sits above the page, never over it. */
 .preview[data-expanded="true"] {
   background: var(--canvas);
   border: 0;
   border-radius: 0;
   box-shadow: var(--shadow-lg);
   inset: 0;
-  padding-top: 56px;
   position: fixed;
   z-index: 10;
 }
 
 .preview[data-expanded="true"] .read {
-  background: var(--raised);
-  border-top: 1px solid var(--border);
+  @apply bg-raised;
 }
 
-.strip {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  left: 8px;
-  pointer-events: none;
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  white-space: nowrap;
-  z-index: 30;
+.head {
+  @apply relative flex h-14 flex-none items-center gap-1.5 border-b border-b-border px-2 whitespace-nowrap;
+}
+
+.head[data-expanded="true"] {
+  @apply z-30 gap-2;
 }
 
 .island {
-  align-items: center;
-  display: flex;
-  flex: none;
-  gap: 2px;
-  height: var(--island-row-h);
-  padding: 0 4px;
-  pointer-events: auto;
+  @apply flex h-(--island-row-h) flex-none items-center gap-0.5 px-1;
 }
 
-/* Centred on the window rather than between its neighbours, and narrowed before it reaches them. */
+/* Centred on the sheet rather than between its neighbours, and narrowed before it reaches them. */
 .middle {
-  left: 50%;
-  max-width: calc(100% - 320px);
-  pointer-events: auto;
-  position: absolute;
-  top: 0;
-  translate: -50% 0;
-  width: 600px;
+  @apply absolute top-2 left-1/2 w-150 max-w-[calc(100%_-_300px)] -translate-x-1/2;
 }
 
-.strip > .island:last-child {
-  margin-left: auto;
+/* The design measures the grown one inside an 8px inset, so its 320px is 336px of the window. */
+.head[data-expanded="true"] .middle {
+  @apply max-w-[calc(100%_-_336px)];
+}
+
+.spacer {
+  @apply flex-1;
+}
+
+.actions {
+  @apply flex items-center gap-0.5;
 }
 
 .named {
@@ -303,24 +307,6 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.bar {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex: none;
-  gap: 8px;
-  padding: 8px 12px;
-}
-
-.path {
-  flex: 1;
-  font-family: var(--mono);
-  font-size: 12.5px;
-  font-weight: 600;
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 
 /* The reader sizes its frame to the page, so this pane owns the scroll. */
