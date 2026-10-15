@@ -258,7 +258,7 @@ onScopeDispose(() => {
 }
 
 .why {
-  @apply m-0 max-w-90 text-[13px] leading-[1.55] text-pretty text-muted;
+  @apply m-0 max-w-90 typo-body text-pretty text-muted;
 }
 
 .retry {
@@ -270,7 +270,7 @@ onScopeDispose(() => {
 }
 
 .remove {
-  @apply inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full border-0 bg-transparent px-3 py-0 typo-caption-strong text-muted transition-[background,color] duration-(--duration-fast) ease-out;
+  @apply inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full border-0 bg-transparent px-3 py-0 typo-caption-strong text-muted transition-colors duration-(--duration-fast) ease-out;
 }
 
 .remove:hover {

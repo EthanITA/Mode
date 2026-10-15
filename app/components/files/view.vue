@@ -112,7 +112,7 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
 <style scoped>
 /* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
 .files {
-  @apply grid h-full min-h-0 grid-cols-[min(var(--side-w),50%)_0_minmax(0,1fr)] gap-x-2;
+  @apply grid h-full min-h-0 grid-cols-pane gap-x-2;
 }
 
 .pane {
@@ -147,7 +147,7 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
 
 @container (width < 280px) {
   .scopes :deep(.segmented-option) {
-    @apply gap-0 text-[0px];
+    @apply gap-0 typo-mono-pico font-sans;
   }
 
   .scopes :deep(.segmented-option svg) {
@@ -168,7 +168,7 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
 }
 
 .dot {
-  @apply size-1.75 flex-none rounded-full border-[1.5px] border-current;
+  @apply size-1.75 flex-none rounded-full border-2 border-current;
 }
 
 .dot[data-group="produced"] {

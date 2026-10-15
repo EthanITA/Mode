@@ -230,7 +230,7 @@ defineExpose({ focus });
 
 <style scoped>
 .island {
-  @apply w-[min(600px,100%)] transition-[width] duration-(--duration-base) ease-out;
+  @apply w-150 max-w-full transition-all duration-(--duration-base) ease-out;
 }
 
 /* At rest only the mascot shows, and the width it grows back into is what reveals the field. */
@@ -274,7 +274,7 @@ defineExpose({ focus });
 }
 
 .title {
-  @apply mr-1.5 flex-none text-[11.5px] font-semibold text-fg;
+  @apply mr-1.5 flex-none typo-caption-strong text-fg;
 }
 
 .state {
@@ -294,7 +294,7 @@ defineExpose({ focus });
 }
 
 .asked {
-  @apply flex max-w-[92%] flex-col items-end gap-1 self-end;
+  @apply flex max-w-11/12 flex-col items-end gap-1 self-end;
 }
 
 .asked .mono-meta {
@@ -302,7 +302,7 @@ defineExpose({ focus });
 }
 
 .bubble {
-  @apply m-0 rounded-box bg-primary-soft px-3 py-2 text-[13px] leading-normal whitespace-pre-wrap text-fg;
+  @apply m-0 rounded-box bg-primary-soft px-3 py-2 typo-body whitespace-pre-wrap text-fg;
 }
 
 .reply {
@@ -314,11 +314,11 @@ defineExpose({ focus });
 }
 
 .words {
-  @apply min-w-0 flex-1 pt-1 text-[13px] leading-[1.55];
+  @apply min-w-0 flex-1 pt-1 typo-body;
 }
 
 .thinking {
-  @apply m-0 pt-0.5 text-[12.5px] text-muted italic;
+  @apply m-0 pt-0.5 typo-body text-muted italic;
 }
 
 .failure {
@@ -334,7 +334,7 @@ defineExpose({ focus });
 }
 
 .secondary {
-  @apply h-6.5 flex-none cursor-pointer rounded-full border border-border-strong bg-raised px-2.75 py-0 font-sans text-[11.5px] font-semibold text-fg;
+  @apply h-6.5 flex-none cursor-pointer rounded-full border border-border-strong bg-raised px-2.75 py-0 font-sans typo-caption-strong text-fg;
 }
 
 .secondary:disabled {

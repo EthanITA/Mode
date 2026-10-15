@@ -88,7 +88,7 @@ const inset = computed(() =>
 /* The notes share the surface's cell and sit over its inline end, so the page's own ground runs under
    them and the surface pads its content clear of them instead of the whole page narrowing. */
 .layer {
-  @apply relative grid grid-cols-[minmax(0,1fr)];
+  @apply relative grid grid-cols-1;
 }
 
 .surface,
@@ -130,7 +130,7 @@ const inset = computed(() =>
 }
 
 .layer[data-scrolls="true"] {
-  @apply min-h-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden;
+  @apply min-h-0 flex-1 grid-rows-1 overflow-hidden;
 }
 
 .layer[data-scrolls="true"] .surface {

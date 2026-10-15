@@ -119,7 +119,7 @@ function track(): void {
 }
 
 .title {
-  @apply min-w-0 flex-initial truncate text-[13px] font-bold tracking-[-0.01em];
+  @apply min-w-0 flex-initial truncate typo-body-strong font-bold;
 }
 
 .host {
@@ -137,7 +137,7 @@ function track(): void {
 
 .field,
 .mirror {
-  @apply font-mono text-[12.5px] font-semibold;
+  @apply font-mono typo-body-strong;
 }
 
 /* Its text is drawn by the mirror above it, so only the caret and the selection show from here. */

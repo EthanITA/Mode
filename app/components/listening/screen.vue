@@ -108,19 +108,19 @@ function resume(key: string): void {
 }
 
 .title {
-  @apply m-0 text-[24px] leading-[1.2] font-extrabold tracking-[-0.03em] text-fg;
+  @apply m-0 typo-heading-xl font-extrabold text-fg;
 }
 
 .hint {
-  @apply m-0 text-[14px] leading-[1.55] text-pretty text-muted;
+  @apply m-0 typo-body-md text-pretty text-muted;
 }
 
 code {
-  @apply rounded-md bg-sunken px-1.5 py-px font-mono text-[12px] text-fg;
+  @apply rounded-md bg-sunken px-1.5 py-px font-mono typo-caption text-fg;
 }
 
 .last {
-  @apply flex items-center gap-3.5 rounded-[20px] p-4;
+  @apply flex items-center gap-3.5 p-4;
 }
 
 .last-text {
@@ -132,7 +132,7 @@ code {
 }
 
 .last-name {
-  @apply truncate text-[16px] font-bold tracking-[-0.02em];
+  @apply truncate typo-heading-md;
 }
 
 .last-place {
@@ -140,7 +140,7 @@ code {
 }
 
 .resume {
-  @apply inline-flex h-8.5 flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary px-4 py-0 text-[12.5px] font-semibold text-primary-content;
+  @apply inline-flex h-8.5 flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 bg-primary px-4 py-0 typo-body-strong text-primary-content;
 }
 
 .ways {
@@ -148,7 +148,7 @@ code {
 }
 
 .way {
-  @apply flex items-center gap-3 text-[13px];
+  @apply flex items-center gap-3 typo-body;
 }
 
 .way-icon {
@@ -156,7 +156,7 @@ code {
 }
 
 .desk-link {
-  @apply self-start rounded-sm text-[12.5px] font-semibold text-primary-deep no-underline;
+  @apply self-start rounded-sm typo-body-strong text-primary-deep no-underline;
 }
 
 .desk-link:hover {

@@ -41,7 +41,7 @@ const style = computed(() => ({
 /* The box is decoration over the cards it groups; only the header takes the pointer,
    so a drag across a frame's empty interior still starts a marquee on the canvas. */
 .frame {
-  @apply pointer-events-none absolute rounded-2xl border-[1.5px] border-dashed border-border-strong;
+  @apply pointer-events-none absolute rounded-2xl border-2 border-dashed border-border-strong;
 }
 
 .frame[data-status="working"] {
@@ -77,15 +77,15 @@ const style = computed(() => ({
 }
 
 .frame-title {
-  @apply min-w-0 flex-1 truncate font-sans text-[12.5px] font-bold tracking-[-0.01em];
+  @apply min-w-0 flex-1 truncate font-sans typo-body-strong font-bold;
 }
 
 .frame-badge {
-  @apply inline-flex h-5 flex-none items-center rounded-full bg-primary-soft px-2 py-0 font-mono text-[10.5px] font-medium whitespace-nowrap text-primary-deep;
+  @apply inline-flex h-5 flex-none items-center rounded-full bg-primary-soft px-2 py-0 typo-mono-meta font-medium whitespace-nowrap text-primary-deep;
 }
 
 .frame-count {
-  @apply flex-none font-mono text-[10.5px] font-medium whitespace-nowrap text-subtle;
+  @apply flex-none typo-mono-meta font-medium whitespace-nowrap text-subtle;
 }
 
 .frame-toggle {

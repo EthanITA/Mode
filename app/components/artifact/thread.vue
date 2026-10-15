@@ -152,7 +152,7 @@ header {
 }
 
 .title {
-  @apply text-[13px] font-bold tracking-[-0.01em];
+  @apply typo-body-strong font-bold;
 }
 
 .meta {
@@ -174,7 +174,7 @@ header {
 }
 
 .resolve {
-  @apply cursor-pointer rounded-selector border border-border bg-raised px-2.5 py-1 text-[11.5px] font-semibold whitespace-nowrap text-success transition-[border-color] duration-(--duration-fast) ease-out;
+  @apply cursor-pointer rounded-selector border border-border bg-raised px-2.5 py-1 typo-caption-strong whitespace-nowrap text-success transition-colors duration-(--duration-fast) ease-out;
 }
 
 .resolve:hover {
@@ -187,7 +187,7 @@ header {
 }
 
 .quote {
-  @apply m-0 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 text-[12.5px] leading-normal text-muted italic;
+  @apply m-0 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 typo-body text-muted italic;
 }
 
 .warn {
@@ -199,7 +199,7 @@ header {
 }
 
 .who {
-  @apply mt-0.5 grid size-4.5 flex-none place-items-center rounded-selector bg-primary-soft font-mono text-[10px] font-semibold text-primary;
+  @apply mt-0.5 grid size-4.5 flex-none place-items-center rounded-selector bg-primary-soft typo-mono-micro font-semibold text-primary;
 }
 
 .who[data-you] {

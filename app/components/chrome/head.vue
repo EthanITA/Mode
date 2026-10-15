@@ -27,7 +27,7 @@ const { cwd, title } = defineProps<{ cwd?: string; title: string }>();
 }
 
 .title {
-  @apply min-w-0 truncate text-[15px] font-extrabold tracking-[-0.02em] text-fg;
+  @apply min-w-0 truncate typo-heading font-extrabold text-fg;
 }
 
 .cwd {

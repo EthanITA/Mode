@@ -284,7 +284,7 @@ onBeforeUnmount(() => {
 }
 
 .name {
-  @apply min-w-0 truncate text-[13px] font-bold tracking-[-0.01em];
+  @apply min-w-0 truncate typo-body-strong font-bold;
 }
 
 /* The reader sizes its frame to the page, so this pane owns the scroll. */

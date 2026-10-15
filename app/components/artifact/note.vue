@@ -188,7 +188,7 @@ async function resolve(): Promise<void> {
 }
 
 .quote {
-  @apply m-0 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 text-[12.5px] leading-normal text-muted italic;
+  @apply m-0 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 typo-body text-muted italic;
 }
 
 .body {
@@ -209,7 +209,7 @@ async function resolve(): Promise<void> {
 }
 
 .notice {
-  @apply m-0 flex items-center gap-1.75 rounded-[10px] bg-success-soft px-2.5 py-1.75 typo-caption-strong;
+  @apply m-0 flex items-center gap-1.75 rounded-field bg-success-soft px-2.5 py-1.75 typo-caption-strong;
 }
 
 .notice::before {

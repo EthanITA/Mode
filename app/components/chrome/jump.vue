@@ -173,14 +173,14 @@ function onKey(event: KeyboardEvent): void {
 }
 
 .name {
-  @apply min-w-0 flex-1 truncate text-[12.5px] font-semibold;
+  @apply min-w-0 flex-1 truncate typo-body-strong;
 }
 
 .where {
-  @apply max-w-[45%] flex-none truncate text-subtle normal-case;
+  @apply max-w-5/12 flex-none truncate text-subtle normal-case;
 }
 
 .none {
-  @apply m-0 p-2.5 text-[12.5px] text-subtle;
+  @apply m-0 p-2.5 typo-body text-subtle;
 }
 </style>

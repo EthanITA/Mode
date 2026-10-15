@@ -151,7 +151,7 @@ watchEffect(() =>
     </div>
 
     <div v-if="adrift" key="adrift" class="perch perch-foot">
-      <UiPopover :estimated-height="320" :placement="away" width="w-[380px]">
+      <UiPopover :estimated-height="320" :placement="away" width="w-95">
         <template #trigger="{ open }">
           <button
             class="loose plain-button mono-meta focusable"
@@ -224,7 +224,7 @@ watchEffect(() =>
 
 /* A saved note lands beside its line; perches are absolute, so a leaving one shifts nothing. */
 .note-enter-active {
-  @apply transition-[opacity,translate] duration-(--duration-snappy) ease-out;
+  @apply transition duration-(--duration-snappy) ease-out;
 }
 
 .note-enter-from {
@@ -232,7 +232,7 @@ watchEffect(() =>
 }
 
 .note-leave-active {
-  @apply transition-[opacity,scale] duration-(--duration-fast) ease-out;
+  @apply transition duration-(--duration-fast) ease-out;
 }
 
 .note-leave-to {

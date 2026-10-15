@@ -109,7 +109,7 @@ const gates = computed(() => contract.steps.filter((step) => step.gate).map((ste
 }
 
 .summary {
-  @apply m-0 text-[11.5px] leading-[1.45] text-muted;
+  @apply m-0 typo-caption leading-normal text-muted;
 }
 
 .plot {
@@ -123,11 +123,13 @@ const gates = computed(() => contract.steps.filter((step) => step.gate).map((ste
 }
 
 .fwd {
-  @apply stroke-border-strong stroke-[1.5];
+  @apply stroke-border-strong;
+  stroke-width: 1.5;
 }
 
 .loop {
-  @apply stroke-warning stroke-[1.5];
+  @apply stroke-warning;
+  stroke-width: 1.5;
   stroke-dasharray: 3 3;
 }
 
@@ -180,7 +182,8 @@ const gates = computed(() => contract.steps.filter((step) => step.gate).map((ste
 }
 
 .gate svg {
-  @apply size-2.5 fill-none stroke-current stroke-[2.4];
+  @apply size-2.5 fill-none stroke-current;
+  stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -206,7 +209,7 @@ const gates = computed(() => contract.steps.filter((step) => step.gate).map((ste
 }
 
 .dash {
-  @apply block h-0 w-3.5 border-t-[1.5px] border-dashed border-warning;
+  @apply block h-0 w-3.5 border-t-2 border-dashed border-warning;
 }
 
 .gates {

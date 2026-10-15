@@ -197,7 +197,7 @@ function onEnter(event: KeyboardEvent): void {
 }
 
 .title {
-  @apply text-[14px] font-extrabold tracking-[-0.02em] text-fg;
+  @apply typo-subheading font-extrabold text-fg;
 }
 
 .meta {
@@ -229,7 +229,7 @@ function onEnter(event: KeyboardEvent): void {
 }
 
 .add-input {
-  @apply h-6 flex-1 border-0 bg-transparent px-1 py-0 text-[12.5px] text-fg outline-none;
+  @apply h-6 flex-1 border-0 bg-transparent px-1 py-0 typo-body text-fg outline-none;
 }
 
 .done-section {
@@ -253,11 +253,11 @@ function onEnter(event: KeyboardEvent): void {
 }
 
 .done-title {
-  @apply text-[10.5px] text-muted;
+  @apply typo-meta text-muted;
 }
 
 .done-count {
-  @apply rounded-full bg-sunken px-1.5 py-px text-[9.5px] text-subtle;
+  @apply rounded-full bg-sunken px-1.5 py-px typo-micro text-subtle;
 }
 
 .done-items {
@@ -267,7 +267,7 @@ function onEnter(event: KeyboardEvent): void {
 /* Resting height must equal --island-row-h: shape="pill" only clips to a full
    circle when the box is no taller than that (see design-system/components/island.md). */
 .pill {
-  @apply inline-flex h-(--island-row-h) cursor-pointer items-center gap-2.5 border-0 bg-transparent bg-none px-3.5 py-0 text-[12.5px] font-semibold text-fg;
+  @apply inline-flex h-(--island-row-h) cursor-pointer items-center gap-2.5 border-0 bg-transparent bg-none px-3.5 py-0 typo-body-strong text-fg;
 }
 
 .pill:hover {
@@ -279,7 +279,7 @@ function onEnter(event: KeyboardEvent): void {
 }
 
 .fill {
-  @apply block h-full rounded-full bg-fg transition-[width] duration-(--duration-base) ease-out;
+  @apply block h-full rounded-full bg-fg transition-all duration-(--duration-base) ease-out;
 }
 
 .count {

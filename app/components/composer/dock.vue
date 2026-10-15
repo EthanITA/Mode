@@ -197,7 +197,7 @@ onMounted(() => {
 /* Closed over the artifact by default: a slim pill, not a panel competing with the reading
    surface. Growing back to the full cell width is what "engaging with it" earns. */
 .dock[data-compact="true"][data-state="minimized"] .island {
-  @apply max-w-90 transition-[max-width] duration-(--duration-base) ease-out;
+  @apply max-w-90 transition-all duration-(--duration-base) ease-out;
 }
 
 /* The island is bottom-anchored inside a clipping box, so whatever does not fit is cut
@@ -286,7 +286,7 @@ onMounted(() => {
 }
 
 .failure {
-  @apply m-0 rounded-field border border-error bg-error-soft px-3.25 py-2.25 text-[13px] text-error;
+  @apply m-0 rounded-field border border-error bg-error-soft px-3.25 py-2.25 typo-body text-error;
 }
 
 @media (prefers-reduced-motion: reduce) {

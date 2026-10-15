@@ -139,7 +139,7 @@ function tellOf(version: FileVersion, index: number): string {
 }
 
 .latest {
-  @apply flex-none cursor-pointer rounded-selector border border-border bg-raised px-2.75 py-1.25 text-[11.5px] font-semibold text-fg transition-[border-color] duration-(--duration-fast) ease-out;
+  @apply flex-none cursor-pointer rounded-selector border border-border bg-raised px-2.75 py-1.25 typo-caption-strong text-fg transition-colors duration-(--duration-fast) ease-out;
 }
 
 .latest:hover {

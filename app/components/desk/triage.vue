@@ -162,11 +162,11 @@ useShortcuts(
 }
 
 .title {
-  @apply m-0 text-[24px] leading-[1.2] font-extrabold tracking-[-0.03em] text-fg;
+  @apply m-0 typo-heading-xl font-extrabold text-fg;
 }
 
 .hint {
-  @apply m-0 text-[14px] leading-[1.55] text-muted;
+  @apply m-0 typo-body-md text-muted;
 }
 
 .rows {
@@ -174,7 +174,7 @@ useShortcuts(
 }
 
 .row {
-  @apply -mx-2 my-0 flex cursor-pointer flex-col gap-0.5 rounded-[10px] p-2;
+  @apply -mx-2 my-0 flex cursor-pointer flex-col gap-0.5 rounded-field p-2;
 }
 
 .row[aria-selected="true"] {
@@ -182,7 +182,7 @@ useShortcuts(
 }
 
 .row-head {
-  @apply flex min-w-0 items-center gap-3 text-[13px];
+  @apply flex min-w-0 items-center gap-3 typo-body;
 }
 
 .dot {
@@ -199,11 +199,11 @@ useShortcuts(
 }
 
 .ago {
-  @apply flex-none font-mono text-[11px] text-muted;
+  @apply flex-none typo-mono-meta text-muted;
 }
 
 .about {
-  @apply m-0 line-clamp-2 pl-5 text-[12.5px] leading-[1.45] text-muted;
+  @apply m-0 line-clamp-2 pl-5 typo-body text-muted;
 }
 
 .menu-head {

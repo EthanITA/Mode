@@ -319,7 +319,7 @@ onBeforeUnmount(() => {
 }
 
 .path {
-  @apply min-w-0 flex-1 font-mono text-[12.5px] font-semibold wrap-anywhere;
+  @apply min-w-0 flex-1 font-mono typo-body-strong wrap-anywhere;
 }
 
 .state {
@@ -332,7 +332,7 @@ onBeforeUnmount(() => {
 
 .ghost,
 .save {
-  @apply inline-flex h-6.5 flex-none cursor-pointer items-center gap-1.25 rounded-full px-2.75 py-0 font-sans text-[11.5px] font-semibold transition-[background-color,border-color,color] duration-(--duration-press) ease-[ease];
+  @apply inline-flex h-6.5 flex-none cursor-pointer items-center gap-1.25 rounded-full px-2.75 py-0 font-sans typo-caption-strong transition-colors duration-(--duration-press) ease-out;
 }
 
 .ghost {

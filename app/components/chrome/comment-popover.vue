@@ -118,7 +118,7 @@ function onEdit(): void {
 }
 
 .label {
-  @apply min-w-0 flex-1 truncate text-[12.5px] font-bold text-fg;
+  @apply min-w-0 flex-1 truncate typo-body-strong font-bold text-fg;
 }
 
 .tell {
@@ -130,12 +130,12 @@ function onEdit(): void {
 }
 
 .tell-body {
-  @apply font-mono text-[11.5px] leading-normal text-pretty text-fg;
+  @apply font-mono typo-caption leading-normal text-pretty text-fg;
 }
 
 /* A long selection or block shows its opening only, so the card keeps its size. */
 .tell-quote {
-  @apply line-clamp-3 border-l-2 border-l-border-strong pl-2 text-[11.5px] leading-normal text-pretty text-muted;
+  @apply line-clamp-3 border-l-2 border-l-border-strong pl-2 typo-caption leading-normal text-pretty text-muted;
 }
 
 .foot {
@@ -145,7 +145,7 @@ function onEdit(): void {
 .cancel,
 .ask,
 .save {
-  @apply h-7 flex-none cursor-pointer rounded-full font-sans text-[11.5px] font-semibold;
+  @apply h-7 flex-none cursor-pointer rounded-full font-sans typo-caption-strong;
 }
 
 .cancel {

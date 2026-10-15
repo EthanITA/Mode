@@ -22,6 +22,7 @@
      fallback for the frame before the observer has reported. The canvas opts out of
      both and draws to the edges, with the islands floating over it. */
   --stage-top: calc(var(--gutter) * 2 + var(--island-row-h));
+  --dot-size: 7px;
 
   /* Session and contract colours arrive as terminal colour names. Cela carries four
      of the hues outright; the rest are mixed from them so nothing here is a raw hex. */
@@ -74,6 +75,8 @@
   --color-tint-slate: var(--tint-slate);
   --color-mascot: var(--mascot);
   --color-mascot-eye: var(--mascot-eye);
+  --color-file-html: var(--file-html);
+  --color-file-md: var(--file-md);
   --color-prop-dark: var(--prop-dark);
   --color-prop-screen: var(--prop-screen);
   --color-prop-code: var(--prop-code);
@@ -100,6 +103,10 @@
   --color-ed-remove: var(--ed-remove);
   --color-ed-remove-ink: var(--ed-remove-ink);
   --color-ed-warn: var(--ed-warn);
+  --color-action-ink: var(--action-ink, var(--ink));
+  --color-action-line: var(--action-line, var(--border-strong));
+  /* Inline, so --side-w resolves on each face rather than once at the root. */
+  --grid-template-columns-pane: min(var(--side-w), 50%) 0 minmax(0, 1fr);
 }
 
 [data-tint="violet"] {
@@ -139,11 +146,11 @@ body {
 }
 
 @utility mono-meta {
-  @apply font-mono text-[10px] leading-[1.4] font-medium tracking-[0.12em] uppercase;
+  @apply typo-mono-micro leading-snug font-medium tracking-widest uppercase;
 }
 
 @utility dot {
-  @apply size-[var(--dot-size,7px)] flex-none rounded-full;
+  @apply size-(--dot-size) flex-none rounded-full;
 }
 
 @utility focusable {

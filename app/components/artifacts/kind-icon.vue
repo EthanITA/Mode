@@ -44,10 +44,12 @@ const { meta, page } = defineProps<{
 }
 
 .mark[data-mark="md"] {
-  @apply stroke-(--file-md) stroke-[1.6];
+  @apply stroke-file-md;
+  stroke-width: 1.6;
 }
 
 .mark[data-mark="html"] {
-  @apply stroke-(--file-html) stroke-[1.8];
+  @apply stroke-file-html;
+  stroke-width: 1.8;
 }
 </style>

@@ -95,7 +95,7 @@ follow.listen();
 }
 
 .empty {
-  @apply m-0 grid h-full place-items-center text-[13px] text-subtle;
+  @apply m-0 grid h-full place-items-center typo-body text-subtle;
 }
 
 .gone {
@@ -103,7 +103,7 @@ follow.listen();
 }
 
 .gone-line {
-  @apply m-0 text-[13px] text-muted;
+  @apply m-0 typo-body text-muted;
 }
 
 .gone-line code {
@@ -111,6 +111,6 @@ follow.listen();
 }
 
 .gone-back {
-  @apply rounded-full text-[12.5px] font-semibold whitespace-nowrap text-primary-deep;
+  @apply rounded-full typo-body-strong whitespace-nowrap text-primary-deep;
 }
 </style>

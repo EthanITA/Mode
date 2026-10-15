@@ -97,7 +97,7 @@ function reject(event: MouseEvent, path: string): void {
 }
 
 .ask {
-  @apply py-0 pr-0.5 pl-1 text-[10.5px] font-semibold whitespace-nowrap text-error;
+  @apply py-0 pr-0.5 pl-1 typo-meta-semibold whitespace-nowrap text-error;
 }
 
 .dot {

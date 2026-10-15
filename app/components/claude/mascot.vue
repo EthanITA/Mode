@@ -332,7 +332,7 @@ onScopeDispose(() => clearTimeout(timer));
 
 .beam-enter-from,
 .beam-leave-to {
-  @apply translate-y-[12%] scale-18 opacity-0;
+  @apply translate-y-1/8 scale-18 opacity-0;
 }
 
 @keyframes portal {
@@ -407,7 +407,8 @@ onScopeDispose(() => clearTimeout(timer));
 }
 
 .rim {
-  @apply fill-none stroke-prop-dark stroke-[1.3];
+  @apply fill-none stroke-prop-dark;
+  stroke-width: 1.3;
 }
 
 .glass {

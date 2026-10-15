@@ -72,11 +72,11 @@ const emit = defineEmits<{ act: []; open: [] }>();
 }
 
 .card-kind {
-  @apply flex-none tracking-[0.04em] text-muted;
+  @apply flex-none tracking-wider text-muted;
 }
 
 .card-file {
-  @apply min-w-0 flex-1 truncate font-mono text-[10.5px] font-medium text-subtle;
+  @apply min-w-0 flex-1 truncate typo-mono-meta font-medium text-subtle;
 }
 
 .card-fresh {
@@ -101,12 +101,12 @@ const emit = defineEmits<{ act: []; open: [] }>();
 }
 
 .card-title {
-  @apply font-sans text-[14px] leading-tight font-bold tracking-[-0.02em] text-balance;
+  @apply font-sans typo-subheading leading-tight font-bold text-balance;
 }
 
 .card-meta,
 .card-done {
-  @apply font-mono text-[10.5px] font-medium;
+  @apply typo-mono-meta font-medium;
 }
 
 .card-meta {
@@ -114,7 +114,7 @@ const emit = defineEmits<{ act: []; open: [] }>();
 }
 
 .card-comments {
-  @apply inline-flex h-5 flex-none items-center gap-1 rounded-full bg-sunken px-1.75 py-0 font-sans text-[10.5px] font-semibold text-muted;
+  @apply inline-flex h-5 flex-none items-center gap-1 rounded-full bg-sunken px-1.75 py-0 font-sans typo-meta-semibold text-muted;
 }
 
 .card-gap {
@@ -126,7 +126,7 @@ const emit = defineEmits<{ act: []; open: [] }>();
 }
 
 .card-act {
-  @apply inline-flex h-6.5 flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 px-2.75 py-0 font-sans text-[11.5px] font-semibold whitespace-nowrap;
+  @apply inline-flex h-6.5 flex-none cursor-pointer items-center gap-1.5 rounded-full border-0 px-2.75 py-0 font-sans typo-caption-strong whitespace-nowrap;
 }
 
 .card-act[data-tone="primary"] {
@@ -142,6 +142,6 @@ const emit = defineEmits<{ act: []; open: [] }>();
 }
 
 .card-act-hint {
-  @apply font-mono text-[9.5px] font-medium opacity-70;
+  @apply typo-mono-micro font-medium opacity-70;
 }
 </style>

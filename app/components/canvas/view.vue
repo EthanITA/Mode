@@ -226,7 +226,8 @@ watch(
 }
 
 .canvas-links path {
-  @apply fill-none stroke-border-strong stroke-[1.5];
+  @apply fill-none stroke-border-strong;
+  stroke-width: 1.5;
   stroke-dasharray: 5 5;
 }
 
@@ -239,7 +240,7 @@ watch(
 }
 
 .canvas-empty {
-  @apply pointer-events-none absolute top-[45%] left-1/2 -translate-1/2 text-center font-mono text-[12px] leading-[1.8] text-muted;
+  @apply pointer-events-none absolute top-5/12 left-1/2 -translate-1/2 text-center font-mono typo-caption leading-relaxed text-muted;
 }
 
 .canvas-menu-head {

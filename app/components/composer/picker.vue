@@ -37,7 +37,7 @@ function clear(close: () => void): void {
 
 <template>
   <span class="anchor" :data-region="`${axis}-picker`">
-    <UiPopover placement="top" width="w-[620px]" :estimated-height="400" :offset="10">
+    <UiPopover placement="top" width="w-155" :estimated-height="400" :offset="10">
       <template #trigger>
         <button
           v-press
@@ -112,7 +112,11 @@ function clear(close: () => void): void {
 }
 
 .dot {
-  @apply size-2 flex-none rounded-full bg-[color:var(--tint,var(--subtle))];
+  @apply size-2 flex-none rounded-full bg-subtle;
+}
+
+.dot[data-tint] {
+  @apply bg-tint;
 }
 
 .origin {
@@ -128,7 +132,7 @@ function clear(close: () => void): void {
 }
 
 .title {
-  @apply text-[12.5px] font-bold;
+  @apply typo-body-strong font-bold;
 }
 
 .hint {
@@ -152,11 +156,11 @@ function clear(close: () => void): void {
 }
 
 .who {
-  @apply text-[12.5px] font-semibold text-fg;
+  @apply typo-body-strong text-fg;
 }
 
 .summary {
-  @apply min-w-0 text-[11.5px] leading-[1.45] text-muted;
+  @apply min-w-0 typo-caption leading-normal text-muted;
 }
 
 .empty {
@@ -176,7 +180,7 @@ function clear(close: () => void): void {
 }
 
 .off {
-  @apply ml-auto h-6.5 cursor-pointer rounded-full border border-border bg-raised px-2.5 py-0 font-sans text-[11.5px] font-semibold text-muted;
+  @apply ml-auto h-6.5 cursor-pointer rounded-full border border-border bg-raised px-2.5 py-0 font-sans typo-caption-strong text-muted;
 }
 
 .off:hover {

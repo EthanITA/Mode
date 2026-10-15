@@ -291,7 +291,7 @@ useShortcuts(
 <style scoped>
 /* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
 .history {
-  @apply grid h-full min-h-0 grid-cols-[min(var(--side-w),50%)_0_minmax(0,1fr)] gap-x-2;
+  @apply grid h-full min-h-0 grid-cols-pane gap-x-2;
 }
 
 .pane {
@@ -311,7 +311,7 @@ useShortcuts(
 }
 
 .title {
-  @apply text-[12.5px] font-bold;
+  @apply typo-body-strong font-bold;
 }
 
 .meta {
@@ -351,7 +351,7 @@ useShortcuts(
 }
 
 .ask {
-  @apply text-[16px] leading-[1.4] font-bold tracking-[-0.02em] text-fg;
+  @apply typo-heading-md text-fg;
 }
 
 p.ask {
@@ -363,11 +363,11 @@ p.ask {
 }
 
 .mark {
-  @apply mt-px flex size-4.5 flex-none items-center justify-center rounded-full bg-primary-soft font-mono text-[10px] font-semibold text-primary-deep;
+  @apply mt-px flex size-4.5 flex-none items-center justify-center rounded-full bg-primary-soft typo-mono-micro font-semibold text-primary-deep;
 }
 
 .reply {
-  @apply text-[13px] leading-normal text-muted;
+  @apply typo-body text-muted;
 }
 
 .scroll {
@@ -393,15 +393,15 @@ p.ask {
 }
 
 .again {
-  @apply mt-2 cursor-pointer rounded-full border border-border-strong bg-raised px-2.75 py-1 text-[11.5px] font-semibold text-fg;
+  @apply mt-2 cursor-pointer rounded-full border border-border-strong bg-raised px-2.75 py-1 typo-caption-strong text-fg;
 }
 
 .notice {
-  @apply m-0 flex-none bg-warning-soft px-3.5 py-2.25 text-[12.5px] leading-normal text-warning;
+  @apply m-0 flex-none bg-warning-soft px-3.5 py-2.25 typo-body text-warning;
 }
 
 .heads {
-  @apply grid flex-none grid-cols-[1fr_1fr] border-b border-b-ed-border bg-ed-bar py-1.25 pr-0 pl-13.5 text-ed-muted normal-case;
+  @apply grid flex-none grid-cols-2 border-b border-b-ed-border bg-ed-bar py-1.25 pr-0 pl-13.5 text-ed-muted normal-case;
 }
 
 .changes {
@@ -409,7 +409,7 @@ p.ask {
 }
 
 .quiet {
-  @apply flex flex-1 items-center justify-center gap-2.5 p-6 text-[13px] leading-[1.55] text-pretty text-muted;
+  @apply flex flex-1 items-center justify-center gap-2.5 p-6 typo-body text-pretty text-muted;
 }
 
 .quiet p {

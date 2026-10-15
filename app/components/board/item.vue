@@ -142,7 +142,7 @@ const commentLabel = computed(() => `${taskId.value} ${task.text}`);
 }
 
 .box {
-  @apply grid size-3.25 flex-none items-center justify-center rounded-sm border-[1.5px] border-border-strong;
+  @apply grid size-3.25 flex-none items-center justify-center rounded-sm border-2 border-border-strong;
 }
 
 .box[aria-pressed="true"] {
@@ -176,7 +176,7 @@ const commentLabel = computed(() => `${taskId.value} ${task.text}`);
 }
 
 .text {
-  @apply min-w-0 flex-1 truncate text-left text-[12.5px] leading-[1.3] text-fg;
+  @apply min-w-0 flex-1 truncate text-left typo-body leading-tight text-fg;
 }
 
 .text[data-expanded="true"] {
@@ -192,7 +192,7 @@ const commentLabel = computed(() => `${taskId.value} ${task.text}`);
 }
 
 .owner-mark :deep([data-size="xs"]) {
-  @apply size-4 text-[7px];
+  @apply size-4 typo-mono-pico font-sans;
 }
 
 .claude-avatar {

@@ -51,7 +51,7 @@ summary::-webkit-details-marker {
 }
 
 .caret {
-  @apply size-0 flex-none border-t-[3.5px] border-b-[3.5px] border-l-5 border-t-transparent border-b-transparent border-l-subtle transition-transform duration-(--duration-fast) ease-out;
+  @apply size-0 flex-none border-t-4 border-b-4 border-l-5 border-t-transparent border-b-transparent border-l-subtle transition-transform duration-(--duration-fast) ease-out;
 }
 
 .folded[open] .caret,
@@ -68,12 +68,12 @@ summary::-webkit-details-marker {
 }
 
 .gist {
-  @apply min-w-0 truncate text-[12px] text-subtle;
+  @apply min-w-0 truncate typo-caption text-subtle;
 }
 
 /* Folded, never dropped: the whole blob is still here, and it scrolls rather than widening the bubble. */
 pre {
-  @apply m-0 max-h-[40vh] max-w-full overflow-auto border-t border-t-border px-2 py-1.5 font-mono text-[11.5px] leading-normal;
+  @apply m-0 max-h-[40vh] max-w-full overflow-auto border-t border-t-border px-2 py-1.5 font-mono typo-caption leading-normal;
 }
 
 /* Prose, not code: it wraps instead of scrolling sideways. */

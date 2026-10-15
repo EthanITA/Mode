@@ -311,7 +311,7 @@ function rejectFile(event: MouseEvent): void {
 <style scoped>
 /* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
 .review {
-  @apply grid h-full min-h-0 grid-cols-[min(var(--side-w),50%)_0_minmax(0,1fr)] gap-x-2;
+  @apply grid h-full min-h-0 grid-cols-pane gap-x-2;
 }
 
 .pane {
@@ -323,7 +323,7 @@ function rejectFile(event: MouseEvent): void {
 }
 
 .title {
-  @apply text-[12.5px] font-bold;
+  @apply typo-body-strong font-bold;
 }
 
 .bar[data-layout="stacked"] {
@@ -381,7 +381,7 @@ function rejectFile(event: MouseEvent): void {
 }
 
 .heads {
-  @apply grid flex-none grid-cols-[1fr_1fr] border-b border-b-ed-border bg-ed-bar py-1.25 pr-0 pl-13.5 text-ed-muted normal-case;
+  @apply grid flex-none grid-cols-2 border-b border-b-ed-border bg-ed-bar py-1.25 pr-0 pl-13.5 text-ed-muted normal-case;
 }
 
 /* The rendered sides have no line-number gutter, so each label starts at its own half. */
@@ -398,7 +398,7 @@ function rejectFile(event: MouseEvent): void {
 }
 
 .action {
-  @apply flex-none cursor-pointer rounded-full border border-border-strong bg-raised px-2.75 py-1 text-[11.5px] font-semibold text-fg;
+  @apply flex-none cursor-pointer rounded-full border border-border-strong bg-raised px-2.75 py-1 typo-caption-strong text-fg;
 }
 
 .action:hover:not(:disabled) {
@@ -418,7 +418,7 @@ function rejectFile(event: MouseEvent): void {
 }
 
 .notice {
-  @apply m-0 flex-none bg-warning-soft px-3.5 py-2.25 text-[12.5px] text-warning;
+  @apply m-0 flex-none bg-warning-soft px-3.5 py-2.25 typo-body text-warning;
 }
 
 .empty {

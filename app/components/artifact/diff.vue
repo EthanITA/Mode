@@ -34,11 +34,11 @@ const highlighted = useHighlightedRows(rows, lang);
 }
 
 .mark {
-  @apply text-center font-mono typo-meta-semibold leading-[1.7];
+  @apply text-center font-mono typo-meta-semibold leading-relaxed;
 }
 
 .code {
-  @apply min-w-0 font-mono text-[12px] leading-[1.7] break-normal wrap-anywhere whitespace-pre-wrap;
+  @apply min-w-0 font-mono typo-caption leading-relaxed break-normal wrap-anywhere whitespace-pre-wrap;
 }
 
 .row[data-kind="add"] {
@@ -74,14 +74,14 @@ const highlighted = useHighlightedRows(rows, lang);
 }
 
 .row[data-kind="hunk"] .code {
-  @apply text-[11px] text-subtle;
+  @apply typo-meta text-subtle;
 }
 
 .note[data-tone="loud"] {
-  @apply m-0 border-l-3 border-l-warning bg-warning-soft px-3 py-2.5 text-[12.5px] leading-normal font-medium text-warning;
+  @apply m-0 border-l-3 border-l-warning bg-warning-soft px-3 py-2.5 typo-body-medium text-warning;
 }
 
 .note[data-tone="quiet"] {
-  @apply m-0 px-3 py-2.5 font-mono text-[11px] leading-normal text-muted;
+  @apply m-0 px-3 py-2.5 typo-mono-meta leading-normal text-muted;
 }
 </style>

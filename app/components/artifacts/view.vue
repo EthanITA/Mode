@@ -197,7 +197,7 @@ async function openUrl(): Promise<void> {
 <style scoped>
 /* The middle track is the resizer's; half the face caps a width remembered from a wider window. */
 .artifacts {
-  @apply grid h-full min-h-0 grid-cols-[min(var(--side-w),50%)_0_minmax(0,1fr)] gap-x-2;
+  @apply grid h-full min-h-0 grid-cols-pane gap-x-2;
 }
 
 .pane {
@@ -218,7 +218,7 @@ async function openUrl(): Promise<void> {
 }
 
 .open {
-  @apply m-0 flex h-8.5 cursor-text items-center gap-2 rounded-2xl border border-border bg-sunken px-3 py-0 transition-[border-color,box-shadow] duration-(--duration-fast) ease-out;
+  @apply m-0 flex h-8.5 cursor-text items-center gap-2 rounded-2xl border border-border bg-sunken px-3 py-0 transition duration-(--duration-fast) ease-out;
 }
 
 .open[data-focused="true"] {
@@ -242,7 +242,7 @@ async function openUrl(): Promise<void> {
 }
 
 .field {
-  @apply min-w-0 flex-1 border-0 bg-transparent p-0 text-[13px] text-fg outline-none;
+  @apply min-w-0 flex-1 border-0 bg-transparent p-0 typo-body text-fg outline-none;
 }
 
 .field::placeholder {
@@ -250,7 +250,7 @@ async function openUrl(): Promise<void> {
 }
 
 .hint {
-  @apply mx-0 -mt-1 mb-0 px-1 py-0 text-[12px] leading-[1.45] text-pretty text-muted;
+  @apply mx-0 -mt-1 mb-0 px-1 py-0 typo-caption leading-normal text-pretty text-muted;
 }
 
 .hint[data-tone="error"] {
@@ -258,7 +258,7 @@ async function openUrl(): Promise<void> {
 }
 
 .title {
-  @apply text-[12.5px] font-bold;
+  @apply typo-body-strong font-bold;
 }
 
 .meta {
@@ -281,7 +281,7 @@ async function openUrl(): Promise<void> {
 
 /* Laid over the row's right end like the review tree's actions, so the text runs under it and never rewraps. */
 .actions {
-  @apply pointer-events-none absolute inset-y-px right-px left-auto flex items-center rounded-l-none rounded-r-[9px] bg-linear-to-r from-transparent to-(--row-bg) to-[18px] py-0 pr-2 pl-4.5 opacity-0 transition-opacity duration-(--duration-fast) ease-out;
+  @apply pointer-events-none absolute inset-y-px right-px left-auto flex items-center rounded-l-none rounded-r-field bg-linear-to-r from-transparent to-(--row-bg) to-[18px] py-0 pr-2 pl-4.5 opacity-0 transition-opacity duration-(--duration-fast) ease-out;
 }
 
 .item:hover .actions,
@@ -296,11 +296,11 @@ async function openUrl(): Promise<void> {
 
 /* The review tree's approve and reject pill, so removing reads like the other row decisions. */
 .pill {
-  @apply inline-flex items-center rounded-full border border-border-strong bg-raised p-px transition-[background,border-color] duration-(--duration-fast) ease-out;
+  @apply inline-flex items-center rounded-full border border-border-strong bg-raised p-px transition-colors duration-(--duration-fast) ease-out;
 }
 
 .dot {
-  @apply grid h-4 w-5 cursor-pointer items-center justify-items-center rounded-full border-0 bg-transparent bg-none p-0 text-muted transition-[color] duration-(--duration-fast) ease-out;
+  @apply grid h-4 w-5 cursor-pointer items-center justify-items-center rounded-full border-0 bg-transparent bg-none p-0 text-muted transition-colors duration-(--duration-fast) ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -314,7 +314,7 @@ async function openUrl(): Promise<void> {
 }
 
 .entry {
-  @apply flex w-full flex-col gap-1.5 rounded-[10px] border border-transparent px-3 py-2.5 text-left transition-[background] duration-(--duration-fast) ease-out;
+  @apply flex w-full flex-col gap-1.5 rounded-field border border-transparent px-3 py-2.5 text-left transition-colors duration-(--duration-fast) ease-out;
 }
 
 /* On the item, so the row keeps its hover while the pointer sits on the pill laid over it. */
@@ -335,7 +335,7 @@ async function openUrl(): Promise<void> {
 }
 
 .name {
-  @apply line-clamp-2 text-[13px] leading-[1.4] font-semibold wrap-break-word text-fg;
+  @apply line-clamp-2 typo-body-strong leading-snug wrap-break-word text-fg;
 }
 
 .entry[data-selected="true"] .name {

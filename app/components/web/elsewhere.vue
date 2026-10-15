@@ -28,7 +28,7 @@ function goAway(): void {
 
 <style scoped>
 .elsewhere {
-  @apply mr-1 inline-flex h-6.5 flex-none cursor-pointer items-center gap-1.5 rounded-full border border-border bg-sunken px-2.5 text-[11.5px] font-semibold whitespace-nowrap text-muted;
+  @apply mr-1 inline-flex h-6.5 flex-none cursor-pointer items-center gap-1.5 rounded-full border border-border bg-sunken px-2.5 typo-caption-strong whitespace-nowrap text-muted;
 }
 
 .elsewhere::before {

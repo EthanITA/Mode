@@ -41,7 +41,7 @@ const others = computed(() => tray.items.value.filter((item) => item.kind !== "c
 }
 
 .chip {
-  @apply inline-flex h-7.5 max-w-105 items-center gap-2 rounded-full border border-border-strong bg-raised py-0 pr-1 pl-3 text-[12px] shadow-sm;
+  @apply inline-flex h-7.5 max-w-105 items-center gap-2 rounded-full border border-border-strong bg-raised py-0 pr-1 pl-3 typo-caption shadow-sm;
 }
 
 .kind {

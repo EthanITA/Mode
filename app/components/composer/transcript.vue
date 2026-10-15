@@ -205,7 +205,7 @@ watch(
 }
 
 .label {
-  @apply flex-none text-[11.5px] font-semibold text-fg;
+  @apply flex-none typo-caption-strong text-fg;
 }
 
 .meta {
@@ -243,7 +243,7 @@ watch(
 }
 
 .answer {
-  @apply min-w-0 text-[13px] wrap-anywhere text-fg;
+  @apply min-w-0 typo-body wrap-anywhere text-fg;
 }
 
 .empty {
@@ -255,7 +255,7 @@ watch(
 }
 
 .turn {
-  @apply flex max-w-[92%] flex-col gap-1;
+  @apply flex max-w-11/12 flex-col gap-1;
 }
 
 .turn[data-role="assistant"] {
@@ -323,17 +323,17 @@ watch(
 
 /* Wraps in full: neither the narration nor an action line may be clipped. */
 .beat-text {
-  @apply m-0 min-w-0 pt-1.5 text-[12.5px] leading-normal wrap-anywhere text-muted;
+  @apply m-0 min-w-0 pt-1.5 typo-body wrap-anywhere text-muted;
 }
 
 /* Prose renders at the transcript's size, so it is scaled down to a narration's weight here. */
 .beat-text :deep(p),
 .beat-text :deep(li) {
-  @apply m-0 text-[12.5px];
+  @apply m-0 typo-body;
 }
 
 .beat-text :deep(code) {
-  @apply text-[11.5px];
+  @apply typo-caption;
 }
 
 .beat-text :deep(strong) {

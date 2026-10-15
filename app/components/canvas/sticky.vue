@@ -49,7 +49,7 @@ const tell = computed(() =>
 }
 
 .sticky-hint {
-  @apply flex-1 tracking-[0.06em] text-warning;
+  @apply flex-1 tracking-wider text-warning;
 }
 
 .sticky-drop {

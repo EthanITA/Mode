@@ -161,7 +161,7 @@ const tell = computed(() => {
 
 .restore,
 .act {
-  @apply flex-none cursor-pointer rounded-full border border-ed-button bg-ed-button px-2.5 py-0.75 typo-meta-semibold text-ed-ink transition-[border-color] duration-(--duration-fast) ease-out;
+  @apply flex-none cursor-pointer rounded-full border border-ed-button bg-ed-button px-2.5 py-0.75 typo-meta-semibold text-ed-ink transition-colors duration-(--duration-fast) ease-out;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -182,7 +182,7 @@ const tell = computed(() => {
 }
 
 .notice {
-  @apply flex items-center gap-2.5 px-3.5 py-2 font-sans text-[12.5px] leading-normal text-ed-warn;
+  @apply flex items-center gap-2.5 px-3.5 py-2 font-sans typo-body text-ed-warn;
   background: color-mix(in oklch, var(--ed-warn) 14%, var(--ed-bg));
 }
 
@@ -201,11 +201,11 @@ const tell = computed(() => {
 }
 
 .note {
-  @apply m-0 px-3.5 py-2.5 font-mono text-[11px] leading-normal text-ed-muted;
+  @apply m-0 px-3.5 py-2.5 typo-mono-meta leading-normal text-ed-muted;
 }
 
 /* A gap we could not fill never renders as a quiet nothing. */
 .note[data-tone="loud"] {
-  @apply border-l-3 border-l-ed-warn font-sans text-[12.5px] text-ed-warn;
+  @apply border-l-3 border-l-ed-warn font-sans typo-body text-ed-warn;
 }
 </style>

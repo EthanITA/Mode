@@ -271,15 +271,15 @@ onMounted(() => {
 
 /* The shipped comment card's quote, so the two read as one family in the margin. */
 .quote {
-  @apply m-0 line-clamp-3 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 text-[12.5px] leading-normal text-muted italic;
+  @apply m-0 line-clamp-3 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 typo-body text-muted italic;
 }
 
 .sent {
-  @apply flex flex-col gap-0.75 rounded-[10px] bg-success-soft px-2.5 py-2;
+  @apply flex flex-col gap-0.75 rounded-field bg-success-soft px-2.5 py-2;
 }
 
 .sent-title {
-  @apply flex items-center gap-1.75 text-[12.5px] font-semibold;
+  @apply flex items-center gap-1.75 typo-body-strong;
 }
 
 .dot {
@@ -287,7 +287,7 @@ onMounted(() => {
 }
 
 .sent-line {
-  @apply text-[12px] leading-[1.45] text-pretty text-muted;
+  @apply typo-caption leading-normal text-pretty text-muted;
 }
 
 .thread {
@@ -303,19 +303,19 @@ onMounted(() => {
 }
 
 .asked-text {
-  @apply text-[12.5px] leading-[1.45] whitespace-pre-wrap text-muted;
+  @apply typo-body whitespace-pre-wrap text-muted;
 }
 
 .answer {
-  @apply flex-none text-[13px] leading-[1.55] text-pretty;
+  @apply flex-none typo-body text-pretty;
 }
 
 .failure {
-  @apply m-0 flex-none text-[12.5px] leading-normal text-error;
+  @apply m-0 flex-none typo-body text-error;
 }
 
 .thinking {
-  @apply m-0 flex-none text-[12.5px] leading-normal;
+  @apply m-0 flex-none typo-body;
 }
 
 .dots::after {
@@ -347,11 +347,11 @@ onMounted(() => {
 }
 
 .bones span:nth-child(2) {
-  @apply w-[90%];
+  @apply w-11/12;
 }
 
 .bones span:nth-child(3) {
-  @apply w-[56%];
+  @apply w-7/12;
 }
 
 .field {
@@ -363,7 +363,7 @@ onMounted(() => {
 }
 
 .field-box {
-  @apply min-w-0 flex-1 text-[12.5px];
+  @apply min-w-0 flex-1 typo-body;
 }
 
 .field :deep(.textarea[data-auto-fit="true"]) {
@@ -405,11 +405,11 @@ onMounted(() => {
 }
 
 .folded-title {
-  @apply flex-none text-[12.5px] font-bold;
+  @apply flex-none typo-body-strong font-bold;
 }
 
 .folded-question {
-  @apply min-w-0 flex-1 truncate text-[12px] text-muted;
+  @apply min-w-0 flex-1 truncate typo-caption text-muted;
 }
 
 .undo {

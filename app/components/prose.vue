@@ -42,7 +42,7 @@ watch(
 
 <style scoped>
 .prose {
-  @apply min-w-0 text-[13px] leading-normal wrap-anywhere;
+  @apply min-w-0 typo-body wrap-anywhere;
 }
 
 .raw {
@@ -67,15 +67,15 @@ watch(
 .prose :deep(h4),
 .prose :deep(h5),
 .prose :deep(h6) {
-  @apply mx-0 mt-3 mb-1.5 text-[13px] leading-[1.35] font-bold tracking-[-0.01em];
+  @apply mx-0 mt-3 mb-1.5 typo-body-strong leading-snug font-bold;
 }
 
 .prose :deep(h1) {
-  @apply text-[15px];
+  @apply typo-heading;
 }
 
 .prose :deep(h2) {
-  @apply text-[14px];
+  @apply typo-subheading font-bold;
 }
 
 .prose :deep(ul),

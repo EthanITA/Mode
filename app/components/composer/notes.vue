@@ -118,7 +118,7 @@ onMounted(() => {
 }
 
 .send {
-  @apply inline-flex h-full cursor-pointer items-center gap-2 rounded-[inherit] border-0 bg-primary px-4 py-0 text-[12.5px] font-semibold text-primary-content;
+  @apply inline-flex h-full cursor-pointer items-center gap-2 rounded-4xl border-0 bg-primary px-4 py-0 typo-body-strong text-primary-content;
 }
 
 .send:disabled {

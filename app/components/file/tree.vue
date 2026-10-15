@@ -137,7 +137,7 @@ watchEffect(() => {
 }
 
 .row {
-  @apply relative flex min-h-6.5 w-full cursor-pointer items-center gap-1.25 rounded-md border-0 bg-transparent bg-none py-0 pr-2 pl-[calc(6px_+_var(--depth)_*_14px)] text-left text-[12.5px] text-fg;
+  @apply relative flex min-h-6.5 w-full cursor-pointer items-center gap-1.25 rounded-md border-0 bg-transparent bg-none py-0 pr-2 pl-[calc(6px_+_var(--depth)_*_14px)] text-left typo-body text-fg;
 }
 
 .item {

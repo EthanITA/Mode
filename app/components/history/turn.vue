@@ -64,7 +64,7 @@ const tell = computed(() => {
 
 <style scoped>
 .row {
-  @apply flex flex-col gap-2 rounded-[10px] border border-transparent;
+  @apply flex flex-col gap-2 rounded-field border border-transparent;
 }
 
 .row[data-picked="true"] {
@@ -72,7 +72,7 @@ const tell = computed(() => {
 }
 
 .turn {
-  @apply grid w-full grid-cols-[28px_minmax(0,1fr)_auto] items-start gap-x-2 rounded-[10px] py-2.5 pr-2 pl-1.5 text-left transition-[background-color] duration-(--duration-fast) ease-out;
+  @apply grid w-full grid-cols-[28px_minmax(0,1fr)_auto] items-start gap-x-2 rounded-field py-2.5 pr-2 pl-1.5 text-left transition-colors duration-(--duration-fast) ease-out;
 }
 
 .row[data-picked="true"] .turn {
@@ -86,7 +86,7 @@ const tell = computed(() => {
 }
 
 .number {
-  @apply pt-0.5 text-right text-[11px] tracking-normal text-subtle;
+  @apply pt-0.5 text-right typo-meta text-subtle;
 }
 
 .row[data-picked="true"] .number {
@@ -98,7 +98,7 @@ const tell = computed(() => {
 }
 
 .ask {
-  @apply line-clamp-2 text-[13px] leading-[1.45] wrap-anywhere whitespace-pre-line text-fg;
+  @apply line-clamp-2 typo-body wrap-anywhere whitespace-pre-line text-fg;
 }
 
 .row[data-picked="true"] .ask {
@@ -136,7 +136,7 @@ const tell = computed(() => {
 }
 
 .name {
-  @apply min-w-0 flex-1 truncate font-mono text-[12.5px] text-info;
+  @apply min-w-0 flex-1 truncate font-mono typo-body text-info;
 }
 
 .file[data-kind="created"] .name {

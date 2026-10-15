@@ -73,7 +73,7 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
 }
 
 .action {
-  @apply inline-flex h-full flex-none cursor-pointer items-center justify-center gap-2 rounded-full border-0 bg-transparent px-3.5 py-0 text-[12.5px] font-semibold text-fg transition-[background-color,border-color,color] duration-(--duration-press) ease-[ease];
+  @apply inline-flex h-full flex-none cursor-pointer items-center justify-center gap-2 rounded-full border-0 bg-transparent px-3.5 py-0 typo-body-strong text-fg transition-colors duration-(--duration-press) ease-out;
 }
 
 .action[data-labelled="false"] {
@@ -82,7 +82,7 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
 
 /* A bar that is not the app's own, such as the dark editor's, retints the pill through these two. */
 .pill {
-  @apply h-6.5 gap-1.5 border border-[color:var(--action-line,var(--border-strong))] px-2.75 py-0 text-[11.5px] text-[color:var(--action-ink,var(--ink))];
+  @apply h-6.5 gap-1.5 border border-action-line px-2.75 py-0 typo-caption text-action-ink;
 }
 
 .pill[data-labelled="false"] {
@@ -111,7 +111,7 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
 
 @media (hover: hover) and (pointer: fine) {
   .pill:hover {
-    @apply border-[color:var(--action-ink,var(--ink))];
+    @apply border-action-ink;
   }
 
   .island .action:hover {

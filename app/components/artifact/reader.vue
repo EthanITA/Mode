@@ -347,7 +347,7 @@ onScopeDispose(() => {
 
 .gap,
 .blank {
-  @apply mx-auto w-full max-w-(--page-w) rounded-box border border-dashed border-border-strong bg-raised px-7 py-10 text-center text-[14px] text-muted;
+  @apply mx-auto w-full max-w-(--page-w) rounded-box border border-dashed border-border-strong bg-raised px-7 py-10 text-center typo-body-md text-muted;
 }
 
 .gap p,

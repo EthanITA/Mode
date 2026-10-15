@@ -93,11 +93,11 @@ function answer(): void {
 }
 
 .label {
-  @apply text-[13px] font-semibold;
+  @apply typo-body-strong;
 }
 
 .why {
-  @apply text-[12px] opacity-80;
+  @apply typo-caption opacity-80;
 }
 
 .foot {

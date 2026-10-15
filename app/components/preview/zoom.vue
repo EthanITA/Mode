@@ -37,12 +37,12 @@ const zoom = defineModel<number>({ required: true });
 <style scoped>
 /* Retinted through the same two variables as an action pill, so it sits on the dark editor bar too. */
 .zoom {
-  @apply inline-flex h-6.5 flex-none items-center rounded-full border border-[color:var(--action-line,var(--border-strong))] px-px py-0 text-[color:var(--action-ink,var(--ink))];
+  @apply inline-flex h-6.5 flex-none items-center rounded-full border border-action-line px-px py-0 text-action-ink;
 }
 
 .step,
 .level {
-  @apply h-5.5 cursor-pointer rounded-full border-0 bg-transparent text-inherit transition-[background-color] duration-(--duration-press) ease-[ease];
+  @apply h-5.5 cursor-pointer rounded-full border-0 bg-transparent text-inherit transition-colors duration-(--duration-press) ease-out;
 }
 
 .step {
@@ -56,7 +56,7 @@ const zoom = defineModel<number>({ required: true });
 @media (hover: hover) and (pointer: fine) {
   .step:hover:not(:disabled),
   .level:hover {
-    @apply bg-[color:var(--action-line,var(--border-strong))];
+    @apply bg-action-line;
   }
 }
 

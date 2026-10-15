@@ -98,7 +98,7 @@ function pin(el: Element): void {
 <style scoped>
 /* The transient lane, per design-system/components/island.md: top-center, empty at rest. */
 .toaster {
-  @apply pointer-events-none fixed top-17 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2 transition-[top] duration-(--duration-base) ease-out;
+  @apply pointer-events-none fixed top-17 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2 transition-all duration-(--duration-base) ease-out;
 }
 
 /* Comment mode puts its own banner in this lane, so the toasts move below it. */
@@ -129,7 +129,7 @@ function pin(el: Element): void {
 
 /* New toasts arrive at the bottom and old ones leave off the top, faster than they came. */
 .toast-leave-active {
-  @apply absolute transition-[opacity,translate] duration-(--duration-press) ease-out;
+  @apply absolute transition duration-(--duration-press) ease-out;
 }
 
 .toast-leave-to {

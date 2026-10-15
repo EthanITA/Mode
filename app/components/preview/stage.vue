@@ -238,7 +238,7 @@ defineExpose({ follow });
 }
 
 .content {
-  @apply origin-[0_0] opacity-0 transition-opacity duration-(--duration-base) ease-out;
+  @apply origin-top-left opacity-0 transition-opacity duration-(--duration-base) ease-out;
 }
 
 .stage[data-loaded="true"] .frame,
