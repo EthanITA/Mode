@@ -212,15 +212,21 @@ refreshes the kit in an older page. `artifact open <slug>` shows the page in the
 when you want to look at it, and `--browser` opens the file in the browser instead, or `--web` its
 published URL. Claude never runs it for you. `artifact open localhost:3000/guide`, or any http or https
 address, does the same for a live site: the sidecar serves it through a local proxy that adds the comment
-layer, keeps one entry per site in `~/.claude/sidecar/web/`, google.com and www.google.com being one, and
-`artifact comments <slug>` reads and answers its threads like a page's. A redirect is followed on its own
-and its last stop is the entry kept. A site's cookies and storage live under its own proxy origin, which
-`~/.claude/sidecar/web-origins.json` keeps even after the entry is removed, so they last across
-conversations and restarts and come back when the site is opened again. Every host of a remote site
-shares one cookie jar, so a consent or a sign-in on accounts.google.com holds on www.google.com too, and
-the proxy sends each request as a browser tab would rather than as a framed page. Each entry keeps its
+layer, keeps the Web artifact in `~/.claude/sidecar/web/`, and `artifact comments <slug>` reads and
+answers its threads like a page's. A Web artifact is a browser tab with a session of its own. Open a URL
+always makes a new one, and inside it links, redirects, forms and the address bar go to any site in
+place, with back and forward walking through all of them. Every site it visits gets its own host under
+the artifact's, such as `www.reddit.com.https.reddit-3f9a2c.sidecar.localhost`, so a site's cookies are
+shared by its other hosts as in a tab, cross-site scripts and their CORS answers work, and no other Web
+artifact sees them. Cookies and storage last across conversations and restarts. Text that isn't an
+address searches Google, in Open a URL and in the address bar alike. `artifact open <url>` and a link
+clicked in the sidecar reuse the conversation's artifact already opened on or showing that address, so
+Claude opening localhost:3000 every turn doesn't pile up copies. The proxy sends each request as a
+browser tab would rather than as a framed page, a site can never navigate the sidecar window itself, and
+a page reaches no host closer to this machine than its own, so a remote site can't call localhost or the
+local network through it, the way Chrome's Private Network Access draws the line. Each artifact keeps its
 own back and forward history in its record, so ⌘[ and ⌘] step through it after a switch or a reload, and
-⌘L edits the address. A remote site runs fenced off from localhost. A link clicked in the sidecar opens there too, a web address as a Web entry and a local
+⌘L edits the address. A link clicked in the sidecar opens there too, a web address as a Web entry and a local
 `.md` or `.html` as a File entry, which `~/.claude/sidecar/tracked.json` remembers until you remove it, so
 the sidecar serves only files someone opened. Three lookups are worth knowing:
 

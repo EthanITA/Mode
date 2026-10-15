@@ -14,13 +14,19 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **Open a URL live, with the comment layer.** The Open a URL field in Artifacts, or `artifact open <url>`,
   shows any local app or website in the sheet through a proxy on this machine that injects the comment
   agent, so a block takes a thread, Ask Claude and the tray the way an artifact's does, and Claude answers
-  with `artifact comments`. Each site is one Web entry, www and http or https included, that keeps its port,
-  its last page and its threads, a redirect is followed on its own and its last stop is the entry kept, a
-  site's cookies and storage last across conversations and browser restarts, a thread names the page it
-  was left on, the address in the bar is editable, hovering a Web entry offers to remove it with Undo, and a
-  remote site is fenced off from localhost and from the sidecar's API. Back and forward arrows, ⌘[ and ⌘],
-  step through the site's own history and never the sidecar's, each entry keeps that history in its record
-  so it survives a switch or a reload, and ⌘L edits the address.
+  with `artifact comments`. A Web artifact is a tab with a session of its own: Open a URL always makes a
+  new one, and inside it links, redirects, forms, scripts and the address bar go to any site in place.
+  Every site it visits gets its own host under the artifact's, so a site's cookies are shared by its other
+  hosts, its cross-site scripts and their CORS answers load, as reddit's did not before, and its cookies
+  and storage last across conversations and browser restarts. Text that isn't an address searches Google.
+  `artifact open <url>` and a link clicked in the sidecar reuse the conversation's artifact already on that
+  address. A thread names the whole address it was left on, a thin bar under the header runs while a page
+  loads, hovering a Web entry offers to remove it with Undo, no site can navigate the sidecar window
+  itself, and a page reaches no host closer to this machine than its own, as Chrome's Private Network
+  Access draws it, so a remote site can't call localhost, the local network or the sidecar's API. Back and
+  forward arrows, ⌘[ and ⌘], step through the artifact's own history across every site and never the
+  sidecar's, each artifact keeps that history in its record so it survives a switch or a reload, and ⌘L
+  edits the address.
 
 - **Fullscreen is three islands over the page.** F, from the sidecar or inside a live site, grows any artifact to the whole window
   under a strip of islands: the list button on the left, which lays Artifacts or Files over the left edge
