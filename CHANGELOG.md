@@ -314,6 +314,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   header and turns into a glass island only once the sheet grows, so it never reads as one more of the
   app's islands. Growing and shrinking keep the one header, so an address being typed in it survives the
   switch.
+- **Growing and shrinking the sheet move as one.** The app's islands and dock fade out of the way, the
+  header's buttons fade and scale into the fullscreen islands and back, the title's flat fill crossfades
+  into glass and the sheet's border eases away, all while the sheet travels, and a page's notes fade in
+  where they land. Reduced motion still snaps.
 - **Artifacts rows show their kind as an icon.** A Web artifact shows its site's favicon, a `.md` the VS
   Code Markdown mark and an `.html` page its `<>`, in place of the Web, Page and Plan chips, and a row's
   title and every toast stop at two lines.
