@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { Globe } from "@lucide/vue";
+import { Globe, LoaderCircle } from "@lucide/vue";
 import type { WebPage } from "~~/lib/web/page/protocol";
 import { parseTarget } from "~~/lib/web/target";
 
-type Shown = { kind: "globe" } | { kind: "search" } | { kind: "site"; src: string };
+type Shown = { kind: "globe" } | { kind: "loading" } | { kind: "search" } | { kind: "site"; src: string };
 
 const { address, page } = defineProps<{
   address: string;
@@ -12,8 +12,8 @@ const { address, page } = defineProps<{
 }>();
 
 const TYPING = 180;
-// A lookup slower than this shows the globe, rather than leave the last site's icon on a new address.
-const PATIENCE = 300;
+// A cached icon answers well inside this, so only a real lookup shows the spinner.
+const GRACE = 120;
 
 const shown = ref<Shown>({ kind: "globe" });
 let asked = 0;
@@ -45,7 +45,7 @@ async function settle(): Promise<void> {
     return;
   }
   const own = page?.icon && isSameSite(page.url, target) ? [page.icon] : [];
-  const slow = setTimeout(() => ask === asked && (shown.value = { kind: "globe" }), PATIENCE);
+  const slow = setTimeout(() => ask === asked && (shown.value = { kind: "loading" }), GRACE);
   try {
     for (const src of [...own, `/api/web/icon?origin=${encodeURIComponent(target.origin)}`]) {
       const isLoaded = await loads(src);
@@ -89,11 +89,18 @@ onBeforeUnmount(() => clearTimeout(typing));
       d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
     />
   </svg>
+  <UiIcon v-else-if="shown.kind === 'loading'" class="favicon" data-favicon="loading" :icon="LoaderCircle" size="sm" />
   <UiIcon v-else class="favicon" data-favicon="globe" :icon="Globe" size="sm" />
 </template>
 
 <style scoped>
 .favicon {
   @apply size-3.5 flex-none rounded-sm object-contain;
+}
+
+/* Tailwind's spin is a full second; the design system's spinner beat reads as quicker. */
+.favicon[data-favicon="loading"] {
+  @apply motion-safe:animate-spin;
+  animation-duration: var(--duration-spin);
 }
 </style>
