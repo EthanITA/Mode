@@ -7,7 +7,7 @@ import type { AddressInfo } from "node:net";
 import { after, test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { WebHost } from "../../../lib/web/host.ts";
-import { asTab, isAllowed, isFencedOrigin, keptCookie, rewriteResponse, serve, stopAll } from "./proxy.ts";
+import { asTab, captchaFor, isAllowed, isFencedOrigin, keptCookie, rewriteResponse, serve, stopAll } from "./proxy.ts";
 
 const PARENT = "http://sidecar.localhost:4747";
 const SLUG = "app-abc123";
@@ -132,6 +132,31 @@ test("a site's cookie domain and its CORS answer name the artifact's hosts, so i
     answered.headers.get("content-security-policy"),
     `connect-src 'self' https: wss: http://*.${BASE}:47488 ws://*.${BASE}:47488; form-action 'self' https: http://*.${BASE}:47488`,
   );
+});
+
+test("reCAPTCHA is told the site's own origin, and its checkbox answers the page by the proxy's", async () => {
+  const page = `http://www.example.dev.https.${BASE}:47488`;
+  const co = (origin: string): string => btoa(origin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, ".");
+  const anchor = new URL(`https://www.google.com/recaptcha/api2/anchor?ar=1&k=key&co=${co(page)}&hl=en&cb=x1`);
+  const captcha = captchaFor(anchor, { slug: SLUG });
+  assert.equal(
+    captcha?.url.href,
+    `https://www.google.com/recaptcha/api2/anchor?ar=1&k=key&co=${co("https://www.example.dev:443")}&hl=en&cb=x1`,
+  );
+  assert.equal(captchaFor(new URL(`https://www.example.dev/search?co=${co(page)}`), { slug: SLUG }), undefined);
+
+  const answered = await rewriteResponse({
+    captcha,
+    isHead: false,
+    parents: new Set([PARENT]),
+    place: { base: BASE, port: 47488 },
+    reach: "public",
+    response: new Response(`<html><script>init("https://www.example.dev:443")</script></html>`, {
+      headers: { "content-type": "text/html" },
+    }),
+    target: anchor,
+  });
+  assert.ok((await answered.text()).includes(`init("${page}")`));
 });
 
 function upgrade(port: number, headers: Record<string, string>): Promise<boolean> {
@@ -400,6 +425,9 @@ test("the bootstrap keeps every call, socket, script, form and navigation inside
     [stopped, calls.splice(0)],
     [2, [`assign ${proxy("https://elsewhere.dev/a")}`, `replace ${proxy("https://elsewhere.dev/c")}`]],
   );
+
+  sandbox.__recaptcha_api = "https://www.google.com/recaptcha/api2/";
+  assert.equal(sandbox.__recaptcha_api, proxy("https://www.google.com/recaptcha/api2/"));
 
   const doc = sandbox.document as { cookie: string };
   doc.cookie = "sid=1; domain=.example.dev; path=/";

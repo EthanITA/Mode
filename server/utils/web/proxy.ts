@@ -125,6 +125,31 @@ function upstreamOf(raw: string | URL, held: Pick<Running, "slug">): { base: str
   return base && to ? { base, url: to } : undefined;
 }
 
+const BASE64URL: Record<string, string> = { "+": "-", "-": "+", "/": "_", _: "/", "=": ".", ".": "=" };
+
+export interface Captcha {
+  proxy: string;
+  site: string;
+  url: URL;
+}
+
+// reCAPTCHA reads the page's origin from co and refuses a localhost one, so it is told the site's own.
+export function captchaFor(target: URL, held: Pick<Running, "slug">): Captcha | undefined {
+  const co = /^\/recaptcha\//.test(target.pathname) ? target.searchParams.get("co") : undefined;
+  let proxy: string;
+  try {
+    proxy = co ? atob(co.replace(/[-_.]/g, (c) => BASE64URL[c] ?? c)) : "";
+  } catch {
+    return undefined;
+  }
+  const page = proxy ? upstreamOf(proxy, held)?.url : undefined;
+  if (!page) return undefined;
+  const site = `${page.protocol}//${page.hostname}:${page.port || (page.protocol === "https:" ? "443" : "80")}`;
+  const own = btoa(site).replace(/[+/=]/g, (c) => BASE64URL[c] ?? c);
+  const search = target.search.replace(/([?&]co=)[^&]*/, `$1${own}`);
+  return { proxy: new URL(proxy).origin, site, url: new URL(`${target.pathname}${search}`, target.origin) };
+}
+
 /** True for a page of a site off this machine, which must never reach the sidecar's own API. */
 export function isFencedOrigin(origin: string | undefined): boolean {
   if (!origin) return false;
@@ -208,6 +233,7 @@ function fenceOf({ base, port }: ProxyPlace): string {
 }
 
 export interface RewriteInput {
+  captcha?: Captcha;
   isHead: boolean;
   parents: Set<string>;
   place: ProxyPlace;
@@ -217,6 +243,7 @@ export interface RewriteInput {
 }
 
 export async function rewriteResponse({
+  captcha,
   isHead,
   parents,
   place,
@@ -252,7 +279,10 @@ export async function rewriteResponse({
   // Asked for identity, so a body still encoded came from a server that ignores it, and is passed on as it is.
   const isEncoded = !["", "identity"].includes(headers.get("content-encoding") ?? "");
   if (!isHtml || isEncoded || isHead || !response.body) return new Response(response.body, init);
-  const html = inject(await response.text(), { parents, place, target });
+  const text = await response.text();
+  // The checkbox only trusts its page by the origin Google wrote back, so it is given the one the frame really has.
+  const page = captcha ? text.replaceAll(captcha.site, captcha.proxy) : text;
+  const html = inject(page, { parents, place, target });
   // The site's validators describe its page, not this one, and a cached copy would make Reload skip a site that's down.
   for (const name of ["content-length", "etag", "last-modified"]) headers.delete(name);
   headers.set("cache-control", "no-store");
@@ -363,11 +393,13 @@ async function handle(event: H3Event, held: Running): Promise<void> {
   else if (headers.get("origin") !== "null") headers.delete("origin");
   if (referer) headers.set("referer", referer.href);
   else headers.delete("referer");
+  const captcha = captchaFor(target, held);
+  const sent = captcha?.url ?? target;
   let response: Response;
   try {
     response = await proxyFetch(
       target.origin,
-      new URL(`${target.pathname}${target.search}`, target.origin),
+      new URL(`${sent.pathname}${sent.search}`, target.origin),
       { body: request.body, duplex: "half", headers, method: request.method, redirect: "manual" } as RequestInit,
       {
         agent: agentOf(target),
@@ -382,7 +414,7 @@ async function handle(event: H3Event, held: Running): Promise<void> {
   const isHead = request.method === "HEAD";
   return sendWebResponse(
     event,
-    await rewriteResponse({ isHead, parents: held.parents, place, reach, response, target }),
+    await rewriteResponse({ captcha, isHead, parents: held.parents, place, reach, response, target }),
   );
 }
 

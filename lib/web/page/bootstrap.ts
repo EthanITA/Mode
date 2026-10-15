@@ -129,6 +129,14 @@
     else location.assign(String(to));
   });
 
+  // reCAPTCHA frames its checkbox from this base and only trusts messages from the origin it names.
+  let captcha: unknown;
+  Object.defineProperty(window, "__recaptcha_api", {
+    configurable: true,
+    get: () => captcha,
+    set: (value: unknown) => (captcha = typeof value === "string" ? String(proxied(value)) : value),
+  });
+
   // The proxy makes the site's own session cookies last and scopes its domain to the artifact, and these are the ones its scripts set.
   const cookieOf = (text: string): string => {
     const domain = /;\s*domain\s*=\s*\.?([^;]*)/i.exec(text)?.[1]?.trim().toLowerCase();
