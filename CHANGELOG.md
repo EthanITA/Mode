@@ -338,6 +338,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **Loading shows a spinner, not the mascot.** The cover between Listening and a conversation spins the
   favicon's loader once a switch runs slow, and the sidecar's first load shows the same loader on the
   theme's own canvas, so a dark sidecar never starts white.
+- **Picking another page, file or turn never flashes.** A loading line waits a beat before fading in,
+  so a quick read never shows it. Another artifact no longer blinks "could not be read" or the last
+  page's versions while it loads, Files keeps the last file up until the next one lands, and History's
+  diffs fade in where "Reading…" was while turns already read stay instant.
 - **Artifacts rows show their kind as an icon.** A Web artifact shows its site's favicon, a `.md` the VS
   Code Markdown mark and an `.html` page its `<>`, in place of the Web, Page and Plan chips, and a row's
   title and every toast stop at two lines.
