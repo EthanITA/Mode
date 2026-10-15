@@ -495,7 +495,14 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 ### Removed
 
 - **The board island.** Hidden on the conversation and artifact pages, the only ones that showed it, so its
-  components, the `/api/sessions/:key/board` routes and the board helpers behind them are gone.
+  components, the `/api/sessions/:key/board` routes, the board helpers behind them and the `board-island`
+  render-check region are gone.
+- **The Canvas face.** The Files face replaced it, so its components, the `/api/sessions/:key/canvas`
+  routes and the canvas types are gone.
+- **The chat island.** Hidden since Claude Code became the chat, so the dock, the mode picker, the
+  transcript and the question options are gone, and the session perch keeps only its mascot.
+- **`/api/why` and `/api/contracts`.** Nothing has called them since the tab rail and the pipeline strip
+  went, and `mode why` on the CLI is unchanged.
 - **The delivery receipt.** `board-deliver` (the warning on ticking a delivery-shaped item), `board-done`
   (the stop check that re-opened an all-ticked board whose receipt failed), the `metadata.done` receipts
   they verified and the `delivery` config rows are gone, so ticking an item no longer runs `glab` or
@@ -504,8 +511,6 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   `deliverable-guard`, the `deliverables:` front matter key, the status-line chip and the
   `Deliverable:` line in the injection are gone, so an edit, a commit, a push or a post is no longer
   held to a named north star. The `delivery` config rows stay, since `board-deliver` still reads them.
-- **The board island in the sidecar.** Conversation and artifact pages no longer render it, and the
-  `board-island` render-check region goes with it.
 - **`artifact wait` and the page's local sink.** The review layer sends Send and Approve to the
   sidecar relay, and with no sidecar running it downloads `<slug>.comments.json` for
   `artifact comments` to pick up. `artifact review --sink` goes with it, and a page built by an
@@ -518,7 +523,7 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 - **The sidecar stops flooding `/api/why`.** Every five-second poll asked for the why of every listed
   conversation, close to 300 requests a tick, for a tab rail nothing renders anymore, so the poll and
-  the screen's gate and ground rule counts it fed are gone. The endpoint stays for other callers.
+  the screen's gate and ground rule counts it fed are gone.
 - **The five-second poll asks for live conversations only.** It fetched every conversation on disk, about
   330 KB and 170ms of server work a tick with three hundred of them, and now asks for the running ones,
   the jobs and the one on screen, about 28 KB in 16ms, while the full list loads once with the page.
