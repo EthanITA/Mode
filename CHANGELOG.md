@@ -318,6 +318,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   header's buttons fade and scale into the fullscreen islands and back, the title's flat fill crossfades
   into glass and the sheet's border eases away, all while the sheet travels, and a page's notes fade in
   where they land. Reduced motion still snaps.
+- **Tooltips draw above everything.** Every tip opens in the browser's top layer, so a live site's frame,
+  the next button along or a clipping pane no longer covers it, and it goes once its control fades out.
 - **Artifacts rows show their kind as an icon.** A Web artifact shows its site's favicon, a `.md` the VS
   Code Markdown mark and an `.html` page its `<>`, in place of the Web, Page and Plan chips, and a row's
   title and every toast stop at two lines.
