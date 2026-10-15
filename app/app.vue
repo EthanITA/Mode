@@ -45,6 +45,7 @@ function onKeyDown(event: KeyboardEvent): void {
   // ⌘K means comment everywhere: an editor notes its selection itself, so what reaches here arms the picker.
   if (meta && event.key.toLowerCase() === "k") {
     event.preventDefault();
+    if (chrome.comment.openOffer()) return;
     if (inlineArmed.value) {
       inlineAsk.value = true;
       return;

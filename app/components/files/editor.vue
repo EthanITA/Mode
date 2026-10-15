@@ -10,7 +10,8 @@ const unsaved = new Set<string>();
 import { Eye, MessageSquarePlus } from "@lucide/vue";
 import type * as MonacoApi from "monaco-editor";
 import type { FrameAnchor, FrameMark } from "~/types/frame";
-import { EditorNotes, type NoteAt, type Notes } from "~/utils/monaco/notes";
+import type { CommentOffer, CommentSpot } from "~/composables/useChrome";
+import { EditorNotes, type NoteAt, type NoteOffer, type Notes } from "~/utils/monaco/notes";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { FileContent, FileSave, FileUnshown } from "~~/shared/types/files";
 
@@ -138,10 +139,10 @@ async function discard(): Promise<void> {
   await pull();
 }
 
-function openNote({ lines, quote, x, y }: NoteAt): void {
+function noteSpot({ lines, quote, x, y }: NoteAt): CommentSpot {
   const span = EditorNotes.spanOf(lines);
   const label = `${basename(path)}:${lines[0] === lines[1] ? lines[0] : lines.join("-")}`;
-  chrome.comment.open({
+  return {
     ask: { label, lines, path, place: file.value, quote, surface: "files", where: `${span} of ${file.value}` },
     excerpt: quote,
     file: file.value,
@@ -152,7 +153,20 @@ function openNote({ lines, quote, x, y }: NoteAt): void {
     tell: `About ${span} of ${file.value}:`,
     x,
     y,
-  });
+  };
+}
+
+function openNote(at: NoteAt): void {
+  chrome.comment.open(noteSpot(at));
+}
+
+let offered: CommentOffer | undefined;
+
+// The popover's place comes from the chip when it opens, so the spot's own is a placeholder.
+function offerNote(at?: NoteOffer): void {
+  chrome.comment.withdraw(offered);
+  offered = at && { end: at.end, spot: noteSpot({ ...at, x: 0, y: 0 }) };
+  if (offered) chrome.comment.offer(offered);
 }
 
 // No file field, as Review's file note: the tell already names it, and a line note's file is what paints the gutter.
@@ -195,7 +209,7 @@ onMounted(async () => {
     theme: OneDarkVivid.name,
     wordWrap: "on",
   });
-  pen = EditorNotes.attach({ api, editor, onNote: openNote });
+  pen = EditorNotes.attach({ api, editor, onNote: openNote, onOffer: offerNote });
   asking.value = { api, editor };
   editor.addCommand(api.KeyMod.CtrlCmd | api.KeyCode.KeyS, () => void save());
   editor.onDidChangeModelContent(markDirty);

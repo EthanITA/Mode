@@ -1,15 +1,62 @@
 <script lang="ts" setup>
+import { useEventListener } from "@vueuse/core";
+import type { CommentOffer } from "~/composables/useChrome";
+import { selectionIn } from "~~/lib/web/page/blocks";
+
 const { path, state } = defineProps<{ path: string; state: DiffState }>();
 
+const chrome = useChrome();
+const list = useTemplateRef<HTMLElement>("list");
 const rows = computed(() => (state.kind === "changed" ? state.rows : []));
 const note = computed(() => Diff.stateNote(state));
 const lang = computed(() => Syntax.languageOf(path));
 const highlighted = useHighlightedRows(rows, lang);
+
+let offered: CommentOffer | undefined;
+
+function withdraw(): void {
+  chrome.comment.withdraw(offered);
+  offered = undefined;
+}
+
+// A past version has nowhere to show an answer, so the chip offers a note for the session.
+function offer(): void {
+  withdraw();
+  const selection = selectionIn(document);
+  if (!selection?.block || !list.value?.contains(selection.block)) return;
+  offered = {
+    end: selection.end,
+    spot: {
+      excerpt: selection.quote,
+      file: path,
+      kind: "selection",
+      label: basename(path),
+      quote: selection.quote,
+      tell: `About this version's diff of ${path}:`,
+      x: 0,
+      y: 0,
+    },
+  };
+  chrome.comment.offer(offered);
+}
+
+function onRelease(): void {
+  requestAnimationFrame(offer);
+}
+
+function onScroll(): void {
+  if (offered) offer();
+}
+
+useEventListener(document, "selectionchange", () => {
+  if (offered && document.getSelection()?.isCollapsed !== false) withdraw();
+});
+onBeforeUnmount(withdraw);
 </script>
 
 <template>
   <div class="diff">
-    <div v-if="rows.length" class="rows">
+    <div v-if="rows.length" ref="list" class="rows" @keyup="offer" @pointerup="onRelease" @scroll.passive="onScroll">
       <p v-for="(row, index) in rows" :key="index" class="row" :data-kind="row.kind">
         <span class="mark" aria-hidden="true" />
         <span class="code" v-html="highlighted[index] ?? ''" />

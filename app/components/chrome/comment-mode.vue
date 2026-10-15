@@ -60,6 +60,8 @@ function onMove(event: MouseEvent): void {
 
 // pointer events fire before mouse events, so this is the only place a card's own drag can be stopped.
 function onPointerDown(event: PointerEvent): void {
+  if (!(event.target instanceof Element && event.target.closest("[data-region='select-ask']")))
+    chrome.comment.offer(undefined);
   if (fromFrame(event)) return;
   if (!chrome.comment.armed.value || chrome.comment.spot.value || !target(event)) return;
   event.stopPropagation();
@@ -145,6 +147,10 @@ onMounted(() => {
     </template>
   </div>
 
+  <ChromeCommentChip
+    v-if="chrome.comment.offered.value && !chrome.comment.spot.value"
+    :offer="chrome.comment.offered.value"
+  />
   <ChromeCommentPopover v-if="chrome.comment.spot.value" :spot="chrome.comment.spot.value" />
 </template>
 

@@ -10,11 +10,20 @@ export interface NoteAt {
   y: number;
 }
 
+/** `end` is in the window's coordinates, not the editor's. */
+export interface NoteOffer {
+  end: { bottom: number; left: number; right: number; top: number };
+  lines: LineSpan;
+  quote: string;
+}
+
 export interface NotesOptions {
   api: typeof MonacoApi;
   editor: MonacoApi.editor.IStandaloneCodeEditor;
   /** Called with 1-based lines and where the popover should sit; the caller opens it, since it owns the chrome. */
   onNote: (at: NoteAt) => void;
+  /** Called with nothing once the selection is gone or scrolled out of the editor. */
+  onOffer?: (at?: NoteOffer) => void;
 }
 
 export interface Notes {
@@ -45,27 +54,52 @@ function linesOf(editor: MonacoApi.editor.ICodeEditor, line?: number): LineSpan 
 }
 
 // A comment icon in the glyph margin follows the pointer, so a note is one click from any line; ⌘K and the menu have it too.
-function attach({ api, editor, onNote }: NotesOptions): Notes {
+function attach({ api, editor, onNote, onOffer }: NotesOptions): Notes {
   const hovered = editor.createDecorationsCollection();
   const noted = editor.createDecorationsCollection();
+
+  function quoteOf(model: MonacoApi.editor.ITextModel, [start, end]: LineSpan): string {
+    return model.getValueInRange(new api.Range(start, 1, end, model.getLineMaxColumn(end)));
+  }
 
   function note(line?: number): void {
     const model = editor.getModel();
     const box = editor.getDomNode()?.getBoundingClientRect();
     if (!model || !box) return;
     const lines = linesOf(editor, line);
-    const [start, end] = lines;
-    const quote = model.getValueInRange(new api.Range(start, 1, end, model.getLineMaxColumn(end)));
-    const at = editor.getScrolledVisiblePosition({ column: 1, lineNumber: end + 1 });
+    const at = editor.getScrolledVisiblePosition({ column: 1, lineNumber: lines[1] + 1 });
     onNote({
       lines,
-      quote,
+      quote: quoteOf(model, lines),
       x: Math.max(12, Math.min(box.left + (at?.left ?? 0), window.innerWidth - POPOVER.width)),
       y: Math.max(12, Math.min(box.top + (at?.top ?? 0) + 6, window.innerHeight - POPOVER.height)),
     });
   }
 
+  function offer(): void {
+    if (!onOffer) return;
+    const model = editor.getModel();
+    const selection = editor.getSelection();
+    const box = editor.getDomNode()?.getBoundingClientRect();
+    const at =
+      selection && !selection.isEmpty() ? editor.getScrolledVisiblePosition(selection.getEndPosition()) : undefined;
+    if (!model || !box || !at || at.top < 0 || at.top > box.height) return onOffer(undefined);
+    const lines = linesOf(editor);
+    const top = box.top + at.top;
+    const left = box.left + at.left;
+    onOffer({ end: { bottom: top + at.height, left, right: left, top }, lines, quote: quoteOf(model, lines) });
+  }
+
   const listeners = [
+    // Offered once the drag or the keys let go, so the chip never chases a selection still being made.
+    editor.onMouseUp(offer),
+    editor.onKeyUp(offer),
+    editor.onDidScrollChange(() => {
+      if (editor.getSelection()?.isEmpty() === false) offer();
+    }),
+    editor.onDidChangeCursorSelection(({ selection }) => {
+      if (selection.isEmpty()) onOffer?.(undefined);
+    }),
     editor.onMouseMove((event) => {
       const line = event.target.position?.lineNumber;
       const options = { glyphMarginClassName: "monaco-note-add", glyphMarginHoverMessage: HINT };
@@ -106,6 +140,7 @@ function attach({ api, editor, onNote }: NotesOptions): Notes {
     for (const listener of listeners) listener.dispose();
     hovered.clear();
     noted.clear();
+    onOffer?.(undefined);
   }
 
   return { dispose, note, paint };

@@ -1,7 +1,7 @@
 import type { CanvasFitOptions } from "@cela/design";
 import type { ComputedRef, Ref } from "vue";
 import type { Maybe, MaybeComputed } from "~/composables/useSidecar";
-import type { FrameHit } from "~/types/frame";
+import type { FrameHit, ViewBox } from "~/types/frame";
 import type { SideAnchor } from "~/utils/ask-claude";
 import type { ArtifactReviewReply } from "~~/shared/types/artifact";
 
@@ -63,6 +63,18 @@ export interface CommentOwner {
   slug?: string;
 }
 
+/** A live text selection the chip offers to ask about; `end` is its last line in the window. */
+export interface CommentOffer {
+  end: ViewBox;
+  spot: CommentSpot;
+}
+
+export interface SpotOptions {
+  hit: FrameHit;
+  owner?: CommentOwner;
+  quote?: string;
+}
+
 export interface CanvasHooks {
   fit?: (options?: CanvasFitOptions) => void;
   reset?: () => void;
@@ -95,7 +107,13 @@ export interface Chrome {
     held: Ref<boolean>;
     hover: Maybe<CommentHover>;
     light: (next?: CommentHover) => void;
+    offer: (next?: CommentOffer) => void;
+    offered: Maybe<CommentOffer>;
     open: (at: CommentSpot) => void;
+    /** Opens the offered selection, false when there is none, so ⌘K falls through to arming. */
+    openOffer: () => boolean;
+    /** Takes back an offer only while it is still the one shown, since a later surface may have replaced it. */
+    withdraw: (mine?: CommentOffer) => void;
     pick: Maybe<FrameHit>;
     release: () => void;
     save: (text: string) => void;
@@ -149,6 +167,47 @@ export function ringOf(hit: FrameHit): CommentHover {
   };
 }
 
+export function spotOf({ hit, owner = {}, quote }: SpotOptions): CommentSpot {
+  const { canAsk = false, canEdit = false, file = hit.page, slug } = owner;
+  const label = hit.label || hit.path;
+  const words = quote ?? hit.text;
+  const what = quote ? "a passage in" : "a block of";
+  return {
+    ask:
+      canAsk && slug
+        ? {
+            block: hit.text,
+            label,
+            mark: hit.key,
+            path: file,
+            place: slug,
+            quote: words,
+            surface: "artifact",
+            top: hit.top,
+            where: hit.page
+              ? `${what} the live page ${hit.page}`
+              : `${what} the artifact ${slug}${file ? ` (${file})` : ""}`,
+          }
+        : undefined,
+    block: hit.text,
+    // Edit rewrites the picked block, and a selection picks none.
+    canEdit: canEdit && !quote,
+    excerpt: words,
+    file,
+    kind: quote ? "selection" : "block",
+    label,
+    mark: hit.key,
+    page: hit.page,
+    path: hit.path,
+    quote: words,
+    slug,
+    tell: [hit.path, file].filter(Boolean).join(" · ") || "On this block",
+    top: hit.top,
+    x: clamp(hit.viewLeft, POPOVER_W),
+    y: clamp(hit.viewTop + hit.height + 8, POPOVER_H, window.innerHeight),
+  };
+}
+
 // Not useState: a callback is nothing to hydrate, and the mounted canvas is the only writer.
 const hooks = shallowRef<CanvasHooks>({});
 let toastSeq = 0;
@@ -168,6 +227,7 @@ export function useChrome(): Chrome {
   const spot = useState<CommentSpot | undefined>("sc:cmt-spot");
   const hover = useState<CommentHover | undefined>("sc:cmt-hover");
   const pick = useState<FrameHit | undefined>("sc:cmt-pick");
+  const offered = useState<CommentOffer | undefined>("sc:cmt-offer");
   const toasts = useState<Toast[]>("sc:toasts", () => []);
   const insets = useState<FrameInsets>("sc:frame-insets", () => ({
     top: 0,
@@ -220,43 +280,24 @@ export function useChrome(): Chrome {
   }
 
   // One step, because a picked block that then asks for a second click is the whole friction.
-  function compose(hit: FrameHit, { canAsk = false, canEdit = false, file = hit.page, slug }: CommentOwner = {}): void {
-    const label = hit.label || hit.path;
+  function compose(hit: FrameHit, owner?: CommentOwner): void {
     pick.value = hit;
     hover.value = ringOf(hit);
+    offered.value = undefined;
+    spot.value = spotOf({ hit, owner });
+  }
+
+  // Under the selection's last line rather than the block, which can be a screen tall.
+  function openOffer(): boolean {
+    const at = offered.value;
+    if (!at) return false;
+    offered.value = undefined;
     spot.value = {
-      ask:
-        canAsk && slug
-          ? {
-              block: hit.text,
-              label,
-              mark: hit.key,
-              path: file,
-              place: slug,
-              quote: hit.text,
-              surface: "artifact",
-              top: hit.top,
-              where: hit.page
-                ? `a block of the live page ${hit.page}`
-                : `a block of the artifact ${slug}${file ? ` (${file})` : ""}`,
-            }
-          : undefined,
-      block: hit.text,
-      canEdit,
-      excerpt: hit.text,
-      file,
-      kind: "block",
-      label,
-      mark: hit.key,
-      page: hit.page,
-      path: hit.path,
-      quote: hit.text,
-      slug,
-      tell: [hit.path, file].filter(Boolean).join(" · ") || "On this block",
-      top: hit.top,
-      x: clamp(hit.viewLeft, POPOVER_W),
-      y: clamp(hit.viewTop + hit.height + 8, POPOVER_H, window.innerHeight),
+      ...at.spot,
+      x: clamp(at.end.left, POPOVER_W),
+      y: clamp(at.end.bottom + 8, POPOVER_H, window.innerHeight),
     };
+    return true;
   }
 
   function save(text: string): void {
@@ -322,6 +363,10 @@ export function useChrome(): Chrome {
       close();
       return true;
     }
+    if (offered.value) {
+      offered.value = undefined;
+      return true;
+    }
     if (pick.value) {
       pick.value = undefined;
       hover.value = undefined;
@@ -380,8 +425,17 @@ export function useChrome(): Chrome {
       light: (next) => {
         hover.value = next;
       },
+      offer: (next) => {
+        offered.value = next;
+      },
+      offered,
       open: (at) => {
+        offered.value = undefined;
         spot.value = at;
+      },
+      openOffer,
+      withdraw: (mine) => {
+        if (mine && toRaw(offered.value) === mine) offered.value = undefined;
       },
       pick,
       release: () => {

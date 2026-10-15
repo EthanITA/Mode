@@ -9,7 +9,8 @@ const drafts = new Map<string, { base: Base; text: string }>();
 import { Check, X } from "@lucide/vue";
 import { useIntersectionObserver } from "@vueuse/core";
 import type * as MonacoApi from "monaco-editor";
-import { EditorNotes, type LineSpan, type NoteAt, type Notes } from "~/utils/monaco/notes";
+import type { CommentOffer, CommentSpot } from "~/composables/useChrome";
+import { EditorNotes, type LineSpan, type NoteAt, type NoteOffer, type Notes } from "~/utils/monaco/notes";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 import type { FileSave } from "~~/shared/types/files";
 import type { ReviewFile } from "~~/shared/types/review";
@@ -90,13 +91,13 @@ function placeHunks(): void {
   });
 }
 
-function openNote(side: Side, { lines, quote, x, y }: NoteAt): void {
+function noteSpot(side: Side, { lines, quote, x, y }: NoteAt): CommentSpot {
   const span = EditorNotes.spanOf(lines);
   const where = side === "old" ? `original ${span}` : span;
   const label = `${basename(file.path)}:${lines[0] === lines[1] ? lines[0] : lines.join("-")}`;
   // History reads the same diff, and only Review's new side has a place to put the answer.
   const canAsk = !isReadonly && side === "new";
-  chrome.comment.open({
+  return {
     ask: canAsk
       ? { label, lines, path: file.path, place: shown.value, quote, surface: "review", where: `${span} of ${shown.value}` }
       : undefined,
@@ -109,7 +110,20 @@ function openNote(side: Side, { lines, quote, x, y }: NoteAt): void {
     tell: side === "old" ? `About the original ${span} of ${shown.value}:` : `About ${span} of ${shown.value}:`,
     x,
     y,
-  });
+  };
+}
+
+function openNote(side: Side, at: NoteAt): void {
+  chrome.comment.open(noteSpot(side, at));
+}
+
+let offered: CommentOffer | undefined;
+
+// The popover's place comes from the chip when it opens, so the spot's own is a placeholder.
+function offerNote(side: Side, at?: NoteOffer): void {
+  chrome.comment.withdraw(offered);
+  offered = at && { end: at.end, spot: noteSpot(side, { ...at, x: 0, y: 0 }) };
+  if (offered) chrome.comment.offer(offered);
 }
 
 function paintNotes(): void {
@@ -220,9 +234,15 @@ async function build(): Promise<void> {
   setModels();
   const sides = [diff.getOriginalEditor(), diff.getModifiedEditor()];
   sides[1]!.addCommand(api.KeyMod.CtrlCmd | api.KeyCode.KeyS, () => void save());
-  pens = sides.map((editor, index) =>
-    EditorNotes.attach({ api: api!, editor, onNote: (at) => openNote(index === 0 ? "old" : "new", at) }),
-  );
+  pens = sides.map((editor, index) => {
+    const side = index === 0 ? "old" : "new";
+    return EditorNotes.attach({
+      api: api!,
+      editor,
+      onNote: (at) => openNote(side, at),
+      onOffer: (at) => offerNote(side, at),
+    });
+  });
   for (const editor of sides) {
     editor.onDidScrollChange(placeHunks);
     editor.onDidLayoutChange(placeHunks);

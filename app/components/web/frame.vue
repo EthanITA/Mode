@@ -4,7 +4,15 @@ import type { FrameAnchor, FrameHit, FrameMark, ViewBox } from "~/types/frame";
 import type { ProxyPlace } from "~~/lib/web/host";
 import { isTyping } from "~~/lib/web/page/blocks";
 import { isAddressKey, stepOf } from "~~/lib/web/page/keys";
-import { type AgentMessage, CHANNEL, type Envelope, type SidecarMessage, type WebHit } from "~~/lib/web/page/protocol";
+import type { CommentOffer } from "~/composables/useChrome";
+import {
+  type AgentMessage,
+  CHANNEL,
+  type Envelope,
+  type SidecarMessage,
+  type WebHit,
+  type WebSelection,
+} from "~~/lib/web/page/protocol";
 import type { WebArrival, WebServeReply } from "~~/shared/types/web";
 
 const {
@@ -110,6 +118,26 @@ function hitOf(hit: WebHit): FrameHit | undefined {
   };
 }
 
+let offered: CommentOffer | undefined;
+
+function onSelect(selection?: WebSelection): void {
+  const box = frame.value?.getBoundingClientRect();
+  const hit = selection && hitOf(selection.hit);
+  const clip = box && clipOf(box);
+  const end = selection &&
+    box && {
+      bottom: selection.end.bottom + box.top,
+      left: selection.end.left + box.left,
+      right: selection.end.right + box.left,
+      top: selection.end.top + box.top,
+    };
+  chrome.comment.withdraw(offered);
+  offered = undefined;
+  if (!selection || !hit || !end || !clip || end.bottom < clip.top || end.top > clip.bottom) return;
+  offered = { end, spot: spotOf({ hit, owner: { canAsk, slug }, quote: selection.quote }) };
+  chrome.comment.offer(offered);
+}
+
 // The down page says so while it parses, which lands before the agent is ready and before the load.
 function greet(): void {
   if (web.state === "starting") web.state = "live";
@@ -127,6 +155,7 @@ function onLoad(): void {
 
 function onKey(key: string): void {
   if (key === "comment") {
+    if (chrome.comment.openOffer()) return;
     if (chrome.comment.armed.value) chrome.comment.disarm();
     else chrome.comment.arm();
   } else if (key === "escape" && !chrome.dismiss()) artifact.isFull = false;
@@ -187,6 +216,9 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
     }
     case "ready":
       greet();
+      return;
+    case "select":
+      onSelect(message.selection);
   }
 });
 
