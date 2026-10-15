@@ -1,5 +1,5 @@
 import type { WebArrival } from "../../../shared/types/web.ts";
-import type { FrameAnchor, FrameMark } from "./blocks.ts";
+import type { FrameAnchor, FrameMark, PageBox } from "./blocks.ts";
 
 export const CHANNEL = "sidecar-web";
 
@@ -13,6 +13,13 @@ export interface WebHit {
   text: string;
   top: number;
   width: number;
+}
+
+/** `end` is the last line selected, in the page's own viewport like the hit. */
+export interface WebSelection {
+  end: PageBox;
+  hit: WebHit;
+  quote: string;
 }
 
 export interface WebPage {
@@ -31,7 +38,8 @@ export type AgentMessage =
   | { type: "layout"; anchors: FrameAnchor[]; hot?: WebHit; marks: FrameMark[]; picked?: WebHit }
   | { type: "page"; how: WebArrival; page: WebPage }
   | { type: "pick"; hit: WebHit }
-  | { type: "ready" };
+  | { type: "ready" }
+  | { type: "select"; selection?: WebSelection };
 
 export type SidecarMessage =
   | { type: "arm"; armed: boolean }

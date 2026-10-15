@@ -36,7 +36,7 @@ const pick = useCommentPick({
   frame,
   inset: () => inset,
   measure: (doc, indexed) => {
-    emit("marks", measure(indexed, 0));
+    emit("marks", measure(indexed, { root: doc }));
     emit("anchors", readAnchors(doc, 0));
   },
   owner: () => ({ file }),

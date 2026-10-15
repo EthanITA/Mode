@@ -32,23 +32,99 @@ export interface Indexed {
   text: string;
 }
 
+export interface BlockAtOptions {
+  /** The block lit now, kept while the pointer crosses the gap to the next one. */
+  hot?: Element;
+  wide?: boolean;
+}
+
+export interface PageBox {
+  bottom: number;
+  left: number;
+  right: number;
+  top: number;
+}
+
+export interface PageSelection {
+  block?: Element;
+  /** The last line selected, in its own document's viewport, which is where the chip sits. */
+  end: PageBox;
+  quote: string;
+}
+
+export interface MeasureOptions {
+  /** The outermost document read, so a block in a nested frame is placed in that one's viewport. */
+  root?: Document;
+  scroll?: number;
+}
+
 // Mirrors labelOf() in the review layer: the anchor label is the host section's own heading.
 const HOSTS = "section, article, figure, .panel, .stage";
 const HEADINGS = "h1, h2, h3, h4";
-// A block is whatever a container holds directly, so an unnamed div is as pickable as a <p>.
+// What a container holds directly is a block too, so a thread anchored before picks got finer still finds its mark.
 const WALK = "body, main, section, article, .page, .panel, .stage";
 const OUTER = `html, ${WALK}`;
-const OWN = "li, tr, dt, dd, figcaption";
+const MEDIA = "img, svg, canvas, video, iframe";
 const SKIP = "script, style, template, noscript";
 const LABEL_MAX = 44;
+// Smaller than this a media element is an icon, which reads as part of its sentence.
+const MEDIA_MIN = 32;
 
 export function norm(text: string | undefined): string {
   return (text || "").replace(/\s+/g, " ").trim();
 }
 
+function displayOf(el: Element): string {
+  return el.ownerDocument?.defaultView?.getComputedStyle(el).display ?? "block";
+}
+
 function boxy(el: Element): boolean {
-  const display = el.ownerDocument?.defaultView?.getComputedStyle(el).display ?? "block";
+  const display = displayOf(el);
   return display !== "inline" && display !== "contents";
+}
+
+// An inline-block chip or link reads as part of its sentence, so only a box in the flow is a block.
+function flows(el: Element): boolean {
+  const display = displayOf(el);
+  return !display.startsWith("inline") && display !== "contents";
+}
+
+function sizable(el: Element): boolean {
+  const { height, width } = el.getBoundingClientRect();
+  return Math.min(height, width) >= MEDIA_MIN;
+}
+
+// Words in no box of their own are this box's, so it is the block a reader means.
+function ownsText(el: Element): boolean {
+  for (const child of el.childNodes) {
+    if (child.nodeType === child.TEXT_NODE && norm(child.nodeValue ?? "")) return true;
+    if (child.nodeType !== child.ELEMENT_NODE) continue;
+    const inner = child as Element;
+    if (!inner.matches(SKIP) && !inner.matches(MEDIA) && !flows(inner) && ownsText(inner)) return true;
+  }
+  return false;
+}
+
+function boxOf(node: Element): Element | undefined {
+  let el: Element | undefined = node;
+  while (el && !el.matches(OUTER) && !flows(el)) el = el.parentElement ?? undefined;
+  return el && !el.matches(OUTER) ? el : undefined;
+}
+
+// A same-text wrapper is skipped, so ⌥ always lights something bigger than what it widens.
+function outerOf(el: Element): Element {
+  const words = norm(el.textContent);
+  for (let up = el.parentElement; up && !up.matches(OUTER); up = up.parentElement) {
+    if (flows(up) && norm(up.textContent) !== words) return up;
+  }
+  return el;
+}
+
+function wordsOf(el: Element): string {
+  if (!el.matches(MEDIA)) return norm(el.textContent);
+  const named = el.getAttribute("aria-label") || el.getAttribute("title") || el.getAttribute("alt");
+  const src = el.getAttribute("src")?.split(/[?#]/)[0]?.split("/").pop();
+  return norm(named || el.textContent || src || el.tagName.toLowerCase());
 }
 
 // A wrapper holding one block child with the same words is not a block of its own.
@@ -69,14 +145,66 @@ export function isTyping(target: unknown): boolean {
 }
 
 // The frame is a second realm, so `instanceof Element` from outside is always false; duck-typing is the only test.
-export function blockAt(target: unknown): Element | undefined {
+export function blockAt(target: unknown, { hot, wide = false }: BlockAtOptions = {}): Element | undefined {
   const node = target as Element | undefined;
-  if (!node?.closest) return undefined;
-  const own = node.closest(OWN);
-  if (own) return own;
-  let el: Element | undefined = node;
-  while (el?.parentElement && !el.parentElement.matches(OUTER)) el = el.parentElement;
-  return el && !el.matches(OUTER) && !el.matches(SKIP) ? tighten(el) : undefined;
+  if (!node?.closest || node.closest(SKIP)) return undefined;
+  const media = node.closest(MEDIA);
+  if (media && sizable(media)) return wide ? outerOf(media) : media;
+  const box = boxOf(media ?? node);
+  if (box && ownsText(box)) return wide ? outerOf(box) : box;
+  if (wide && box && norm(box.textContent)) return box;
+  // A margin between two paragraphs belongs to their wrapper, which would flash the whole of it.
+  const around = box ?? node.closest(OUTER);
+  return hot && around && !around.matches("html, body") && around.contains(hot) ? hot : undefined;
+}
+
+// A triple click ends the range on an empty box at the start of the next block, which is not where the words end.
+function lastLine(range: Range): PageBox {
+  const lines = [...range.getClientRects()].filter((line) => line.width > 0);
+  const { bottom, left, right, top } = lines.at(-1) ?? range.getBoundingClientRect();
+  return { bottom, left, right, top };
+}
+
+export function selectionIn(doc: Document): PageSelection | undefined {
+  const selection = doc.getSelection();
+  if (!selection || selection.isCollapsed || !selection.rangeCount) return undefined;
+  const range = selection.getRangeAt(selection.rangeCount - 1);
+  const quote = norm(selection.toString());
+  const common = range.commonAncestorContainer;
+  const host = common.nodeType === common.ELEMENT_NODE ? (common as Element) : common.parentElement;
+  if (!quote || !host || isTyping(host)) return undefined;
+  const start = range.startContainer.parentElement ?? undefined;
+  return { block: blockAt(host) ?? boxOf(host) ?? blockAt(start), end: lastLine(range), quote };
+}
+
+export function originIn(doc: Document, root: Document): { x: number; y: number } {
+  let x = 0;
+  let y = 0;
+  for (let at = doc; at !== root;) {
+    const frame = at.defaultView?.frameElement;
+    if (!frame) break;
+    const box = frame.getBoundingClientRect();
+    x += box.x + frame.clientLeft;
+    y += box.y + frame.clientTop;
+    at = frame.ownerDocument;
+  }
+  return { x, y };
+}
+
+export function rectIn(el: Element, root: Document): DOMRect {
+  const box = el.getBoundingClientRect();
+  const { x, y } = originIn(el.ownerDocument, root);
+  return new DOMRect(box.x + x, box.y + y, box.width, box.height);
+}
+
+// Another origin's frame answers null, and is reached only through the agent it runs, or not at all.
+export function framesIn(doc: Document, isOwned: (inner: Document) => boolean = () => false): Document[] {
+  const out = [doc];
+  for (const frame of doc.querySelectorAll("iframe")) {
+    const inner = frame.contentDocument;
+    if (inner?.documentElement && !isOwned(inner)) out.push(...framesIn(inner, isOwned));
+  }
+  return out;
 }
 
 export function pathOf(node: Element): string {
@@ -113,12 +241,11 @@ export function readAnchors(doc: Document, scroll: number): FrameAnchor[] {
 }
 
 // The mirror of blockAt(): a pick this walk misses has no key and cannot be anchored.
-export function indexBlocks(doc: Document): Indexed[] {
-  const indexed: Indexed[] = [];
-  const held = new Set<Element>();
+export function indexBlocks(doc: Document, indexed: Indexed[] = []): Indexed[] {
+  const held = new Set<Element>(indexed.map(({ el }) => el));
   const take = (el: Element): void => {
     if (held.has(el) || el.matches(SKIP)) return;
-    const text = norm(el.textContent);
+    const text = wordsOf(el);
     if (!text) return;
     held.add(el);
     indexed.push({
@@ -133,13 +260,23 @@ export function indexBlocks(doc: Document): Indexed[] {
       if (!child.matches(OUTER)) take(tighten(child));
     }
   }
-  for (const el of doc.querySelectorAll(OWN)) take(el);
+  // Every box from the words up to their container, since ⌥ and a gap can each light any of them.
+  const words = doc.createTreeWalker(doc.body ?? doc.documentElement, NodeFilter.SHOW_TEXT);
+  for (let text = words.nextNode(); text; text = words.nextNode()) {
+    const parent = text.parentElement;
+    if (!parent || !norm(text.nodeValue ?? "") || parent.closest(`${SKIP}, svg`)) continue;
+    for (let box = boxOf(parent); box && !held.has(box); box = box.parentElement ? boxOf(box.parentElement) : undefined)
+      take(box);
+  }
+  for (const el of doc.querySelectorAll(MEDIA)) {
+    if (!el.parentElement?.closest("svg") && sizable(el)) take(el);
+  }
   return indexed;
 }
 
-export function measure(indexed: Indexed[], scroll: number): FrameMark[] {
+export function measure(indexed: Indexed[], { root, scroll = 0 }: MeasureOptions = {}): FrameMark[] {
   return indexed.map(({ el, key, label, text }) => {
-    const box = el.getBoundingClientRect();
+    const box = root ? rectIn(el, root) : el.getBoundingClientRect();
     return { height: box.height, key, label, left: box.left, text, top: box.top + scroll, width: box.width };
   });
 }

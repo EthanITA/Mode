@@ -52,7 +52,7 @@ const pick = useCommentPick({
   measure: (doc, indexed) => {
     height.value = doc.body?.scrollHeight || doc.documentElement.scrollHeight;
     emit("anchors", readAnchors(doc, doc.documentElement.scrollTop));
-    emit("marks", measure(indexed, doc.documentElement.scrollTop));
+    emit("marks", measure(indexed, { root: doc, scroll: doc.documentElement.scrollTop }));
     emit("pending", readPending(doc, doc.documentElement.scrollTop));
   },
   owner: () => ({ canAsk, canEdit, file, slug }),
