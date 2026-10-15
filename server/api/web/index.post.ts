@@ -22,5 +22,5 @@ export default defineEventHandler(async (event): Promise<WebOpenReply> => {
     url,
   });
   if (isOurs) record(entry.slug, session);
-  return { isNew, port: entry.port, slug: entry.slug, url: entry.url };
+  return { isNew, slug: entry.slug, url: entry.url };
 });

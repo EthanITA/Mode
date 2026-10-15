@@ -1,5 +1,5 @@
 export interface ProxyPlace {
-  /** The artifact's own name under the sidecar's host, which every site it visits is served beneath. */
+  /** The same for every artifact, so a sign-in or a solved captcha in one holds in all of them. */
   base: string;
   port: number;
 }
@@ -7,7 +7,7 @@ export interface ProxyPlace {
 const LABEL = /^(https?)(?:-(\d+))?$/;
 const SOCKET: Record<string, string> = { "ws:": "http:", "wss:": "https:" };
 
-// The site's host, scheme and port fold into one name under the artifact's, so each site keeps an origin and cookies of its own.
+// The site's host, scheme and port fold into one name under the base, so each site keeps an origin and cookies of its own.
 function proxied(raw: string | URL, { base, port }: ProxyPlace): string | undefined {
   let url: URL;
   try {
@@ -41,15 +41,22 @@ function upstream(raw: string | URL, base: string): URL | undefined {
   return new URL(`${to}://${head.slice(0, cut)}${port ? `:${port}` : ""}${url.pathname}${url.search}${url.hash}`);
 }
 
-/** The artifact's base: its slug under the sidecar's own host, which must end in localhost for the frame to resolve. */
-function baseOf({ host, slug }: { host: string; slug: string }): string {
-  return `${slug}.${host === "localhost" || host.endsWith(".localhost") ? host : "sidecar.localhost"}`;
+const isLocal = (host: string): boolean => host === "localhost" || host.endsWith(".localhost");
+
+// Under the sidecar's own host the frame is same-site with it, so the site's SameSite cookies still reach it.
+function baseOf(host: string): string {
+  return isLocal(host) ? host : "sidecar.localhost";
 }
 
-/** The base a proxy host was named under, read by finding the artifact's slug in it. */
-function baseIn({ host, slug }: { host: string; slug: string }): string | undefined {
-  const at = host.lastIndexOf(`.${slug}.`);
-  return at < 0 ? undefined : host.slice(at + 1);
+// The base never holds a scheme label, so the last one names where the site's host ends.
+function baseIn(host: string): string | undefined {
+  const labels = host.split(".");
+  for (let at = labels.length - 2; at > 0; at -= 1) {
+    if (!LABEL.test(labels[at] ?? "")) continue;
+    const base = labels.slice(at + 1).join(".");
+    return isLocal(base) ? base : undefined;
+  }
+  return undefined;
 }
 
 export const WebHost = { baseIn, baseOf, proxied, upstream };

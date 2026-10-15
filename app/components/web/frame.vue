@@ -61,7 +61,7 @@ async function start(): Promise<void> {
   try {
     const got = await $fetch<WebServeReply>(`/api/web/${slug}/serve`, { method: "POST" });
     if (run !== started) return;
-    const next = Web.placeOf({ here: new URL(location.href), port: got.port, slug });
+    const next = Web.placeOf({ here: new URL(location.href), port: got.port });
     const to = Web.proxied(web.page?.url ?? url, next);
     if (!to) throw new Error(`${url} has no address inside the artifact`);
     place.value = next;

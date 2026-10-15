@@ -1,7 +1,6 @@
 export interface WebOpenReply {
   /** Made by this open, rather than an artifact of the conversation already showing the address. */
   isNew: boolean;
-  port: number;
   slug: string;
   url: string;
 }

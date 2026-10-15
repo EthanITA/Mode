@@ -6,7 +6,6 @@ export interface WebPlaceOptions {
   /** The sidecar's own address, whose host every artifact's sites are named under. */
   here: URL;
   port: number;
-  slug: string;
 }
 
 export interface WebElsewhere {
@@ -14,8 +13,8 @@ export interface WebElsewhere {
   page: string;
 }
 
-function placeOf({ here, port, slug }: WebPlaceOptions): ProxyPlace {
-  return { base: WebHost.baseOf({ host: here.hostname, slug }), port };
+function placeOf({ here, port }: WebPlaceOptions): ProxyPlace {
+  return { base: WebHost.baseOf(here.hostname), port };
 }
 
 function pageOf(href: string): string {

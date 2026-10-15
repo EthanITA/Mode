@@ -16,35 +16,23 @@ const thread = (id: string, page: string, updated: string, status: ReviewThread[
   updated,
 });
 
-test("every site an artifact visits gets a host of its own under the artifact's, and maps back onto itself", () => {
-  const place = Web.placeOf({ here: new URL("http://sidecar.localhost:4747/c/x"), port: 47488, slug: "reddit-3f9a2c" });
-  assert.equal(place.base, "reddit-3f9a2c.sidecar.localhost");
-  assert.equal(
-    Web.placeOf({ here: new URL("http://127.0.0.1:4747/"), port: 1, slug: "a" }).base,
-    "a.sidecar.localhost",
-  );
+test("every site gets one host of its own under the sidecar's, the same in every artifact, and maps back onto itself", () => {
+  const place = Web.placeOf({ here: new URL("http://sidecar.localhost:4747/c/x"), port: 47481 });
+  assert.equal(place.base, "sidecar.localhost");
+  assert.equal(Web.placeOf({ here: new URL("http://127.0.0.1:4747/"), port: 1 }).base, "sidecar.localhost");
   const cases = [
-    [
-      "https://www.reddit.com/r/vue?x=1#top",
-      "http://www.reddit.com.https.reddit-3f9a2c.sidecar.localhost:47488/r/vue?x=1#top",
-    ],
-    ["http://localhost:3000/guide", "http://localhost.http-3000.reddit-3f9a2c.sidecar.localhost:47488/guide"],
-    ["wss://gql.reddit.com/live", "ws://gql.reddit.com.https.reddit-3f9a2c.sidecar.localhost:47488/live"],
+    ["https://www.reddit.com/r/vue?x=1#top", "http://www.reddit.com.https.sidecar.localhost:47481/r/vue?x=1#top"],
+    ["http://localhost:3000/guide", "http://localhost.http-3000.sidecar.localhost:47481/guide"],
+    ["wss://gql.reddit.com/live", "ws://gql.reddit.com.https.sidecar.localhost:47481/live"],
   ];
   for (const [site, proxy] of cases) {
     assert.equal(Web.proxied(site ?? "", place), proxy);
     assert.equal(Web.upstream(proxy ?? "", place.base)?.href, site);
   }
-  assert.equal(
-    Web.proxied("http://[::1]:5173/", place),
-    "http://localhost.http-5173.reddit-3f9a2c.sidecar.localhost:47488/",
-  );
+  assert.equal(Web.proxied("http://[::1]:5173/", place), "http://localhost.http-5173.sidecar.localhost:47481/");
   assert.equal(Web.proxied(cases[0]?.[1] ?? "", place), undefined);
   assert.equal(Web.proxied("mailto:a@b.dev", place), undefined);
-  assert.equal(
-    Web.upstream("http://www.reddit.com.https.other-000000.sidecar.localhost:47488/", place.base),
-    undefined,
-  );
+  assert.equal(Web.upstream("http://www.reddit.com.https.localhost:47481/", place.base), undefined);
   assert.equal(Web.addressOf("http://localhost:3000/guide?x=1#setup"), "http://localhost:3000/guide?x=1");
 });
 

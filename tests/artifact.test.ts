@@ -229,10 +229,7 @@ describe("web entries", () => {
     const first = openRecord({ url: guide });
     const second = openRecord({ title: "Mode docs", url: guide });
     assert.match(first.record.slug, /^localhost-3000-[0-9a-f]{6}$/);
-    assert.deepEqual(
-      [first.isNew, second.isNew, second.record.port, second.record.title],
-      [true, true, first.record.port + 1, "Mode docs"],
-    );
+    assert.deepEqual([first.isNew, second.isNew, second.record.title], [true, true, "Mode docs"]);
     assert.notEqual(second.record.slug, first.record.slug);
 
     const mine = [first.record.slug];
@@ -310,7 +307,7 @@ describe("web entries", () => {
     assert.match(artifact("list", "--tsv").stdout, new RegExp(`^${slug}\\t${file}$`, "m"));
     assert.match(artifact("comments", slug).stdout, /#1 {2}open {6}Drift on http:\/\/localhost:4000\/guide\/hooks/);
     assert.equal(artifact("comments", slug, "--resolve", "1", "rewrote it").status, 0);
-    const kept = JSON.parse(read(file)) as { port: number; threads: { status: string; replies: unknown[] }[] };
-    assert.deepEqual([kept.port, kept.threads[0]?.status, kept.threads[0]?.replies.length], [47490, "resolved", 1]);
+    const kept = JSON.parse(read(file)) as { threads: { status: string; replies: unknown[] }[] };
+    assert.deepEqual([kept.threads[0]?.status, kept.threads[0]?.replies.length], ["resolved", 1]);
   });
 });

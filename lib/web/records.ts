@@ -13,7 +13,6 @@ import { sidecarHome } from "../mode/paths.ts";
 export interface WebRecord {
   /** The address it was opened on, which a link or the CLI opening that address again finds it by. */
   opened?: string;
-  port: number;
   slug: string;
   threads: unknown[];
   title?: string;
@@ -29,8 +28,8 @@ export interface OpenedRecord {
   record: WebRecord;
 }
 
-const FIRST_PORT = 47481;
-// The slug is a label of every proxy host, and a hostname past 253 characters never resolves.
+/** Where every web artifact is served, one port so a site's storage is the same in all of them. */
+export const PROXY_PORT = 47481;
 const NAME_MAX = 24;
 export function webHome(): string {
   return join(sidecarHome(), "web");
@@ -78,12 +77,11 @@ function recordOf(raw: unknown): WebRecord | undefined {
   if (typeof raw !== "object" || !raw) return undefined;
   const rec = raw as Partial<Omit<WebRecord, "v">> & { v?: number };
   if (typeof rec.slug !== "string" || !SLUG.test(rec.slug)) return undefined;
-  if (typeof rec.url !== "string" || !URL.canParse(rec.url) || typeof rec.port !== "number") return undefined;
+  if (typeof rec.url !== "string" || !URL.canParse(rec.url)) return undefined;
   const threads = Array.isArray(rec.threads) ? rec.threads : [];
   const origin = new URL(rec.url).origin;
   return {
     opened: typeof rec.opened === "string" && URL.canParse(rec.opened) ? rec.opened : undefined,
-    port: rec.port,
     slug: rec.slug,
     threads: rec.v === 2 ? threads : threads.map((thread) => placed(thread, origin)),
     title: typeof rec.title === "string" && rec.title ? rec.title : undefined,
@@ -127,14 +125,6 @@ export function writeRecord(record: WebRecord): void {
   renameSync(tmp, file);
 }
 
-/** The lowest proxy port no web artifact holds, skipping any the caller found taken by something else. */
-export function freePort(skip: number[] = []): number {
-  const taken = new Set([...listRecords().map((one) => one.port), ...skip]);
-  let port = FIRST_PORT;
-  while (taken.has(port)) port += 1;
-  return port;
-}
-
 export interface OpenRecordOptions {
   /** Artifacts that may be reused, a conversation's own, so a link opened again lands on the tab already showing it. */
   reuse?: string[];
@@ -149,7 +139,7 @@ function reusable({ reuse, url }: { reuse: string[]; url: URL }): WebRecord | un
     .find((one) => addressOf(one.url) === at || (!!one.opened && addressOf(one.opened) === at));
 }
 
-/** A new web artifact, its own session, unless one in reuse already shows or was opened on the address. */
+/** A new web artifact, a tab of its own, unless one in reuse already shows or was opened on the address. */
 export function openRecord({ reuse = [], title, url }: OpenRecordOptions): OpenedRecord {
   const held = reusable({ reuse, url });
   const now = new Date().toISOString();
@@ -168,7 +158,6 @@ export function openRecord({ reuse = [], title, url }: OpenRecordOptions): Opene
   }
   const record: WebRecord = {
     opened: url.href,
-    port: freePort(),
     slug: webSlug(url),
     threads: [],
     ...(title ? { title } : {}),
@@ -201,7 +190,7 @@ export function updateRecord(slug: string, { title, trail, url }: PageUpdate): W
   return record;
 }
 
-/** Deletes the artifact and its threads; its cookies and storage stay with its slug in the browser. */
+/** Deletes the artifact and its threads; the session every artifact shares stays. */
 export function removeRecord(slug: string): WebRecord | undefined {
   const gone = readRecord(slug);
   if (!gone) return undefined;

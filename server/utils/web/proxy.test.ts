@@ -10,8 +10,8 @@ import { WebHost } from "../../../lib/web/host.ts";
 import { asTab, captchaFor, isAllowed, isFencedOrigin, keptCookie, rewriteResponse, serve, stopAll } from "./proxy.ts";
 
 const PARENT = "http://sidecar.localhost:4747";
-const SLUG = "app-abc123";
-const BASE = `${SLUG}.sidecar.localhost`;
+const BASE = "sidecar.localhost";
+const SERVED = { parents: new Set([PARENT]) };
 const servers: Server[] = [];
 
 after(async () => {
@@ -73,7 +73,7 @@ test("a page comes back framable, the page's nonce on the proxy's scripts and it
   });
   const up = await listen(upstream);
   const port = await freePort();
-  await serve({ parent: PARENT, port, slug: SLUG });
+  await serve({ parent: PARENT, port });
   const host = hostOf(`http://localhost:${up}`, port);
 
   const page = await get(port, "/", { host, origin: `http://${host}` });
@@ -105,6 +105,7 @@ test("a page comes back framable, the page's nonce on the proxy's scripts and it
     [302, `http://${hostOf("https://accounts.example.dev", port)}/next`, "no-store"],
   );
   assert.equal((await get(port, "/", { host: `127.0.0.1:${port}` })).status, 404);
+  assert.equal((await get(port, "/", { host: `localhost.http-${up}.elsewhere.localhost:${port}` })).status, 404);
 });
 
 test("a site's cookie domain and its CORS answer name the artifact's hosts, so its other hosts share them here", async () => {
@@ -138,12 +139,12 @@ test("reCAPTCHA is told the site's own origin, and its checkbox answers the page
   const page = `http://www.example.dev.https.${BASE}:47488`;
   const co = (origin: string): string => btoa(origin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, ".");
   const anchor = new URL(`https://www.google.com/recaptcha/api2/anchor?ar=1&k=key&co=${co(page)}&hl=en&cb=x1`);
-  const captcha = captchaFor(anchor, { slug: SLUG });
+  const captcha = captchaFor(anchor, SERVED);
   assert.equal(
     captcha?.url.href,
     `https://www.google.com/recaptcha/api2/anchor?ar=1&k=key&co=${co("https://www.example.dev:443")}&hl=en&cb=x1`,
   );
-  assert.equal(captchaFor(new URL(`https://www.example.dev/search?co=${co(page)}`), { slug: SLUG }), undefined);
+  assert.equal(captchaFor(new URL(`https://www.example.dev/search?co=${co(page)}`), SERVED), undefined);
 
   const answered = await rewriteResponse({
     captcha,
@@ -196,7 +197,7 @@ test("a socket reaches the site as the page's own origin, and one from a site of
   });
   const up = await listen(upstream);
   const port = await freePort();
-  await serve({ parent: PARENT, port, slug: SLUG });
+  await serve({ parent: PARENT, port });
   const host = hostOf(`http://localhost:${up}`, port);
 
   assert.equal(await upgrade(port, { host, origin: `http://${host}` }), true);
@@ -207,7 +208,7 @@ test("a socket reaches the site as the page's own origin, and one from a site of
 test("a site that isn't answering tells the sidecar, and only a page load gets the page", async () => {
   const port = await freePort();
   const closed = await freePort();
-  await serve({ parent: PARENT, port, slug: SLUG });
+  await serve({ parent: PARENT, port });
   const host = hostOf(`http://localhost:${closed}`, port);
 
   const page = await get(port, "/", { host, "sec-fetch-dest": "iframe" });
@@ -221,7 +222,7 @@ test("a page reaches no host closer to this machine than its own, bar a plain na
   const upstream = createServer((_req, res) => res.writeHead(200, { "content-type": "text/plain" }).end("local"));
   const up = await listen(upstream);
   const port = await freePort();
-  await serve({ parent: PARENT, port, slug: SLUG });
+  await serve({ parent: PARENT, port });
   const local = hostOf(`http://localhost:${up}`, port);
   const remote = `http://${hostOf("https://site.invalid", port)}`;
 
@@ -250,7 +251,7 @@ test("a page reaches no host closer to this machine than its own, bar a plain na
 
 test("the proxy serves its own scripts type-stripped and nothing else under its folder", async () => {
   const port = await freePort();
-  await serve({ parent: PARENT, port, slug: SLUG });
+  await serve({ parent: PARENT, port });
 
   const agent = await get(port, "/__sidecar/agent.ts");
   assert.equal(agent.status, 200);

@@ -25,8 +25,6 @@ export interface ProxyTarget {
   /** The origin the sidecar's page is on, which is the only one the injected agent answers. */
   parent: string;
   port: number;
-  /** The artifact's slug, which every host the proxy serves is named under. */
-  slug: string;
 }
 
 interface Running {
@@ -35,7 +33,6 @@ interface Running {
   port: number;
   ready: Promise<void>;
   servers: Server[];
-  slug: string;
   // An upgraded socket leaves the server's books, so close would wait on an open HMR socket forever.
   sockets: Set<Duplex>;
 }
@@ -113,16 +110,21 @@ export function reachOf(host: string): Promise<Reach> {
   return held;
 }
 
-function upstreamOf(raw: string | URL, held: Pick<Running, "slug">): { base: string; url: URL } | undefined {
+function isBaseOf(base: string, held: Pick<Running, "parents">): boolean {
+  return [...held.parents].some((parent) => URL.canParse(parent) && WebHost.baseOf(new URL(parent).hostname) === base);
+}
+
+function upstreamOf(raw: string | URL, held: Pick<Running, "parents">): { base: string; url: URL } | undefined {
   let url: URL;
   try {
     url = new URL(raw);
   } catch {
     return undefined;
   }
-  const base = WebHost.baseIn({ host: url.hostname, slug: held.slug });
-  const to = base && WebHost.upstream(url, base);
-  return base && to ? { base, url: to } : undefined;
+  const base = WebHost.baseIn(url.hostname);
+  if (!base || !isBaseOf(base, held)) return undefined;
+  const to = WebHost.upstream(url, base);
+  return to ? { base, url: to } : undefined;
 }
 
 const BASE64URL: Record<string, string> = { "+": "-", "-": "+", "/": "_", _: "/", "=": ".", ".": "=" };
@@ -134,7 +136,7 @@ export interface Captcha {
 }
 
 // reCAPTCHA reads the page's origin from co and refuses a localhost one, so it is told the site's own.
-export function captchaFor(target: URL, held: Pick<Running, "slug">): Captcha | undefined {
+export function captchaFor(target: URL, held: Pick<Running, "parents">): Captcha | undefined {
   const co = /^\/recaptcha\//.test(target.pathname) ? target.searchParams.get("co") : undefined;
   let proxy: string;
   try {
@@ -340,7 +342,7 @@ export function asTab(headers: Headers, { from, target }: TabInput): void {
 }
 
 // Every proxy host is same-site to the browser, so the request's own Origin or Referer says which site it came from.
-function initiatorOf(headers: Headers, held: Pick<Running, "slug">): { origin?: URL; referer?: URL } {
+function initiatorOf(headers: Headers, held: Pick<Running, "parents">): { origin?: URL; referer?: URL } {
   const origin = headers.get("origin");
   const referer = headers.get("referer");
   return {
@@ -487,17 +489,19 @@ function close(held: Running): Promise<void> {
   ).then(() => undefined);
 }
 
-/** Starts the proxy for one artifact on its port, or joins the one already there. */
-export async function serve({ parent, port, slug }: ProxyTarget): Promise<void> {
+/** Starts the proxy every web artifact shares on the port, or joins the one already there. */
+export async function serve({ parent, port }: ProxyTarget): Promise<void> {
   const held = running.get(port);
-  if (held?.generation === GENERATION && held.slug === slug) {
+  if (held?.generation === GENERATION) {
     held.parents.add(parent);
     return held.ready;
   }
-  if (held) {
-    running.delete(port);
-    await held.ready.catch(() => undefined);
-    await close(held);
+  // A dev reload leaves the last copy's proxies running, one per artifact before they shared a session.
+  for (const [at, stale] of running) {
+    if (stale.generation === GENERATION) continue;
+    running.delete(at);
+    await stale.ready.catch(() => undefined);
+    await close(stale);
   }
   const next: Running = {
     generation: GENERATION,
@@ -505,20 +509,11 @@ export async function serve({ parent, port, slug }: ProxyTarget): Promise<void> 
     port,
     ready: Promise.resolve(),
     servers: [],
-    slug,
     sockets: new Set(),
   };
   next.ready = start(next);
   running.set(port, next);
   return next.ready;
-}
-
-export async function stop(port: number): Promise<void> {
-  const held = running.get(port);
-  if (!held) return;
-  running.delete(port);
-  await held.ready.catch(() => undefined);
-  await close(held);
 }
 
 export async function stopAll(): Promise<void> {
