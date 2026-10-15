@@ -301,7 +301,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   innermost block that owns the words, holding ⌥ takes the box around it such as a whole card, and
   crossing the gap between two paragraphs keeps the last one lit. Blocks inside an artifact's or a Web
   page's own iframes pick and select too, and an embed from another origin picks as one block. Wrappers
-  are still indexed, so a thread left on one before this keeps its place.
+  are still indexed, so a thread left on one before this keeps its place. The banner says ⌥ widens, and
+  pressing or releasing ⌥, or holding C to arm, re-lights the block under a resting pointer at once, with
+  no need to move the mouse.
 - **The sidecar is styled with Tailwind and Cela's tokens.** Every component's scoped style `@apply`s
   Tailwind and `@cela/design` utilities in place of about 3,700 hand-written declarations, and every size,
   radius and colour is an existing token, so text sits on Cela's `typo-*` scale (12.5px text is 13px now),
