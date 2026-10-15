@@ -1,5 +1,9 @@
 <script lang="ts" setup>
+import { keycaps } from "@cela/design";
 import type { CommentTarget } from "~/composables/useChrome";
+
+// Named in the banner itself, because a hint that only shows on hover is never found mid-pick.
+const ALT = keycaps("alt").join("");
 
 const route = useRoute();
 const chrome = useChrome();
@@ -125,7 +129,10 @@ onMounted(() => {
       data-tip="Cancel · {esc}"
       data-tip-align="center"
     >
-      Pick anything to comment on
+      {{ chrome.comment.wide.value ? "Picking the box around it" : "Pick anything to comment on" }}
+      <span class="hint">
+        {{ chrome.comment.wide.value ? `Let go of ${ALT} for less` : `Hold ${ALT} for the box around it` }}
+      </span>
     </p>
 
     <template v-if="chrome.comment.hover.value">
@@ -162,6 +169,10 @@ onMounted(() => {
 /* The overlay lets the pointer through to pick, so the banner opts back in for its tip. */
 .banner {
   @apply pointer-events-auto absolute top-16 left-1/2 m-0 inline-flex h-8.5 -translate-x-1/2 items-center gap-2.5 rounded-full bg-primary px-3.5 py-0 typo-caption-strong text-primary-content shadow-md;
+}
+
+.hint {
+  @apply border-l border-l-primary-content/30 pl-2.5 font-normal opacity-80;
 }
 
 /* Drawn beside the element rather than on it: chrome never writes into a view's DOM. */

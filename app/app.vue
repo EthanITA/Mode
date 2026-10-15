@@ -33,12 +33,17 @@ function typing(event: KeyboardEvent): boolean {
   return event.target instanceof Element && Boolean(event.target.closest(EDITABLE));
 }
 
+// The physical key, since ⌥ held over it turns the c of its release into a ç on a Mac.
 let armKey: string | undefined;
 
 function onKeyDown(event: KeyboardEvent): void {
   const meta = event.metaKey || event.ctrlKey;
+  if (event.key === "Alt") {
+    chrome.comment.widen(true);
+    return;
+  }
   // A held key auto-repeats into the popover box its own click just focused.
-  if (armKey && event.key.toLowerCase() === armKey) {
+  if (armKey && event.code === armKey) {
     event.preventDefault();
     return;
   }
@@ -60,19 +65,21 @@ function onKeyDown(event: KeyboardEvent): void {
   }
   if (meta || event.altKey || typing(event)) return;
   if (event.key.toLowerCase() === "c" && !event.repeat) {
-    armKey = "c";
+    armKey = event.code;
     chrome.comment.arm(true);
   } else if (event.key === "!") chrome.canvas.fit.value?.();
 }
 
 function onKeyUp(event: KeyboardEvent): void {
-  if (!armKey || event.key.toLowerCase() !== armKey) return;
+  if (event.key === "Alt") chrome.comment.widen(false);
+  if (!armKey || event.code !== armKey) return;
   armKey = undefined;
   chrome.comment.release();
 }
 
 function onBlur(): void {
   armKey = undefined;
+  chrome.comment.widen(false);
   // Clicking into the artifact frame blurs this window too, and that is not leaving the app.
   if (document.activeElement instanceof HTMLIFrameElement) return;
   chrome.comment.disarm();

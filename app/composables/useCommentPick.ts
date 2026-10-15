@@ -35,10 +35,15 @@ function applyInset(doc: Document, px: number): void {
   else doc.documentElement.style.removeProperty("padding-inline-end");
 }
 
-function isInside(box: DOMRect, event: MouseEvent): boolean {
-  return (
-    event.clientX >= box.left && event.clientX <= box.right && event.clientY >= box.top && event.clientY <= box.bottom
-  );
+interface Pointer {
+  clientX: number;
+  clientY: number;
+  doc: Document;
+  target: unknown;
+}
+
+function isInside(box: DOMRect, { clientX, clientY }: Pick<Pointer, "clientX" | "clientY">): boolean {
+  return clientX >= box.left && clientX <= box.right && clientY >= box.top && clientY <= box.bottom;
 }
 
 export function useCommentPick({ edit, frame, inset = () => 0, measure, owner }: CommentPickOptions): CommentPick {
@@ -53,6 +58,7 @@ export function useCommentPick({ edit, frame, inset = () => 0, measure, owner }:
   let raf = 0;
   let selectedIn: Document | undefined;
   let offered: CommentOffer | undefined;
+  let pointer: Pointer | undefined;
 
   // A frame on a face kept mounted out of sight has no box, and must not clear the ring a shown one lit.
   const isShown = (): boolean => !!frame.value?.getClientRects().length;
@@ -182,9 +188,17 @@ export function useCommentPick({ edit, frame, inset = () => 0, measure, owner }:
     for (const one of opaqueIn(doc)) one.style.pointerEvents = on ? "none" : "";
   }
 
-  function blockUnder(doc: Document, event: MouseEvent): Element | undefined {
-    const embed = opaqueIn(doc).find((one) => isInside(one.getBoundingClientRect(), event));
-    return embed ?? blockAt(event.target, { hot, wide: event.altKey });
+  function blockUnder(at: Pointer, wide: boolean): Element | undefined {
+    const embed = opaqueIn(at.doc).find((one) => isInside(one.getBoundingClientRect(), at));
+    return embed ?? blockAt(at.target, { hot, wide });
+  }
+
+  // ⌥ changes what the resting pointer means, and nothing else would light the new block until it moved.
+  function repick(): void {
+    if (!pointer || !chrome.comment.armed.value || chrome.comment.spot.value) return;
+    hot = undefined;
+    hot = blockUnder(pointer, chrome.comment.wide.value);
+    publish();
   }
 
   function bind(doc: Document): void {
@@ -192,11 +206,14 @@ export function useCommentPick({ edit, frame, inset = () => 0, measure, owner }:
     if (!win) return;
 
     const onMove = (event: MouseEvent): void => {
+      pointer = { clientX: event.clientX, clientY: event.clientY, doc, target: event.target };
+      chrome.comment.widen(event.altKey);
       if (!chrome.comment.armed.value || chrome.comment.spot.value) return;
-      hot = blockUnder(doc, event);
+      hot = blockUnder(pointer, event.altKey);
       publish();
     };
     const onLeave = (): void => {
+      pointer = undefined;
       hot = undefined;
       if (!picked) chrome.comment.light(undefined);
     };
@@ -205,7 +222,10 @@ export function useCommentPick({ edit, frame, inset = () => 0, measure, owner }:
       if (event.defaultPrevented || chrome.comment.spot.value || !chrome.comment.armed.value) return;
       // A drag that ended here selected words, and the chip asks about those rather than the block.
       if (doc.getSelection()?.isCollapsed === false) return;
-      const node = blockUnder(doc, event);
+      const node = blockUnder(
+        { clientX: event.clientX, clientY: event.clientY, doc, target: event.target },
+        event.altKey,
+      );
       if (!node) return;
       event.preventDefault();
       event.stopPropagation();
@@ -230,8 +250,12 @@ export function useCommentPick({ edit, frame, inset = () => 0, measure, owner }:
     };
     const onKeyDown = (event: KeyboardEvent): void => {
       const meta = event.metaKey || event.ctrlKey;
+      if (event.key === "Alt") {
+        chrome.comment.widen(true);
+        return;
+      }
       // A held key auto-repeats into the popover box its own click just focused.
-      if (armKey && event.key.toLowerCase() === armKey) {
+      if (armKey && event.code === armKey) {
         event.preventDefault();
         return;
       }
@@ -249,14 +273,15 @@ export function useCommentPick({ edit, frame, inset = () => 0, measure, owner }:
       }
       if (meta || event.altKey || isTyping(event.target)) return;
       if (event.key.toLowerCase() === "c" && !event.repeat) {
-        armKey = "c";
+        armKey = event.code;
         chrome.comment.arm(true);
       } else if (event.key.toLowerCase() === "f" && !event.repeat) artifact.toggleFull();
     };
     // A hold begun in the app window ends here once a click has carried focus into the frame.
     const onKeyUp = (event: KeyboardEvent): void => {
       offerFrom(doc);
-      if (event.key.toLowerCase() !== "c" || (!armKey && !chrome.comment.held.value)) return;
+      if (event.key === "Alt") chrome.comment.widen(false);
+      if (event.code !== (armKey ?? "KeyC") || (!armKey && !chrome.comment.held.value)) return;
       armKey = undefined;
       chrome.comment.release();
     };
@@ -326,8 +351,10 @@ export function useCommentPick({ edit, frame, inset = () => 0, measure, owner }:
   watch(chrome.comment.armed, (on) => {
     const root = rootDoc();
     if (root) for (const doc of framesIn(root)) shield(doc, on);
-    if (!on) clearPick();
+    if (on) repick();
+    else clearPick();
   });
+  watch(chrome.comment.wide, repick);
   onScopeDispose(detach);
 
   return { attach, clearPick, detach };

@@ -29,7 +29,19 @@ export interface WebPage {
 }
 
 export type WebKey =
-  "address" | "back" | "comment" | "escape" | "forward" | "full" | "hold" | "reload" | "release" | "remove" | "undo";
+  | "address"
+  | "back"
+  | "comment"
+  | "escape"
+  | "forward"
+  | "full"
+  | "hold"
+  | "narrow"
+  | "reload"
+  | "release"
+  | "remove"
+  | "undo"
+  | "wide";
 
 export type AgentMessage =
   | { type: "busy"; busy: boolean }
@@ -46,6 +58,7 @@ export type SidecarMessage =
   | { type: "clear" }
   | { type: "hello" }
   | { type: "step"; by: -1 | 1; to: string }
-  | { type: "theme"; theme: string };
+  | { type: "theme"; theme: string }
+  | { type: "wide"; wide: boolean };
 
 export type Envelope<T> = T & { channel: typeof CHANNEL };

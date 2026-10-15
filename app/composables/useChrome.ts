@@ -119,6 +119,9 @@ export interface Chrome {
     save: (text: string) => void;
     select: (hit?: FrameHit) => void;
     spot: Maybe<CommentSpot>;
+    /** ⌥ is down, wherever focus is, so every surface widens its ring without waiting for the pointer to move. */
+    wide: Ref<boolean>;
+    widen: (on: boolean) => void;
   };
   dismiss: () => boolean;
   frame: {
@@ -228,6 +231,7 @@ export function useChrome(): Chrome {
   const hover = useState<CommentHover | undefined>("sc:cmt-hover");
   const pick = useState<FrameHit | undefined>("sc:cmt-pick");
   const offered = useState<CommentOffer | undefined>("sc:cmt-offer");
+  const wide = useState<boolean>("sc:cmt-wide", () => false);
   const toasts = useState<Toast[]>("sc:toasts", () => []);
   const insets = useState<FrameInsets>("sc:frame-insets", () => ({
     top: 0,
@@ -448,6 +452,10 @@ export function useChrome(): Chrome {
         hover.value = hit && ringOf(hit);
       },
       spot,
+      wide,
+      widen: (on) => {
+        if (wide.value !== on) wide.value = on;
+      },
     },
     dismiss,
     frame: { insets, set },

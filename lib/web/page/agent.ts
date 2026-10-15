@@ -43,6 +43,9 @@ const nav = "navigation" in window ? window.navigation : undefined;
 let how: WebArrival = nav?.activation?.navigationType ?? "push";
 let parent: string | undefined;
 let armed = false;
+let wide = false;
+let resting: EventTarget | undefined;
+let holdCode: string | undefined;
 let theme: string | undefined;
 let indexed: Indexed[] = [];
 let hot: Element | undefined;
@@ -187,10 +190,22 @@ function step(by: -1 | 1, to: string): void {
   finished?.catch(() => undefined);
 }
 
+// ⌥ changes what the resting pointer means, and nothing else would light the new block until it moved.
+function widen(on: boolean): void {
+  if (wide === on) return;
+  wide = on;
+  if (!armed || !resting) return;
+  hot = blockAt(resting, { wide });
+  schedule();
+}
+
 function onKeyDown(event: KeyboardEvent): void {
   const meta = event.metaKey || event.ctrlKey;
   const by = isTyping(event.target) ? undefined : stepOf(event);
-  if (by) {
+  if (event.key === "Alt") {
+    widen(true);
+    post({ type: "key", key: "wide" });
+  } else if (by) {
     event.preventDefault();
     post({ type: "key", key: by < 0 ? "back" : "forward" });
   } else if (isAddressKey(event)) {
@@ -213,6 +228,7 @@ function onKeyDown(event: KeyboardEvent): void {
     // Read once the site has had the press, so closing its own dialog doesn't also leave fullscreen.
     setTimeout(() => event.defaultPrevented || post({ type: "key", key: "escape" }));
   } else if (!meta && !event.altKey && !isTyping(event.target) && event.key.toLowerCase() === "c" && !event.repeat) {
+    holdCode = event.code;
     post({ type: "key", key: "hold" });
   } else if (!meta && !event.altKey && !isTyping(event.target) && event.key.toLowerCase() === "f" && !event.repeat) {
     post({ type: "key", key: "full" });
@@ -251,6 +267,9 @@ function bind(doc: Document): void {
   win.addEventListener(
     "mousemove",
     (event) => {
+      resting = event.target ?? undefined;
+      if (event.altKey !== wide) post({ type: "key", key: event.altKey ? "wide" : "narrow" });
+      widen(event.altKey);
       if (!armed) return;
       const next = blockAt(event.target, { hot, wide: event.altKey });
       if (next === hot) return;
@@ -260,6 +279,7 @@ function bind(doc: Document): void {
     true,
   );
   doc.addEventListener("mouseleave", () => {
+    resting = undefined;
     hot = undefined;
     schedule();
   });
@@ -273,7 +293,15 @@ function bind(doc: Document): void {
     "keyup",
     (event) => {
       postSelection(doc);
-      if (event.key.toLowerCase() === "c") post({ type: "key", key: "release" });
+      if (event.key === "Alt") {
+        widen(false);
+        post({ type: "key", key: "narrow" });
+      }
+      // By the physical key, since ⌥ held over it turns the c of its release into a ç on a Mac.
+      if (event.code === (holdCode ?? "KeyC")) {
+        holdCode = undefined;
+        post({ type: "key", key: "release" });
+      }
     },
     true,
   );
@@ -285,6 +313,7 @@ function fromChild(from: HTMLIFrameElement, origin: string, message: Envelope<Ag
     case "ready":
       tell({ type: "hello" }, from, origin);
       tell({ type: "arm", armed }, from, origin);
+      tell({ type: "wide", wide }, from, origin);
       if (theme) tell({ type: "theme", theme }, from, origin);
       return;
     case "layout":
@@ -354,12 +383,13 @@ window.addEventListener("message", (event: MessageEvent<Partial<Envelope<AgentMe
   if (event.origin !== parent) return;
   if (message.type === "arm") {
     armed = message.armed;
-    if (!armed) {
-      hot = undefined;
-      picked = undefined;
-    }
+    hot = armed && resting ? blockAt(resting, { wide }) : undefined;
+    if (!armed) picked = undefined;
     for (const one of frames()) tell(message, one);
     schedule();
+  } else if (message.type === "wide") {
+    widen(message.wide);
+    for (const one of frames()) tell(message, one);
   } else if (message.type === "clear") {
     hot = undefined;
     picked = undefined;

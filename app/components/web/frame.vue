@@ -144,6 +144,7 @@ function greet(): void {
   post({ type: "hello" });
   post({ type: "arm", armed: chrome.comment.armed.value });
   post({ type: "theme", theme: look.theme.value });
+  post({ type: "wide", wide: chrome.comment.wide.value });
 }
 
 function onLoad(): void {
@@ -160,6 +161,7 @@ function onKey(key: string): void {
     else chrome.comment.arm();
   } else if (key === "escape" && !chrome.dismiss()) artifact.isFull = false;
   else if (key === "hold") chrome.comment.arm(true);
+  else if (key === "wide" || key === "narrow") chrome.comment.widen(key === "wide");
   else if (key === "release") chrome.comment.release();
   else if (key === "reload") web.reload();
   else if (key === "remove") web.removeAimed();
@@ -235,6 +237,7 @@ useEventListener(window, "keydown", (event: KeyboardEvent) => {
 
 watch(chrome.comment.armed, (armed) => post({ type: "arm", armed }));
 watch(look.theme, (theme) => post({ type: "theme", theme }));
+watch(chrome.comment.wide, (wide) => post({ type: "wide", wide }));
 watch(chrome.comment.pick, (hit) => {
   if (!hit) post({ type: "clear" });
 });
