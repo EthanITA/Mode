@@ -289,9 +289,19 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   blurred veil fades over the page, the page changes underneath it and the veil lifts once the new one
   has rendered. Claude shows up on it only when the new page is slow, and a switch you start yourself
   stays instant.
+- **Select any text to ask Claude about it.** Selecting words in an artifact, a Files preview, a live Web
+  page, the code editor, a Review or History diff or a past version's diff shows an Ask Claude chip at the
+  end of the selection, and clicking it or pressing ⌘K opens the comment popover quoting exactly those
+  words. Where the surface has nowhere to show an answer the chip reads Note for Claude and adds to the
+  tray. In comment mode a drag selects and a click still picks the block.
 
 ### Changed
 
+- **Comment mode lights the paragraph under the pointer, not its whole wrapper.** A pick is the
+  innermost block that owns the words, holding ⌥ takes the box around it such as a whole card, and
+  crossing the gap between two paragraphs keeps the last one lit. Blocks inside an artifact's or a Web
+  page's own iframes pick and select too, and an embed from another origin picks as one block. Wrappers
+  are still indexed, so a thread left on one before this keeps its place.
 - **The sidecar is styled with Tailwind and Cela's tokens.** Every component's scoped style `@apply`s
   Tailwind and `@cela/design` utilities in place of about 3,700 hand-written declarations, and every size,
   radius and colour is an existing token, so text sits on Cela's `typo-*` scale (12.5px text is 13px now),
