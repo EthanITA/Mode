@@ -15,6 +15,8 @@ export interface ReadVersions {
   diffState: MaybeComputed<DiffState>;
   head: MaybeComputed<FileVersion>;
   list: ComputedRef<FileVersion[]>;
+  /** False until the store has answered for this file, so an empty list means none rather than not yet. */
+  listed: Ref<boolean>;
   reading: Ref<boolean>;
   skipped: MaybeComputed<string>;
   unreachable: Ref<boolean>;
@@ -33,6 +35,7 @@ export function useReadVersions({ path, sessionKey, diffable }: VersionsInput): 
   const content = ref<VersionContent>();
   const diff = ref<FileDiff>();
   const found = ref<ConversationVersions>();
+  const listed = ref(false);
   const reading = ref(false);
   const unreachable = ref(false);
 
@@ -66,6 +69,7 @@ export function useReadVersions({ path, sessionKey, diffable }: VersionsInput): 
       at.value = undefined;
       content.value = undefined;
       found.value = undefined;
+      listed.value = false;
       unreachable.value = false;
       if (!key || !one) return;
       try {
@@ -73,6 +77,8 @@ export function useReadVersions({ path, sessionKey, diffable }: VersionsInput): 
         if (mine === listing) found.value = got;
       } catch {
         if (mine === listing) unreachable.value = true;
+      } finally {
+        if (mine === listing) listed.value = true;
       }
     },
     { immediate: true },
@@ -109,5 +115,5 @@ export function useReadVersions({ path, sessionKey, diffable }: VersionsInput): 
     }
   });
 
-  return { at, baseline, content, diffState, head, list, reading, skipped, unreachable };
+  return { at, baseline, content, diffState, head, list, listed, reading, skipped, unreachable };
 }

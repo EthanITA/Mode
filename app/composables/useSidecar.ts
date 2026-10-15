@@ -14,6 +14,8 @@ export interface Sidecar {
   artifact: Maybe<ArtifactDetail>;
   catalogue: Ref<ArtifactMeta[]>;
   failure: Maybe<string>;
+  /** The slug whose read failed, so a reader tells a missing page from one still on its way. */
+  missing: Maybe<string>;
   ready: Ref<boolean>;
   sessionKey: Maybe<string>;
   sessions: Ref<LiveSession[]>;
@@ -27,6 +29,7 @@ export function useSidecar(): Sidecar {
     artifact: maybeState<ArtifactDetail>("sc:artifact"),
     catalogue: useState<ArtifactMeta[]>("sc:catalogue", () => []),
     failure: maybeState<string>("sc:failure"),
+    missing: maybeState<string>("sc:missing"),
     ready: useState<boolean>("sc:ready", () => false),
     sessionKey: maybeState<string>("sc:session-key"),
     sessions: useState<LiveSession[]>("sc:sessions", () => []),
@@ -136,7 +139,9 @@ export function loadSidecar(): void {
       }
       const got = await $fetch<ArtifactDetail>(`/api/artifacts/${slug}`).catch(() => undefined);
       // Two picks in one tick fetch twice, and only the one still held may land.
-      if (sc.slug.value === slug) sc.artifact.value = got;
+      if (sc.slug.value !== slug) return;
+      sc.artifact.value = got;
+      sc.missing.value = got ? undefined : slug;
     },
     { immediate: true },
   );

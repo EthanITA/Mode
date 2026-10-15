@@ -5,6 +5,7 @@ const {
   baseline,
   head,
   list,
+  listed = true,
   reading = false,
   skipped,
   slug,
@@ -13,6 +14,7 @@ const {
   baseline?: BaselineOrigin;
   head?: FileVersion;
   list: FileVersion[];
+  listed?: boolean;
   reading?: boolean;
   skipped?: string;
   slug: string;
@@ -82,7 +84,7 @@ function tellOf(version: FileVersion, index: number): string {
 
       <span v-if="unreachable" class="note mono-meta" data-tone="loud">the version store could not be read</span>
       <span v-else-if="skipped" class="note mono-meta">not versioned — {{ skipped }}</span>
-      <span v-else-if="!list.length" class="note mono-meta">no turn has written this file yet</span>
+      <span v-else-if="!list.length && listed" class="note mono-meta">no turn has written this file yet</span>
       <span v-else-if="short" class="note mono-meta" :data-tone="note?.tone" :title="note?.text">{{ short }}</span>
     </div>
 
@@ -101,8 +103,9 @@ function tellOf(version: FileVersion, index: number): string {
   @apply flex items-center gap-2 border-b border-b-border px-0 pt-2 pb-2.5;
 }
 
+/* A chip's height even before the list lands, so the page below never jumps when it does. */
 .tabs {
-  @apply flex min-w-0 scrollbar-none items-center gap-1 overflow-x-auto;
+  @apply flex min-h-7 min-w-0 scrollbar-none items-center gap-1 overflow-x-auto;
 }
 
 .tab {

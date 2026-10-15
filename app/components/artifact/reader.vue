@@ -34,9 +34,11 @@ const frameReady = ref(false);
 const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
 
-const path = computed(() => sc.artifact.value?.path);
-const threads = computed(() => sc.artifact.value?.threads ?? []);
-const markdown = computed(() => sc.artifact.value?.format === "md");
+// The last page stays in sc.artifact until the next one lands, and none of it belongs to this slug.
+const held = computed(() => (sc.artifact.value?.slug === slug ? sc.artifact.value : undefined));
+const path = computed(() => held.value?.path);
+const threads = computed(() => held.value?.threads ?? []);
+const markdown = computed(() => held.value?.format === "md");
 const versions = useReadVersions({ path, sessionKey: sc.sessionKey, diffable: markdown });
 const live = computed(() => !versions.at.value);
 // A stored .md version is raw text, so the render route draws it rather than srcdoc.
@@ -237,6 +239,7 @@ onScopeDispose(() => {
       :baseline="versions.baseline.value"
       :head="versions.head.value"
       :list="versions.list.value"
+      :listed="versions.listed.value"
       :reading="versions.reading.value"
       :skipped="versions.skipped.value"
       :slug="slug"
@@ -244,7 +247,7 @@ onScopeDispose(() => {
     />
 
     <CommentLayer
-      v-if="sc.artifact.value?.slug === slug"
+      v-if="held"
       v-slot="{ canAsk, inset }"
       :file="path"
       :live="live"
@@ -280,7 +283,7 @@ onScopeDispose(() => {
         @ready="onReady"
       />
 
-      <div v-if="showDiff ? stage !== 'version' : !measured" class="gap" data-region="version-gap">
+      <div v-if="stage === 'reading' || stage === 'unreadable'" class="gap" data-region="version-gap">
         <UiStateMessage v-if="stage === 'reading'" align="center" kind="loading">
           Reading turn {{ versions.at.value }}…
         </UiStateMessage>
@@ -325,13 +328,13 @@ onScopeDispose(() => {
       </UiSurface>
     </CommentLayer>
 
-    <div v-else class="blank">
-      <UiStateMessage v-if="!sc.ready.value" align="center" kind="loading">Reading the page…</UiStateMessage>
-      <UiStateMessage v-else align="center" kind="error">
+    <div v-else-if="sc.missing.value === slug" class="blank">
+      <UiStateMessage align="center" kind="error">
         <b>{{ slug }}</b> could not be read from the artifacts directory.
       </UiStateMessage>
       <slot name="blank" />
     </div>
+    <UiStateMessage v-else align="center" class="opening" kind="loading">Reading the page…</UiStateMessage>
   </div>
 </template>
 
@@ -348,6 +351,10 @@ onScopeDispose(() => {
 .gap,
 .blank {
   @apply mx-auto w-full max-w-(--page-w) rounded-box border border-dashed border-border-strong bg-raised px-7 py-10 text-center typo-body-md text-muted;
+}
+
+.opening {
+  @apply py-10;
 }
 
 .gap p,
