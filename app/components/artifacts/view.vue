@@ -1,14 +1,6 @@
 <script lang="ts" setup>
 import { Trash2 } from "@lucide/vue";
-import type { ArtifactKind, ArtifactMeta } from "~~/shared/types/artifact";
-
-const KIND: Record<ArtifactKind, string> = {
-  document: "Document",
-  file: "File",
-  page: "Page",
-  plan: "Plan",
-  web: "Web",
-};
+import type { ArtifactMeta } from "~~/shared/types/artifact";
 
 const { initial: sideInitial, width: side } = usePaneWidth();
 const sc = useSidecar();
@@ -170,7 +162,7 @@ async function openUrl(): Promise<void> {
             @click="selected = meta.slug"
           >
             <span class="head">
-              <span class="kind mono-meta" :data-kind="meta.kind">{{ KIND[meta.kind] }}</span>
+              <ArtifactsKindIcon :meta="meta" :page="meta.slug === selected ? web.page : undefined" />
               <span v-if="meta.kind === 'web'" class="age mono-meta">{{ hostOf(meta) }}</span>
               <span v-else-if="meta.updated" class="age mono-meta">{{ relativeAge(meta.updated) }}</span>
             </span>
@@ -435,34 +427,13 @@ async function openUrl(): Promise<void> {
   gap: 8px;
 }
 
-.kind {
-  background: var(--sunken);
-  border-radius: 999px;
-  color: var(--muted);
-  padding: 2px 7px;
-  text-transform: none;
-}
-
-.kind[data-kind="plan"] {
-  background: var(--primary-soft);
-  color: var(--primary-deep);
-}
-
-.kind[data-kind="web"] {
-  background: var(--info-soft);
-  color: var(--info);
-}
-
 .age {
   color: var(--subtle);
   text-transform: none;
 }
 
 .name {
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
+  @apply line-clamp-2 text-[13px] leading-[1.4] font-semibold wrap-break-word text-fg;
 }
 
 .entry[data-selected="true"] .name {

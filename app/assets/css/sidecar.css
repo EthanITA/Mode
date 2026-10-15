@@ -41,6 +41,9 @@
      a token would be wrong in both themes. Same carve-out cela makes for ui/provider-icon.vue. */
   --mascot: #d97757;
   --mascot-eye: #ffffff;
+  /* VS Code's file icon colours, which make the marks recognisable at a glance; same carve-out as the mark. */
+  --file-html: #e37933;
+  --file-md: #519aba;
 
   /* The props are objects, not the brand, so they carry object colours and only the body is coral. */
   --prop-dark: color-mix(in oklch, var(--ink) 82%, var(--canvas));
