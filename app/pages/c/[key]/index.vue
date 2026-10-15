@@ -40,13 +40,12 @@ const title = computed(() => (session.value ? nameOf(session.value) : key.value)
 const face = computed(() => built[chrome.view.current.value]);
 const gone = computed(() => sc.ready.value && !session.value);
 
-// A live page reloads whenever its frame leaves the DOM, so Artifacts stays mounted behind the other faces once opened.
-const isArtifacts = computed(() => chrome.view.current.value === "artifacts");
-const keepsArtifacts = ref(false);
+// A face stays mounted behind the others once opened, so coming back neither reloads a live page nor reads its data again.
+const opened = ref<Face[]>([]);
 watch(
-  isArtifacts,
-  (on) => {
-    if (on) keepsArtifacts.value = true;
+  () => chrome.view.current.value,
+  (now) => {
+    if (built[now] && !opened.value.includes(now)) opened.value = [...opened.value, now];
   },
   { immediate: true },
 );
@@ -78,9 +77,10 @@ follow.listen();
     </UiSurface>
 
     <main v-else class="stage" data-region="conversation-stage" :data-face="chrome.view.current.value">
-      <component :is="built.artifacts" v-if="built.artifacts && keepsArtifacts" v-show="isArtifacts" />
-      <component :is="face" v-if="face && !isArtifacts" />
-      <p v-else-if="!face" class="empty">No view has been built for this conversation yet.</p>
+      <template v-for="one in opened" :key="one">
+        <FaceHost v-if="built[one]" :face="one" :view="built[one]" />
+      </template>
+      <p v-if="!face" class="empty">No view has been built for this conversation yet.</p>
     </main>
   </NuxtLayout>
 </template>

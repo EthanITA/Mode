@@ -176,6 +176,11 @@ body {
   }
 }
 
+/* Fades in when it mounts or stops being display none, so content that replaces a loading state never pops. */
+@utility settle {
+  @apply transition-opacity duration-(--duration-fast) ease-out motion-reduce:transition-none starting:opacity-0;
+}
+
 /* Marks a region drawn from the design that no data can fill yet, so a drawing is
    never read as a description. */
 [data-scaffold] {

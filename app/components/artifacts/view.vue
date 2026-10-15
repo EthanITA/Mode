@@ -8,8 +8,7 @@ const chrome = useChrome();
 const follow = $follow();
 const selected = useConversationPick("ar:picks");
 
-const shown = computed(() => chrome.view.current.value === "artifacts");
-provide(FACE_SHOWN, shown);
+const shown = useFaceShown();
 
 // Comment mode was armed against the page this face holds, which stays mounted out of sight.
 watch(shown, (on) => {
@@ -140,6 +139,7 @@ async function openUrl(): Promise<void> {
       </header>
       <div class="scroll">
         <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
+        <UiStateMessage v-else-if="!sc.ready.value" class="empty" kind="loading">Reading the artifacts…</UiStateMessage>
         <UiStateMessage v-else-if="!entries.length" class="empty">
           This conversation hasn't made a page or a plan yet.
         </UiStateMessage>
@@ -270,7 +270,7 @@ async function openUrl(): Promise<void> {
 }
 
 .item {
-  @apply relative flex-none;
+  @apply relative flex-none settle;
   --row-bg: var(--raised);
 }
 

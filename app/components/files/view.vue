@@ -69,8 +69,11 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
         <span class="where mono-meta" :title="session.cwd">{{ homePath(session.cwd) }}</span>
         <UiChip :selected="showIgnored" size="xs" @click="showIgnored = !showIgnored">Ignored</UiChip>
       </div>
-      <div class="scroll">
+      <div v-fade="scope === 'all' || !!files" class="scroll">
         <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
+        <UiStateMessage v-else-if="scope !== 'all' && !files" class="empty" kind="loading">
+          Reading the files…
+        </UiStateMessage>
         <UiStateMessage v-else-if="scope !== 'all' && !scoped.root.value" class="empty">{{
           EMPTY[scope]
         }}</UiStateMessage>

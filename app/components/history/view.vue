@@ -5,6 +5,7 @@ import { useNow } from "@vueuse/core";
 import { OneDarkVivid } from "~/utils/monaco/one-dark-vivid";
 
 const sc = useSidecar();
+const shown = useFaceShown();
 const history = useHistory();
 const review = useReview();
 const now = useNow({ interval: 30_000 });
@@ -123,7 +124,7 @@ useShortcuts(
     J: { repeat: true, run: () => step(1) },
     K: { repeat: true, run: () => step(-1) },
   },
-  { when: () => !sc.failure.value },
+  { when: () => shown.value && !sc.failure.value },
 );
 </script>
 
@@ -145,7 +146,7 @@ useShortcuts(
         </UiChip>
       </header>
 
-      <div ref="listEl" class="scroll" data-scroll="turns">
+      <div ref="listEl" v-fade="history.loading.value" class="scroll" data-scroll="turns">
         <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>
         <UiStateMessage v-else-if="history.loading.value" class="empty" kind="loading">
           Reading the turns…
@@ -179,7 +180,7 @@ useShortcuts(
 
     <PaneResizer v-model="side" :initial="sideInitial" label="Resize the turns pane" />
 
-    <UiSurface class="pane" data-region="history-changes" pad="none" variant="raised">
+    <UiSurface v-fade="!!turn" class="pane" data-region="history-changes" pad="none" variant="raised">
       <template v-if="turn">
         <header class="bar" data-layout="stacked">
           <div class="line">

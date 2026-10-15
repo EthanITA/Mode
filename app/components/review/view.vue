@@ -6,6 +6,7 @@ import type { ReviewPicks, ReviewRowRejected } from "~/utils/review";
 
 const sc = useSidecar();
 const chrome = useChrome();
+const shown = useFaceShown();
 const review = useReview();
 const { initial: sideInitial, width: side } = usePaneWidth();
 
@@ -98,6 +99,7 @@ useEventListener(
   window,
   "keydown",
   (event: KeyboardEvent) => {
+    if (!shown.value) return;
     if (event.key === "Escape" && review.confirming.value) {
       review.confirming.value = undefined;
       return;
@@ -139,7 +141,7 @@ function rejectFile(event: MouseEvent): void {
         <span class="meta mono-meta">{{ plural(files.length, "file") }}</span>
       </header>
 
-      <div class="scroll" data-scroll="files">
+      <div v-fade="isReading" class="scroll" data-scroll="files">
         <UiStateMessage v-if="!files.length" class="empty" :kind="isReading ? 'loading' : 'empty'">{{
           empty
         }}</UiStateMessage>
@@ -191,7 +193,7 @@ function rejectFile(event: MouseEvent): void {
 
     <PaneResizer v-model="side" :initial="sideInitial" label="Resize the file list" />
 
-    <UiSurface class="pane" data-region="review-changes" pad="none" variant="raised">
+    <UiSurface v-fade="isReading" class="pane" data-region="review-changes" pad="none" variant="raised">
       <template v-if="file">
         <header
           class="bar"
