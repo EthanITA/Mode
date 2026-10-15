@@ -22,7 +22,6 @@ export const $follow = defineStore(() => {
   const target = ref<FollowTarget>({ source: "none" });
   /** The artifact Claude Code asked to show, held until Artifacts mounts and opens it. */
   const opening = ref<string>();
-  const isPinned = ref(false);
   const isSwitching = ref(false);
   let switches = 0;
   let landing: string | undefined = window.location.pathname;
@@ -33,7 +32,6 @@ export const $follow = defineStore(() => {
     return isLanding;
   }
 
-  /** Goes there even while pinned, since a person asked for it rather than Claude Code. */
   function show(place: FollowPlace): void {
     const face = FACES.find((one) => one === (place.slug ? "artifacts" : place.face));
     if (face) chrome.view.set(face);
@@ -57,7 +55,6 @@ export const $follow = defineStore(() => {
   }
 
   function go(next: FollowTarget): void {
-    if (isPinned.value) return;
     const route = router.currentRoute.value;
     if (next.key && next.key !== route.params.key) void switchTo(() => show(next));
     else if (next.key) show(next);
@@ -83,14 +80,11 @@ export const $follow = defineStore(() => {
       });
     };
     connect();
-    watch(isPinned, (pinned) => {
-      if (!pinned) go(target.value);
-    });
     onScopeDispose(() => {
       window.clearTimeout(retry);
       source?.close();
     });
   }
 
-  return { isPinned, isSwitching, listen, opening, show, target };
+  return { isSwitching, listen, opening, show, target };
 });
