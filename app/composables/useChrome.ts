@@ -301,7 +301,7 @@ export function useChrome(): Chrome {
           action: "create",
           anchor: {
             label: at.label,
-            page: at.page && Web.pageOf(at.page),
+            page: at.page && Web.addressOf(at.page),
             quote: at.quote ?? at.excerpt,
             sel: at.path,
             text: at.block,

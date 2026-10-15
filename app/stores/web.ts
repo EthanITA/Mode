@@ -4,15 +4,13 @@ import type { ArtifactMeta } from "~~/shared/types/artifact";
 import type { WebArrival, WebOpenReply, WebTrail } from "~~/shared/types/web";
 import { Trail } from "~~/shared/utils/trail";
 
-export type WebState = "down" | "live" | "moved" | "starting" | "unreachable";
+export type WebState = "down" | "live" | "starting" | "unreachable";
 
 export interface WebOpenOptions {
-  /** Where the frame was sent, so the server opens it as it is rather than chasing it again. */
-  landed?: boolean;
+  /** Lands on an artifact of this conversation already showing the address, as a link opened again should. */
+  reuse?: boolean;
 }
 
-// Redirects that run this long without a page are a loop, so the frame stops and says so.
-const HOPS = 8;
 const EDITABLE = "input, textarea, select, [contenteditable]:not([contenteditable='false'])";
 const REMOVABLE_ROW = "[data-region='artifact-row']:is([data-kind='web'], [data-kind='file'])";
 
@@ -28,12 +26,8 @@ export const $web = defineStore(() => {
   const stepping = ref<{ by: -1 | 1; to: string }>();
   const addressing = ref(0);
   const state = ref<WebState>("starting");
+  const isBusy = ref(true);
   const edition = ref(0);
-  const going = ref<string>();
-  const movedTo = ref<string>();
-  const hops = ref(0);
-  // An entry a redirect made and passed through without a page, which goes once the redirect moves on.
-  const passing = new Set<string>();
   let undo: { put: () => Promise<void>; toast: number } | undefined;
   let aim: number | undefined;
   // A frame the sidecar just (re)made lands where it was sent, so a redirect there replaces that page rather than adding one.
@@ -41,13 +35,9 @@ export const $web = defineStore(() => {
 
   function reload(): void {
     state.value = "starting";
-    movedTo.value = undefined;
+    isBusy.value = true;
     isLanding = true;
     edition.value += 1;
-  }
-
-  function go(path: string): void {
-    going.value = path;
   }
 
   function step(by: -1 | 1): void {
@@ -55,6 +45,7 @@ export const $web = defineStore(() => {
     if (!to) return;
     aim = trail.value.at + by;
     if (state.value === "live") {
+      isBusy.value = true;
       stepping.value = { by, to };
       return;
     }
@@ -82,8 +73,14 @@ export const $web = defineStore(() => {
     aim = undefined;
     isLanding = true;
     state.value = "starting";
-    going.value = undefined;
-    movedTo.value = undefined;
+    isBusy.value = true;
+  }
+
+  // Inside the artifact, whatever site it is on, as a tab goes wherever its address bar is sent.
+  function visit(url: URL): void {
+    trail.value = Trail.arrive(trail.value, { how: "push", url: url.href });
+    page.value = { title: "", url: url.href };
+    reload();
   }
 
   async function reread(): Promise<void> {
@@ -91,49 +88,14 @@ export const $web = defineStore(() => {
   }
 
   // The server records it against the conversation, and the next poll would only say so seconds later.
-  async function open(url: string, { landed = false }: WebOpenOptions = {}): Promise<WebOpenReply> {
+  async function open(url: string, { reuse = false }: WebOpenOptions = {}): Promise<WebOpenReply> {
     const key = sc.sessionKey.value;
-    const got = await $fetch<WebOpenReply>("/api/web", { body: { landed, session: key, url }, method: "POST" });
-    if (got.isNew) passing.add(got.slug);
-    if (!landed) hops.value = 0;
+    const got = await $fetch<WebOpenReply>("/api/web", { body: { reuse, session: key, url }, method: "POST" });
     await reread();
     sc.sessions.value = sc.sessions.value.map((one) =>
       one.key === key && !one.artifacts.includes(got.slug) ? { ...one, artifacts: [got.slug, ...one.artifacts] } : one,
     );
     return got;
-  }
-
-  // An entry is one site, and a typed one may really live at another, google.com at www, so the server settles which.
-  async function visit({ slug, typed }: { slug: string; typed: URL }): Promise<string> {
-    const got = await open(typed.href);
-    if (got.slug === slug) {
-      trail.value = Trail.arrive(trail.value, { how: "push", url: got.url });
-      page.value = { title: "", url: got.url };
-      reload();
-    }
-    return got.slug;
-  }
-
-  function shown(slug: string): void {
-    passing.delete(slug);
-    hops.value = 0;
-  }
-
-  // Taken as the redirect gave it, since probing it again would spend a sign-in's one-time code.
-  async function follow(slug: string): Promise<string | undefined> {
-    const to = movedTo.value;
-    if (!to || hops.value >= HOPS) return undefined;
-    hops.value += 1;
-    state.value = "starting";
-    const got = await open(to, { landed: true });
-    if (got.slug === slug) {
-      page.value = { title: "", url: got.url };
-      reload();
-    } else if (passing.delete(slug)) {
-      await $fetch(`/api/web/${slug}`, { method: "DELETE" }).catch(() => undefined);
-      await reread();
-    }
-    return got.slug;
   }
 
   async function putBack(): Promise<void> {
@@ -159,7 +121,7 @@ export const $web = defineStore(() => {
     return async () => void (await $fetch(`/api/web/${meta.slug}`, { body: record, method: "PUT" }));
   }
 
-  // Only the entry goes: a site's cookies and storage, or a file on disk, stay for when it is opened again.
+  // Only the entry goes: a web artifact's cookies and storage, or a file on disk, stay for when it is put back.
   async function remove(meta: ArtifactMeta): Promise<void> {
     const name = meta.title || meta.slug;
     try {
@@ -208,12 +170,8 @@ export const $web = defineStore(() => {
     arrive,
     askAddress,
     edition,
-    follow,
-    go,
-    going,
     history,
-    hops,
-    movedTo,
+    isBusy,
     open,
     page,
     reload,
@@ -221,7 +179,6 @@ export const $web = defineStore(() => {
     removeAimed,
     reset,
     seed,
-    shown,
     state,
     step,
     stepping,

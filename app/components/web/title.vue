@@ -1,15 +1,14 @@
 <script lang="ts" setup>
 import { ChevronLeft, ChevronRight, ExternalLink, Globe } from "@lucide/vue";
 
-const { conversation, slug } = defineProps<{ conversation: string; slug: string }>();
+const { slug } = defineProps<{ slug: string }>();
 
 const sc = useSidecar();
 const web = $web();
 const field = useTemplateRef<HTMLInputElement>("field");
 const scrolled = ref(0);
 const isIconBroken = ref(false);
-const { cancel, commit, draft, edit, host, isEditing, isOpening, isRefused, openOut, page } = useWebAddress({
-  conversation: () => conversation,
+const { cancel, commit, draft, edit, host, isEditing, openOut, page } = useWebAddress({
   focus: () => {
     field.value?.focus();
     field.value?.select();
@@ -40,7 +39,6 @@ watch(
     class="island"
     data-region="title-island"
     :data-editing="isEditing"
-    :data-refused="isRefused"
     pad="none"
     shape="pill"
     variant="glass-liquid"
@@ -72,13 +70,8 @@ watch(
         inputmode="url"
         spellcheck="false"
         type="text"
-        :aria-invalid="isRefused"
-        :disabled="isOpening"
-        @blur="isOpening || cancel()"
-        @input="
-          isRefused = false;
-          track();
-        "
+        @blur="cancel"
+        @input="track"
         @keydown.esc.prevent.stop="cancel"
         @keyup="track"
         @scroll="track"
@@ -125,12 +118,6 @@ watch(
   box-shadow:
     0 0 0 1px var(--primary),
     0 0 0 4px var(--primary-soft);
-}
-
-.island[data-refused="true"] {
-  box-shadow:
-    0 0 0 1px var(--error),
-    0 0 0 4px var(--error-soft);
 }
 
 .rule {

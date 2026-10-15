@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ExternalLink, RotateCw, Trash2 } from "@lucide/vue";
+import { RotateCw, Trash2 } from "@lucide/vue";
 import { useDebounceFn } from "@vueuse/core";
 import type { FrameAnchor, FrameMark } from "~/types/frame";
 import type { WebArrival } from "~~/shared/types/web";
@@ -13,7 +13,6 @@ const sc = useSidecar();
 const chrome = useChrome();
 const route = useRoute();
 const web = $web();
-const follow = $follow();
 const sides = $sideQuestion();
 const tray = useTray();
 
@@ -38,15 +37,15 @@ const entry = computed(() => (held.value?.slug === slug ? held.value : undefined
 // Seeded as soon as the entry reads, so the arrows know the way back before the page has loaded.
 watch(entry, (got) => web.seed(got?.trail));
 const address = computed(() => web.page?.url ?? entry.value?.url);
-const page = computed(() => (address.value ? Web.pageOf(address.value) : "/"));
+// Threads are keyed by the whole address, since one artifact can go from site to site.
+const page = computed(() => (address.value ? Web.addressOf(address.value) : ""));
+const where = computed(() => (address.value ? Web.shortOf(address.value, {}) : "/"));
 const host = computed(() => (address.value ? new URL(address.value).host : slug));
 const threads = computed(() => Web.threadsOn(entry.value?.threads ?? [], page.value));
 const notices = computed(() => Object.fromEntries(fresh.value.map((id) => [id, RELOADED])));
-const isDown = computed(() => ["down", "moved", "unreachable"].includes(web.state));
+const isDown = computed(() => ["down", "unreachable"].includes(web.state));
 
 const downLine = computed(() => {
-  if (web.state === "moved")
-    return `${host.value} keeps redirecting without ever showing a page, so it stopped here. Open it in a browser tab.`;
   if (web.state === "unreachable") return `The sidecar could not open ${host.value}. Reload to try again.`;
   return address.value && Web.isLocal(address.value)
     ? `Nothing answers on ${host.value}. Start the app, then reload.`
@@ -96,23 +95,6 @@ watch(
   },
 );
 
-watch(
-  () => web.state,
-  async (state) => {
-    if (state !== "moved") return;
-    try {
-      const next = await web.follow(slug);
-      if (next && next !== slug) follow.show({ key: conversation, slug: next });
-    } catch {
-      web.state = "unreachable";
-    }
-  },
-);
-
-function openOut(): void {
-  if (web.movedTo) window.open(web.movedTo, "_blank", "noopener");
-}
-
 async function removeEntry(): Promise<void> {
   if (!entry.value) return;
   await web.remove(entry.value);
@@ -131,13 +113,12 @@ function onMarks(next: FrameMark[]): void {
 async function onPage(how: WebArrival): Promise<void> {
   const at = web.page;
   if (!at) return;
-  web.shown(slug);
   web.seed(entry.value?.trail);
   web.arrive({ how, url: at.url });
   void refresh(true);
-  await $fetch("/api/web", {
-    body: { landed: true, session: conversation, title: at.title, trail: web.trail, url: at.url },
-    method: "POST",
+  await $fetch(`/api/web/${slug}`, {
+    body: { title: at.title, trail: web.trail, url: at.url },
+    method: "PATCH",
   }).catch(() => undefined);
   sc.catalogue.value = sc.catalogue.value.map((meta): ArtifactMeta =>
     meta.slug === slug ? { ...meta, title: at.title || meta.title, url: at.url } : meta,
@@ -192,25 +173,7 @@ onScopeDispose(() => {
       <div v-if="isDown" class="down" role="status">
         <p class="why">{{ downLine }}</p>
         <div class="actions">
-          <button
-            v-if="web.state === 'moved'"
-            v-press
-            class="retry focusable"
-            type="button"
-            data-tip="Open in a browser tab"
-            @click="openOut"
-          >
-            <UiIcon :icon="ExternalLink" size="xs" />
-            Browser tab
-          </button>
-          <button
-            v-else
-            v-press
-            class="retry focusable"
-            type="button"
-            data-tip="Reload · {cmd R}"
-            @click="web.reload()"
-          >
+          <button v-press class="retry focusable" type="button" data-tip="Reload · {cmd R}" @click="web.reload()">
             <UiIcon :icon="RotateCw" size="xs" />
             Reload
           </button>
@@ -235,7 +198,7 @@ onScopeDispose(() => {
         :file="address && Web.addressOf(address)"
         :marks="marks"
         :notices="notices"
-        :page="page"
+        :page="where"
         :ready="measured"
         scrolls
         :slug="slug"

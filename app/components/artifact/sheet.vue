@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
           />
         </UiSurface>
         <div class="middle">
-          <WebTitle v-if="kind === 'web' && slug && conversation" :conversation="conversation" :slug="slug" />
+          <WebTitle v-if="kind === 'web' && slug && conversation" :slug="slug" />
           <UiSurface
             v-else
             class="island named"
@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
       </div>
       <template v-if="path && slug && conversation">
         <header v-if="!isExpanded" class="bar">
-          <WebBar v-if="kind === 'web'" :conversation="conversation" :slug="slug" />
+          <WebBar v-if="kind === 'web'" :slug="slug" />
           <span v-else class="path">{{ homePath(path) }}</span>
           <ChromeCommentToggle shape="pill" />
           <ChromeAction

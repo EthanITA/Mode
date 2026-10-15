@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
 import type { FrameAnchor, FrameHit, FrameMark, ViewBox } from "~/types/frame";
+import type { ProxyPlace } from "~~/lib/web/host";
 import { isTyping } from "~~/lib/web/page/blocks";
 import { isAddressKey, stepOf } from "~~/lib/web/page/keys";
 import { type AgentMessage, CHANNEL, type Envelope, type SidecarMessage, type WebHit } from "~~/lib/web/page/protocol";
@@ -26,37 +27,64 @@ const emit = defineEmits<{
   page: [how: WebArrival];
 }>();
 
+// Everything but leaving: a site can never navigate the sidecar window itself, whatever its links or scripts ask.
+const SANDBOX = [
+  "allow-downloads",
+  "allow-forms",
+  "allow-modals",
+  "allow-orientation-lock",
+  "allow-pointer-lock",
+  "allow-popups",
+  "allow-popups-to-escape-sandbox",
+  "allow-presentation",
+  "allow-same-origin",
+  "allow-scripts",
+  "allow-storage-access-by-user-activation",
+  "allow-top-navigation-to-custom-protocols",
+].join(" ");
+
 const chrome = useChrome();
 const web = $web();
 const artifact = $artifact();
 const shown = useFaceShown();
 const look = useTheme();
-const links = useLinks();
 const frame = ref<HTMLIFrameElement>();
-const proxy = ref<string>();
-const upstream = ref<string>();
+const place = ref<ProxyPlace>();
+// The frame moves between the artifact's hosts as it goes from site to site, and a message only reaches the one it is on.
+const on = ref<string>();
 const src = ref<string>();
 let started = 0;
 
 async function start(): Promise<void> {
   const run = ++started;
-  proxy.value = undefined;
+  place.value = undefined;
   try {
     const got = await $fetch<WebServeReply>(`/api/web/${slug}/serve`, { method: "POST" });
     if (run !== started) return;
-    proxy.value = Web.origin({ here: new URL(location.href), jar: got.jar, port: got.port });
-    upstream.value = got.upstream;
-    src.value = Web.srcOf({ proxy: proxy.value, url: web.page?.url ?? url });
+    const next = Web.placeOf({ here: new URL(location.href), port: got.port, slug });
+    const to = Web.proxied(web.page?.url ?? url, next);
+    if (!to) throw new Error(`${url} has no address inside the artifact`);
+    place.value = next;
+    src.value = to;
+    on.value = new URL(to).origin;
   } catch {
-    if (run === started) web.state = "unreachable";
+    if (run === started) {
+      web.state = "unreachable";
+      web.isBusy = false;
+    }
   }
 }
 
+function isOurs(origin: string): boolean {
+  const at = place.value;
+  return !!at && URL.canParse(origin) && new URL(origin).port === String(at.port) && !!Web.upstream(origin, at.base);
+}
+
 function post(message: SidecarMessage): void {
-  if (proxy.value)
+  if (on.value)
     frame.value?.contentWindow?.postMessage(
       { ...message, channel: CHANNEL } satisfies Envelope<SidecarMessage>,
-      proxy.value,
+      on.value,
     );
 }
 
@@ -91,7 +119,8 @@ function greet(): void {
 }
 
 function onLoad(): void {
-  if (!proxy.value) return;
+  if (!place.value) return;
+  web.isBusy = false;
   greet();
   emit("load");
 }
@@ -125,15 +154,17 @@ function onLayout(message: Extract<AgentMessage, { type: "layout" }>): void {
 }
 
 useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentMessage>> | undefined>) => {
-  if (!proxy.value || event.origin !== proxy.value || event.source !== frame.value?.contentWindow) return;
+  if (!isOurs(event.origin) || event.source !== frame.value?.contentWindow) return;
   if (event.data?.channel !== CHANNEL) return;
+  on.value = event.origin;
   const message = event.data as Envelope<AgentMessage>;
   switch (message.type) {
-    case "away":
-      void links.open(message.url, { landed: true });
+    case "busy":
+      web.isBusy = message.busy;
       return;
     case "down":
       web.state = "down";
+      web.isBusy = false;
       return;
     case "key":
       onKey(message.key);
@@ -141,14 +172,10 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
     case "layout":
       onLayout(message);
       return;
-    case "moved":
-      web.movedTo = message.url;
-      web.state = "moved";
-      return;
     case "page": {
-      const address = Web.upstreamOf(message.page.url, { proxy: proxy.value, upstream: upstream.value ?? "" });
-      if (new URL(address).origin !== upstream.value) return;
-      web.page = { icon: message.page.icon, title: message.page.title, url: address };
+      const address = place.value && Web.upstream(message.page.url, place.value.base);
+      if (!address) return;
+      web.page = { icon: message.page.icon, title: message.page.title, url: address.href };
       emit("page", message.how);
       return;
     }
@@ -180,19 +207,12 @@ watch(chrome.comment.pick, (hit) => {
   if (!hit) post({ type: "clear" });
 });
 watch(
-  () => web.going,
-  (path) => {
-    if (!path) return;
-    web.going = undefined;
-    post({ type: "go", path });
-  },
-);
-watch(
   () => web.stepping,
   (asked) => {
-    if (!asked || !proxy.value) return;
+    const to = asked && place.value && Web.proxied(asked.to, place.value);
+    if (!asked || !to) return;
     web.stepping = undefined;
-    post({ type: "step", by: asked.by, to: Web.srcOf({ proxy: proxy.value, url: asked.to }) });
+    post({ type: "step", by: asked.by, to });
   },
 );
 watch(
@@ -208,12 +228,14 @@ watch(
 
 <template>
   <div class="web" data-region="web-frame" :style="{ paddingInlineEnd: inset ? `${inset}px` : undefined }">
+    <span class="progress" aria-hidden="true" data-region="web-progress" :data-busy="web.isBusy" />
     <iframe
-      v-if="src && proxy"
+      v-if="src && place"
       ref="frame"
       :key="`${slug}:${web.edition}`"
       allow="clipboard-read; clipboard-write; fullscreen"
       :data-state="web.state"
+      :sandbox="SANDBOX"
       :src="src"
       :style="{ colorScheme: look.theme.value }"
       :title="`Live page ${slug}`"
@@ -251,5 +273,43 @@ iframe[data-state="starting"] {
 .pending {
   inset: 0;
   position: absolute;
+}
+
+/* Done, it runs to the end before it fades, so a quick page still reads as finished rather than cut off. */
+.progress {
+  background: var(--primary);
+  height: 2px;
+  inset: 0 0 auto;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transform-origin: left;
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    opacity var(--duration-base) var(--ease-out) var(--duration-fast);
+  z-index: 1;
+}
+
+.progress[data-busy="true"] {
+  animation: creep 12s cubic-bezier(0.1, 0.65, 0.2, 1) forwards;
+  opacity: 1;
+  transition: none;
+}
+
+@keyframes creep {
+  from {
+    transform: scaleX(0.04);
+  }
+
+  to {
+    transform: scaleX(0.92);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress[data-busy="true"] {
+    animation: none;
+    opacity: 0.6;
+  }
 }
 </style>

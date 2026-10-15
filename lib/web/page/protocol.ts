@@ -25,11 +25,10 @@ export type WebKey =
   "address" | "back" | "comment" | "escape" | "forward" | "full" | "hold" | "reload" | "release" | "remove" | "undo";
 
 export type AgentMessage =
-  | { type: "away"; url: string }
+  | { type: "busy"; busy: boolean }
   | { type: "down"; url: string }
   | { type: "key"; key: WebKey }
   | { type: "layout"; anchors: FrameAnchor[]; hot?: WebHit; marks: FrameMark[]; picked?: WebHit }
-  | { type: "moved"; url: string }
   | { type: "page"; how: WebArrival; page: WebPage }
   | { type: "pick"; hit: WebHit }
   | { type: "ready" };
@@ -37,7 +36,6 @@ export type AgentMessage =
 export type SidecarMessage =
   | { type: "arm"; armed: boolean }
   | { type: "clear" }
-  | { type: "go"; path: string }
   | { type: "hello" }
   | { type: "step"; by: -1 | 1; to: string }
   | { type: "theme"; theme: string };

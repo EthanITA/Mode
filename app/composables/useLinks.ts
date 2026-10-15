@@ -3,8 +3,6 @@ import type { FileOpenReply } from "~~/shared/types/files";
 export interface LinkOpenOptions {
   /** The folder a relative link is read against: the page's own, else the conversation's. */
   base?: string;
-  /** Opened where it points, as a link inside a site is, since chasing its redirects from here carries none of the site's cookies. */
-  landed?: boolean;
 }
 
 export interface Links {
@@ -34,13 +32,13 @@ export function useLinks(): Links {
     return !!raw && !raw.startsWith("#") && (WEB.test(raw) || /^file:/i.test(raw) || !SCHEME.test(raw));
   };
 
-  async function open(href: string, { base, landed }: LinkOpenOptions = {}): Promise<void> {
+  async function open(href: string, { base }: LinkOpenOptions = {}): Promise<void> {
     const raw = href.trim();
     const key = sc.sessionKey.value;
     if (!owns(raw) || !key) return;
     try {
       if (WEB.test(raw)) {
-        follow.show({ key, slug: (await web.open(raw, { landed })).slug });
+        follow.show({ key, slug: (await web.open(raw, { reuse: true })).slug });
         return;
       }
       const cwd = sc.sessions.value.find((one) => one.key === key)?.cwd;

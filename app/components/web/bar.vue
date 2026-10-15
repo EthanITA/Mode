@@ -1,20 +1,26 @@
 <script lang="ts" setup>
 import { ChevronLeft, ChevronRight, ExternalLink, RotateCw } from "@lucide/vue";
 
-const { conversation, slug } = defineProps<{ conversation: string; slug: string }>();
+const { slug } = defineProps<{ slug: string }>();
 
 const sc = useSidecar();
 const web = $web();
 const field = useTemplateRef<HTMLInputElement>("field");
-const { cancel, commit, draft, edit, host, isEditing, isOpening, isRefused, openOut, page } = useWebAddress({
-  conversation: () => conversation,
+const { address, cancel, commit, draft, edit, host, isEditing, openOut, page } = useWebAddress({
   focus: () => {
     field.value?.focus();
     field.value?.select();
   },
   slug: () => slug,
 });
-const away = computed(() => Web.elsewhere(sc.artifact.value?.threads ?? [], page.value)[0]);
+const away = computed(() => {
+  const at = address.value && Web.elsewhere(sc.artifact.value?.threads ?? [], Web.addressOf(address.value))[0];
+  return at ? { ...at, label: Web.shortOf(at.page, { from: address.value }) } : undefined;
+});
+
+function goAway(): void {
+  if (away.value) web.visit(new URL(away.value.page));
+}
 </script>
 
 <template>
@@ -38,21 +44,18 @@ const away = computed(() => Web.elsewhere(sc.artifact.value?.threads ?? [], page
       @click="web.step(1)"
     />
   </span>
-  <form v-if="isEditing" class="address" data-region="web-address" :data-refused="isRefused" @submit.prevent="commit">
+  <form v-if="isEditing" class="address" data-region="web-address" @submit.prevent="commit">
     <input
       ref="field"
       v-model="draft"
       aria-label="Address"
       autocomplete="off"
       class="field"
-      data-tip="Open the address · {enter}, {esc} keeps this page"
+      data-tip="Open the address or search for it · {enter}, {esc} keeps this page"
       inputmode="url"
       spellcheck="false"
       type="text"
-      :aria-invalid="isRefused"
-      :disabled="isOpening"
-      @blur="isOpening || cancel()"
-      @input="isRefused = false"
+      @blur="cancel"
       @keydown.esc.prevent.stop="cancel"
     />
   </form>
@@ -74,9 +77,9 @@ const away = computed(() => Web.elsewhere(sc.artifact.value?.threads ?? [], page
     class="elsewhere focusable"
     type="button"
     data-tip="Go to the page the thread was left on"
-    @click="web.go(away.page)"
+    @click="goAway"
   >
-    {{ plural(away.count, "thread") }} on {{ away.page }}
+    {{ plural(away.count, "thread") }} on {{ away.label }}
   </button>
   <UiIconButton
     :icon="ExternalLink"
@@ -161,11 +164,6 @@ const away = computed(() => Web.elsewhere(sc.artifact.value?.threads ?? [], page
   min-width: 0;
   outline: none;
   padding: 0 6px;
-}
-
-.address[data-refused="true"] .field {
-  border-color: var(--error);
-  box-shadow: 0 0 0 2px var(--error-soft);
 }
 
 .elsewhere {

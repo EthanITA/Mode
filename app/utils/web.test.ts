@@ -16,43 +16,57 @@ const thread = (id: string, page: string, updated: string, status: ReviewThread[
   updated,
 });
 
-test("each jar gets its own host under the sidecar's, except under an IP, which has no subdomain to give", () => {
-  const jar = "google-com";
+test("every site an artifact visits gets a host of its own under the artifact's, and maps back onto itself", () => {
+  const place = Web.placeOf({ here: new URL("http://sidecar.localhost:4747/c/x"), port: 47488, slug: "reddit-3f9a2c" });
+  assert.equal(place.base, "reddit-3f9a2c.sidecar.localhost");
   assert.equal(
-    Web.origin({ here: new URL("http://sidecar.localhost:4747/c/x"), jar, port: 47481 }),
-    `http://${jar}.sidecar.localhost:47481`,
+    Web.placeOf({ here: new URL("http://127.0.0.1:4747/"), port: 1, slug: "a" }).base,
+    "a.sidecar.localhost",
   );
-  assert.equal(Web.origin({ here: new URL("http://127.0.0.1:4747/"), jar, port: 47481 }), "http://127.0.0.1:47481");
-  assert.equal(Web.origin({ here: new URL("http://[::1]:4747/"), jar, port: 47481 }), "http://[::1]:47481");
-});
-
-test("a page inside the proxy maps back onto the site, and anything else is left alone", () => {
-  const ends = { proxy: "http://a.sidecar.localhost:47481", upstream: "http://localhost:3000" };
+  const cases = [
+    [
+      "https://www.reddit.com/r/vue?x=1#top",
+      "http://www.reddit.com.https.reddit-3f9a2c.sidecar.localhost:47488/r/vue?x=1#top",
+    ],
+    ["http://localhost:3000/guide", "http://localhost.http-3000.reddit-3f9a2c.sidecar.localhost:47488/guide"],
+    ["wss://gql.reddit.com/live", "ws://gql.reddit.com.https.reddit-3f9a2c.sidecar.localhost:47488/live"],
+  ];
+  for (const [site, proxy] of cases) {
+    assert.equal(Web.proxied(site ?? "", place), proxy);
+    assert.equal(Web.upstream(proxy ?? "", place.base)?.href, site);
+  }
   assert.equal(
-    Web.upstreamOf("http://a.sidecar.localhost:47481/guide?x=1#setup", ends),
-    "http://localhost:3000/guide?x=1#setup",
+    Web.proxied("http://[::1]:5173/", place),
+    "http://localhost.http-5173.reddit-3f9a2c.sidecar.localhost:47488/",
   );
-  assert.equal(Web.upstreamOf("https://github.com/x", ends), "https://github.com/x");
-  assert.equal(Web.srcOf({ proxy: ends.proxy, url: "http://localhost:3000/guide#setup" }), `${ends.proxy}/guide#setup`);
+  assert.equal(Web.proxied(cases[0]?.[1] ?? "", place), undefined);
+  assert.equal(Web.proxied("mailto:a@b.dev", place), undefined);
+  assert.equal(
+    Web.upstream("http://www.reddit.com.https.other-000000.sidecar.localhost:47488/", place.base),
+    undefined,
+  );
   assert.equal(Web.addressOf("http://localhost:3000/guide?x=1#setup"), "http://localhost:3000/guide?x=1");
 });
 
 test("the gutter holds the threads of the page on screen, and the newest open one elsewhere leads the way there", () => {
+  const [hooks, slots] = ["https://docs.mode.dev/guide/hooks", "https://docs.mode.dev/guide/slots"];
   const threads = [
-    thread("a", "/guide/hooks", "2026-10-14T10:00:00Z"),
-    thread("b", "/guide/slots", "2026-10-14T09:00:00Z"),
-    thread("c", "/guide/slots", "2026-10-14T08:00:00Z"),
-    thread("d", "/changelog", "2026-10-14T11:00:00Z", "resolved"),
+    thread("a", hooks, "2026-10-14T10:00:00Z"),
+    thread("b", slots, "2026-10-14T09:00:00Z"),
+    thread("c", slots, "2026-10-14T08:00:00Z"),
+    thread("d", "https://github.com/x", "2026-10-14T11:00:00Z", "resolved"),
   ];
   assert.deepEqual(
-    Web.threadsOn(threads, "/guide/slots").map((one) => one.id),
+    Web.threadsOn(threads, slots).map((one) => one.id),
     ["b", "c"],
   );
-  assert.deepEqual(Web.elsewhere(threads, "/"), [
-    { count: 1, page: "/guide/hooks" },
-    { count: 2, page: "/guide/slots" },
+  assert.deepEqual(Web.elsewhere(threads, "https://docs.mode.dev/"), [
+    { count: 1, page: hooks },
+    { count: 2, page: slots },
   ]);
-  assert.deepEqual(Web.elsewhere(threads, "/guide/hooks"), [{ count: 2, page: "/guide/slots" }]);
+  assert.deepEqual(Web.elsewhere(threads, hooks), [{ count: 2, page: slots }]);
+  assert.equal(Web.shortOf(slots, { from: hooks }), "/guide/slots");
+  assert.equal(Web.shortOf(slots, { from: "https://github.com/" }), "docs.mode.dev/guide/slots");
 });
 
 test("the address drops its scheme only where typing it back brings the same one", () => {

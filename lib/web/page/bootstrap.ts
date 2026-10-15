@@ -1,44 +1,45 @@
 {
   const script = new URL(document.currentScript?.getAttribute("src") ?? "", location.href).searchParams;
-  const given = script.get("upstream");
-  const upstream = given ? new URL(given) : undefined;
-  const site = script.get("site") ?? "";
-  const WEB: Record<string, string> = { "ws:": "http:", "wss:": "https:" };
+  const base = script.get("base") ?? "";
+  const SOCKET: Record<string, string> = { "ws:": "http:", "wss:": "https:" };
+  const head = base && location.hostname.endsWith(`.${base}`) ? location.hostname.slice(0, -base.length - 1) : "";
+  const host = head.slice(0, head.lastIndexOf("."));
+  const tail = location.hostname.slice(host.length);
+  // The proxy is plain http, so an address that borrows the page's scheme takes the site's own instead.
+  const scheme = head.slice(host.length + 1).replace(/-\d+$/, "") || location.protocol.slice(0, -1);
 
-  // Only calls take the sibling route, since a page loaded through it would resolve its links against the wrong host.
-  const mapped = (raw: string | URL, { siblings = false } = {}): string | URL => {
-    if (!upstream) return raw;
+  // WebHost.proxied's twin, since a classic script that runs before the page's own can't import it.
+  const proxied = (raw: string | URL): string | URL => {
+    if (!base) return raw;
     let url: URL;
     try {
-      url = new URL(String(raw), location.href);
+      url = new URL(
+        String(raw),
+        String(raw).startsWith("//") ? `${scheme}://${host || location.host}/` : location.href,
+      );
     } catch {
       return raw;
     }
-    const socket = url.protocol in WEB;
-    if ((WEB[url.protocol] ?? url.protocol) !== upstream.protocol) return raw;
-    if (url.host !== upstream.host) {
-      const isSibling = !!site && (url.hostname === site || url.hostname.endsWith(`.${site}`));
-      return siblings && isSibling && !socket
-        ? `${location.origin}/__sidecar/via/${url.host}${url.pathname}${url.search}${url.hash}`
-        : raw;
-    }
-    url.protocol = socket ? (location.protocol === "https:" ? "wss:" : "ws:") : location.protocol;
-    url.host = location.host;
-    return url.href;
+    const web = SOCKET[url.protocol] ?? url.protocol;
+    if (web !== "http:" && web !== "https:") return raw;
+    const name = url.hostname === "[::1]" ? "localhost" : url.hostname;
+    if (name.startsWith("[") || name.endsWith(`.${base}`)) return raw;
+    const label = `${web.slice(0, -1)}${url.port ? `-${url.port}` : ""}`;
+    const to = url.protocol in SOCKET ? "ws" : "http";
+    return `${to}://${name}.${label}.${base}:${location.port}${url.pathname}${url.search}${url.hash}`;
   };
-  const CALL = { siblings: true };
 
   const fetchNative = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    if (!(input instanceof Request)) return fetchNative(mapped(input, CALL), init);
-    const url = mapped(input.url, CALL);
+    if (!(input instanceof Request)) return fetchNative(proxied(input), init);
+    const url = proxied(input.url);
     return fetchNative(url === input.url ? input : new Request(url, input), init);
   };
 
   // Arity matters: open(method, url, undefined) is a synchronous request, so the arguments pass through as given.
   const open = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, ...args: unknown[]): void {
-    if (args.length > 1) args[1] = mapped(args[1] as string | URL, CALL);
+    if (args.length > 1) args[1] = proxied(args[1] as string | URL);
     Reflect.apply(open, this, args);
   } as typeof open;
 
@@ -46,27 +47,66 @@
     const Native = window[name];
     window[name] = new Proxy(Native, {
       construct: (target, args: unknown[]) => {
-        if (args.length) args[0] = mapped(args[0] as string | URL, CALL);
+        if (args.length) args[0] = proxied(args[0] as string | URL);
         return Reflect.construct(target, args) as object;
       },
     }) as never;
   }
 
+  const beacon = window.navigator?.sendBeacon?.bind(window.navigator);
+  if (beacon) window.navigator.sendBeacon = (url: string | URL, data?: BodyInit) => beacon(proxied(url), data);
+  const popup = window.open?.bind(window);
+  if (popup)
+    window.open = (url?: string | URL, target?: string, features?: string) =>
+      popup(url && proxied(url), target, features);
+
+  // Bundlers add their chunks and preloads by setting src or href, which would load them past the proxy.
+  const kinds = window as unknown as Record<string, { prototype: object } | undefined>;
+  for (const [kind, name] of [
+    ["HTMLScriptElement", "src"],
+    ["HTMLLinkElement", "href"],
+    ["HTMLIFrameElement", "src"],
+  ] as const) {
+    const proto = kinds[kind]?.prototype;
+    const held = proto && Object.getOwnPropertyDescriptor(proto, name);
+    const set = held?.set;
+    if (proto && held && set)
+      Object.defineProperty(proto, name, {
+        ...held,
+        set(this: object, value: unknown): void {
+          set.call(this, String(proxied(String(value))));
+        },
+      });
+  }
+  const isMoved = (el: Element, name: string): boolean =>
+    (name === "src" && /^(SCRIPT|IFRAME)$/.test(el.tagName)) || (name === "href" && el.tagName === "LINK");
+  const setAttribute = window.Element?.prototype.setAttribute;
+  if (setAttribute)
+    window.Element.prototype.setAttribute = function (this: Element, name: string, value: string): void {
+      setAttribute.call(this, name, isMoved(this, name.toLowerCase()) ? String(proxied(value)) : value);
+    };
+
   // Read off the attribute, since form.action is shadowed by any field named "action".
   const aim = (el: Element | undefined, name: string): void => {
     const raw = el?.getAttribute(name);
-    const to = raw && String(mapped(raw, CALL));
+    const to = raw && String(proxied(raw));
     if (to && to !== raw) el?.setAttribute(name, to);
   };
+  // A new tab or the window above would take the page out of the sidecar.
+  const stay = (el: Element | undefined, name: string): void => {
+    if (/^_(blank|parent|top)$/i.test(el?.getAttribute(name) ?? "")) el?.setAttribute(name, "_self");
+  };
 
-  // An absolute link or form aimed at the site itself would leave the proxy, and the comment layer with it.
   const keep = (event: Event): void => {
     const target = event.target as Element | undefined;
     const link = target?.closest?.("a[href]") as HTMLAnchorElement | undefined;
-    if (link && mapped(link.href) !== link.href) link.href = String(mapped(link.href));
+    if (link && proxied(link.href) !== link.href) link.href = String(proxied(link.href));
     if (event.type !== "submit") return;
+    const submitter = (event as SubmitEvent).submitter ?? undefined;
     aim(target, "action");
-    aim((event as SubmitEvent).submitter ?? undefined, "formaction");
+    aim(submitter, "formaction");
+    stay(target, "target");
+    stay(submitter, "formtarget");
   };
   window.addEventListener("click", keep, true);
   window.addEventListener("submit", keep, true);
@@ -75,10 +115,28 @@
   const submit = HTMLFormElement.prototype.submit;
   HTMLFormElement.prototype.submit = function (this: HTMLFormElement): void {
     aim(this, "action");
+    stay(this, "target");
     submit.call(this);
   };
 
-  // The proxy makes the site's own session cookies last, and these are the ones its scripts set.
+  // A script that sets location to another site would leave the proxy, and most sites refuse to be framed.
+  window.navigation?.addEventListener("navigate", (event) => {
+    if (!event.cancelable || event.formData || typeof event.downloadRequest === "string") return;
+    const to = proxied(event.destination.url);
+    if (to === event.destination.url) return;
+    event.preventDefault();
+    if (event.navigationType === "replace") location.replace(String(to));
+    else location.assign(String(to));
+  });
+
+  // The proxy makes the site's own session cookies last and scopes its domain to the artifact, and these are the ones its scripts set.
+  const cookieOf = (text: string): string => {
+    const domain = /;\s*domain\s*=\s*\.?([^;]*)/i.exec(text)?.[1]?.trim().toLowerCase();
+    const own = text.replace(/;\s*domain\s*=[^;]*/gi, "");
+    const lasting = /;\s*(expires|max-age)\s*=/i.test(own) ? own : `${own}; max-age=34560000`;
+    const isOwn = !!domain && !!host && (host === domain || host.endsWith(`.${domain}`));
+    return isOwn ? `${lasting}; domain=${domain}${tail}` : lasting;
+  };
   const jar = Object.getOwnPropertyDescriptor(Document.prototype, "cookie");
   const { get: read, set: write } = jar ?? {};
   if (read && write)
@@ -89,8 +147,7 @@
         return read.call(this) as string;
       },
       set(this: Document, value: unknown): void {
-        const text = String(value);
-        write.call(this, /;\s*(expires|max-age)\s*=/i.test(text) ? text : `${text}; max-age=34560000`);
+        write.call(this, cookieOf(String(value)));
       },
     });
 

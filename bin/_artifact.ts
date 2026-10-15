@@ -14,6 +14,7 @@ import {
   record,
   resolve,
   scaffold,
+  sessionEntries,
   stamp,
   TEMPLATES,
 } from "../lib/artifact/store.ts";
@@ -149,7 +150,7 @@ const VERBS: Record<string, Spec> = {
     run: async ({ positionals: [slug = ""], flags }) => {
       const site = urlGiven(slug);
       if (site) {
-        const { record: entry } = await openRecord({ typed: true, url: site });
+        const { record: entry } = openRecord({ reuse: sessionEntries(), url: site });
         record(entry.slug);
         if (flags.has("browser") || flags.has("web")) browse(entry.url);
         else

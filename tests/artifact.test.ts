@@ -208,80 +208,74 @@ describe("a .md outside the folder", () => {
 });
 
 describe("web entries", () => {
-  test("a URL becomes one entry per site, which keeps its port and remembers the last page opened", async () => {
-    process.env.CLAUDE_CONFIG_DIR = config;
-    const { openRecord, webSlug } = await import("../lib/web/records.ts");
-    const { parseTarget } = await import("../lib/web/target.ts");
+  test("what is typed opens as the address it names, or as a search, the way a browser's bar reads it", async () => {
+    const { addressOf, parseTarget } = await import("../lib/web/target.ts");
     assert.equal(parseTarget("localhost:3000/guide/hooks")?.href, "http://localhost:3000/guide/hooks");
     assert.equal(parseTarget("docs.mode.dev/guide")?.href, "https://docs.mode.dev/guide");
-    assert.equal(parseTarget("ftp://files.dev"), undefined);
-    assert.equal(parseTarget("  "), undefined);
-
-    const { record: first } = await openRecord({ url: new URL("http://localhost:3000/guide") });
-    const { isNew, record: again } = await openRecord({
-      title: "Mode docs",
-      url: new URL("http://localhost:3000/guide/slots"),
-    });
-    const { record: other } = await openRecord({ url: new URL("http://127.0.0.1:5173/") });
-    const hash = createHash("sha1").update("http://localhost:3000").digest("hex").slice(0, 6);
-    assert.equal(first.slug, `localhost-3000--${hash}`);
-    assert.deepEqual(
-      [isNew, again.slug, again.port, again.url, again.title],
-      [false, first.slug, first.port, "http://localhost:3000/guide/slots", "Mode docs"],
-    );
-    assert.equal(other.port, first.port + 1);
-    assert.equal(webSlug(new URL("https://docs.mode.dev")).replace(/--.*/, ""), "docs-mode-dev-443");
+    assert.equal(parseTarget("myapp.localhost")?.href, "http://myapp.localhost/");
+    assert.equal(parseTarget("intranet:8080")?.href, "https://intranet:8080/");
+    for (const typed of ["vue", "how to center a div", "ftp://files.dev", "  "])
+      assert.equal(parseTarget(typed), undefined, typed);
+    assert.equal(addressOf("how to center a div")?.href, "https://www.google.com/search?q=how%20to%20center%20a%20div");
+    assert.equal(addressOf("localhost")?.href, "http://localhost/");
+    assert.equal(addressOf(" "), undefined);
   });
 
-  test("www and the https upgrade are one site, and a removed site opened again is back on its own origin", async () => {
-    const { foldWebSites, record: link, sessionEntries } = await import("../lib/artifact/store.ts");
-    const { openRecord, readRecord, removeRecord, restoreRecord, writeRecord } = await import("../lib/web/records.ts");
-    const { record: bare } = await openRecord({ url: new URL("https://mode.dev/") });
-    const { isNew, record: www } = await openRecord({ url: new URL("https://www.mode.dev/guide") });
-    const { record: plain } = await openRecord({ url: new URL("http://mode.dev/") });
-    assert.deepEqual([isNew, www.slug, www.port, plain.slug], [false, bare.slug, bare.port, bare.slug]);
+  test("every open is a new artifact, and only a reuse lands on one already opened on or showing the address", async () => {
+    process.env.CLAUDE_CONFIG_DIR = config;
+    const { openRecord, readRecord, removeRecord, restoreRecord, updateRecord, webSlug } =
+      await import("../lib/web/records.ts");
+    const guide = new URL("http://localhost:3000/guide");
+    const first = openRecord({ url: guide });
+    const second = openRecord({ title: "Mode docs", url: guide });
+    assert.match(first.record.slug, /^localhost-3000-[0-9a-f]{6}$/);
+    assert.deepEqual(
+      [first.isNew, second.isNew, second.record.port, second.record.title],
+      [true, true, first.record.port + 1, "Mode docs"],
+    );
+    assert.notEqual(second.record.slug, first.record.slug);
 
-    const gone = removeRecord(bare.slug);
-    assert.ok(gone && !readRecord(bare.slug));
-    const { isNew: fresh, record: back } = await openRecord({ url: new URL("https://www.mode.dev/") });
-    assert.deepEqual([fresh, back.slug, back.port], [true, bare.slug, bare.port]);
+    const mine = [first.record.slug];
+    assert.deepEqual(
+      [openRecord({ reuse: mine, url: guide }).record.slug, openRecord({ reuse: mine, url: guide }).isNew],
+      [first.record.slug, false],
+    );
+    assert.equal(openRecord({ reuse: mine, url: new URL("http://localhost:3000/other") }).isNew, true);
+    updateRecord(first.record.slug, { url: new URL("https://www.google.com/") });
+    const back = openRecord({ reuse: mine, url: guide });
+    assert.deepEqual(
+      [back.isNew, back.record.url, readRecord(first.record.slug)?.trail?.urls.at(-1)],
+      [false, guide.href, guide.href],
+    );
+
+    const gone = removeRecord(second.record.slug);
+    assert.ok(gone && !readRecord(second.record.slug));
     assert.ok(restoreRecord({ ...gone, threads: [{ id: "t1" }] }));
-    assert.deepEqual(readRecord(bare.slug)?.threads, [{ id: "t1" }]);
+    assert.deepEqual(readRecord(second.record.slug)?.threads, [{ id: "t1" }]);
     assert.equal(restoreRecord({ ...gone, slug: "../out" }), undefined);
-
-    writeRecord({
-      port: 49001,
-      slug: "old-site-80--aaaaaa",
-      threads: [{ id: "a" }],
-      updated: "",
-      url: "http://old.site/",
-      v: 1,
-    });
-    writeRecord({
-      port: 49002,
-      slug: "www-old-site-80--bbbbbb",
-      threads: [],
-      title: "Old",
-      updated: "",
-      url: "http://www.old.site/",
-      v: 1,
-    });
-    link("www-old-site-80--bbbbbb", "abcd1234");
-    foldWebSites();
-    assert.deepEqual(
-      [readRecord("old-site-80--aaaaaa")?.title, readRecord("www-old-site-80--bbbbbb"), sessionEntries("abcd1234")],
-      ["Old", undefined, ["www-old-site-80--bbbbbb", "old-site-80--aaaaaa"]],
-    );
+    assert.match(webSlug(new URL("https://www.reddit.com/r/vue")), /^reddit-[0-9a-f]{6}$/);
+    const long = webSlug(new URL(`https://${"feature-branch-".repeat(3)}mode-docs-team.vercel.app/`));
+    assert.ok(long.length <= 31 && /^[a-z0-9][a-z0-9-]*-[0-9a-f]{6}$/.test(long), long);
   });
 
-  test("a host too long for one DNS label is trimmed, keeping the port and the hash whole", async () => {
-    const { webSlug } = await import("../lib/web/records.ts");
-    const host = `${"feature-branch-".repeat(3)}mode-docs-team.vercel.app`;
-    assert.equal(host.length, 70);
-    const slug = webSlug(new URL(`https://${host}/`));
-    const hash = createHash("sha1").update(`https://${host}`).digest("hex").slice(0, 6);
-    assert.ok(slug.length <= 63, slug);
-    assert.ok(slug.endsWith(`-443--${hash}`) && /^[a-z0-9]/.test(slug), slug);
+  test("an entry from when it was one site keeps its threads, placed on that site's whole address", async () => {
+    const { readRecord } = await import("../lib/web/records.ts");
+    write(
+      join(config, "sidecar", "web", "old-site-80--aaaaaa.json"),
+      JSON.stringify({
+        port: 49001,
+        slug: "old-site-80--aaaaaa",
+        threads: [{ anchor: { label: "Drift", page: "/guide?x=1" }, id: "a" }, { id: "b" }],
+        updated: "",
+        url: "http://old.site/changelog",
+        v: 1,
+      }),
+    );
+    const held = readRecord("old-site-80--aaaaaa");
+    assert.deepEqual(
+      [held?.v, held?.threads],
+      [2, [{ anchor: { label: "Drift", page: "http://old.site/guide?x=1" }, id: "a" }, { id: "b" }]],
+    );
   });
 
   test("resolves by its slug, answers comments in its record, and names the page each one was left on", () => {
@@ -314,7 +308,7 @@ describe("web entries", () => {
     assert.equal(artifact("path", "localhost-4000").stdout.trim(), file);
     assert.equal(artifact("url", slug).stdout.trim(), "http://localhost:4000/guide/hooks");
     assert.match(artifact("list", "--tsv").stdout, new RegExp(`^${slug}\\t${file}$`, "m"));
-    assert.match(artifact("comments", slug).stdout, /#1 {2}open {6}Drift on \/guide\/hooks/);
+    assert.match(artifact("comments", slug).stdout, /#1 {2}open {6}Drift on http:\/\/localhost:4000\/guide\/hooks/);
     assert.equal(artifact("comments", slug, "--resolve", "1", "rewrote it").status, 0);
     const kept = JSON.parse(read(file)) as { port: number; threads: { status: string; replies: unknown[] }[] };
     assert.deepEqual([kept.port, kept.threads[0]?.status, kept.threads[0]?.replies.length], [47490, "resolved", 1]);

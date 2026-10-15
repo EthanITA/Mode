@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { Globe, Trash2 } from "@lucide/vue";
+import { parseTarget } from "~~/lib/web/target";
 import type { ArtifactKind, ArtifactMeta } from "~~/shared/types/artifact";
 
 const KIND: Record<ArtifactKind, string> = {
@@ -41,6 +42,16 @@ watch(
   { immediate: true },
 );
 
+// A link or Claude asked for the artifact already open, maybe on another page, which its record now names.
+async function showAgain(slug: string): Promise<void> {
+  const meta = sc.catalogue.value.find((one) => one.slug === slug);
+  if (meta?.kind !== "web") return;
+  const got = await $fetch<ArtifactMeta>(`/api/artifacts/${slug}`).catch(() => undefined);
+  const at = web.page?.url;
+  if (got?.url && selected.value === slug && (!at || Web.addressOf(got.url) !== Web.addressOf(at)))
+    web.visit(new URL(got.url));
+}
+
 // A page made after the catalogue loaded is not in it yet, so the catalogue is read again before giving up.
 watch(
   () => follow.opening,
@@ -50,6 +61,7 @@ watch(
     if (!isKnown()) sc.catalogue.value = await $fetch<ArtifactMeta[]>("/api/artifacts").catch(() => sc.catalogue.value);
     if (follow.opening !== slug) return;
     follow.opening = undefined;
+    if (slug === selected.value) void showAgain(slug);
     if (isKnown()) selected.value = slug;
   },
   { immediate: true },
@@ -86,11 +98,8 @@ async function openUrl(): Promise<void> {
   try {
     selected.value = (await web.open(url)).slug;
     address.value = "";
-  } catch (error) {
-    refused.value =
-      (error as { statusCode?: number }).statusCode === 400
-        ? "Only http and https addresses open here, such as localhost:3000 or docs.mode.dev."
-        : "The sidecar could not open that address. Try again in a moment.";
+  } catch {
+    refused.value = "The sidecar could not open that. Try again in a moment.";
   } finally {
     isOpening.value = false;
   }
@@ -114,7 +123,7 @@ async function openUrl(): Promise<void> {
         <form
           class="open"
           data-region="open-url"
-          data-tip="Any website or app on this machine opens live here · {enter}"
+          data-tip="An address or a search opens live here, as a tab of its own · {enter}"
           :data-focused="isFocused"
           :data-refused="!!refused"
           @submit.prevent="openUrl"
@@ -137,7 +146,9 @@ async function openUrl(): Promise<void> {
           />
         </form>
         <p v-if="refused" class="hint" data-tone="error" role="alert">{{ refused }}</p>
-        <p v-else-if="isFocused && address.trim()" class="hint">Opens live here, with the comment layer.</p>
+        <p v-else-if="isFocused && address.trim()" class="hint">
+          {{ parseTarget(address) ? "Opens live here, with the comment layer." : "Searches Google for it, live here." }}
+        </p>
       </header>
       <div class="scroll">
         <UiStateMessage v-if="!sc.sessionKey.value" class="empty">No conversation is selected.</UiStateMessage>

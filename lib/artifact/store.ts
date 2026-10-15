@@ -8,7 +8,7 @@ import { head, lines, lstrip, pad, strip, words } from "../text.ts";
 import { documentSlug } from "../sidecar/comments.ts";
 import * as Events from "../sidecar/events.ts";
 import { Tracked } from "../sidecar/tracked.ts";
-import { isWebRecord, listRecords, mergeSites, readRecord, recordPath } from "../web/records.ts";
+import { isWebRecord, listRecords, readRecord, recordPath } from "../web/records.ts";
 import { artifactsDir, expandHome, readPage, root } from "./files.ts";
 import { install } from "./review.ts";
 
@@ -50,21 +50,6 @@ export function record(entry: string, sid?: string): void {
   if (!file) return;
   mkdirSync(dirname(file), { recursive: true });
   if (!sessionEntries(sid).includes(entry)) appendFileSync(file, `${entry}\n`);
-}
-
-// Entries made before www and the https upgrade meant one site fold into one, and each conversation keeps the one it had.
-export function foldWebSites(): void {
-  const merged = mergeSites();
-  const dir = sessionDir();
-  if (!merged.length || !isDir(dir)) return;
-  for (const name of readdirSync(dir).filter((one) => one.startsWith("session-"))) {
-    const file = join(dir, name);
-    const held = lines(readTextSafe(file) ?? "").map(strip);
-    const added = new Set(
-      merged.filter(({ from, to }) => held.includes(from) && !held.includes(to)).map(({ to }) => to),
-    );
-    if (added.size) appendFileSync(file, [...added].map((slug) => `${slug}\n`).join(""));
-  }
 }
 
 export function documents(entries: string[]): Map<string, string> {

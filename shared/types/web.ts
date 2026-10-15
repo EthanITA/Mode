@@ -1,5 +1,5 @@
 export interface WebOpenReply {
-  /** Made by this open, so an entry a redirect passed through can be dropped once the redirect moves on. */
+  /** Made by this open, rather than an artifact of the conversation already showing the address. */
   isNew: boolean;
   port: number;
   slug: string;
@@ -15,9 +15,5 @@ export interface WebTrail {
 export type WebArrival = "push" | "reload" | "replace" | "traverse";
 
 export interface WebServeReply {
-  /** The name the proxy's origin is given: the site's for a remote one, the entry's own for a local app. */
-  jar: string;
   port: number;
-  /** The site's own origin, which a page URL inside the proxy maps back onto. */
-  upstream: string;
 }

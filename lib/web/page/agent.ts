@@ -77,22 +77,14 @@ function schedule(reindex = false): void {
   if (!frame && parent) frame = requestAnimationFrame(layout);
 }
 
-// Another site would load in the frame without the agent, and most refuse to be framed at all.
+// A new tab or the window above would take the page out of the sidecar, so those links open in place.
 function leave(event: MouseEvent): void {
   const link = (event.target as Element | undefined)?.closest?.("a[href]");
-  if (!(link instanceof HTMLAnchorElement) || event.defaultPrevented) return;
-  const to = new URL(link.href, location.href);
-  if (!/^https?:$/.test(to.protocol)) return;
-  if (to.origin === location.origin) {
-    // A new tab would take the page out of the sidecar, so the site's own pages open in place.
-    if (link.target === "_blank") {
-      event.preventDefault();
-      location.assign(to.href);
-    }
-    return;
-  }
+  if (!(link instanceof HTMLAnchorElement) || event.defaultPrevented || event.metaKey || event.ctrlKey) return;
+  const target = link.target || document.querySelector<HTMLBaseElement>("base[target]")?.target || "";
+  if (!/^_(blank|parent|top)$/i.test(target) || !/^https?:$/.test(new URL(link.href, location.href).protocol)) return;
   event.preventDefault();
-  post({ type: "away", url: to.href });
+  location.assign(link.href);
 }
 
 // The frame's own entry when it is the page asked for, which keeps an app's state; a frame that forgot it loads it in place.
@@ -195,6 +187,14 @@ nav?.addEventListener("currententrychange", (event) => {
   how = event.navigationType ?? "push";
   schedule();
 });
+// The bootstrap may have cancelled it to send it through the proxy, in which case the one it starts says so instead.
+nav?.addEventListener("navigate", (event) => {
+  if (!event.defaultPrevented && !event.destination.sameDocument && !event.hashChange)
+    post({ type: "busy", busy: true });
+});
+// A page that intercepts its own navigations never loads a new document, so it says when it is done instead.
+for (const type of ["navigatesuccess", "navigateerror"])
+  nav?.addEventListener(type, () => post({ type: "busy", busy: false }));
 for (const name of ["pushState", "replaceState"] as const) {
   const native = history[name];
   history[name] = function (this: History, ...args: Parameters<History["pushState"]>): void {
@@ -229,8 +229,6 @@ window.addEventListener("message", (event: MessageEvent<Partial<Envelope<Sidecar
     hot = undefined;
     picked = undefined;
     schedule();
-  } else if (message.type === "go") {
-    location.assign(new URL(message.path, location.origin).href);
   } else if (message.type === "step") {
     step(message.by, message.to);
   } else if (message.type === "theme") {

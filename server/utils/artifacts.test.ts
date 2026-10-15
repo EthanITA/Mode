@@ -122,19 +122,15 @@ test("a web entry lists under its host, and a thread left on one of its pages la
   const dir = realpathSync(mkdtempSync(join(tmpdir(), "web-")));
   process.env.CLAUDE_CONFIG_DIR = dir;
   try {
+    const page = "http://localhost:3000/guide/hooks";
     const {
       record: { slug },
-    } = await openRecord({ url: new URL("http://localhost:3000/guide/hooks") });
-    const made = applyWebReview({
-      action: "create",
-      anchor: { label: "Drift", page: "/guide/hooks" },
-      body: "simpler?",
-      slug,
-    });
+    } = openRecord({ url: new URL(page) });
+    const made = applyWebReview({ action: "create", anchor: { label: "Drift", page }, body: "simpler?", slug });
     if (!made.ok) assert.fail(made.reason);
     const [row] = await listArtifacts();
     assert.deepEqual([row?.kind, row?.title, row?.threadCount], ["web", "localhost:3000", 1]);
-    assert.equal(readRecord(slug)?.threads[0]?.anchor?.page, "/guide/hooks");
+    assert.equal(readRecord(slug)?.threads[0]?.anchor?.page, page);
     assert.deepEqual(applyWebReview({ action: "create", body: "x", slug: "gone-80--000000" }), {
       ok: false,
       reason: "not-found",

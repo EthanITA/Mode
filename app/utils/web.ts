@@ -1,11 +1,12 @@
+import { type ProxyPlace, WebHost } from "../../lib/web/host.ts";
 import { parseTarget } from "../../lib/web/target.ts";
 import type { ReviewThread } from "../../shared/types/artifact.ts";
 
-export interface WebOriginOptions {
-  /** The sidecar's own address, whose host the proxy's is named under. */
+export interface WebPlaceOptions {
+  /** The sidecar's own address, whose host every artifact's sites are named under. */
   here: URL;
-  jar: string;
   port: number;
+  slug: string;
 }
 
 export interface WebElsewhere {
@@ -13,11 +14,8 @@ export interface WebElsewhere {
   page: string;
 }
 
-const isIp = (host: string): boolean => host.startsWith("[") || /^\d+(\.\d+){3}$/.test(host);
-
-// A host per jar keeps sites' cookies apart, which a port alone does not; an IP has no subdomain to give.
-function origin({ here, jar, port }: WebOriginOptions): string {
-  return `http://${isIp(here.hostname) ? here.hostname : `${jar}.${here.hostname}`}:${port}`;
+function placeOf({ here, port, slug }: WebPlaceOptions): ProxyPlace {
+  return { base: WebHost.baseOf({ host: here.hostname, slug }), port };
 }
 
 function pageOf(href: string): string {
@@ -31,16 +29,6 @@ function addressOf(href: string): string {
   return `${at.origin}${at.pathname}${at.search}`;
 }
 
-function srcOf({ proxy, url }: { proxy: string; url: string }): string {
-  const at = new URL(url);
-  return `${proxy}${at.pathname}${at.search}${at.hash}`;
-}
-
-function upstreamOf(href: string, { proxy, upstream }: { proxy: string; upstream: string }): string {
-  const at = new URL(href);
-  return at.origin === proxy ? `${upstream}${at.pathname}${at.search}${at.hash}` : href;
-}
-
 // The address as one would type it: the scheme goes only when typing it back would bring the same one.
 function typed(href: string): string {
   const at = new URL(href);
@@ -48,12 +36,18 @@ function typed(href: string): string {
   return parseTarget(bare)?.href === at.href ? bare : href;
 }
 
+// Shorter when it is on the site already showing, the way a tab names a page of its own site.
+function shortOf(address: string, { from }: { from?: string }): string {
+  const at = new URL(address);
+  return from && new URL(from).origin === at.origin ? pageOf(address) : `${at.host}${pageOf(address)}`;
+}
+
 function isLocal(href: string): boolean {
   const host = new URL(href).hostname;
   return host === "localhost" || host.endsWith(".localhost") || host.startsWith("127.") || host === "[::1]";
 }
 
-const pageOfThread = (thread: ReviewThread): string => thread.anchor?.page ?? "/";
+const pageOfThread = (thread: ReviewThread): string => thread.anchor?.page ?? "";
 
 function threadsOn(threads: ReviewThread[], page: string): ReviewThread[] {
   return threads.filter((thread) => pageOfThread(thread) === page);
@@ -64,7 +58,7 @@ function elsewhere(threads: ReviewThread[], page: string): WebElsewhere[] {
   const groups = new Map<string, { count: number; latest: string }>();
   for (const thread of threads) {
     const on = pageOfThread(thread);
-    if (on === page || thread.status === "resolved") continue;
+    if (!on || on === page || thread.status === "resolved") continue;
     const held = groups.get(on) ?? { count: 0, latest: "" };
     const at = thread.updated ?? thread.at;
     groups.set(on, { count: held.count + 1, latest: at > held.latest ? at : held.latest });
@@ -74,4 +68,15 @@ function elsewhere(threads: ReviewThread[], page: string): WebElsewhere[] {
     .map(([on, { count }]) => ({ count, page: on }));
 }
 
-export const Web = { addressOf, elsewhere, isLocal, origin, pageOf, srcOf, threadsOn, typed, upstreamOf };
+export const Web = {
+  addressOf,
+  elsewhere,
+  isLocal,
+  pageOf,
+  placeOf,
+  proxied: WebHost.proxied,
+  shortOf,
+  threadsOn,
+  typed,
+  upstream: WebHost.upstream,
+};

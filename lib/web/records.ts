@@ -1,23 +1,27 @@
-import { createHash } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { Agent as HttpAgent, get as httpGet, type IncomingMessage } from "node:http";
-import { Agent as HttpsAgent, get as httpsGet } from "node:https";
+import { Agent as HttpAgent } from "node:http";
+import { Agent as HttpsAgent } from "node:https";
 import { basename, dirname, join } from "node:path";
+import { getDomainWithoutSuffix } from "tldts";
 import type { WebTrail } from "../../shared/types/web.ts";
 import { Trail } from "../../shared/utils/trail.ts";
 import { readTextSafe } from "../files.ts";
 import { sidecarHome } from "../mode/paths.ts";
 
-/** One site the sidecar has opened, whose file is that entry's "path" for the server and the CLI alike. */
+/** One web artifact, a tab of its own, whose file is that entry's "path" for the server and the CLI alike. */
 export interface WebRecord {
+  /** The address it was opened on, which a link or the CLI opening that address again finds it by. */
+  opened?: string;
   port: number;
   slug: string;
   threads: unknown[];
   title?: string;
   trail?: WebTrail;
   updated: string;
+  /** The page it shows now, on whichever site it has gone to. */
   url: string;
-  v: 1;
+  v: 2;
 }
 
 export interface OpenedRecord {
@@ -25,15 +29,9 @@ export interface OpenedRecord {
   record: WebRecord;
 }
 
-// Outlives the entry, so a site opened again finds its cookies and storage under the same proxy origin.
-interface SiteOrigin {
-  port: number;
-  slug: string;
-}
-
 const FIRST_PORT = 47481;
-// The slug is the proxy's host label, and a DNS label past 63 characters never resolves.
-const LABEL_MAX = 63;
+// The slug is a label of every proxy host, and a hostname past 253 characters never resolves.
+const NAME_MAX = 24;
 export function webHome(): string {
   return join(sidecarHome(), "web");
 }
@@ -46,77 +44,53 @@ export function isWebRecord(path: string): boolean {
   return dirname(path) === webHome() && path.endsWith(".json");
 }
 
-const originsPath = (): string => join(sidecarHome(), "web-origins.json");
-
-const HOPS = 5;
-const LANDING_MS = 10_000;
-const bare = (host: string): string => host.toLowerCase().replace(/^www\./, "");
-
 // Node gives up on each address after 250ms, which no connect beats on a slow link, so every site would read as down.
 const PATIENT = { autoSelectFamilyAttemptTimeout: 5000, keepAlive: true, maxFreeSockets: 64, maxSockets: 256 };
 export const siteAgents = { http: new HttpAgent(PATIENT), https: new HttpsAgent(PATIENT) };
 
-// google.com and www.google.com, on http or https, are one site and so one entry.
-function siteOf(url: URL): string {
-  return `${bare(url.hostname)}${url.port ? `:${url.port}` : ""}`;
-}
-
-function answer(url: URL, signal: AbortSignal): Promise<{ location?: string; status: number }> {
-  return new Promise((resolve, reject) => {
-    const done = (res: IncomingMessage): void => {
-      res.destroy();
-      resolve({ location: res.headers.location, status: res.statusCode ?? 0 });
-    };
-    const req =
-      url.protocol === "https:"
-        ? httpsGet(url, { agent: siteAgents.https, signal }, done)
-        : httpGet(url, { agent: siteAgents.http, signal }, done);
-    req.on("error", reject);
-  });
-}
-
-export async function landing(url: URL): Promise<URL> {
-  let at = url;
-  const signal = AbortSignal.timeout(LANDING_MS);
-  try {
-    for (let hop = 0; hop < HOPS; hop += 1) {
-      const { location, status } = await answer(at, signal);
-      if (status < 300 || status >= 400 || !location) return at;
-      const next = new URL(location, at);
-      // A move within the origin is the frame's to follow, and one off the web leads to no site.
-      if (next.origin === at.origin || !/^https?:$/.test(next.protocol)) return at;
-      at = next;
-    }
-  } catch {}
-  return at;
-}
-
 export function webSlug(url: URL): string {
-  const port = url.port || (url.protocol === "https:" ? "443" : "80");
-  const tail = `-${port}--${createHash("sha1").update(url.origin).digest("hex").slice(0, 6)}`;
-  const host = url.hostname
+  const name = (getDomainWithoutSuffix(url.hostname) || url.hostname)
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return `${(host || "site").slice(0, LABEL_MAX - tail.length).replace(/-+$/, "")}${tail}`;
+    .replace(/^-+|-+$/g, "")
+    .slice(0, NAME_MAX)
+    .replace(/-+$/, "");
+  return `${name || "site"}${url.port ? `-${url.port}` : ""}-${randomBytes(3).toString("hex")}`;
 }
 
 const SLUG = /^[a-z0-9-]+$/;
 
+// The hash only scrolls, so an address with one is the page without it.
+function addressOf(href: string): string {
+  const at = new URL(href);
+  return `${at.origin}${at.pathname}${at.search}`;
+}
+
+// A thread from when an entry was one site kept only its path, which was always on the entry's own origin.
+function placed(thread: unknown, origin: string): unknown {
+  if (typeof thread !== "object" || !thread) return thread;
+  const { anchor } = thread as { anchor?: { page?: unknown } };
+  if (typeof anchor?.page !== "string" || !anchor.page.startsWith("/")) return thread;
+  return { ...thread, anchor: { ...anchor, page: `${origin}${anchor.page}` } };
+}
+
 function recordOf(raw: unknown): WebRecord | undefined {
   if (typeof raw !== "object" || !raw) return undefined;
-  const rec = raw as Partial<WebRecord>;
+  const rec = raw as Partial<Omit<WebRecord, "v">> & { v?: number };
   if (typeof rec.slug !== "string" || !SLUG.test(rec.slug)) return undefined;
   if (typeof rec.url !== "string" || !URL.canParse(rec.url) || typeof rec.port !== "number") return undefined;
+  const threads = Array.isArray(rec.threads) ? rec.threads : [];
+  const origin = new URL(rec.url).origin;
   return {
+    opened: typeof rec.opened === "string" && URL.canParse(rec.opened) ? rec.opened : undefined,
     port: rec.port,
     slug: rec.slug,
-    threads: Array.isArray(rec.threads) ? rec.threads : [],
+    threads: rec.v === 2 ? threads : threads.map((thread) => placed(thread, origin)),
     title: typeof rec.title === "string" && rec.title ? rec.title : undefined,
     trail: Trail.of(rec.trail),
     updated: typeof rec.updated === "string" ? rec.updated : "",
     url: rec.url,
-    v: 1,
+    v: 2,
   };
 }
 
@@ -145,118 +119,92 @@ export function listRecords(): WebRecord[] {
     .filter((record): record is WebRecord => Boolean(record));
 }
 
-function writeJson(file: string, value: unknown): void {
+export function writeRecord(record: WebRecord): void {
+  const file = recordPath(record.slug);
   mkdirSync(dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  writeFileSync(tmp, `${JSON.stringify(value)}\n`);
+  writeFileSync(tmp, `${JSON.stringify(record)}\n`);
   renameSync(tmp, file);
 }
 
-function origins(): Record<string, SiteOrigin> {
-  const raw = parse(readTextSafe(originsPath()));
-  return typeof raw === "object" && raw ? (raw as Record<string, SiteOrigin>) : {};
-}
-
-function remember(record: WebRecord): void {
-  const all = origins();
-  const site = siteOf(new URL(record.url));
-  if (all[site]?.port === record.port && all[site]?.slug === record.slug) return;
-  writeJson(originsPath(), { ...all, [site]: { port: record.port, slug: record.slug } });
-}
-
-export function writeRecord(record: WebRecord): void {
-  writeJson(recordPath(record.slug), record);
-  remember(record);
-}
-
-/** The lowest proxy port no site holds, skipping any the caller found taken by something else. */
+/** The lowest proxy port no web artifact holds, skipping any the caller found taken by something else. */
 export function freePort(skip: number[] = []): number {
-  const held = [...listRecords(), ...Object.values(origins())].map((one) => one.port);
-  const taken = new Set([...held, ...skip]);
+  const taken = new Set([...listRecords().map((one) => one.port), ...skip]);
   let port = FIRST_PORT;
   while (taken.has(port)) port += 1;
   return port;
 }
 
-// Two entries of one site predate one site meaning one entry, and the one with the most on it is the one kept.
-function byWeight(a: WebRecord, b: WebRecord): number {
-  return (
-    b.threads.length - a.threads.length ||
-    Number(Boolean(b.title)) - Number(Boolean(a.title)) ||
-    b.updated.localeCompare(a.updated)
-  );
-}
-
-function siteEntry(url: URL): WebRecord | undefined {
-  const site = siteOf(url);
-  return listRecords()
-    .filter((one) => siteOf(new URL(one.url)) === site)
-    .sort(byWeight)[0];
-}
-
 export interface OpenRecordOptions {
+  /** Artifacts that may be reused, a conversation's own, so a link opened again lands on the tab already showing it. */
+  reuse?: string[];
   title?: string;
-  trail?: WebTrail;
-  /** Typed by someone, so a site not held yet is chased to the last stop of its redirects. */
-  typed?: boolean;
   url: URL;
 }
 
-function where({ held, typed, url }: { held?: WebRecord; typed: boolean; url: URL }): Promise<URL> | URL {
-  if (!typed) return url;
-  // A held site skips the probe, which has none of the frame's cookies and would land on its login.
-  if (held) return new URL(`${url.pathname}${url.search}${url.hash}`, new URL(held.url).origin);
-  return landing(url);
+function reusable({ reuse, url }: { reuse: string[]; url: URL }): WebRecord | undefined {
+  const at = addressOf(url.href);
+  return listRecords()
+    .filter((one) => reuse.includes(one.slug))
+    .find((one) => addressOf(one.url) === at || (!!one.opened && addressOf(one.opened) === at));
 }
 
-/** Reuses the site's entry, so its port and with it the site's storage survive, and remembers where it was opened. */
-export async function openRecord({ title, trail, typed = false, url }: OpenRecordOptions): Promise<OpenedRecord> {
-  const at = await where({ held: siteEntry(url), typed, url });
-  const held = siteEntry(at);
-  const home = held ? undefined : origins()[siteOf(at)];
+/** A new web artifact, its own session, unless one in reuse already shows or was opened on the address. */
+export function openRecord({ reuse = [], title, url }: OpenRecordOptions): OpenedRecord {
+  const held = reusable({ reuse, url });
+  const now = new Date().toISOString();
+  if (held) {
+    const moved = addressOf(held.url) !== addressOf(url.href);
+    const record: WebRecord = moved
+      ? {
+          ...held,
+          trail: Trail.arrive(held.trail ?? { at: 0, urls: [] }, { how: "push", url: url.href }),
+          updated: now,
+          url: url.href,
+        }
+      : held;
+    if (moved) writeRecord(record);
+    return { isNew: false, record };
+  }
   const record: WebRecord = {
-    port: held?.port ?? home?.port ?? freePort(),
-    slug: held?.slug ?? home?.slug ?? webSlug(at),
-    threads: held?.threads ?? [],
-    title: title || held?.title,
-    trail: trail ?? held?.trail,
-    updated: new Date().toISOString(),
-    url: at.href,
-    v: 1,
+    opened: url.href,
+    port: freePort(),
+    slug: webSlug(url),
+    threads: [],
+    ...(title ? { title } : {}),
+    updated: now,
+    url: url.href,
+    v: 2,
   };
   writeRecord(record);
-  return { isNew: !held, record };
+  return { isNew: true, record };
 }
 
-const idOf = (thread: unknown): string =>
-  typeof thread === "object" && thread && "id" in thread ? String(thread.id) : JSON.stringify(thread);
-
-export function mergeSites(): { from: string; to: string }[] {
-  const sites = new Map<string, WebRecord[]>();
-  for (const one of listRecords()) {
-    const site = siteOf(new URL(one.url));
-    sites.set(site, [...(sites.get(site) ?? []), one]);
-  }
-  const merged: { from: string; to: string }[] = [];
-  for (const group of sites.values()) {
-    const [kept, ...rest] = group.sort(byWeight);
-    if (!kept || !rest.length) continue;
-    const ids = new Set(kept.threads.map(idOf));
-    const threads = [...kept.threads, ...rest.flatMap((one) => one.threads).filter((thread) => !ids.has(idOf(thread)))];
-    writeRecord({ ...kept, threads, title: kept.title || rest.find((one) => one.title)?.title });
-    for (const gone of rest) {
-      rmSync(recordPath(gone.slug), { force: true });
-      merged.push({ from: gone.slug, to: kept.slug });
-    }
-  }
-  return merged;
+export interface PageUpdate {
+  title?: string;
+  trail?: WebTrail;
+  url: URL;
 }
 
-/** Deletes the entry and its threads, while its origin stays remembered, so the site opened again finds its storage. */
+/** Where the artifact's page went, so the list and a reopen land where the person left off. */
+export function updateRecord(slug: string, { title, trail, url }: PageUpdate): WebRecord | undefined {
+  const held = readRecord(slug);
+  if (!held) return undefined;
+  const record: WebRecord = {
+    ...held,
+    title: title || held.title,
+    trail: trail ?? held.trail,
+    updated: new Date().toISOString(),
+    url: url.href,
+  };
+  writeRecord(record);
+  return record;
+}
+
+/** Deletes the artifact and its threads; its cookies and storage stay with its slug in the browser. */
 export function removeRecord(slug: string): WebRecord | undefined {
   const gone = readRecord(slug);
   if (!gone) return undefined;
-  remember(gone);
   rmSync(recordPath(slug), { force: true });
   return gone;
 }
