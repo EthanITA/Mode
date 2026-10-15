@@ -1,7 +1,8 @@
 <script lang="ts" setup>
+import type { SurfaceVariant } from "@cela/design";
 import { ChevronLeft, ChevronRight, ExternalLink } from "@lucide/vue";
 
-const { slug } = defineProps<{ slug: string }>();
+const { slug, variant } = defineProps<{ slug: string; variant: SurfaceVariant }>();
 
 const sc = useSidecar();
 const web = $web();
@@ -34,7 +35,7 @@ function track(): void {
     :data-editing="isEditing"
     pad="none"
     shape="pill"
-    variant="glass-liquid"
+    :variant="variant"
   >
     <ChromeAction
       data-region="web-back"

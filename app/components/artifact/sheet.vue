@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { SurfaceVariant } from "@cela/design";
 import { EASE_CSS, MOTION_DURATION, prefersReducedMotion } from "@cela/design/utils/motion";
 import { Maximize2, Minimize2, PanelLeft } from "@lucide/vue";
 import { useEventListener } from "@vueuse/core";
@@ -29,6 +30,8 @@ const slot = useTemplateRef<HTMLElement>("slot");
 const preview = useTemplateRef<ComponentPublicInstance>("preview");
 const read = useTemplateRef<HTMLElement>("read");
 const hasBar = computed(() => !!(path && slug && conversation));
+// Glass only when grown, since a raised pill in the sheet's header reads as one more of the app's islands.
+const pill = computed<SurfaceVariant>(() => (isExpanded.value ? "glass-liquid" : "sunken"));
 const list = computed(() => LIST[chrome.view.current.value] ?? "Artifacts");
 const title = computed(() => {
   const meta = slug ? sc.catalogue.value.find((one) => one.slug === slug) : undefined;
@@ -179,15 +182,8 @@ onBeforeUnmount(() => {
           />
         </UiSurface>
         <div class="middle">
-          <WebTitle v-if="kind === 'web' && slug && conversation" :slug="slug" />
-          <UiSurface
-            v-else
-            class="island named"
-            data-region="title-island"
-            pad="none"
-            shape="pill"
-            variant="glass-liquid"
-          >
+          <WebTitle v-if="kind === 'web' && slug && conversation" :slug="slug" :variant="pill" />
+          <UiSurface v-else class="island named" data-region="title-island" pad="none" shape="pill" :variant="pill">
             <span class="name">{{ title }}</span>
           </UiSurface>
         </div>
