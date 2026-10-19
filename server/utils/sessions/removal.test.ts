@@ -33,6 +33,7 @@ function seed(key: string, id: string): void {
   put(join(root, "mode", "state", `session-${key}.mode`), "swarm\n");
   put(join(root, "mode", "state", `session-${key}.style`), "edu\n");
   put(join(root, "sidecar", "versions", key, "HEAD"), "ref\n");
+  put(join(root, "sidecar", "links", `${key}.json`), "{}\n");
   put(join(root, "projects", "-tmp", `${id}.jsonl`), '{"transcript":"stays"}\n');
 }
 
@@ -54,7 +55,7 @@ afterEach(() => {
 test("every place the session kept state goes, and the transcript and the neighbour stay", async () => {
   const outcome = await removeSession(KEY);
   assert.equal(outcome.refused, undefined);
-  assert.equal(outcome.removed.length, 8);
+  assert.equal(outcome.removed.length, 9);
   assert.deepEqual(
     survivors().filter((path) => path.includes(KEY)),
     [`projects/-tmp/${ID}.jsonl`],

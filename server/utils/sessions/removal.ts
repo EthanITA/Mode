@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { readTextSafe } from "../../../lib/files.ts";
 import { configRoot, sidecarHome, stateHome } from "../../../lib/mode/paths.ts";
 import { artifactListsHome, canvasHome, isKey, jobsHome, keyOf, teamsHome } from "./paths.ts";
+import { Links } from "./links.ts";
 import { isAlive, liveEntries } from "./registry.ts";
 import { jobs } from "./jobs.ts";
 
@@ -95,6 +96,7 @@ function targets(key: string): string[] {
     join(configRoot(), "tasks", `session-${key}`),
     join(teamsHome(), `session-${key}`),
     join(sidecarHome(), "versions", key),
+    Links.ledger(key),
     ...modeFiles,
   ];
 }

@@ -1,5 +1,6 @@
 import { watch, type FSWatcher } from "node:fs";
 import { conversationOf } from "~~/server/utils/sessions/conversation";
+import { Links } from "~~/server/utils/sessions/links";
 import { transcriptIndex } from "~~/server/utils/sessions/transcripts";
 
 export default defineEventHandler((event): Promise<void> => {
@@ -16,7 +17,10 @@ export default defineEventHandler((event): Promise<void> => {
     for (const turn of slice.turns) {
       void stream.push({ event: "turn", data: JSON.stringify(turn) });
     }
+    Links.adopt({ key, isLive: true });
   };
+
+  Links.adopt({ key });
 
   const path = transcriptIndex().get(key)?.path;
   if (path) {

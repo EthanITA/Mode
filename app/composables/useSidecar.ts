@@ -71,6 +71,10 @@ export function loadSidecar(): void {
     });
     const byKey = new Map(fresh.map((s) => [s.key, s]));
     const known = new Set(sc.sessions.value.map((s) => s.key));
+    const listed = new Set(sc.sessions.value.find((s) => s.key === sc.sessionKey.value)?.artifacts);
+    // A chat's links are recorded with no event, so the catalogue would never hold them otherwise.
+    if (byKey.get(sc.sessionKey.value ?? "")?.artifacts.some((slug) => !listed.has(slug)))
+      sc.catalogue.value = await $fetch<ArtifactMeta[]>("/api/artifacts");
     // Left out of a live answer means its process has ended.
     const kept = sc.sessions.value.map(
       (s) => byKey.get(s.key) ?? (s.live ? { ...s, live: false, status: undefined } : s),

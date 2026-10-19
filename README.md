@@ -231,7 +231,10 @@ local network through it, the way Chrome's Private Network Access draws the line
 own back and forward history in its record, so ⌘[ and ⌘] step through it after a switch or a reload, and
 ⌘L edits the address. A link clicked in the sidecar opens there too, a web address as a Web entry and a local
 `.md` or `.html` as a File entry, which `~/.claude/sidecar/tracked.json` remembers until you remove it, so
-the sidecar serves only files someone opened. Three lookups are worth knowing:
+the sidecar serves only files someone opened. A web address you or Claude write in the chat, outside
+code, becomes a Web entry of that conversation too, once per address and read off the transcript, so a
+link you remove stays removed, and one said while the sidecar shows the conversation gets the toast a new
+page gets. Three lookups are worth knowing:
 
 | It resolves           | In this order                                                                                                   |
 | --------------------- | --------------------------------------------------------------------------------------------------------------- |
