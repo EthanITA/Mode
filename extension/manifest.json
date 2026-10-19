@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Mode sidecar",
+  "version": "1.0.0",
+  "description": "Opens Web artifacts in the Mode sidecar at their real address, signed in as in your tabs.",
+  "minimum_chrome_version": "120",
+  "background": { "service_worker": "background.js", "type": "module" },
+  "permissions": ["contentSettings", "declarativeNetRequestWithHostAccess", "storage", "webNavigation"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    { "matches": ["http://sidecar.localhost/*"], "js": ["announce.js"], "run_at": "document_start" },
+    { "matches": ["<all_urls>"], "js": ["inject.js"], "run_at": "document_start", "all_frames": true }
+  ],
+  "web_accessible_resources": [
+    { "resources": ["frame.html"], "matches": ["http://sidecar.localhost/*"] },
+    { "resources": ["page/*"], "matches": ["<all_urls>"] }
+  ]
+}

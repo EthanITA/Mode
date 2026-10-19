@@ -62,3 +62,9 @@ export type SidecarMessage =
   | { type: "wide"; wide: boolean };
 
 export type Envelope<T> = T & { channel: typeof CHANNEL };
+
+export interface RelayNotice {
+  relay: string;
+  type: "down" | "loaded";
+  url: string;
+}
