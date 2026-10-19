@@ -133,6 +133,49 @@ describe("namespace-guard", () => {
   });
 });
 
+describe("token-guard", () => {
+  test("flags a raw colour, duration, curve, arbitrary Tailwind value and size in what a style edit adds", () => {
+    const said = wrote(
+      "token-guard",
+      "card.vue",
+      [
+        "  color: #7c3aed;",
+        "  transition: opacity 200ms ease;",
+        "  transition-timing-function: cubic-bezier(.2, 0, 0, 1);",
+        '  <div class="w-[340px] bg-[#fff]">',
+        "  font-size: 13px;",
+        "  animate(el, { duration: 300 })",
+      ].join("\n"),
+      { tool: "Edit" },
+    );
+    assert.deepEqual(
+      [...said.matchAll(/line (\d+) /g)].map((match) => match[1]),
+      ["1", "2", "3", "4", "5", "6"],
+    );
+  });
+
+  test("token definitions, motion resets, hairlines, allowed brackets, marked lines and scripts pass", () => {
+    const quiet = [
+      wrote("token-guard", "palette.css", ":root {\n  --primary: #7c3aed;\n  --ease-out: cubic-bezier(.23, 1, .32, 1);\n}\n"),
+      wrote("token-guard", "reduce.css", "  transition-duration: 0ms;\n  animation-duration: 0.01ms;\n", { tool: "Edit" }),
+      wrote(
+        "token-guard",
+        "layout.vue",
+        '  border: 1px solid var(--border);\n  <div class="grid-cols-[1fr_2fr] w-[calc(100%-var(--rail))] max-h-[60vh]">\n  transition-duration: var(--duration-fast);\n  animation: creep 12s cubic-bezier(0.1, 0.65, 0.2, 1) forwards;\n  <code class="text-[0.9em]">\n',
+        { tool: "Edit" },
+      ),
+      wrote("token-guard", "brand.css", "  color: #1da1f2; /* no token: the vendor's brand colour */\n", { tool: "Edit" }),
+      wrote("token-guard", "theme.ts", 'export const ink = "#17151e"\n'),
+      wrote("token-guard", "fallback.css", "  font-size: var(--fs-base, 16px);\n  color: var(--ink, #17151e);\n", {
+        tool: "Edit",
+      }),
+      wrote("token-guard", "skills/create-artifact/assets/pack.css", "  padding: 72px 24px;\n", { tool: "Edit" }),
+      wrote("token-guard", "design/css/prose.css", "  font-size: 15px;\n  border-radius: 6px;\n", { tool: "Edit" }),
+    ];
+    assert.deepEqual(quiet, ["", "", "", "", "", "", "", ""]);
+  });
+});
+
 describe("memory-guard, on a durable rule file", () => {
   const rules = (name: string) => join(".claude", "rules", name);
 

@@ -11,6 +11,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **Hand-rolled styling is flagged as it is written.** `token-guard` reads what a Write or Edit adds to a
+  `.vue` or `.css` file and names each raw colour, duration, `cubic-bezier` curve, arbitrary Tailwind
+  bracket holding a px, rem, ms or hex value, and raw type, radius or spacing size, pointing at the token
+  or utility the design system already has. Token definitions, keyframe animations, reduced-motion resets,
+  `var()` fallbacks, generated files and a design system's own stylesheets pass, and a line that really
+  has no token says why in a `no token` comment.
 - **Open a URL live, with the comment layer.** The Open a URL field in Artifacts, or `artifact open <url>`,
   shows any local app or website in the sheet through a proxy on this machine that injects the comment
   agent, so a block takes a thread, Ask Claude and the tray the way an artifact's does, and Claude answers
