@@ -30,7 +30,12 @@ declare namespace chrome {
     const onInstalled: { addListener(listener: () => void): void };
   }
 
+  namespace scripting {
+    function executeScript(details: { files: string[]; target: { tabId: number } }): Promise<unknown>;
+  }
+
   namespace tabs {
+    function query(filter: { url?: string }): Promise<Tab[]>;
     function sendMessage(tabId: number, message: unknown, options?: { frameId?: number }): Promise<unknown>;
     const onRemoved: { addListener(listener: (tabId: number) => void): void };
   }

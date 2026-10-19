@@ -243,6 +243,11 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
   }
 });
 
+// The extension says so again when it loads or reloads under an open sidecar, and a page already showing moves onto its relay.
+useEventListener(document, "sidecar-relay", () => {
+  if (src.value) web.reload();
+});
+
 // A relay's own load fires once, so the extension says when the site in it loads or fails, as the proxy's pages did.
 useEventListener(document, "sidecar-relay-frame", (event: Event) => {
   if (!isRelayed.value || !src.value || !(event instanceof CustomEvent) || typeof event.detail !== "string") return;

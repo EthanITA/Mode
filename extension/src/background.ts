@@ -12,6 +12,13 @@ function allowCookiesUnderSidecar(): void {
   });
 }
 
+// Chrome runs content scripts only in pages loaded after it, so a sidecar already open would stay on the proxy.
+async function announceOpenSidecars(): Promise<void> {
+  const tabs = await chrome.tabs.query({ url: "http://sidecar.localhost/*" });
+  for (const { id } of tabs)
+    if (id) await chrome.scripting.executeScript({ files: ["announce.js"], target: { tabId: id } }).catch(() => undefined);
+}
+
 async function frameTab(tabId: number): Promise<void> {
   const rules = await chrome.declarativeNetRequest.getSessionRules();
   const stale = rules.filter((rule) => rule.condition.tabIds?.includes(tabId)).map((rule) => rule.id);
@@ -47,7 +54,10 @@ async function tellFrame(type: RelayNotice["type"], details: chrome.webNavigatio
   await chrome.tabs.sendMessage(details.tabId, notice, { frameId: 0 }).catch(() => undefined);
 }
 
-chrome.runtime.onInstalled.addListener(allowCookiesUnderSidecar);
+chrome.runtime.onInstalled.addListener(() => {
+  allowCookiesUnderSidecar();
+  void announceOpenSidecars();
+});
 chrome.runtime.onStartup.addListener(allowCookiesUnderSidecar);
 
 const typeOf = (message: unknown): unknown =>
