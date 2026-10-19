@@ -54,10 +54,12 @@ function get(port: number, path: string, headers: Record<string, string> = {}): 
 // The proxy host the browser would use for a site inside this test's artifact.
 const hostOf = (site: string, port: number): string => new URL(WebHost.proxied(site, { base: BASE, port }) ?? "").host;
 
-test("a page comes back framable, the page's nonce on the proxy's scripts and its absolute scripts and redirects kept inside", async () => {
+test("a page comes back framable, the page's nonce on the proxy's scripts and its absolute scripts, frames and redirects kept inside", async () => {
   let seen: IncomingHttpHeaders = {};
+  let asked = "";
   const upstream = createServer((req, res) => {
     seen = req.headers;
+    asked = req.url ?? "";
     if (req.url === "/go") {
       res.writeHead(301, { location: "https://accounts.example.dev/next" }).end();
       return;
@@ -69,7 +71,7 @@ test("a page comes back framable, the page's nonce on the proxy's scripts and it
       "x-frame-options": "DENY",
     });
     res.end(
-      `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="script-src 'none'"><script nonce="n0nce" src="https://cdn.example.dev/app.js?a=1&amp;b=2"></script></head><body><img src="https://cdn.example.dev/i.png"></body></html>`,
+      `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="script-src 'none'"><script nonce="n0nce" src="https://cdn.example.dev/app.js?a=1&amp;b=2"></script></head><body><img src="https://cdn.example.dev/i.png"><iframe src="https://embed.example.dev/x"></iframe></body></html>`,
     );
   });
   const up = await listen(upstream);
@@ -84,8 +86,11 @@ test("a page comes back framable, the page's nonce on the proxy's scripts and it
   assert.deepEqual(page.headers["set-cookie"], ["theme=dark; Path=/; Max-Age=86400"]);
   assert.ok(
     page.body.startsWith(
-      `<!doctype html><html><head><script nonce="n0nce" src="/__sidecar/bootstrap.ts?base=${encodeURIComponent(BASE)}">`,
+      `<!doctype html><html><head><script nonce="n0nce" src="/__sidecar/bootstrap.ts?base=${encodeURIComponent(BASE)}&amp;frame=base-uri%20*">`,
     ),
+  );
+  assert.ok(
+    page.body.includes(`<iframe csp="base-uri *" src="http://${hostOf("https://embed.example.dev", port)}/x">`),
   );
   assert.ok(
     page.body.includes(
@@ -98,6 +103,26 @@ test("a page comes back framable, the page's nonce on the proxy's scripts and it
   assert.deepEqual(
     [seen.host, seen.origin, seen["accept-encoding"]],
     [`localhost:${up}`, `http://localhost:${up}`, "identity"],
+  );
+
+  const nav = { host, "sec-fetch-dest": "iframe", "sec-fetch-mode": "navigate", "sec-fetch-site": "same-site" };
+  const framed = await get(port, "/", { ...nav, "sec-required-csp": "base-uri *" });
+  assert.equal(framed.headers["allow-csp-from"], "*");
+  assert.deepEqual(
+    [seen["sec-fetch-dest"], seen["sec-fetch-site"], seen["sec-required-csp"]],
+    ["iframe", "same-site", undefined],
+  );
+  const tab = await get(
+    port,
+    `/auth?origin=${encodeURIComponent(`http://${host}`)}&next=${encodeURIComponent(`http://${host}/b?c=1`)}&q=a+b`,
+    nav,
+  );
+  assert.equal(tab.headers["allow-csp-from"], undefined);
+  assert.deepEqual([seen["sec-fetch-dest"], seen["sec-fetch-site"]], ["document", "none"]);
+  const real = new URL(asked, "http://x").searchParams;
+  assert.deepEqual(
+    [real.get("origin"), real.get("next"), real.get("q")],
+    [`http://localhost:${up}`, `http://localhost:${up}/b?c=1`, "a b"],
   );
 
   const moved = await get(port, "/go", { host });
@@ -264,7 +289,7 @@ test("the proxy serves its own scripts type-stripped and nothing else under its 
   assert.equal((await get(port, "/__sidecar/../package.json")).status, 404);
 });
 
-test("a request leaves as a browser tab's would: never framed, and each site's relation to the page as the site sees it", () => {
+test("a request leaves as a browser tab's would: the sidecar's frame never framed, and each site's relation to the page as the site sees it", () => {
   const sent = (
     init: Record<string, string>,
     from?: string,
@@ -342,6 +367,42 @@ test("the bootstrap keeps every call, socket, script, form and navigation inside
       this.#held.clear();
     }
   }
+  class Element {
+    tagName = "IFRAME";
+    #attrs = new Map<string, string>();
+    getAttribute(name: string): string | undefined {
+      return this.#attrs.get(name);
+    }
+    hasAttribute(name: string): boolean {
+      return this.#attrs.has(name);
+    }
+    setAttribute(name: string, value: string): void {
+      this.#attrs.set(name, value);
+    }
+  }
+  class HTMLIFrameElement extends Element {
+    #src = "";
+    get src(): string {
+      return this.#src;
+    }
+    set src(value: string) {
+      this.#src = value;
+    }
+  }
+  class MessageEvent {
+    #from: { origin: string; source: object };
+    constructor(from: { origin: string; source: object }) {
+      this.#from = from;
+    }
+    get origin(): string {
+      return this.#from.origin;
+    }
+    get source(): object {
+      return this.#from.source;
+    }
+  }
+  const popupWindow = {};
+  const framing = { postMessage: (...args: unknown[]) => calls.push(`answer ${JSON.stringify(args)}`) };
   const local = new Storage();
   const session = new Storage();
   local.setItem("__sidecar:session", JSON.stringify({ token: "kept" }));
@@ -353,18 +414,27 @@ test("the bootstrap keeps every call, socket, script, form and navigation inside
   const sandbox: Record<string, unknown> = {
     addEventListener: (type: string, listener: (event: unknown) => void) => (listeners[type] = listener),
     document: Object.assign(Object.create(Document.prototype) as object, {
-      currentScript: { getAttribute: () => `/__sidecar/bootstrap.ts?base=${encodeURIComponent(BASE)}` },
+      currentScript: {
+        getAttribute: () => `/__sidecar/bootstrap.ts?base=${encodeURIComponent(BASE)}&frame=base-uri%20*`,
+      },
     }),
     Document,
+    Element,
     EventSource: Socket,
     fetch: (input: unknown) => calls.push(`fetch ${input instanceof Request ? input.url : String(input)}`),
     HTMLFormElement: Form,
+    HTMLIFrameElement,
     localStorage: local,
     location: Object.assign(new URL(here), {
+      ancestorOrigins: [new URL(WebHost.proxied("https://claude.example.dev/", place) ?? "").origin],
       assign: (to: string) => calls.push(`assign ${to}`),
       replace: (to: string) => calls.push(`replace ${to}`),
     }),
+    MessageEvent,
     navigation: { addEventListener: (_type: string, listener: (event: unknown) => void) => (navigate = listener) },
+    open: (url: string) => (calls.push(`open ${url}`), popupWindow),
+    opener: { postMessage: (...args: unknown[]) => calls.push(`answer ${JSON.stringify(args)}`) },
+    parent: framing,
     queueMicrotask,
     Request,
     sessionStorage: session,
@@ -426,6 +496,44 @@ test("the bootstrap keeps every call, socket, script, form and navigation inside
   assert.deepEqual(
     [stopped, calls.splice(0)],
     [2, [`assign ${proxy("https://elsewhere.dev/a")}`, `replace ${proxy("https://elsewhere.dev/c")}`]],
+  );
+
+  const frame = new HTMLIFrameElement();
+  frame.src = "https://embed.example.dev/x";
+  assert.deepEqual([frame.src, frame.getAttribute("csp")], [proxy("https://embed.example.dev/x"), "base-uri *"]);
+
+  const signIn = sandbox as {
+    open: (url: string) => object;
+    opener: { postMessage: (...args: unknown[]) => void };
+  };
+  const opened = signIn.open("https://accounts.example.dev/o/auth");
+  const origin = (site: string): string => new URL(proxy(site)).origin;
+  const answer = (source: object): MessageEvent =>
+    new MessageEvent({ origin: origin("https://accounts.example.dev/"), source });
+  assert.deepEqual(
+    [calls.pop(), answer(popupWindow).origin, answer(popupWindow).source === opened, answer({}).origin],
+    [
+      `open ${proxy("https://accounts.example.dev/o/auth")}`,
+      "https://accounts.example.dev",
+      true,
+      origin("https://accounts.example.dev/"),
+    ],
+  );
+  signIn.opener.postMessage("code", "https://www.example.dev");
+  signIn.opener.postMessage("any", "*");
+  (sandbox.parent as { postMessage: (...args: unknown[]) => void }).postMessage("layout", "https://claude.example.dev");
+  const framed = new MessageEvent({ origin: origin("https://claude.example.dev/"), source: framing });
+  assert.deepEqual(
+    [calls.splice(0), framed.origin, framed.source === sandbox.parent],
+    [
+      [
+        `answer ${JSON.stringify(["code", proxy("https://www.example.dev")])}`,
+        `answer ${JSON.stringify(["any", "*"])}`,
+        `answer ${JSON.stringify(["layout", proxy("https://claude.example.dev")])}`,
+      ],
+      "https://claude.example.dev",
+      true,
+    ],
   );
 
   sandbox.__recaptcha_api = "https://www.google.com/recaptcha/api2/";

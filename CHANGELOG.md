@@ -527,6 +527,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **A claude.ai artifact loads in a Web artifact.** Its sandbox frame reached claude.ai as a top-level page,
+  so claude.ai sent it back to itself and showed Couldn't load artifact. A frame a site makes inside its
+  page now reaches the site as a frame, while the Web artifact's own page still reads as a browser tab.
+- **Continue with Google works in a Web artifact.** Google's sign-in popup was told the proxy's address as
+  the site's origin and answered Error 400, and its answer could not have reached the page anyway. A
+  page's own address in a request now reaches the site as the site's real one, and the popup and the page
+  that opened it hear each other at the addresses they expect.
 - **The sidecar stops flooding `/api/why`.** Every five-second poll asked for the why of every listed
   conversation, close to 300 requests a tick, for a tab rail nothing renders anymore, so the poll and
   the screen's gate and ground rule counts it fed are gone.

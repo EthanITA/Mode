@@ -1,6 +1,7 @@
 {
   const script = new URL(document.currentScript?.getAttribute("src") ?? "", location.href).searchParams;
   const base = script.get("base") ?? "";
+  const frame = script.get("frame") ?? "";
   const SOCKET: Record<string, string> = { "ws:": "http:", "wss:": "https:" };
   const head = base && location.hostname.endsWith(`.${base}`) ? location.hostname.slice(0, -base.length - 1) : "";
   const host = head.slice(0, head.lastIndexOf("."));
@@ -29,6 +30,20 @@
     return `${to}://${name}.${label}.${base}:${location.port}${url.pathname}${url.search}${url.hash}`;
   };
 
+  const siteOf = (origin: string): string => {
+    let url: URL;
+    try {
+      url = new URL(origin);
+    } catch {
+      return origin;
+    }
+    if (!base || !url.hostname.endsWith(`.${base}`)) return origin;
+    const at = url.hostname.slice(0, -base.length - 1);
+    const cut = at.lastIndexOf(".");
+    const [, web, port] = /^(https?)(?:-(\d+))?$/.exec(at.slice(cut + 1)) ?? [];
+    return cut > 0 && web ? `${web}://${at.slice(0, cut)}${port ? `:${port}` : ""}` : origin;
+  };
+
   const fetchNative = window.fetch.bind(window);
   window.fetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     if (!(input instanceof Request)) return fetchNative(proxied(input), init);
@@ -55,10 +70,79 @@
 
   const beacon = window.navigator?.sendBeacon?.bind(window.navigator);
   if (beacon) window.navigator.sendBeacon = (url: string | URL, data?: BodyInit) => beacon(proxied(url), data);
+
+  // Pages trust their popup, opener and framing site by the sites' own origins, as Google's sign-in and claude.ai's artifacts do.
+  const aimed = (to: unknown): unknown => {
+    if (typeof to === "string") return to === "*" || to === "/" ? to : String(proxied(to));
+    return to && typeof to === "object" && "targetOrigin" in to
+      ? { ...to, targetOrigin: aimed((to as WindowPostMessageOptions).targetOrigin) }
+      : to;
+  };
+  const views = new WeakMap<object, Window>();
+  const view = (raw: Window): Window => {
+    const held = views.get(raw);
+    if (held) return held;
+    const post = (...args: unknown[]): void => {
+      if (args.length > 1) args[1] = aimed(args[1]);
+      Reflect.apply(raw.postMessage, raw, args);
+    };
+    const shown = new Proxy(raw, {
+      get: (into, name) => {
+        if (name === "postMessage") return post;
+        const value = Reflect.get(into, name) as unknown;
+        return typeof value === "function" ? value.bind(into) : value;
+      },
+    });
+    views.set(raw, shown);
+    return shown;
+  };
+  const seen = (name: "opener" | "parent", raw: Window): void => {
+    let shown: unknown = view(raw);
+    Object.defineProperty(window, name, {
+      configurable: true,
+      enumerable: true,
+      get: () => shown,
+      set: (value: unknown) => (shown = value),
+    });
+  };
+  if (window.opener) seen("opener", window.opener as Window);
+  const above = window.location.ancestorOrigins?.[0];
+  if (above && above !== location.origin && siteOf(above) !== above) seen("parent", window.parent);
+
   const popup = window.open?.bind(window);
   if (popup)
-    window.open = (url?: string | URL, target?: string, features?: string) =>
-      popup(url && proxied(url), target, features);
+    window.open = (url?: string | URL, target?: string, features?: string) => {
+      const opened = popup(url && proxied(url), target, features);
+      return opened && view(opened);
+    };
+  const told = window.MessageEvent && Object.getOwnPropertyDescriptor(MessageEvent.prototype, "origin")?.get;
+  const from = window.MessageEvent && Object.getOwnPropertyDescriptor(MessageEvent.prototype, "source")?.get;
+  if (told && from)
+    Object.defineProperties(MessageEvent.prototype, {
+      origin: {
+        configurable: true,
+        enumerable: true,
+        get(this: MessageEvent): string {
+          const origin = told.call(this) as string;
+          return views.has(from.call(this) as object) ? siteOf(origin) : origin;
+        },
+      },
+      source: {
+        configurable: true,
+        enumerable: true,
+        get(this: MessageEvent): MessageEvent["source"] {
+          const source = from.call(this) as MessageEvent["source"];
+          return (source && views.get(source)) ?? source;
+        },
+      },
+    });
+
+  const setAttribute = window.Element?.prototype.setAttribute;
+  // Chrome sends a frame's csp as Sec-Required-CSP, which is how the proxy tells a site's frame from the sidecar's.
+  const mark = (el: Element): void => {
+    if (frame && setAttribute && el.tagName === "IFRAME" && !el.hasAttribute("csp"))
+      setAttribute.call(el, "csp", frame);
+  };
 
   // Bundlers add their chunks and preloads by setting src or href, which would load them past the proxy.
   const kinds = window as unknown as Record<string, { prototype: object } | undefined>;
@@ -73,17 +157,19 @@
     if (proto && held && set)
       Object.defineProperty(proto, name, {
         ...held,
-        set(this: object, value: unknown): void {
+        set(this: Element, value: unknown): void {
+          mark(this);
           set.call(this, String(proxied(String(value))));
         },
       });
   }
   const isMoved = (el: Element, name: string): boolean =>
     (name === "src" && /^(SCRIPT|IFRAME)$/.test(el.tagName)) || (name === "href" && el.tagName === "LINK");
-  const setAttribute = window.Element?.prototype.setAttribute;
   if (setAttribute)
     window.Element.prototype.setAttribute = function (this: Element, name: string, value: string): void {
-      setAttribute.call(this, name, isMoved(this, name.toLowerCase()) ? String(proxied(value)) : value);
+      const isAddress = isMoved(this, name.toLowerCase());
+      if (isAddress) mark(this);
+      setAttribute.call(this, name, isAddress ? String(proxied(value)) : value);
     };
 
   // Read off the attribute, since form.action is shadowed by any field named "action".

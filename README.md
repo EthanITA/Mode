@@ -223,7 +223,9 @@ next. Cookies and storage last across conversations and restarts. Text that isn'
 address searches Google, in Open a URL and in the address bar alike. `artifact open <url>` and a link
 clicked in the sidecar reuse the conversation's artifact already opened on or showing that address, so
 Claude opening localhost:3000 every turn doesn't pile up copies. The proxy sends each request as a
-browser tab would rather than as a framed page, a site can never navigate the sidecar window itself, and
+browser tab would rather than as a framed page, while a frame a site makes inside its own page still
+reaches the site as a frame, which claude.ai's artifacts need, and a sign-in popup such as Google's is
+told and answered at the site's real address. A site can never navigate the sidecar window itself, and
 a page reaches no host closer to this machine than its own, so a remote site can't call localhost or the
 local network through it, the way Chrome's Private Network Access draws the line. Each artifact keeps its
 own back and forward history in its record, so ⌘[ and ⌘] step through it after a switch or a reload, and

@@ -46,6 +46,9 @@ const HOSTS = ["127.0.0.1", "::1"];
 const OWN = "/__sidecar/";
 const PAGE_FILE = /^\/__sidecar\/([a-z]+)\.ts$/;
 const DROPPED = ["content-security-policy", "content-security-policy-report-only", "x-frame-options"];
+// Given to every frame a site makes, so Chrome's Sec-Required-CSP tells it from the sidecar's frame; it restricts nothing.
+const FRAME_CSP = "base-uri *";
+const FRAME_TAG = /^<iframe\b(?![^>]*\scsp\s*=)/i;
 const PERMANENT: Record<number, number> = { 301: 302, 308: 307 };
 const META_CSP = /<meta\b[^>]*http-equiv\s*=\s*["']?content-security-policy["']?[^>]*>/gi;
 const NONCE = /<script\b[^>]*\snonce\s*=\s*["']?([^"'\s>]+)/i;
@@ -127,6 +130,20 @@ function upstreamOf(raw: string | URL, held: Pick<Running, "parents">): { base: 
   return to ? { base, url: to } : undefined;
 }
 
+// A page names itself to a site by its own address, as Google's sign-in popup does with origin, so the site hears its real one.
+function realQuery(target: URL, held: Pick<Running, "parents">): void {
+  let isMoved = false;
+  const query = new URLSearchParams();
+  for (const [name, value] of target.searchParams) {
+    const site = /^https?:\/\//i.test(value) ? upstreamOf(value, held)?.url : undefined;
+    const proxy = site && new URL(value).origin;
+    const real = site && proxy && value.startsWith(proxy) ? `${site.origin}${value.slice(proxy.length)}` : site?.href;
+    isMoved ||= !!real;
+    query.append(name, real ?? value);
+  }
+  if (isMoved) target.search = query.toString();
+}
+
 const BASE64URL: Record<string, string> = { "+": "-", "-": "+", "/": "_", _: "/", "=": ".", ".": "=" };
 
 export interface Captcha {
@@ -201,10 +218,12 @@ function proxiedText(raw: string, { place, target }: { place: ProxyPlace; target
 function rewriteTags(html: string, at: { place: ProxyPlace; target: URL }): string {
   return html
     .replace(TAG, (tag) =>
-      tag.replace(
-        ATTR,
-        (_all, head: string, quote: string, value: string) => `${head}${quote}${proxiedText(value, at)}${quote}`,
-      ),
+      tag
+        .replace(
+          ATTR,
+          (_all, head: string, quote: string, value: string) => `${head}${quote}${proxiedText(value, at)}${quote}`,
+        )
+        .replace(FRAME_TAG, `<iframe csp="${FRAME_CSP}"`),
     )
     .replace(REFRESH, (_all, head: string, value: string) => `${head}${proxiedText(value, at)}`);
 }
@@ -221,7 +240,7 @@ function inject(html: string, { parents, place, target }: InjectInput): string {
   const nonce = NONCE.exec(page)?.[1];
   const sealed = nonce ? ` nonce="${nonce}"` : "";
   const tags =
-    `<script${sealed} src="${OWN}bootstrap.ts?base=${encodeURIComponent(place.base)}"></script>` +
+    `<script${sealed} src="${OWN}bootstrap.ts?base=${encodeURIComponent(place.base)}&amp;frame=${encodeURIComponent(FRAME_CSP)}"></script>` +
     `<script${sealed} type="module" src="${OWN}agent.ts?parent=${encodeURIComponent([...parents].join(","))}"></script>`;
   const at = /<head\b[^>]*>/i.exec(page) ?? /<html\b[^>]*>/i.exec(page) ?? /<!doctype[^>]*>/i.exec(page);
   const end = at ? at.index + at[0].length : 0;
@@ -236,6 +255,7 @@ function fenceOf({ base, port }: ProxyPlace): string {
 
 export interface RewriteInput {
   captcha?: Captcha;
+  isFrame?: boolean;
   isHead: boolean;
   parents: Set<string>;
   place: ProxyPlace;
@@ -246,6 +266,7 @@ export interface RewriteInput {
 
 export async function rewriteResponse({
   captcha,
+  isFrame = false,
   isHead,
   parents,
   place,
@@ -255,6 +276,8 @@ export async function rewriteResponse({
 }: RewriteInput): Promise<Response> {
   const headers = new Headers(response.headers);
   for (const name of DROPPED) headers.delete(name);
+  // Chrome shows a frame that was sent a required csp only when the answer allows it.
+  if (isFrame) headers.set("allow-csp-from", "*");
   const location = headers.get("location");
   if (location) headers.set("location", WebHost.proxied(new URL(location, target), place) ?? location);
   const allowed = headers.get("access-control-allow-origin");
@@ -326,14 +349,16 @@ function siteOf(url: URL): string {
 export interface TabInput {
   /** The page the request came from, as the site itself would see it, when the request names one of this artifact. */
   from?: URL;
+  /** A frame a site made in its own page, which a tab sends as a frame too, as claude.ai's artifact sandbox must be. */
+  isFrame?: boolean;
   target: URL;
 }
 
-// The frame stands in for a browser tab, and a site may refuse what reads as framed, as Google's sign-in answers 401.
-export function asTab(headers: Headers, { from, target }: TabInput): void {
-  if (headers.get("sec-fetch-dest") === "iframe") headers.set("sec-fetch-dest", "document");
+// The sidecar's frame stands in for a browser tab, and a site may refuse what reads as framed, as Google's sign-in answers 401.
+export function asTab(headers: Headers, { from, isFrame = false, target }: TabInput): void {
+  if (!isFrame && headers.get("sec-fetch-dest") === "iframe") headers.set("sec-fetch-dest", "document");
   const site = headers.get("sec-fetch-site");
-  if (headers.get("sec-fetch-mode") === "navigate" && !from) headers.set("sec-fetch-site", "none");
+  if (!isFrame && headers.get("sec-fetch-mode") === "navigate" && !from) headers.set("sec-fetch-site", "none");
   else if (from && site && site !== "none") {
     const relation =
       from.origin === target.origin ? "same-origin" : siteOf(from) === siteOf(target) ? "same-site" : "cross-site";
@@ -375,9 +400,12 @@ async function handle(event: H3Event, held: Running): Promise<void> {
   const found = upstreamOf(url, held);
   if (!found) return sendWebResponse(event, new Response("", { status: 404 }));
   const { base, url: target } = found;
+  realQuery(target, held);
   const place = { base, port: held.port };
   const request = toWebRequest(event);
   const headers = new Headers(request.headers);
+  const required = headers.get("sec-required-csp");
+  if (required === FRAME_CSP) headers.delete("sec-required-csp");
   const { origin, referer } = initiatorOf(headers, held);
   const from = origin ?? referer;
   const reach = await reachOf(target.hostname);
@@ -390,7 +418,7 @@ async function handle(event: H3Event, held: Running): Promise<void> {
   });
   if (!allowed) return sendWebResponse(event, new Response("", { status: 403 }));
   headers.set("accept-encoding", "identity");
-  asTab(headers, { from: referer ?? origin, target });
+  asTab(headers, { from: referer ?? origin, isFrame: !!required, target });
   if (origin) headers.set("origin", origin.origin);
   else if (headers.get("origin") !== "null") headers.delete("origin");
   if (referer) headers.set("referer", referer.href);
@@ -416,7 +444,16 @@ async function handle(event: H3Event, held: Running): Promise<void> {
   const isHead = request.method === "HEAD";
   return sendWebResponse(
     event,
-    await rewriteResponse({ captcha, isHead, parents: held.parents, place, reach, response, target }),
+    await rewriteResponse({
+      captcha,
+      isFrame: !!required,
+      isHead,
+      parents: held.parents,
+      place,
+      reach,
+      response,
+      target,
+    }),
   );
 }
 
