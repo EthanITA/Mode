@@ -9,6 +9,7 @@ import {
   type AgentMessage,
   CHANNEL,
   type Envelope,
+  type RelayNotice,
   type SidecarMessage,
   type WebHit,
   type WebSelection,
@@ -58,6 +59,8 @@ const shown = useFaceShown();
 const look = useTheme();
 const frame = ref<HTMLIFrameElement>();
 const place = ref<ProxyPlace>();
+// With the extension the frame holds its relay page, which holds the site at its real address instead of the proxy.
+const isRelayed = ref(false);
 // The frame moves between the artifact's hosts as it goes from site to site, and a message only reaches the one it is on.
 const on = ref<string>();
 const src = ref<string>();
@@ -66,11 +69,21 @@ let started = 0;
 async function start(): Promise<void> {
   const run = ++started;
   place.value = undefined;
+  isRelayed.value = false;
+  const at = web.page?.url ?? url;
+  const relay = await Web.relay();
+  if (run !== started) return;
+  if (relay) {
+    isRelayed.value = true;
+    src.value = Web.relayed(relay, at);
+    on.value = new URL(at).origin;
+    return;
+  }
   try {
     const got = await $fetch<WebServeReply>(`/api/web/${slug}/serve`, { method: "POST" });
     if (run !== started) return;
     const next = Web.placeOf({ here: new URL(location.href), port: got.port });
-    const to = Web.proxied(web.page?.url ?? url, next);
+    const to = Web.proxied(at, next);
     if (!to) throw new Error(`${url} has no address inside the artifact`);
     place.value = next;
     src.value = to;
@@ -83,18 +96,25 @@ async function start(): Promise<void> {
   }
 }
 
-function isOurs(origin: string): boolean {
+const site = (): Window | undefined =>
+  (isRelayed.value ? frame.value?.contentWindow?.frames[0] : frame.value?.contentWindow) ?? undefined;
+
+// Relayed, the site is whatever the page went to, so the window it speaks from is the whole check.
+function isOurs({ origin, source }: MessageEvent): boolean {
+  if (!source || source !== site()) return false;
   const at = place.value;
-  return !!at && URL.canParse(origin) && new URL(origin).port === String(at.port) && !!Web.upstream(origin, at.base);
+  return (
+    isRelayed.value ||
+    (!!at && URL.canParse(origin) && new URL(origin).port === String(at.port) && !!Web.upstream(origin, at.base))
+  );
 }
 
 function post(message: SidecarMessage): void {
-  if (on.value)
-    frame.value?.contentWindow?.postMessage(
-      { ...message, channel: CHANNEL } satisfies Envelope<SidecarMessage>,
-      on.value,
-    );
+  if (on.value) site()?.postMessage({ ...message, channel: CHANNEL } satisfies Envelope<SidecarMessage>, on.value);
 }
+
+const realOf = (address: string): URL | undefined =>
+  isRelayed.value ? new URL(address) : place.value && Web.upstream(address, place.value.base);
 
 // The page scrolls itself, so the frame's own box is all of it that can be on screen; grown, nothing floats over it.
 function clipOf(box: DOMRect): ViewBox {
@@ -148,7 +168,7 @@ function greet(): void {
 }
 
 function onLoad(): void {
-  if (!place.value) return;
+  if (!place.value && !isRelayed.value) return;
   web.isBusy = false;
   greet();
   emit("load");
@@ -185,8 +205,7 @@ function onLayout(message: Extract<AgentMessage, { type: "layout" }>): void {
 }
 
 useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentMessage>> | undefined>) => {
-  if (!isOurs(event.origin) || event.source !== frame.value?.contentWindow) return;
-  if (event.data?.channel !== CHANNEL) return;
+  if (event.data?.channel !== CHANNEL || !isOurs(event)) return;
   on.value = event.origin;
   const message = event.data as Envelope<AgentMessage>;
   switch (message.type) {
@@ -204,7 +223,7 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
       onLayout(message);
       return;
     case "page": {
-      const address = place.value && Web.upstream(message.page.url, place.value.base);
+      const address = realOf(message.page.url);
       if (!address) return;
       web.page = { icon: message.page.icon, title: message.page.title, url: address.href };
       emit("page", message.how);
@@ -221,6 +240,18 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
       return;
     case "select":
       onSelect(message.selection);
+  }
+});
+
+// A relay's own load fires once, so the extension says when the site in it loads or fails, as the proxy's pages did.
+useEventListener(document, "sidecar-relay-frame", (event: Event) => {
+  if (!isRelayed.value || !src.value || !(event instanceof CustomEvent) || typeof event.detail !== "string") return;
+  const notice = JSON.parse(event.detail) as RelayNotice;
+  if (!URL.canParse(notice.relay) || new URL(notice.relay).href !== new URL(src.value).href) return;
+  if (notice.type === "loaded") onLoad();
+  else {
+    web.state = "down";
+    web.isBusy = false;
   }
 });
 
@@ -244,7 +275,7 @@ watch(chrome.comment.pick, (hit) => {
 watch(
   () => web.stepping,
   (asked) => {
-    const to = asked && place.value && Web.proxied(asked.to, place.value);
+    const to = asked && (isRelayed.value ? asked.to : place.value && Web.proxied(asked.to, place.value));
     if (!asked || !to) return;
     web.stepping = undefined;
     post({ type: "step", by: asked.by, to });
@@ -265,7 +296,7 @@ watch(
   <div class="web" data-region="web-frame" :style="{ paddingInlineEnd: inset ? `${inset}px` : undefined }">
     <span class="progress" aria-hidden="true" data-region="web-progress" :data-busy="web.isBusy" />
     <iframe
-      v-if="src && place"
+      v-if="src && (place || isRelayed)"
       ref="frame"
       :key="`${slug}:${web.edition}`"
       allow="clipboard-read; clipboard-write; fullscreen"

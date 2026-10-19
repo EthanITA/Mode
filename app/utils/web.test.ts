@@ -64,6 +64,25 @@ test("the address drops its scheme only where typing it back brings the same one
   assert.equal(Web.typed("http://example.com/a?b=1"), "http://example.com/a?b=1");
 });
 
+test("the extension's mark picks the real address once its rules hold, and the proxy when it is missing or gives up", async () => {
+  const host = (dataset: DOMStringMap) => Object.assign(new EventTarget(), { documentElement: { dataset } });
+  const relay = "chrome-extension://abc/frame.html";
+  assert.equal(await Web.relay(host({})), undefined);
+  assert.equal(await Web.relay(host({ sidecarRelay: relay, sidecarRelayReady: "true" })), relay);
+  for (const ok of [true, false]) {
+    const waiting = host({ sidecarRelay: relay });
+    const picked = Web.relay(waiting);
+    if (ok) waiting.documentElement.dataset.sidecarRelayReady = "true";
+    else delete waiting.documentElement.dataset.sidecarRelay;
+    waiting.dispatchEvent(new Event("sidecar-relay"));
+    assert.equal(await picked, ok ? relay : undefined);
+  }
+  assert.equal(
+    new URL(Web.relayed(relay, "https://claude.ai/artifact/x?y=1#z")).searchParams.get("to"),
+    "https://claude.ai/artifact/x?y=1#z",
+  );
+});
+
 test("an entry's trail goes back and forward like a tab, and a step from the sidecar lands where it aimed", () => {
   const [a, b, c] = ["http://localhost:3000/", "http://localhost:3000/b", "http://localhost:3000/c"];
   let trail = Trail.arrive({ at: 0, urls: [] }, { how: "replace", url: a });

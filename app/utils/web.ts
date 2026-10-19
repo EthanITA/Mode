@@ -13,6 +13,20 @@ export interface WebElsewhere {
   page: string;
 }
 
+export interface RelayHost extends EventTarget {
+  documentElement: { dataset: DOMStringMap };
+}
+
+// The extension marks the sidecar before its scripts run, then says ready once the tab's frame rules hold, or unmarks it.
+function relay(host: RelayHost = document): Promise<string | undefined> {
+  const { dataset } = host.documentElement;
+  const ready = (): string | undefined => (dataset.sidecarRelayReady ? dataset.sidecarRelay : undefined);
+  if (!dataset.sidecarRelay || dataset.sidecarRelayReady) return Promise.resolve(ready());
+  return new Promise((resolve) => host.addEventListener("sidecar-relay", () => resolve(ready()), { once: true }));
+}
+
+const relayed = (relay: string, to: string): string => `${relay}?${new URLSearchParams({ to })}`;
+
 function placeOf({ here, port }: WebPlaceOptions): ProxyPlace {
   return { base: WebHost.baseOf(here.hostname), port };
 }
@@ -74,6 +88,8 @@ export const Web = {
   pageOf,
   placeOf,
   proxied: WebHost.proxied,
+  relay,
+  relayed,
   shortOf,
   threadsOn,
   typed,
