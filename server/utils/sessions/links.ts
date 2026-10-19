@@ -64,10 +64,18 @@ function addressesIn(text: string): string[] {
 
 const linksOf = (text: string): string[] => addressesIn(text.replace(CODE, " "));
 
-// A search lists a page as ?hl=es and Claude cites it bare, so what a web tool brought in matches on the page alone.
-function pageOf(href: string): string {
-  const { origin, pathname } = new URL(href);
-  return `${origin}${pathname.replace(/\/+$/, "")}`;
+const pageOf = ({ origin, pathname }: URL): string => `${origin}${pathname.replace(/\/+$/, "")}`;
+
+// A search lists a page as ?hl=es and Claude cites it bare, while ?v=two is another video than a fetched ?v=one.
+function isFetched(fetched: Set<string>, href: string): boolean {
+  const cited = new URL(href);
+  return [...fetched].some((one) => {
+    const got = new URL(one);
+    return (
+      pageOf(got) === pageOf(cited) &&
+      [...cited.searchParams].every(([name, value]) => got.searchParams.getAll(name).includes(value))
+    );
+  });
 }
 
 function textOf(value: unknown): string {
@@ -182,11 +190,11 @@ function adopt({ key, isLive = false }: LinkAdoption): void {
     for (const block of blocksOf(entry)) {
       if (block.type === "tool_use" && WEB_TOOLS.has(str(block.name))) {
         pending.add(str(block.id));
-        for (const href of addressesIn(textOf(block.input))) fetched.add(pageOf(href));
+        for (const href of addressesIn(textOf(block.input))) fetched.add(href);
       } else if (block.type === "tool_result" && pending.delete(str(block.tool_use_id))) {
-        for (const href of addressesIn(textOf(block.content))) fetched.add(pageOf(href));
+        for (const href of addressesIn(textOf(block.content))) fetched.add(href);
       } else if (entry.type === "assistant" && block.type === "text") {
-        for (const href of linksOf(str(block.text))) if (!fetched.has(pageOf(href))) take(href);
+        for (const href of linksOf(str(block.text))) if (!isFetched(fetched, href)) take(href);
       }
     }
   }

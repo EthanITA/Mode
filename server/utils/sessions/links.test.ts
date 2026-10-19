@@ -87,12 +87,24 @@ test("adopts what the user or Claude links once, never what WebFetch or WebSearc
   appendFileSync(
     path,
     lines(
-      answered(6, "s1", 'Web search results\n\nLinks: [{"title":"A","url":"https://found.dev/a/?hl=es"}]'),
-      said(7, "it links https://docs.dev/x, see https://inside.dev/x\n\nSources:\n- [A](https://found.dev/a)"),
+      answered(
+        6,
+        "s1",
+        'Links: [{"title":"A","url":"https://found.dev/a/?hl=es"},{"title":"B","url":"https://video.dev/watch?v=one"}]',
+      ),
+      said(
+        7,
+        "it links https://docs.dev/x and https://video.dev/watch?v=two, see https://inside.dev/x\n\nSources:\n- [A](https://found.dev/a)\n- [B](https://video.dev/watch?v=one)",
+      ),
     ),
   );
   Links.adopt({ key });
-  assert.deepEqual(urls(key), ["https://github.com/a/b", "https://fetched.dev/page", "https://docs.dev/x"]);
+  assert.deepEqual(urls(key), [
+    "https://github.com/a/b",
+    "https://fetched.dev/page",
+    "https://docs.dev/x",
+    "https://video.dev/watch?v=two",
+  ]);
   assert.equal(Events.read(events).events.length, 0);
 
   const [first = ""] = sessionEntries(key);
@@ -107,6 +119,7 @@ test("adopts what the user or Claude links once, never what WebFetch or WebSearc
     "",
     "https://fetched.dev/page",
     "https://docs.dev/x",
+    "https://video.dev/watch?v=two",
     "https://new.dev/",
     "https://inside.dev/x",
   ]);
