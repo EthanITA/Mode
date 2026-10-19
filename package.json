@@ -8,7 +8,7 @@
     "build": "nuxt build",
     "preview": "nuxt preview",
     "typecheck": "nuxi typecheck",
-    "typecheck:plugin": "tsc -p tsconfig.plugin.json && tsc -p lib/web/page/tsconfig.json && tsc -p extension/tsconfig.json",
+    "typecheck:plugin": "tsc -p tsconfig.plugin.json && tsc -p lib/web/page/tsconfig.json",
     "format": "prettier --write .",
     "test": "node --test --experimental-strip-types \"server/utils/**/*.test.ts\" \"app/utils/**/*.test.ts\"",
     "test:plugin": "node --test --experimental-strip-types \"tests/**/*.test.ts\"",

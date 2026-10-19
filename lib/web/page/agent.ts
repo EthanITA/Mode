@@ -32,13 +32,9 @@ interface ChildState {
   picked?: WebHit;
 }
 
-const script = new URL(import.meta.url);
-const parents = new Set((script.searchParams.get("parent") ?? "").split(",").filter(Boolean));
-const isRelayed = script.protocol === "chrome-extension:" && location.ancestorOrigins[0] === script.origin;
-// The extension's relay page only holds the site, so the sidecar it sits in is the one this page answers to.
-const above = isRelayed ? (window.top ?? window.parent) : window.parent;
+const parents = new Set((new URL(import.meta.url).searchParams.get("parent") ?? "").split(",").filter(Boolean));
 // The site's own frames run this agent too, and answer to the page around them, which relays them to the sidecar.
-const nested = above !== window.top;
+const nested = window.parent !== window.top;
 // A same-origin frame running its own agent is that agent's to read, or every block in it would answer twice.
 const AGENT = Symbol.for("sidecar-agent");
 Reflect.set(window, AGENT, true);
@@ -63,7 +59,7 @@ const bound = new WeakSet<Document>();
 const children = new Map<HTMLIFrameElement, ChildState>();
 
 function post(message: AgentMessage): void {
-  if (parent) above.postMessage({ ...message, channel: CHANNEL } satisfies Envelope<AgentMessage>, parent);
+  if (parent) window.parent.postMessage({ ...message, channel: CHANNEL } satisfies Envelope<AgentMessage>, parent);
 }
 
 function tell(message: SidecarMessage, to: HTMLIFrameElement, origin = "*"): void {
@@ -376,7 +372,7 @@ window.addEventListener("message", (event: MessageEvent<Partial<Envelope<AgentMe
     fromChild(from, event.origin, event.data as Envelope<AgentMessage>);
     return;
   }
-  if (event.source !== above || (!nested && !parents.has(event.origin))) return;
+  if (event.source !== window.parent || (!nested && !parents.has(event.origin))) return;
   const message = event.data as Envelope<SidecarMessage>;
   if (message.type === "hello") {
     parent = event.origin;
@@ -412,8 +408,8 @@ window.addEventListener("message", (event: MessageEvent<Partial<Envelope<AgentMe
 for (const one of frames()) tell({ type: "hello" }, one);
 
 // Said once the document is parsed, so the sidecar shows the page without waiting on every subresource and nested frame.
-if (above !== window) {
+if (window.parent !== window) {
   const ready = { type: "ready", channel: CHANNEL } satisfies Envelope<AgentMessage>;
-  if (nested) above.postMessage(ready, "*");
-  else for (const to of parents) above.postMessage(ready, to);
+  if (nested) window.parent.postMessage(ready, "*");
+  else for (const to of parents) window.parent.postMessage(ready, to);
 }
