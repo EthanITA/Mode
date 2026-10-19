@@ -132,16 +132,22 @@ export interface OpenRecordOptions {
   url: URL;
 }
 
-function reusable({ reuse, url }: { reuse: string[]; url: URL }): WebRecord | undefined {
+export interface FindRecordOptions {
+  among: string[];
+  url: URL;
+}
+
+// A tab that has since gone to another page still holds the address it was opened on.
+export function findRecord({ among, url }: FindRecordOptions): WebRecord | undefined {
   const at = addressOf(url.href);
-  return listRecords()
-    .filter((one) => reuse.includes(one.slug))
-    .find((one) => addressOf(one.url) === at || (!!one.opened && addressOf(one.opened) === at));
+  return among
+    .map(readRecord)
+    .find((one) => !!one && (addressOf(one.url) === at || (!!one.opened && addressOf(one.opened) === at)));
 }
 
 /** A new web artifact, a tab of its own, unless one in reuse already shows or was opened on the address. */
 export function openRecord({ reuse = [], title, url }: OpenRecordOptions): OpenedRecord {
-  const held = reusable({ reuse, url });
+  const held = findRecord({ among: reuse, url });
   const now = new Date().toISOString();
   if (held) {
     const moved = addressOf(held.url) !== addressOf(url.href);
