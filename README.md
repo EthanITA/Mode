@@ -264,6 +264,7 @@ sidecar stop        # wherever it was started from, a terminal's pnpm dev includ
 sidecar restart
 sidecar install     # start it now and at every login, through launchd
 sidecar uninstall
+sidecar extension   # build the Chrome extension and open chrome://extensions to load it
 ```
 
 The conversation `open` points at is the key given, else the Claude Code session it runs in, read
@@ -272,6 +273,18 @@ from `CLAUDE_CODE_SESSION_ID`; from a plain terminal it just opens the app. It s
 `~/.claude/sidecar/server.log`. Stop only signals a server that answers as the sidecar, so another app
 on the port is left alone. `install` writes `~/Library/LaunchAgents/local.mode.sidecar.plist` with
 the node and `PATH` of the shell that ran it, so run it again after switching node versions.
+
+With the Chrome extension, a Web artifact opens at the site's real address instead of through the
+proxy, in your own Chrome profile, so your sign-ins reach it and whatever a site keys on its origin
+works as in a tab, claude.ai's artifacts and Google's sign-in included. `sidecar extension` builds it
+into `extension/` and opens `chrome://extensions`, where Developer mode and Load unpacked take that
+folder once, and after an update you run it again and press reload there. It acts only inside the
+sidecar's own tab, where it lets a site be framed, asks `accounts.google.com` for a page rather than a
+frame and lets the site's cookies through, so every other tab keeps each site's framing protection and
+your third-party cookie setting. A site's localStorage inside the sidecar is its own, kept across
+restarts but apart from your tabs, so a site that keeps its sign-in there asks once. The extension knows
+the sidecar at `sidecar.localhost`, and without it, in another browser or on another host, the sidecar
+takes the proxy as before. `sidecar status` says whether the extension has answered.
 
 Claude talks to the sidecar through events, the way a Kafka producer talks to its consumers. Each
 event is one line appended to `~/.claude/sidecar/events.jsonl` under a topic, with the conversation's

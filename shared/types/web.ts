@@ -16,3 +16,8 @@ export type WebArrival = "push" | "reload" | "replace" | "traverse";
 export interface WebServeReply {
   port: number;
 }
+
+export interface ExtensionReply {
+  /** When the Chrome extension last announced a sidecar page, since this server started. */
+  heard?: string;
+}

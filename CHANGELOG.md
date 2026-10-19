@@ -42,6 +42,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   edits the address. A reCAPTCHA checkbox and its picture challenge work inside a Web artifact, so the
   "unusual traffic" check Google gives a browser it doesn't know can be passed there.
 
+- **Web artifacts open at their real address with the Chrome extension.** `sidecar extension` builds an
+  extension that lets the sidecar's own tab frame a site as it is, so the page runs in your Chrome
+  profile with your sign-ins, and claude.ai's artifacts, Google's sign-in and anything else a site keys
+  on its origin work as in a tab. Without it the sidecar keeps the proxy, and `sidecar status` says
+  whether it has answered.
 - **Fullscreen is three islands over the page.** F, from the sidecar or inside a live site, grows any artifact to the whole window
   under a strip of islands: the list button on the left, which lays Artifacts or Files over the left edge
   to switch without leaving fullscreen, the title in the middle, and Comment, the theme and Exit on the

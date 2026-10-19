@@ -7,9 +7,21 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { sidecarHome } from "../lib/mode/paths.ts";
 import * as Events from "../lib/sidecar/events.ts";
+import { buildExtension } from "../lib/web/extension.ts";
 import type { Topics } from "../shared/types/events.ts";
+import type { ExtensionReply } from "../shared/types/web.ts";
 
-type Command = "open" | "publish" | "status" | "start" | "stop" | "restart" | "install" | "uninstall" | "help";
+type Command =
+  | "open"
+  | "publish"
+  | "status"
+  | "start"
+  | "stop"
+  | "restart"
+  | "install"
+  | "uninstall"
+  | "extension"
+  | "help";
 type Proc = { pid: number; ppid: number; args: string };
 type Point = { key?: string; slug?: string };
 
@@ -42,6 +54,9 @@ const USAGE = `usage: sidecar [command]     /sidecar [command] in a Claude Code 
   restart     stop it, then start it
   install     start it now and at every login, through launchd
   uninstall   stop it and take it off login
+  extension   build the Chrome extension that opens Web artifacts at their real address, print
+              the folder to load unpacked and open chrome://extensions; run it again after an
+              update, then reload the extension there
 
 It serves ${ADDRESS} (SIDECAR_URL overrides it) and logs to ${LOG}.`;
 
@@ -126,6 +141,13 @@ async function status(): Promise<number> {
   const [pid] = listeners();
   if (pid && (await isSidecar())) {
     console.log(`up at ${ADDRESS}, pid ${pid}${login}`);
+    const reply = await fetch(`${ADDRESS}/api/extension`, { signal: AbortSignal.timeout(2000) }).catch(() => undefined);
+    const { heard } = ((await reply?.json().catch(() => undefined)) ?? {}) as ExtensionReply;
+    console.log(
+      heard
+        ? `the Chrome extension answered at ${new Date(heard).toLocaleTimeString()}, so Web artifacts open at their real address`
+        : "no Chrome extension has answered since it started, so Web artifacts open through the proxy; sidecar extension sets it up",
+    );
     return 0;
   }
   if (pid) console.log(`down, and port ${PORT} is held by pid ${pid}, which is not the sidecar: ${holderOf(pid)}`);
@@ -350,6 +372,16 @@ function publish(): number {
   return 0;
 }
 
+// Chrome loads an unpacked extension only from its own page, so this hands over the folder rather than installing it.
+function extension(): number {
+  const folder = buildExtension(ROOT);
+  console.log(`built ${folder}
+in chrome://extensions turn on Developer mode, then Load unpacked and pick that folder, or press reload on
+Mode sidecar if it is there already, and reopen the sidecar`);
+  spawnSync(OPEN, ["-na", "Google Chrome", "--args", "chrome://extensions"]);
+  return 0;
+}
+
 const COMMANDS = {
   open: async () => {
     const { positionals, values } = parseArgs({
@@ -366,6 +398,7 @@ const COMMANDS = {
   restart: async () => ((await stop()) === 0 ? start() : 1),
   install,
   uninstall: async () => uninstall(),
+  extension: async () => extension(),
   help: async () => (console.log(USAGE), 0),
 } satisfies Record<Command, () => Promise<number>>;
 
