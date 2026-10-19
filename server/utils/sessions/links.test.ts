@@ -31,6 +31,14 @@ const assistant = (s: number, content: Record<string, unknown>[]) => ({
   timestamp: at(s),
   message: { role: "assistant", content },
 });
+const said = (s: number, text: string) => assistant(s, [{ type: "text", text }]);
+const called = (s: number, id: string, name: string, input: Record<string, unknown>) =>
+  assistant(s, [{ type: "tool_use", id, name, input }]);
+const answered = (s: number, id: string, content: string) => ({
+  type: "user",
+  timestamp: at(s),
+  message: { role: "user", content: [{ type: "tool_result", tool_use_id: id, content }] },
+});
 const lines = (...entries: Record<string, unknown>[]): string =>
   entries.map((one) => `${JSON.stringify(one)}\n`).join("");
 const urls = (key: string): string[] => sessionEntries(key).map((slug) => readRecord(slug)?.url ?? "");
@@ -53,36 +61,60 @@ test("reads every address in prose, trimming what the sentence or markdown wrapp
   ]);
 });
 
-test("adopts each address the user or Claude said once, keeps a removed one gone, and announces only live ones", () => {
+test("adopts what the user or Claude links once, never what WebFetch or WebSearch brought in, and announces only live ones", () => {
   const key = "abcdef12";
   const path = join(root, "projects", "-tmp-links", `${key}-1111-2222-3333-444444444444.jsonl`);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(
     path,
     lines(
-      user(1, "look at https://github.com/a/b please"),
+      user(1, "look at https://github.com/a/b and https://fetched.dev/page"),
+      {
+        type: "user",
+        isMeta: true,
+        timestamp: at(1),
+        message: { role: "user", content: "a skill's https://skill.dev" },
+      },
       assistant(2, [{ type: "thinking", thinking: "maybe https://thought.dev" }]),
-      assistant(3, [{ type: "tool_use", id: "t1", name: "WebFetch", input: { url: "https://fetched.dev" } }]),
-      assistant(4, [{ type: "text", text: "it links https://docs.dev/x and https://github.com/a/b" }]),
+      called(3, "f1", "WebFetch", { url: "https://fetched.dev/page", prompt: "read it" }),
+      answered(4, "f1", "the page links https://inside.dev/x"),
+      called(5, "s1", "WebSearch", { query: "chrome storage" }),
     ),
   );
   const events = Events.end();
 
   Links.adopt({ key });
-  assert.deepEqual(urls(key), ["https://github.com/a/b", "https://docs.dev/x"]);
+  appendFileSync(
+    path,
+    lines(
+      answered(6, "s1", 'Web search results\n\nLinks: [{"title":"A","url":"https://found.dev/a/?hl=es"}]'),
+      said(7, "it links https://docs.dev/x, see https://inside.dev/x\n\nSources:\n- [A](https://found.dev/a)"),
+    ),
+  );
+  Links.adopt({ key });
+  assert.deepEqual(urls(key), ["https://github.com/a/b", "https://fetched.dev/page", "https://docs.dev/x"]);
   assert.equal(Events.read(events).events.length, 0);
 
   const [first = ""] = sessionEntries(key);
   removeRecord(first);
   appendFileSync(
     path,
-    lines(assistant(5, [{ type: "text", text: "again https://github.com/a/b, new https://new.dev" }])),
+    lines(said(8, "again https://github.com/a/b, new https://new.dev"), user(9, "https://inside.dev/x")),
   );
   Links.adopt({ key, isLive: true });
 
-  assert.deepEqual(urls(key), ["", "https://docs.dev/x", "https://new.dev/"]);
+  assert.deepEqual(urls(key), [
+    "",
+    "https://fetched.dev/page",
+    "https://docs.dev/x",
+    "https://new.dev/",
+    "https://inside.dev/x",
+  ]);
   assert.deepEqual(
     Events.read(events).events.map((event) => [event.key, event.data.title]),
-    [[key, "new.dev"]],
+    [
+      [key, "new.dev"],
+      [key, "inside.dev"],
+    ],
   );
 });

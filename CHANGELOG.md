@@ -14,7 +14,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **Every link in the chat opens as a Web artifact.** A web address you or Claude write in a conversation,
   outside code, lands in its Artifacts once, the same entry clicking it in the sidecar makes, and one said
   while the sidecar shows that conversation gets the New artifact toast. A link you remove stays removed
-  however often it is said again.
+  however often it is said again, and a page a WebFetch or WebSearch brought back stays out even when
+  Claude cites it, unless you write it yourself.
 - **Hand-rolled styling is flagged as it is written.** `token-guard` reads what a Write or Edit adds to a
   `.vue` or `.css` file and names each raw colour, duration, `cubic-bezier` curve, arbitrary Tailwind
   bracket holding a px, rem, ms or hex value, and raw type, radius or spacing size, pointing at the token

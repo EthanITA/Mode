@@ -234,7 +234,8 @@ own back and forward history in its record, so ⌘[ and ⌘] step through it aft
 the sidecar serves only files someone opened. A web address you or Claude write in the chat, outside
 code, becomes a Web entry of that conversation too, once per address and read off the transcript, so a
 link you remove stays removed, and one said while the sidecar shows the conversation gets the toast a new
-page gets. Three lookups are worth knowing:
+page gets. A page a WebFetch or WebSearch brought back never does, even when Claude cites it in its
+sources, unless you write it yourself. Three lookups are worth knowing:
 
 | It resolves           | In this order                                                                                                   |
 | --------------------- | --------------------------------------------------------------------------------------------------------------- |
