@@ -18,8 +18,9 @@ function check(): void {
   const blocks = addedBlocks(str(input.old_string), added, marker);
   if (!blocks.length) return;
 
-  const wholeFile = data.tool_name === "Write";
-  const findings = verdicts(blocks, wholeFile && opensWithHeader(added, marker), wholeFile);
+  const isWrite = data.tool_name === "Write";
+  const isCreated = str(record(data.tool_response).type) === "create";
+  const findings = verdicts(blocks, isWrite && opensWithHeader(added, marker), isWrite && !isCreated);
   if (!findings.length) return;
   postContext(
     `comment-guard on ${basename(path)} — ${findings.join("; ")}\n\nThe rule this guard enforces: comment WHY, ` +
@@ -27,8 +28,9 @@ function check(): void {
       "blurbs, usage blocks, docstrings restating the signature, and anything describing what the " +
       "code does.\n\nA comment survives only if the logic is genuinely non-obvious, or the code " +
       "deliberately diverges from expectation for a specific reason — a hidden constraint, a " +
-      "linked workaround, a rejected alternative. Even then it earns one line.\n\nCut what fails " +
-      "that test now. Do not narrate the check itself; if you revise, say what changed in a clause.",
+      "linked workaround, a rejected alternative. Even then it earns one line.\n\nThat call is the " +
+      "user's, not yours: cut every comment named above now, and if you think one meets the test, " +
+      "name it in one clause of your reply so the user can put it back. Do not narrate the check itself.",
   );
 }
 

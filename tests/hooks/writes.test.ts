@@ -11,7 +11,12 @@ function wrote(
   guard: string,
   name: string,
   text: string,
-  { tool = "Write", file = text, before = "" }: { tool?: string; file?: string; before?: string } = {},
+  {
+    tool = "Write",
+    file = text,
+    before = "",
+    isCreated = false,
+  }: { tool?: string; file?: string; before?: string; isCreated?: boolean } = {},
 ): string {
   const path = write(join(tmp, name), file);
   const input =
@@ -19,7 +24,13 @@ function wrote(
   return contextOf(
     fire(
       `guards/${guard}`,
-      { session_id: "w0000001", hook_event_name: "PostToolUse", tool_name: tool, tool_input: input },
+      {
+        session_id: "w0000001",
+        hook_event_name: "PostToolUse",
+        tool_name: tool,
+        tool_input: input,
+        tool_response: { type: isCreated ? "create" : "update" },
+      },
       vars,
     ),
   );
@@ -28,7 +39,7 @@ function wrote(
 describe("comment-guard", () => {
   const lines = (...rows: string[]): string => rows.join("\n") + "\n";
 
-  test("flags a file header, a comment past two lines or 28 words, and any comment an edit adds", () => {
+  test("flags a file header, a comment past two lines or 28 words, and any comment an edit or a new file adds", () => {
     assert.match(
       wrote("comment-guard", "header.ts", lines("// Utilities for orders.", "export const a = 1")),
       /file-header comment/,
@@ -43,6 +54,10 @@ describe("comment-guard", () => {
     assert.match(wrote("comment-guard", "wordy.ts", lines("const a = 1", wordy), { tool: "Edit" }), /30-word comment/);
     assert.match(
       wrote("comment-guard", "short.py", lines("a = 1", "# the cap the API enforces"), { tool: "Edit" }),
+      /new comment/,
+    );
+    assert.match(
+      wrote("comment-guard", "created.ts", lines("const a = 1", "// the cap the API enforces"), { isCreated: true }),
       /new comment/,
     );
   });
