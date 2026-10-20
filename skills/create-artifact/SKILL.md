@@ -23,18 +23,11 @@ Mandatory before writing any artifact page: it calibrates how much design invest
 
 ## 1b. Read the open comments before you touch the page
 
-Every local artifact ships a review layer, so a page you are asked to change may already carry the user's comments on it. **Read them first, every time, before you plan a single edit.** Working from the chat while the page holds three open threads is how a round of review gets silently dropped. The threads are the sidecar's, so its CLI reads and answers them.
-
-1. **`sidecar comments <slug>`** prints the threads, and picks up anything the page saved to `~/Downloads` on the way. No layer yet means no comments, and it says so.
-2. **Work each open thread.** A comment is an instruction about one specific block, not a suggestion, and it carries the quote it was anchored to.
-3. **Answer every one as you go.** `sidecar comments <slug> --reply <n> "..."` says something back; `sidecar comments <slug> --resolve <n> "what changed"` closes it. A thread you decided not to act on stays open with a reply saying why, because a silent rejection is the one outcome the user cannot see.
-4. **Rebuild, then `artifact review <slug>`** to refresh the layer. Threads survive it: each one re-anchors by the text it was attached to, so a block that moved keeps its comment and a block that was rewritten reports itself unanchored rather than pointing at the wrong paragraph.
+Every local artifact ships a review layer, so a page you are asked to change may already carry the user's comments on it. **Read them first, every time, before you plan a single edit.** Working from the chat while the page holds three open threads is how a round of review gets silently dropped. The threads belong to the [sidecar](https://github.com/cela-sage/sidecar), and while it is installed its rule says how to read, answer and resolve them. Work each open thread as an instruction about the block it quotes, and answer every one, because a thread left open with no reply is the one outcome the user cannot see.
 
 **Resolving is a claim that the page now does what the thread asked, so resolve after the edit lands, never before.** Nothing is finished while a thread is open and unanswered.
 
-**What the user sends.** The page's Send and Approve go to the sidecar, which relays them into the conversation that built the page as a message from the user. With no sidecar running the page downloads `<slug>.comments.json`, and `sidecar comments <slug>` takes it from the downloads folder.
-
-**A `.md` in the artifacts directory is an artifact too.** The sidecar renders it in the house style and takes comments on it the way it does on a page, writing them into one `<!-- rv:seed -->` comment block at the end of the file. `sidecar comments`, `--reply` and `--resolve` work on it unchanged. `artifact review` only adds the empty block. Beyond that folder, every `.md` a conversation writes or edits is recorded against it by the PostToolUse hook, shows in the sidecar as `<stem>--<hash>`, and answers to `sidecar comments <that slug or its path>`. A comment on one lands in that file, wherever it lives.
+**Rebuild, then `artifact review <slug>`** to refresh the layer. Threads survive it: each one re-anchors by the text it was attached to, so a block that moved keeps its comment and a block that was rewritten reports itself unanchored rather than pointing at the wrong paragraph. On a `.md` in the artifacts directory, `artifact review` only adds the empty `<!-- rv:seed -->` block the sidecar writes its threads into.
 
 **In copilot mode this is the approval gate.** Approve pressed with no open threads is the yes: record it with `mode approve <slug>` and dispatch. Approve pressed with threads still open is an approval with named changes, so those threads are the work. Anything weaker is not an approval, and silence never is.
 
@@ -109,7 +102,7 @@ Then carry the sources into the page: a `.receipt` chip beside each claim and a 
 
 **Being local changes what you may reach for, so use it.** Three.js, GSAP, a real charting library and React are all available. The rules that remain are the ones that keep the file working in a year: pin an exact version, wrap initialisation in `try`/`catch` or a check that the global exists, and keep the prose readable when a library fails to load. See §8 and `references/rich-media.md`.
 
-**The artifacts directory** resolves in this order: the `NOTES_ARTIFACTS` environment variable, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/.claude/sidecar/artifacts`. `artifact list` reads the same chain, so where the CLI looks and where you write can never disagree.
+**The artifacts directory** resolves in this order: the `NOTES_ARTIFACTS` environment variable, then `~/.claude/sidecar/artifacts`. `artifact list` reads the same chain, so where the CLI looks and where you write can never disagree.
 
 **Only the finished page goes in it**: a `<slug>.html`, or a `<slug>.md` that is itself the artifact. Everything that builds the page lives in the session's own **build folder**, `$CLAUDE_JOB_DIR/tmp/<slug>/`, or `$TMPDIR/claude-<first 8 of $CLAUDE_CODE_SESSION_ID>/<slug>/` when `CLAUDE_JOB_DIR` is unset. That covers a pre-build source, build scripts, data exports, a brief and the notes file. It goes away when the session does, so the page has to stand on its own.
 
