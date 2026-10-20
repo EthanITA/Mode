@@ -31,7 +31,6 @@ const MD_SEED_START = "<!-- rv:seed\n";
 const COMMENT = /<!--[\s\S]*?-->/g;
 const FENCE = /^(```|~~~)[\s\S]*?^\1/gm;
 const H1 = /^#[ \t]+(.+?)[ \t#]*$/m;
-// Mirrors BLOCK in lib/artifact/review.ts, the one writer of this layer.
 const RV_LAYER = /<!-- rv:start -->[\s\S]*?<!-- rv:end -->\n?/;
 const RV_LAYER_START = /<!-- rv:start -->/;
 type MetaField = "slug" | "title" | "url" | "target" | "ds" | "updated";
@@ -87,7 +86,7 @@ function parseMeta({ format, head, fallbackSlug, path }: ParseMetaInput): Artifa
   }
   // A document's slug carries a hash, so its own file name reads better than a deslugged fallback.
   const title = fields.title || titleOf(head, format) || (format === "md" ? basename(path, ".md") : "");
-  // A local showpiece owns its own doctype; a published one never does, and a .md is never published. Mirrors readMeta in lib/artifact/store.ts.
+  // A local showpiece owns its own doctype; a published one never does, and a .md is never published. Mirrors readMeta in Mode's lib/artifact/store.ts.
   const target = fields.target || (format === "md" || /^\s*<!doctype/i.test(head) ? "s" : "b");
   return {
     slug: fields.slug || fallbackSlug,

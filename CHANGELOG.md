@@ -324,6 +324,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **`artifact` knows only pages and recorded documents.** `artifact list`, `path`, `url`, `touch` and
+  `stamp` no longer see Web artifacts or files a link opened, which are the sidecar's, so the status line
+  stops showing Web artifacts. The `artifacts` key in `~/.claude/mode/config.json` is gone, and
+  `NOTES_ARTIFACTS` is the one way to move the folder, read the same by the sidecar.
 - **The sidecar announces a new page itself.** It watches the conversation lists in `~/.claude/artifacts/`
   and toasts a page the first time a conversation records one it was not already showing, so
   `artifact new` and the observe hook no longer publish `artifact.created`. The observe hook now records

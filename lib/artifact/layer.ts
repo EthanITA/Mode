@@ -1,14 +1,13 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { basename, extname, join } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
 import { isRecord, type Payload } from "../hook/io.ts";
 import { Refusal } from "../mode/refusal.ts";
-import { isStoredDocument, MD_SEED } from "../sidecar/comments.ts";
 import { pyJson, pyStr } from "../text.ts";
-import { isWebRecord } from "../web/records.ts";
 import { artifactsDir, readPage, root } from "./files.ts";
 
 const BLOCK = /<!-- rv:start -->[\s\S]*?<!-- rv:end -->\n?/;
 const SEED = /(<script type="application\/json" id="rv-seed">)([\s\S]*?)(<\/script>)/;
+const MD_SEED = /(<!-- rv:seed\n)([\s\S]*?)(\n-->\n?)/;
 
 const stem = (path: string): string => basename(path, extname(path));
 
@@ -23,10 +22,9 @@ const seeded = (text: string): Payload => {
 
 // Inject or refresh the layer in place, carrying whatever threads the page already holds.
 export const install = (path: string, sidecar = ""): string => {
-  if (isStoredDocument(path, artifactsDir()) || isWebRecord(path)) return "already present";
   const text = readPage(path);
   if (path.endsWith(".md")) {
-    if (MD_SEED.test(text)) return "already present";
+    if (dirname(path) !== artifactsDir() || MD_SEED.test(text)) return "already present";
     const doc = pyJson({ v: 1, slug: stem(path), threads: [] }, false);
     writeFileSync(path, `${text.replace(/\n+$/, "")}\n\n<!-- rv:seed\n${doc}\n-->\n`);
     return "added";

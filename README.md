@@ -238,13 +238,13 @@ new page gets, and one said while the sidecar was stopped lands quietly once it 
 or WebSearch brought back never does, even when Claude cites it in its sources, unless you write it
 yourself. Three lookups are worth knowing:
 
-| It resolves           | In this order                                                                                                   |
-| --------------------- | --------------------------------------------------------------------------------------------------------------- |
-| A design system       | The packs shipped here, then `~/.claude/mode/design-systems/`, where yours wins on a name clash                 |
-| Where artifacts live  | `NOTES_ARTIFACTS`, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/.claude/sidecar/artifacts` |
-| Who a comment is from | The `user` key in `~/.claude/sidecar/config.json`, defaulting to "User"                                         |
+| It resolves           | In this order                                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------------- |
+| A design system       | The packs shipped here, then `~/.claude/mode/design-systems/`, where yours wins on a name clash |
+| Where artifacts live  | `NOTES_ARTIFACTS`, then `~/.claude/sidecar/artifacts`                                           |
+| Who a comment is from | The `user` key in `~/.claude/sidecar/config.json`, defaulting to "User"                         |
 
-That config file holds the plugin's own settings too: `guards` turns every guard off at once,
+`~/.claude/mode/config.json` holds the plugin's own settings: `guards` turns every guard off at once,
 `disarm` turns off only the guards it lists by file stem, such as `["board-check"]`.
 `review-lines`, 30 when absent, is how many changed lines a `pair` commit may record before
 `pair-guard` wants the director to have answered after the last edit.

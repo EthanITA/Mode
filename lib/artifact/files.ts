@@ -2,9 +2,7 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { modeConfig } from "../mode/config.ts";
-import { resolvePluginRoot, sidecarHome } from "../mode/paths.ts";
-import { pyStr } from "../text.ts";
+import { configRoot, resolvePluginRoot } from "../mode/paths.ts";
 
 const moduleDir = dirname(fileURLToPath(import.meta.url));
 
@@ -21,7 +19,5 @@ export function readPage(path: string): string {
 export const expandHome = (path: string): string =>
   path === "~" || path.startsWith("~/") ? homedir() + path.slice(1) : path;
 
-export function artifactsDir(): string {
-  const configured = process.env.NOTES_ARTIFACTS || (modeConfig().artifacts ? pyStr(modeConfig().artifacts) : "");
-  return configured ? expandHome(configured) : join(sidecarHome(), "artifacts");
-}
+export const artifactsDir = (): string =>
+  process.env.NOTES_ARTIFACTS ? expandHome(process.env.NOTES_ARTIFACTS) : join(configRoot(), "sidecar", "artifacts");

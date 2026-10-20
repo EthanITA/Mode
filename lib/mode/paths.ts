@@ -35,10 +35,6 @@ export function modeHome(): string {
   return join(configRoot(), "mode");
 }
 
-export function sidecarHome(): string {
-  return join(configRoot(), "sidecar");
-}
-
 // Session state sits one level down, so it can never be mistaken for a contract folder.
 export function stateHome(): string {
   return join(modeHome(), "state");

@@ -1,5 +1,5 @@
 import { basename } from "node:path";
-import { install } from "../lib/artifact/review.ts";
+import { install } from "../lib/artifact/layer.ts";
 import {
   documentSlug,
   ds,

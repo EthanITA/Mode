@@ -14,7 +14,7 @@ The product and its CLI are **the sidecar**, never "Mode". The plugin is still n
 
 ## The two surfaces · fires: when the sidecar's desktop-versus-web behaviour matters
 
-A Web artifact renders one of two ways, and which one is the surface chosen in `sidecar setup`, stored in `sidecarHome()/config.json` as `{ surface: "desktop" | "web" }`:
+A Web artifact renders one of two ways, and which one is the surface chosen in `sidecar setup`, stored in `~/.claude/sidecar/config.json` as `{ surface: "desktop" | "web" }`:
 
 - **desktop** is the Electron shell in `desktop/`, where a Web artifact is a real top-level Chromium page signed in with imported Chrome cookies, heavier because it is a separate Chromium but with no framing refusals.
 - **web** is a tab in Chrome against the sidecar, where a Web artifact is framed through the rewriting proxy, light but broken on framing-hostile sites.

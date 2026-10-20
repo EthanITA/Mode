@@ -1,17 +1,21 @@
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { createHash } from "node:crypto";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { basename, dirname, extname, join, resolve as resolvePath } from "node:path";
 import { isDir, isFile, readTextSafe } from "../files.ts";
 import { configRoot, modeHome } from "../mode/paths.ts";
 import { Refusal } from "../mode/refusal.ts";
 import { head, lines, lstrip, pad, strip, words } from "../text.ts";
-import { documentSlug } from "../sidecar/comments.ts";
-import { Tracked } from "../sidecar/tracked.ts";
-import { isWebRecord, listRecords, readRecord, recordPath } from "../web/records.ts";
 import { artifactsDir, expandHome, readPage, root } from "./files.ts";
-import { install } from "./review.ts";
-
-export { artifactsDir, documentSlug };
+import { install } from "./layer.ts";
 
 export type Meta = Record<string, string>;
 
@@ -28,6 +32,20 @@ const FIELDS = ["slug", "title", "url", "target", "ds", "updated"];
 export const TEMPLATES = ["interactive", "showpiece"];
 
 const stem = (path: string): string => basename(path, extname(path));
+
+const realPath = (path: string): string => {
+  try {
+    return realpathSync.native(path);
+  } catch {
+    return path;
+  }
+};
+
+export const documentSlug = (path: string): string => {
+  const real = realPath(path);
+  const name = basename(real, extname(real)).replace(/[^a-zA-Z0-9._-]+/g, "-");
+  return `${name}--${createHash("sha1").update(real).digest("hex").slice(0, 6)}`;
+};
 
 // Same key the status line derives from its own session_id, so both sides agree.
 const sessionDir = (): string => join(configRoot(), "artifacts");
@@ -80,7 +98,7 @@ export function artifactFiles(): string[] {
 }
 
 export function entryOf(path: string): string {
-  return isWebRecord(path) || artifactFiles().includes(path) ? stem(path) : path;
+  return artifactFiles().includes(path) ? stem(path) : path;
 }
 
 const ENTITIES: Record<string, string> = {
@@ -120,8 +138,6 @@ function unescapeHtml(text: string): string {
 }
 
 export function readMeta(path: string): Meta {
-  const site = isWebRecord(path) ? readRecord(stem(path)) : undefined;
-  if (site) return { path, slug: site.slug, target: "s", title: site.title ?? new URL(site.url).host, url: site.url };
   const top = head(readPage(path), 4000);
   const meta: Meta = { slug: stem(path), path };
   for (const line of lines(BLOCK.exec(top)?.[1] ?? "")) {
@@ -143,14 +159,12 @@ export function readMeta(path: string): Meta {
   return meta;
 }
 
-// A .md given by its path, then a recorded document's or opened file's slug, then this conversation's artifacts, then the folder.
 export function resolve(given: string, sid?: string): string {
   if (given.includes("/") && given.endsWith(".md") && isFile(expandHome(given))) return resolvePath(expandHome(given));
   const files = artifactFiles();
   const token = given.replace(/\.(html|md)$/, "");
-  const document = recordedDocuments().get(token) ?? Tracked.paths().get(token);
+  const document = recordedDocuments().get(token);
   if (document) return document;
-  files.push(...listRecords().map((site) => recordPath(site.slug)));
   if (!files.length) throw new Refusal(`no artifacts in ${artifactsDir()}`);
   const recorded = new Set(sessionEntries(sid));
   const pools = recorded.size ? [files.filter((path) => recorded.has(stem(path))), files] : [files];
@@ -216,7 +230,7 @@ export function listReport({
   session?: string;
   tsv?: boolean;
 }): string {
-  let files = [...artifactFiles(), ...listRecords().map((site) => recordPath(site.slug))];
+  let files = artifactFiles();
   let docs = new Map<string, string>();
   if (mine) {
     const entries = sessionEntries(session || undefined);
@@ -347,10 +361,4 @@ export function scaffold({
   install(path);
   stamp(path, { ds: key, target: "s", title });
   return path;
-}
-
-// What the page's Save button wrote, which lands wherever the browser puts a download.
-export function dropped(slug: string): string | undefined {
-  const hit = join(homedir(), "Downloads", `${slug}.comments.json`);
-  return isFile(hit) ? hit : undefined;
 }
