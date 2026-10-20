@@ -352,9 +352,13 @@ watch(
   @apply relative min-h-0 min-w-0 flex-1 overflow-hidden bg-raised;
 }
 
-iframe,
-webview {
+iframe {
   @apply block size-full border-0 transition-opacity duration-(--duration-fast) ease-out;
+}
+
+/* Filled absolutely because an Electron <webview> does not take a percentage height the way an iframe does. */
+webview {
+  @apply absolute inset-0 border-0 transition-opacity duration-(--duration-fast) ease-out;
 }
 
 /* Held back until the agent is up, so a half-parsed page never shows under the loading line. */
