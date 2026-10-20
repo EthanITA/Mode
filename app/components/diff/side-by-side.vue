@@ -312,26 +312,26 @@ onBeforeUnmount(() => {
         class="hunk"
         :style="{ top: `${hunk.top}px` }"
       >
-        <button
-          class="arrow focusable"
-          type="button"
+        <UiIconButton
+          aria-label="Accept the hunk"
           data-tip="Accept the hunk"
-          data-tone="accept"
           :disabled="isBusy || isDirty"
+          :icon="Check"
+          icon-size="xs"
+          size="xs"
+          tone="success"
           @click="emit('hunk', hunk.change, true, $event)"
-        >
-          <UiIcon :icon="Check" size="xs" />
-        </button>
-        <button
-          class="arrow focusable"
-          type="button"
+        />
+        <UiIconButton
+          aria-label="Reject the hunk"
           data-tip="Reject the hunk, then say why"
-          data-tone="reject"
           :disabled="isBusy || isDirty"
+          :icon="X"
+          icon-size="xs"
+          size="xs"
+          tone="destructive"
           @click="emit('hunk', hunk.change, false, $event)"
-        >
-          <UiIcon :icon="X" size="xs" />
-        </button>
+        />
       </div>
     </div>
   </div>
@@ -356,28 +356,6 @@ onBeforeUnmount(() => {
 }
 
 .hunk {
-  @apply pointer-events-auto absolute right-1 z-5 flex gap-px rounded-full border border-ed-button bg-ed-bar p-px;
-}
-
-.arrow {
-  @apply grid h-4 w-5 cursor-pointer items-center justify-items-center rounded-full border-0 bg-transparent bg-none p-0 text-ed-muted;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .arrow:hover:not(:disabled) {
-    @apply bg-ed-button;
-  }
-
-  .arrow[data-tone="accept"]:hover:not(:disabled) {
-    @apply text-ed-add;
-  }
-
-  .arrow[data-tone="reject"]:hover:not(:disabled) {
-    @apply text-ed-remove;
-  }
-}
-
-.arrow:disabled {
-  @apply cursor-progress opacity-50;
+  @apply editor-tokens decision-pill pointer-events-auto absolute right-1 z-5;
 }
 </style>

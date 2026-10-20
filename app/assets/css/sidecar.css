@@ -165,6 +165,10 @@ body {
   @apply pointer-events-none absolute inset-y-0 right-0 flex items-center rounded-l-none bg-linear-to-r from-transparent to-(--row-bg) to-[--spacing(4.5)] py-0 pl-4.5 opacity-0 transition-opacity duration-(--duration-fast) ease-out;
 }
 
+@utility decision-pill {
+  @apply inline-flex items-center gap-px rounded-full border border-border-strong bg-raised p-px;
+}
+
 @utility scrim {
   @apply fixed inset-0 bg-fg/12;
 }

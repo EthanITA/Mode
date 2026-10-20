@@ -51,31 +51,30 @@ function reject(event: MouseEvent, path: string): void {
           <span v-if="entry.kind === 'dir' && review.confirming.value !== entry.path" class="count mono-meta">{{
             countOf(entry.path)
           }}</span>
-          <button
-            class="dot focusable"
-            type="button"
-            data-tone="accept"
+          <UiIconButton
             :aria-label="`Approve ${whatOf(entry)}`"
             :data-tip="`Approve ${whatOf(entry)}`"
             :disabled="!isIdle"
+            :icon="Check"
+            icon-size="xs"
+            size="xs"
+            tone="success"
             @click="review.decideUnder(entry.path, true)"
-          >
-            <UiIcon :icon="Check" size="xs" />
-          </button>
+          />
           <span v-if="review.confirming.value === entry.path" class="ask">
             Reject {{ entry.kind === "dir" ? countOf(entry.path) : "it" }}?
           </span>
-          <button
-            class="dot focusable"
-            type="button"
-            data-tone="reject"
+          <UiIconButton
             :aria-label="`${review.confirming.value === entry.path ? 'Press again to reject' : 'Reject'} ${whatOf(entry)}`"
             :data-tip="review.confirming.value === entry.path ? 'Press again to reject' : 'Reject, then say why'"
             :disabled="!isIdle"
+            :icon="X"
+            icon-size="xs"
+            size="xs"
+            tone="destructive"
+            :variant="review.confirming.value === entry.path ? 'filled' : 'ghost'"
             @click="reject($event, entry.path)"
-          >
-            <UiIcon :icon="X" size="xs" />
-          </button>
+          />
         </span>
       </template>
     </FileTree>
@@ -83,9 +82,8 @@ function reject(event: MouseEvent, path: string): void {
 </template>
 
 <style scoped>
-/* The hunk seam's pill, in the tree's light surface. */
 .pill {
-  @apply inline-flex items-center gap-px rounded-full border border-border-strong bg-raised p-px;
+  @apply decision-pill;
 }
 
 .pill[data-armed="true"] {
@@ -98,27 +96,5 @@ function reject(event: MouseEvent, path: string): void {
 
 .ask {
   @apply py-0 pr-0.5 pl-1 typo-meta-semibold whitespace-nowrap text-error;
-}
-
-.dot {
-  @apply grid h-4 w-5 cursor-pointer items-center justify-items-center rounded-full border-0 bg-transparent bg-none p-0 text-muted;
-}
-
-.pill[data-armed="true"] .dot[data-tone="reject"] {
-  @apply bg-error-soft text-error;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .dot[data-tone="accept"]:hover:not(:disabled) {
-    @apply bg-success-soft text-success;
-  }
-
-  .dot[data-tone="reject"]:hover:not(:disabled) {
-    @apply bg-error-soft text-error;
-  }
-}
-
-.dot:disabled {
-  @apply cursor-progress opacity-50;
 }
 </style>
