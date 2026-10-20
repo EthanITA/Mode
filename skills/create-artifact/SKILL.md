@@ -23,18 +23,18 @@ Mandatory before writing any artifact page: it calibrates how much design invest
 
 ## 1b. Read the open comments before you touch the page
 
-Every local artifact ships a review layer, so a page you are asked to change may already carry the user's comments on it. **Read them first, every time, before you plan a single edit.** Working from the chat while the page holds three open threads is how a round of review gets silently dropped.
+Every local artifact ships a review layer, so a page you are asked to change may already carry the user's comments on it. **Read them first, every time, before you plan a single edit.** Working from the chat while the page holds three open threads is how a round of review gets silently dropped. The threads are the sidecar's, so its CLI reads and answers them.
 
-1. **`artifact comments <slug>`** prints the threads, and picks up anything the page saved to `~/Downloads` on the way. No layer yet means no comments, and it says so.
+1. **`sidecar comments <slug>`** prints the threads, and picks up anything the page saved to `~/Downloads` on the way. No layer yet means no comments, and it says so.
 2. **Work each open thread.** A comment is an instruction about one specific block, not a suggestion, and it carries the quote it was anchored to.
-3. **Answer every one as you go.** `artifact comments <slug> --reply <n> "..."` says something back; `artifact comments <slug> --resolve <n> "what changed"` closes it. A thread you decided not to act on stays open with a reply saying why, because a silent rejection is the one outcome the user cannot see.
+3. **Answer every one as you go.** `sidecar comments <slug> --reply <n> "..."` says something back; `sidecar comments <slug> --resolve <n> "what changed"` closes it. A thread you decided not to act on stays open with a reply saying why, because a silent rejection is the one outcome the user cannot see.
 4. **Rebuild, then `artifact review <slug>`** to refresh the layer. Threads survive it: each one re-anchors by the text it was attached to, so a block that moved keeps its comment and a block that was rewritten reports itself unanchored rather than pointing at the wrong paragraph.
 
 **Resolving is a claim that the page now does what the thread asked, so resolve after the edit lands, never before.** Nothing is finished while a thread is open and unanswered.
 
-**What the user sends.** The page's Send and Approve go to the sidecar, which relays them into the conversation that built the page as a message from the user. With no sidecar running the page downloads `<slug>.comments.json`, and `artifact comments <slug>` takes it from the downloads folder, so the artifact still works alone on a laptop.
+**What the user sends.** The page's Send and Approve go to the sidecar, which relays them into the conversation that built the page as a message from the user. With no sidecar running the page downloads `<slug>.comments.json`, and `sidecar comments <slug>` takes it from the downloads folder.
 
-**A `.md` in the artifacts directory is an artifact too.** The sidecar renders it in the house style and takes comments on it the way it does on a page, writing them into one `<!-- rv:seed -->` comment block at the end of the file. `artifact comments`, `--reply` and `--resolve` work on it unchanged. `artifact review` only adds the empty block. Beyond that folder, every `.md` a conversation writes or edits is recorded against it by the PostToolUse hook, shows in the sidecar as `<stem>--<hash>`, and answers to `artifact comments <that slug or its path>`. A comment on one lands in that file, wherever it lives.
+**A `.md` in the artifacts directory is an artifact too.** The sidecar renders it in the house style and takes comments on it the way it does on a page, writing them into one `<!-- rv:seed -->` comment block at the end of the file. `sidecar comments`, `--reply` and `--resolve` work on it unchanged. `artifact review` only adds the empty block. Beyond that folder, every `.md` a conversation writes or edits is recorded against it by the PostToolUse hook, shows in the sidecar as `<stem>--<hash>`, and answers to `sidecar comments <that slug or its path>`. A comment on one lands in that file, wherever it lives.
 
 **In copilot mode this is the approval gate.** Approve pressed with no open threads is the yes: record it with `mode approve <slug>` and dispatch. Approve pressed with threads still open is an approval with named changes, so those threads are the work. Anything weaker is not an approval, and silence never is.
 
@@ -139,7 +139,7 @@ Then carry the sources into the page: a `.receipt` chip beside each claim and a 
 5. **Harden per `showpiece.md`**: device pixel ratio capped at 2, loop paused when the tab is hidden, canvas sized to its container, `webglcontextlost` handled, no console errors in any state.
 6. **Refresh the review layer** with `artifact review <slug>` after a rebuild. It carries its own threads, so refreshing keeps every comment already made. Never paste the layer or the kit by hand and never edit either inside a page: the one copies live in `assets/` and the commands install them.
 7. **Gate it, last thing before delivering**: `scripts/check-prose.sh <file>` and `scripts/check-artifact.sh --target s <file>`. Both skip the review layer, so the page is judged on its own content. Edit nothing afterwards.
-8. **Hand over the absolute path and stop.** Never open it yourself, with `artifact open` or `open <path>`, unless they ask, because they open it when they choose. You still never inspect the rendered page, screenshot it, or ask whether it looks right.
+8. **Hand over the absolute path and stop.** Never open it yourself, with `sidecar open --artifact <slug>` or `open <path>`, unless they ask, because they open it when they choose. You still never inspect the rendered page, screenshot it, or ask whether it looks right.
 
 ## 9. Build for Target A (in-repo lab)
 

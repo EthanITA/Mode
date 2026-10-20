@@ -1,15 +1,18 @@
 import { execFileSync, spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, openSync, readdirSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { Commands } from "../lib/sidecar/commands.ts";
+import { SidecarConfig } from "../lib/sidecar/config.ts";
 import { Sidecar } from "../lib/sidecar/paths.ts";
 import * as Events from "../lib/sidecar/events.ts";
 import type { Topics } from "../shared/types/events.ts";
 
-type Command = "open" | "publish" | "status" | "start" | "stop" | "restart" | "setup" | "uninstall" | "import" | "help";
+type Command =
+  "open" | "comments" | "publish" | "status" | "start" | "stop" | "restart" | "setup" | "uninstall" | "import" | "help";
 type Proc = { pid: number; ppid: number; args: string };
 type Point = { key?: string; slug?: string };
 
@@ -29,22 +32,15 @@ const DESKTOP_APP = join(homedir(), "Applications", `${NAME}.app`);
 const isDesktopInstalled = (): boolean => existsSync(DESKTOP_APP);
 // The Electron userData, named after the app, holds the imported cookies and the import marker.
 const APP_DATA = join(homedir(), "Library", "Application Support", NAME);
-const CONFIG = join(Sidecar.home(), "config.json");
-
 type Surface = "desktop" | "web";
 
 function readSurface(): Surface | undefined {
-  try {
-    const { surface } = JSON.parse(readFileSync(CONFIG, "utf8")) as { surface?: Surface };
-    return surface === "desktop" || surface === "web" ? surface : undefined;
-  } catch {
-    return undefined;
-  }
+  const { surface } = SidecarConfig.read();
+  return surface === "desktop" || surface === "web" ? surface : undefined;
 }
 
 function writeSurface(surface: Surface): void {
-  mkdirSync(Sidecar.home(), { recursive: true });
-  writeFileSync(CONFIG, `${JSON.stringify({ surface }, null, 2)}\n`);
+  SidecarConfig.write({ surface });
 }
 
 const USAGE = `usage: sidecar [command]     /sidecar [command] in a Claude Code session runs the same
@@ -52,7 +48,9 @@ const USAGE = `usage: sidecar [command]     /sidecar [command] in a Claude Code 
   open [key]  the default: start it when down, point it at the conversation, and bring an open
               sidecar to the front, else open it as the surface you chose in setup.
               The conversation is the key given, else the Claude Code session this runs in, and
-              --artifact <slug> opens that page there, in Artifacts
+              --artifact <slug|url> opens that page there, in Artifacts, an address as a new Web artifact
+  comments <slug> [--reply <n> "text"] [--resolve <n> ["what changed"]] [--json]
+              read the comment threads on an artifact, and answer or close one
   setup [desktop|web]
               choose how the sidecar runs and set it up. desktop builds and installs the Electron
               app, so Web artifacts render as real pages signed in with Chrome's cookies; web runs
@@ -458,7 +456,7 @@ function importCookies(): number {
 // The app bundle, the Electron userData that holds the imported cookies, and the surface choice, so a fresh setup starts clean.
 function uninstall(): number {
   const had = isDesktopInstalled();
-  for (const path of [DESKTOP_APP, APP_DATA, CONFIG]) rmSync(path, { force: true, recursive: true });
+  for (const path of [DESKTOP_APP, APP_DATA, SidecarConfig.file()]) rmSync(path, { force: true, recursive: true });
   console.log(had ? "removed the desktop app and all its data" : "removed the sidecar's data");
   return 0;
 }
@@ -470,8 +468,10 @@ const COMMANDS = {
       allowPositionals: true,
       options: { artifact: { type: "string" } },
     });
-    return open({ key: positionals[0], slug: values.artifact });
+    const key = positionals[0] ?? process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8);
+    return open({ key, slug: values.artifact && Commands.artifact(values.artifact, key) });
   },
+  comments: async () => Commands.comments(process.argv.slice(3)),
   publish: async () => publish(),
   status,
   start,

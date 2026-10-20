@@ -324,6 +324,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **Comments and opening a page moved to the sidecar CLI.** `artifact comments <slug>` is now
+  `sidecar comments <slug>`, with the same `--reply`, `--resolve`, `--json` and `--ingest`, and
+  `artifact open <slug|url>` is now `sidecar open --artifact <slug|url>`. The `user` key that names who
+  left a comment moved from `~/.claude/mode/config.json` to `~/.claude/sidecar/config.json`, carried over
+  once. `artifact` keeps scaffolding, stamping and `review`, which installs the layer.
 - **The sidecar keeps its own list of conversations.** It used to find past conversations by reading
   mode's session state, so the list now comes from `~/.claude/sidecar/conversations/`, where the sidecar's
   Claude Code mod leaves one empty file per conversation as it takes a turn. Removing a conversation in

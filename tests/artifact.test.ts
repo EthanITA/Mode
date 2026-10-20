@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, symlinkSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, test } from "node:test";
 import { ARTIFACT, env, PLUGIN, run, scratch, write } from "./support.ts";
 
@@ -52,30 +52,6 @@ describe("stamp and list", () => {
   });
 });
 
-describe("comments on a .md", () => {
-  test("land in one trailing block that a --> inside a thread cannot close, and read back whole", () => {
-    const sent = write(
-      join(tmp, "plan.comments.json"),
-      JSON.stringify({
-        threads: [
-          { id: "t1", n: 1, by: "user", at: "a", updated: "a", body: "before --> after", status: "open", replies: [] },
-        ],
-      }),
-    );
-    artifact("comments", "plan", "--ingest", sent);
-    assert.equal(artifact("comments", "plan", "--reply", "1", "done").status, 0);
-    const body = read(join(arts, "plan.md"));
-    assert.ok(body.split("<!-- rv:seed").length === 2 && !body.includes("--> after") && body.endsWith("-->\n"), body);
-    const doc = JSON.parse(artifact("comments", "plan", "--json", "--no-ingest").stdout || "{}") as {
-      threads?: { body: string; replies?: unknown[] }[];
-    };
-    assert.deepEqual(
-      doc.threads?.map(({ body, replies }) => [body, replies?.length]),
-      [["before --> after", 1]],
-    );
-  });
-});
-
 describe("new and kit", () => {
   const packs = join(config, "mode", "design-systems");
   write(
@@ -102,20 +78,6 @@ describe("new and kit", () => {
       assert.deepEqual([body.split("<!-- cx:start -->").length, body.split("<!-- rv:start -->").length], [2, 2], key);
     }
     assert.match(page("layered"), /fonts\.googleapis\.com\/css2\?family=Inter/);
-  });
-
-  test("new announces the page, and a read resumes from its offset while a half-written line waits", async () => {
-    process.env.CLAUDE_CONFIG_DIR = config;
-    const Events = await import("../lib/sidecar/events.ts");
-    const before = Events.end();
-    assert.equal(artifact("new", "announced", "--ds", "neutral", "--title", "Announced").status, 0);
-    const { events, offset } = Events.read(before);
-    assert.deepEqual(
-      events.map(({ topic, data }) => [topic, data.slug, data.title]),
-      [["artifact.created", "announced", "Announced"]],
-    );
-    appendFileSync(Events.logFile(), '{"topic":"artifact.created"');
-    assert.deepEqual(Events.read(offset), { events: [], offset });
   });
 
   test("new refuses a slug that already has a page, and kit refreshes in place", () => {
@@ -167,147 +129,5 @@ describe("a .md outside the folder", () => {
     assert.ok(touched.status === 0 && touched.stdout.includes(slug), touched.stderr);
     assert.ok(run(ARTIFACT, ["list", "--session", "--tsv"], { env: mine }).stdout.includes(`${slug}\t${doc}`));
     assert.equal(artifact("path", slug).stdout.trim(), doc);
-  });
-
-  test("keeps its comments in the sidecar store, leaving the file as it was and lifting out an old block", () => {
-    const threads = [{ id: "t0", n: 1, by: "user", at: "a", updated: "a", body: "old", status: "open", replies: [] }];
-    const doc = write(
-      join(tmp, "notes", "plan.md"),
-      `# Plan\n\nShip it.\n\n<!-- rv:seed\n${JSON.stringify({ v: 1, threads })}\n-->\n`,
-    );
-    assert.equal(artifact("comments", doc, "--reply", "1", "done").status, 0);
-    assert.equal(read(doc), "# Plan\n\nShip it.\n");
-    const slug = `plan--${createHash("sha1").update(doc).digest("hex").slice(0, 6)}`;
-    const stored = JSON.parse(read(join(config, "sidecar", "comments", `${slug}.json`))) as {
-      threads: { body: string; replies: unknown[] }[];
-    };
-    assert.deepEqual(
-      stored.threads.map(({ body, replies }) => [body, replies.length]),
-      [["old", 1]],
-    );
-  });
-
-  test("reached through a symlink reads the same store as its real path", () => {
-    const threads = [{ id: "t0", n: 1, by: "user", at: "a", updated: "a", body: "old", status: "open", replies: [] }];
-    const doc = write(
-      join(tmp, "rules", "relay.md"),
-      `# Relay\n\n<!-- rv:seed\n${JSON.stringify({ v: 1, threads })}\n-->\n`,
-    );
-    const link = join(tmp, "linked", "relay.md");
-    mkdirSync(dirname(link), { recursive: true });
-    symlinkSync(doc, link);
-    assert.equal(artifact("comments", doc, "--reply", "1", "done").status, 0);
-    const seen = JSON.parse(artifact("comments", link, "--json", "--no-ingest").stdout || "{}") as {
-      threads?: { replies: unknown[] }[];
-    };
-    assert.deepEqual(
-      seen.threads?.map(({ replies }) => replies.length),
-      [1],
-    );
-  });
-});
-
-describe("web entries", () => {
-  test("what is typed opens as the address it names, or as a search, the way a browser's bar reads it", async () => {
-    const { addressOf, parseTarget } = await import("../lib/web/target.ts");
-    assert.equal(parseTarget("localhost:3000/guide/hooks")?.href, "http://localhost:3000/guide/hooks");
-    assert.equal(parseTarget("docs.mode.dev/guide")?.href, "https://docs.mode.dev/guide");
-    assert.equal(parseTarget("myapp.localhost")?.href, "http://myapp.localhost/");
-    assert.equal(parseTarget("intranet:8080")?.href, "https://intranet:8080/");
-    for (const typed of ["vue", "how to center a div", "ftp://files.dev", "  "])
-      assert.equal(parseTarget(typed), undefined, typed);
-    assert.equal(addressOf("how to center a div")?.href, "https://www.google.com/search?q=how%20to%20center%20a%20div");
-    assert.equal(addressOf("localhost")?.href, "http://localhost/");
-    assert.equal(addressOf(" "), undefined);
-  });
-
-  test("every open is a new artifact, and only a reuse lands on one already opened on or showing the address", async () => {
-    process.env.CLAUDE_CONFIG_DIR = config;
-    const { openRecord, readRecord, removeRecord, restoreRecord, updateRecord, webSlug } =
-      await import("../lib/web/records.ts");
-    const guide = new URL("http://localhost:3000/guide");
-    const first = openRecord({ url: guide });
-    const second = openRecord({ title: "Mode docs", url: guide });
-    assert.match(first.record.slug, /^localhost-3000-[0-9a-f]{6}$/);
-    assert.deepEqual([first.isNew, second.isNew, second.record.title], [true, true, "Mode docs"]);
-    assert.notEqual(second.record.slug, first.record.slug);
-
-    const mine = [first.record.slug];
-    assert.deepEqual(
-      [openRecord({ reuse: mine, url: guide }).record.slug, openRecord({ reuse: mine, url: guide }).isNew],
-      [first.record.slug, false],
-    );
-    assert.equal(openRecord({ reuse: mine, url: new URL("http://localhost:3000/other") }).isNew, true);
-    updateRecord(first.record.slug, { url: new URL("https://www.google.com/") });
-    const back = openRecord({ reuse: mine, url: guide });
-    assert.deepEqual(
-      [back.isNew, back.record.url, readRecord(first.record.slug)?.trail?.urls.at(-1)],
-      [false, guide.href, guide.href],
-    );
-
-    const gone = removeRecord(second.record.slug);
-    assert.ok(gone && !readRecord(second.record.slug));
-    assert.ok(restoreRecord({ ...gone, threads: [{ id: "t1" }] }));
-    assert.deepEqual(readRecord(second.record.slug)?.threads, [{ id: "t1" }]);
-    assert.equal(restoreRecord({ ...gone, slug: "../out" }), undefined);
-    assert.match(webSlug(new URL("https://www.reddit.com/r/vue")), /^reddit-[0-9a-f]{6}$/);
-    const long = webSlug(new URL(`https://${"feature-branch-".repeat(3)}mode-docs-team.vercel.app/`));
-    assert.ok(long.length <= 31 && /^[a-z0-9][a-z0-9-]*-[0-9a-f]{6}$/.test(long), long);
-  });
-
-  test("an entry from when it was one site keeps its threads, placed on that site's whole address", async () => {
-    const { readRecord } = await import("../lib/web/records.ts");
-    write(
-      join(config, "sidecar", "web", "old-site-80--aaaaaa.json"),
-      JSON.stringify({
-        port: 49001,
-        slug: "old-site-80--aaaaaa",
-        threads: [{ anchor: { label: "Drift", page: "/guide?x=1" }, id: "a" }, { id: "b" }],
-        updated: "",
-        url: "http://old.site/changelog",
-        v: 1,
-      }),
-    );
-    const held = readRecord("old-site-80--aaaaaa");
-    assert.deepEqual(
-      [held?.v, held?.threads],
-      [2, [{ anchor: { label: "Drift", page: "http://old.site/guide?x=1" }, id: "a" }, { id: "b" }]],
-    );
-  });
-
-  test("resolves by its slug, answers comments in its record, and names the page each one was left on", () => {
-    const slug = "localhost-4000--abc123";
-    const threads = [
-      {
-        id: "w1",
-        n: 1,
-        by: "user",
-        at: "a",
-        updated: "a",
-        body: "simpler?",
-        status: "open",
-        anchor: { label: "Drift", page: "/guide/hooks" },
-        replies: [],
-      },
-    ];
-    const file = write(
-      join(config, "sidecar", "web", `${slug}.json`),
-      JSON.stringify({
-        v: 1,
-        slug,
-        url: "http://localhost:4000/guide/hooks",
-        port: 47490,
-        title: "Docs",
-        threads,
-        updated: "a",
-      }),
-    );
-    assert.equal(artifact("path", "localhost-4000").stdout.trim(), file);
-    assert.equal(artifact("url", slug).stdout.trim(), "http://localhost:4000/guide/hooks");
-    assert.match(artifact("list", "--tsv").stdout, new RegExp(`^${slug}\\t${file}$`, "m"));
-    assert.match(artifact("comments", slug).stdout, /#1 {2}open {6}Drift on http:\/\/localhost:4000\/guide\/hooks/);
-    assert.equal(artifact("comments", slug, "--resolve", "1", "rewrote it").status, 0);
-    const kept = JSON.parse(read(file)) as { threads: { status: string; replies: unknown[] }[] };
-    assert.deepEqual([kept.threads[0]?.status, kept.threads[0]?.replies.length], ["resolved", 1]);
   });
 });

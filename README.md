@@ -205,14 +205,14 @@ Beyond the two slots, the plugin carries the skills the contracts reach for, so 
 They are namespaced `mode:<name>`, and the installer writes a bare `/<name>` command for each.
 
 `create-artifact` comes with a CLI, `bin/artifact`, which scaffolds a page, resolves a slug to a file,
-stamps its metadata, and runs the comment round trip that lets you review a page and have Claude answer
-the threads. `artifact new <slug> --ds <key>` writes a page with the pack's stylesheets and the component
-kit already in it, so Claude writes markup rather than CSS and JavaScript, and `artifact kit <slug>`
-refreshes the kit in an older page. `artifact open <slug>` shows the page in the sidecar's Artifacts face
-when you want to look at it, and `--browser` opens the file in the browser instead, or `--web` its
-published URL. Claude never runs it for you. `artifact open localhost:3000/guide`, or any http or https
-address, does the same for a live site: the sidecar serves it through a local proxy that adds the comment
-layer, keeps the Web artifact in `~/.claude/sidecar/web/`, and `artifact comments <slug>` reads and
+stamps its metadata and installs the review layer. `artifact new <slug> --ds <key>` writes a page with the
+pack's stylesheets and the component kit already in it, so Claude writes markup rather than CSS and
+JavaScript, and `artifact kit <slug>` refreshes the kit in an older page. The comment round trip that
+lets you review a page and have Claude answer the threads is the sidecar's: `sidecar comments <slug>`
+reads and answers them, and `sidecar open --artifact <slug>` shows the page in the sidecar's Artifacts face
+when you want to look at it. Claude never runs it for you. `sidecar open --artifact localhost:3000/guide`,
+or any http or https address, does the same for a live site: the sidecar serves it through a local proxy
+that adds the comment layer, keeps the Web artifact in `~/.claude/sidecar/web/`, and `sidecar comments`
 answers its threads like a page's. A Web artifact is a tab, and every Web artifact is a tab of the same
 browser. Open a URL always makes a new one, and inside it links, redirects, forms and the address bar go
 to any site in place, with back and forward walking through all of them. Every site gets one host of its
@@ -220,7 +220,7 @@ own under the sidecar's, such as `www.reddit.com.https.sidecar.localhost`, the s
 a site's cookies are shared by its other hosts as in a tab, cross-site scripts and their CORS answers
 work, and a sign-in, a solved captcha or anything a site stores carries from one Web artifact to the
 next. Cookies and storage last across conversations and restarts. Text that isn't an
-address searches Google, in Open a URL and in the address bar alike. `artifact open <url>` and a link
+address searches Google, in Open a URL and in the address bar alike. `sidecar open --artifact <url>` and a link
 clicked in the sidecar reuse the conversation's artifact already opened on or showing that address, so
 Claude opening localhost:3000 every turn doesn't pile up copies. The proxy sends each request as a
 browser tab would rather than as a framed page, while a frame a site makes inside its own page still
@@ -242,7 +242,7 @@ yourself. Three lookups are worth knowing:
 | --------------------- | --------------------------------------------------------------------------------------------------------------- |
 | A design system       | The packs shipped here, then `~/.claude/mode/design-systems/`, where yours wins on a name clash                 |
 | Where artifacts live  | `NOTES_ARTIFACTS`, then the `artifacts` key in `~/.claude/mode/config.json`, then `~/.claude/sidecar/artifacts` |
-| Who a comment is from | The `user` key in that same config, defaulting to "User"                                                        |
+| Who a comment is from | The `user` key in `~/.claude/sidecar/config.json`, defaulting to "User"                                         |
 
 That config file holds the plugin's own settings too: `guards` turns every guard off at once,
 `disarm` turns off only the guards it lists by file stem, such as `["board-check"]`.

@@ -1,11 +1,7 @@
-import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { basename, dirname, extname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { ingest, install, readDoc, render, reply } from "../lib/artifact/review.ts";
+import { basename } from "node:path";
+import { install } from "../lib/artifact/review.ts";
 import {
   documentSlug,
-  dropped,
   ds,
   entryOf,
   installKit,
@@ -14,15 +10,10 @@ import {
   record,
   resolve,
   scaffold,
-  sessionEntries,
   stamp,
   TEMPLATES,
 } from "../lib/artifact/store.ts";
-import { isFile } from "../lib/files.ts";
 import { Refusal } from "../lib/mode/refusal.ts";
-import { pyJson, pyStr } from "../lib/text.ts";
-import { openRecord } from "../lib/web/records.ts";
-import { parseTarget } from "../lib/web/target.ts";
 
 type Parsed = {
   positionals: string[];
@@ -45,22 +36,7 @@ class UsageError extends Error {}
 const NEGATIVE = /^-\d+$|^-\d*\.\d+$/;
 
 const print = (text: string): void => void process.stdout.write(`${text}\n`);
-const stemOf = (path: string): string => basename(path, extname(path));
 const slugOf = (path: string): string => (entryOf(path) === path ? documentSlug(path) : entryOf(path));
-const SIDECAR = join(dirname(fileURLToPath(import.meta.url)), "sidecar");
-
-// Absolute on macOS because bin/open on PATH shadows the system one inside a Notes-style tree.
-function browse(target: string): void {
-  spawnSync(process.platform === "darwin" ? "/usr/bin/open" : "xdg-open", [target], { stdio: "inherit" });
-}
-
-// A slug never has a scheme, a port or a dotted host, and a file name keeps its own extension.
-function urlGiven(given: string): URL | undefined {
-  if (/\.(html|md)$/.test(given) || /^[/~.]/.test(given)) return undefined;
-  const isUrl =
-    /^[a-z][a-z0-9+.-]*:\/\//i.test(given) || /^[^\s/:]+(\.[^\s/.:]+)+(:\d+)?(\/|$)|^[^\s/:]+:\d+(\/|$)/.test(given);
-  return isUrl ? parseTarget(given) : undefined;
-}
 
 function parse(argv: string[], spec: Spec): Parsed {
   const parsed: Parsed = { positionals: [], values: {}, lists: {}, flags: new Set() };
@@ -143,34 +119,6 @@ const VERBS: Record<string, Spec> = {
       return meta.url;
     },
   },
-  open: {
-    help: "open the artifact, or any URL live with comments, in the sidecar, or with --browser or --web in the browser",
-    positionals: 1,
-    options: { browser: "flag", web: "flag" },
-    run: async ({ positionals: [slug = ""], flags }) => {
-      const site = urlGiven(slug);
-      if (site) {
-        const { record: entry } = openRecord({ reuse: sessionEntries(), url: site });
-        record(entry.slug);
-        if (flags.has("browser") || flags.has("web")) browse(entry.url);
-        else
-          process.exitCode = spawnSync(SIDECAR, ["open", "--artifact", entry.slug], { stdio: "inherit" }).status ?? 1;
-        return;
-      }
-      const path = resolve(slug);
-      if (!flags.has("browser") && !flags.has("web")) {
-        process.exitCode = spawnSync(SIDECAR, ["open", "--artifact", slugOf(path)], { stdio: "inherit" }).status ?? 1;
-        return;
-      }
-      let target = path;
-      if (flags.has("web")) {
-        const meta = readMeta(path);
-        if (meta.url) target = meta.url;
-        else console.error(`no published URL recorded for ${meta.slug}, opening the local file`);
-      }
-      browse(target);
-    },
-  },
   review: {
     help: "add or refresh the comment layer, keeping the threads it holds",
     positionals: 1,
@@ -179,30 +127,6 @@ const VERBS: Record<string, Spec> = {
     run: ({ positionals: [slug = ""], values }) => {
       const path = resolve(slug);
       return `review layer ${install(path, values.sidecar ?? "")} in ${basename(path)}`;
-    },
-  },
-  comments: {
-    help: "read the comments on an artifact, and answer them",
-    positionals: 1,
-    options: { ingest: "value", "no-ingest": "flag", reply: "two", resolve: "many", json: "flag" },
-    run: ({ positionals: [slug = ""], values, lists, flags }) => {
-      const path = resolve(slug);
-      const answer = lists.reply ?? lists.resolve;
-      if (answer) {
-        const [n = "", body = ""] = answer;
-        const thread = reply({ path, n, body, resolve: !lists.reply });
-        return `#${pyStr(thread.n)} is now ${pyStr(thread.status)}`;
-      }
-      const source = values.ingest ?? dropped(stemOf(path));
-      const out: string[] = [];
-      if (source && !flags.has("no-ingest")) {
-        if (!isFile(source)) throw new Refusal(`no such file: ${source}`);
-        const [added, total] = ingest(path, JSON.parse(readFileSync(source, "utf8")));
-        out.push(`took ${added} new comment(s) from ${source}, ${total} total`);
-      }
-      const doc = readDoc(path);
-      out.push(flags.has("json") ? pyJson(doc, false, 2) : render(doc, stemOf(path)));
-      return out.join("\n");
     },
   },
   new: {
@@ -243,7 +167,7 @@ function usage(): string {
   return [
     "usage: artifact <command> ...",
     "",
-    "Scaffold, resolve, open and stamp the artifacts in the artifacts directory.",
+    "Scaffold, resolve and stamp the artifacts in the artifacts directory. The sidecar opens them and carries their comments.",
     "",
     ...Object.entries(VERBS).map(([verb, spec]) => `  ${verb.padEnd(width)}  ${spec.help}`),
   ].join("\n");
