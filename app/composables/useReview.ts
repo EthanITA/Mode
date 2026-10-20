@@ -13,6 +13,7 @@ export interface ReviewFace {
   file: MaybeComputed<ReviewFile>;
   isCompact: Ref<boolean>;
   isDirty: Ref<boolean>;
+  isJobsShown: Ref<boolean>;
   isWrapped: Ref<boolean>;
   listen: () => void;
   selected: Maybe<string>;
@@ -34,6 +35,7 @@ export function useReview(): ReviewFace {
   const isCompact = useState("rv:compact", () => true);
   const isWrapped = useState("rv:wrapped", () => true);
   const isDirty = useState("rv:dirty", () => false);
+  const isJobsShown = useState("rv:jobs", () => false);
   const confirming = useState<string | undefined>("rv:confirming");
   const busy = useState("rv:busy", () => false);
 
@@ -128,12 +130,13 @@ export function useReview(): ReviewFace {
       source = undefined;
     };
     watch(
-      () => sc.sessionKey.value,
-      (key) => {
+      [() => sc.sessionKey.value, isJobsShown],
+      ([key, withJobs], before) => {
         disconnect();
-        snapshot.value = undefined;
+        if (!before || key !== before[0]) snapshot.value = undefined;
         if (!key) return;
-        source = new EventSource(`/api/sessions/${encodeURIComponent(key)}/review/stream`);
+        const query = withJobs ? "?jobs=1" : "";
+        source = new EventSource(`/api/sessions/${encodeURIComponent(key)}/review/stream${query}`);
         source.addEventListener("review", (event: MessageEvent<string>) => {
           snapshot.value = JSON.parse(event.data) as ReviewSnapshot;
         });
@@ -154,6 +157,7 @@ export function useReview(): ReviewFace {
     file,
     isCompact,
     isDirty,
+    isJobsShown,
     isWrapped,
     listen,
     selected,

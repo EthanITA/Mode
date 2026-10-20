@@ -5,5 +5,9 @@ import { liveEntries } from "~~/server/utils/sessions/registry";
 
 export default defineEventHandler((event): ReviewSnapshot => {
   const key = getRouterParam(event, "key") || "";
-  return snapshotOf({ key, live: liveEntries().some((entry) => keyOf(entry.id) === key) });
+  return snapshotOf({
+    key,
+    live: liveEntries().some((entry) => keyOf(entry.id) === key),
+    withJobs: getQuery(event).jobs === "1",
+  });
 });

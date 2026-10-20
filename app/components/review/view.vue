@@ -139,6 +139,17 @@ function rejectFile(event: MouseEvent): void {
       <header class="bar">
         <span class="title">To review</span>
         <span class="meta mono-meta">{{ plural(files.length, "file") }}</span>
+        <span class="spacer" />
+        <UiChip
+          :selected="review.isJobsShown.value"
+          size="xs"
+          :title="
+            review.isJobsShown.value ? 'Hide files under .claude/jobs' : 'Show files Claude writes under .claude/jobs'
+          "
+          @click="review.isJobsShown.value = !review.isJobsShown.value"
+        >
+          jobs
+        </UiChip>
       </header>
 
       <div v-fade="isReading" class="scroll" data-scroll="files">

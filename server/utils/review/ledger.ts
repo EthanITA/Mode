@@ -49,8 +49,10 @@ export function ledgerDirOf(key: string): string | undefined {
   return undefined;
 }
 
-function isClaudeOwn(path: string): boolean {
-  return path.split("/").includes(".claude");
+function isHidden({ path, withJobs }: { path: string; withJobs: boolean }): boolean {
+  const parts = path.split("/");
+  const at = parts.indexOf(".claude");
+  return at >= 0 && !(withJobs && parts[at + 1] === "jobs");
 }
 
 // Wrapped so an empty file stays distinct from a missing one.
@@ -100,12 +102,20 @@ export function originalOf({ key, path }: { key: string; path: string }): Review
   return tracked.blob ? { kind: "blob", file: join(dir, "blobs", tracked.blob) } : { kind: "created" };
 }
 
-export function snapshotOf({ key, live }: { key: string; live: boolean }): ReviewSnapshot {
+export function snapshotOf({
+  key,
+  live,
+  withJobs = false,
+}: {
+  key: string;
+  live: boolean;
+  withJobs?: boolean;
+}): ReviewSnapshot {
   const dir = ledgerDirOf(key);
   const ledger = dir ? ledgerOf(dir) : undefined;
   if (!dir || !ledger) return { key, live, turn: 0, files: [] };
   const files = Object.entries(ledger.files)
-    .filter(([path]) => !isClaudeOwn(path))
+    .filter(([path]) => !isHidden({ path, withJobs }))
     .map(([path, tracked]) => fileOf(dir, path, tracked))
     .filter((file): file is ReviewFile => !!file && file.changes.length > 0);
   const undo = ledger.undo.at(-1)?.label;

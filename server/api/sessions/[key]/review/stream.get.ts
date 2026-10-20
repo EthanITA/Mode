@@ -10,13 +10,14 @@ const SETTLE_MS = 120;
 
 export default defineEventHandler((event): Promise<void> => {
   const key = getRouterParam(event, "key") || "";
+  const withJobs = getQuery(event).jobs === "1";
   const stream = createEventStream(event);
   const watchers: FSWatcher[] = [];
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const push = (): void => {
     const live = liveEntries().some((entry) => keyOf(entry.id) === key);
-    void stream.push({ event: "review", data: JSON.stringify(snapshotOf({ key, live })) });
+    void stream.push({ event: "review", data: JSON.stringify(snapshotOf({ key, live, withJobs })) });
   };
 
   // Watching the parent folder catches the session's own folder being created by its first edit.

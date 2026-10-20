@@ -21,7 +21,10 @@ before(() => {
   writeFileSync(join(root, "settled"), "kept\n");
   mkdirSync(join(root, ".claude"));
   writeFileSync(join(root, ".claude", "plan.md"), "scratch\n");
+  mkdirSync(join(root, ".claude", "jobs", "ab12cd34", "tmp"), { recursive: true });
+  writeFileSync(join(root, ".claude", "jobs", "ab12cd34", "tmp", "notes.md"), "working\n");
   const files = {
+    [join(root, ".claude", "jobs", "ab12cd34", "tmp", "notes.md")]: { turns: [2] },
     [join(root, "edited")]: { turns: [1, 2], blob: "orig" },
     [join(root, "created")]: { turns: [2] },
     [join(root, "settled")]: { turns: [1], blob: "same" },
@@ -47,6 +50,12 @@ test("the snapshot pairs each file's original blob with the disk, and leaves out
   assert.equal(snapshot.turn, 2);
   assert.equal(snapshot.undo, "rejecting line 2 of edited");
   assert.equal(snapshot.redo, undefined);
+});
+
+test("withJobs lets .claude/jobs through and keeps the rest of .claude out", () => {
+  const snapshot = snapshotOf({ key: ID.slice(0, 8), live: true, withJobs: true });
+  const names = snapshot.files.map((file) => file.path.slice(root.length + 1)).sort();
+  assert.deepEqual(names, [".claude/jobs/ab12cd34/tmp/notes.md", "created", "edited", "gone"]);
 });
 
 test("a ledger under sidecar/review is read, and wins over the old turn-diff folder", () => {
