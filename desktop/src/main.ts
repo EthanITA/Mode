@@ -79,9 +79,13 @@ function openExternal(_event: IpcMainInvokeEvent, url: unknown): void {
 }
 
 function guardWebview(contents: WebContents): void {
-  // A link that would open a new OS window stays in the webview instead, so the page never escapes the sidecar.
-  contents.setWindowOpenHandler(({ url }) => {
-    if (/^https?:\/\//i.test(url)) void contents.loadURL(url);
+  contents.setWindowOpenHandler((details) => {
+    if (!/^https?:\/\//i.test(details.url)) return { action: "deny" };
+    // A popup opens as a child window so its opener survives for OAuth; a _blank link stays in the webview.
+    if (details.disposition === "new-window") {
+      return { action: "allow", overrideBrowserWindowOptions: { webPreferences: { contextIsolation: true, nodeIntegration: false, partition: PARTITION } } };
+    }
+    void contents.loadURL(details.url);
     return { action: "deny" };
   });
 }

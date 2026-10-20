@@ -329,6 +329,7 @@ watch(
     <webview
       v-if="shell && src"
       ref="view"
+      allowpopups
       :key="`${slug}:${web.edition}`"
       :data-state="web.state"
       :partition="shellApi?.partition"
