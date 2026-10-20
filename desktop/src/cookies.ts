@@ -4,7 +4,7 @@ import { copyFileSync, existsSync, mkdtempSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { Session } from "electron";
+import type { CookiesSetDetails, Session } from "electron";
 
 const SALT = "saltysalt";
 const ITERATIONS = 1003;
@@ -81,6 +81,20 @@ function expiryOf(row: CookieRow): number | undefined {
   return seconds > Date.now() / 1000 ? seconds : undefined;
 }
 
+// cookies.set rejects a __Host- cookie given a domain, so passing one silently dropped every __Host- cookie on import.
+export function setDetails(row: CookieRow, value: string): CookiesSetDetails {
+  const base: CookiesSetDetails = {
+    expirationDate: expiryOf(row),
+    httpOnly: !!row.is_httponly,
+    name: row.name,
+    sameSite: SAME_SITE[Number(row.samesite)] ?? "unspecified",
+    secure: !!row.is_secure,
+    url: urlOf(row),
+    value,
+  };
+  return row.name.startsWith("__Host-") ? { ...base, path: "/", secure: true } : { ...base, domain: row.host_key, path: row.path };
+}
+
 export async function importChromeCookies(session: Session, { profile = "Default" }: { profile?: string }): Promise<CookieImport> {
   const db = join(profileDir(profile), "Cookies");
   if (!existsSync(db)) throw new Error(`no Chrome cookie database at ${db}`);
@@ -105,17 +119,7 @@ export async function importChromeCookies(session: Session, { profile = "Default
       continue;
     }
     try {
-      await session.cookies.set({
-        domain: row.host_key,
-        expirationDate: expiryOf(row),
-        httpOnly: !!row.is_httponly,
-        name: row.name,
-        path: row.path,
-        sameSite: SAME_SITE[Number(row.samesite)] ?? "unspecified",
-        secure: !!row.is_secure,
-        url: urlOf(row),
-        value: got.value,
-      });
+      await session.cookies.set(setDetails(row, got.value));
       out.set += 1;
     } catch {
       out.failed += 1;
