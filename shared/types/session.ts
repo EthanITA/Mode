@@ -1,5 +1,3 @@
-import type { Pipeline, Slot } from "../../lib/mode/types.ts";
-
 export type SessionAgent = { name: string; color: string };
 
 export type SessionStatus = "busy" | "idle" | "waiting";
@@ -20,8 +18,6 @@ export interface LiveSession {
   cwd: string;
   live: boolean;
   color?: string;
-  slots: { mode: Slot; style: Slot };
-  pipeline?: Pipeline;
   artifacts: string[];
   agents?: SessionAgent[];
   // Additive to the frozen contract: a narrower type on the client ignores these at runtime.

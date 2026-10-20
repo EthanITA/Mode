@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { configRoot } from "../../../lib/sidecar/paths.ts";
+import { Sidecar, configRoot } from "../../../lib/sidecar/paths.ts";
 
 export const KEY_LENGTH = 8;
 
@@ -27,6 +27,10 @@ export function canvasHome(): string {
 
 export function teamsHome(): string {
   return join(configRoot(), "teams");
+}
+
+export function conversationsHome(): string {
+  return join(Sidecar.home(), "conversations");
 }
 
 // The join every other reader keys on: the first 8 hex of the session uuid.

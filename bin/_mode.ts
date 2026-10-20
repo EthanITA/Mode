@@ -17,6 +17,7 @@ import {
   done,
   exitSlot,
   expired,
+  forget,
   getSlot,
   red,
   setSlot,
@@ -196,6 +197,11 @@ const VERBS: Record<string, Spec> = {
       clear({ session, announced: flags.has("announced") });
       return "";
     },
+  },
+  forget: {
+    help: "delete everything held for a conversation that is gone, given by --session",
+    max: 0,
+    run: ({ session }) => forget(session),
   },
   sync: {
     help: "rewrite the skill's registries from the contract folders",

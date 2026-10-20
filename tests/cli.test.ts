@@ -680,6 +680,18 @@ describe("approve, whose answer is the dispatch gate's whole signal", () => {
     clear({ session });
     assert.deepEqual([get("mode", session), get("style", session), approve({ session })], ["", "", undefined]);
   });
+
+  test("forget, which the sidecar runs on a removed conversation, takes all its state and none of its neighbour's", () => {
+    const [gone, kept] = [sid(), sid()];
+    set("mode", gone, "lead");
+    set("style", gone, "teach");
+    set("mode", kept, "lead");
+    const forgot = cli(["--session", gone, "forget"]);
+    assert.equal(forgot.status, 0);
+    assert.match(forgot.stdout, /^forgot [1-9]\d* state files\n$/);
+    assert.deepEqual([get("mode", gone), get("style", gone), get("mode", kept)], ["", "", "lead"]);
+    assert.equal(cli(["forget"]).status, 2);
+  });
 });
 
 describe("pins, which outlive a conversation", () => {

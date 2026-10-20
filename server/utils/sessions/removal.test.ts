@@ -1,5 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync, existsSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+  existsSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { afterEach, beforeEach, test } from "node:test";
@@ -34,6 +43,7 @@ function seed(key: string, id: string): void {
   put(join(root, "mode", "state", `session-${key}.style`), "edu\n");
   put(join(root, "sidecar", "versions", key, "HEAD"), "ref\n");
   put(join(root, "sidecar", "links", `${key}.json`), "{}\n");
+  put(join(root, "sidecar", "conversations", key), "");
   put(join(root, "projects", "-tmp", `${id}.jsonl`), '{"transcript":"stays"}\n');
 }
 
@@ -44,6 +54,10 @@ beforeEach(() => {
   process.env.CLAUDE_CONFIG_DIR = root;
   seed(KEY, ID);
   seed("ffff0002", "ffff0002-1111-2222-3333-444444444444");
+  const mode = join(root, "mode-plugin", "bin", "mode");
+  put(mode, '#!/bin/sh\nprintf "%s " "$@" >> "$CLAUDE_CONFIG_DIR/forgot"\n');
+  chmodSync(mode, 0o755);
+  put(join(root, "mode", "plugin-root"), `${join(root, "mode-plugin")}\n`);
 });
 
 afterEach(() => {
@@ -55,13 +69,20 @@ afterEach(() => {
 test("every place the session kept state goes, and the transcript and the neighbour stay", async () => {
   const outcome = await removeSession(KEY);
   assert.equal(outcome.refused, undefined);
-  assert.equal(outcome.removed.length, 9);
+  assert.equal(outcome.removed.length, 8);
   assert.deepEqual(
-    survivors().filter((path) => path.includes(KEY)),
-    [`projects/-tmp/${ID}.jsonl`],
+    survivors()
+      .filter((path) => path.includes(KEY))
+      .sort(),
+    [`mode/state/session-${KEY}.mode`, `mode/state/session-${KEY}.style`, `projects/-tmp/${ID}.jsonl`],
   );
   assert.equal(existsSync(join(root, "artifacts", "session-ffff0002")), true);
   assert.equal(existsSync(join(root, "jobs", "ffff0002", "state.json")), true);
+});
+
+test("mode's own state is left to mode, through the CLI its plugin-root names", async () => {
+  await removeSession(KEY);
+  assert.equal(readFileSync(join(root, "forgot"), "utf8"), `--session ${KEY} forget `);
 });
 
 test("a second delete removes nothing and does not fail", async () => {

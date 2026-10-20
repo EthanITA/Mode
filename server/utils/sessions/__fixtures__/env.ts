@@ -2,7 +2,6 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const MODE_PLUGIN = join(HERE, "..", "..", "mode", "__fixtures__", "plugin")
 
 function restore(key: string, had: boolean, was: string | undefined): void {
   if (had) process.env[key] = was ?? ""
@@ -12,18 +11,14 @@ function restore(key: string, had: boolean, was: string | undefined): void {
 export function useFixtures(): () => void {
   // `in` rather than a truth test: an env var set to "" must restore as "", not as unset.
   const hadConfig = "CLAUDE_CONFIG_DIR" in process.env
-  const hadPlugin = "MODE_PLUGIN_ROOT" in process.env
   const hadBin = "CLAUDE_BIN" in process.env
   const prevConfig = process.env.CLAUDE_CONFIG_DIR
-  const prevPlugin = process.env.MODE_PLUGIN_ROOT
   const prevBin = process.env.CLAUDE_BIN
   process.env.CLAUDE_CONFIG_DIR = join(HERE, "config")
-  process.env.MODE_PLUGIN_ROOT = MODE_PLUGIN
   // Points at nothing, so the job list takes the on-disk path a machine without the CLI would.
   process.env.CLAUDE_BIN = join(HERE, "no-such-claude")
   return () => {
     restore("CLAUDE_CONFIG_DIR", hadConfig, prevConfig)
-    restore("MODE_PLUGIN_ROOT", hadPlugin, prevPlugin)
     restore("CLAUDE_BIN", hadBin, prevBin)
   }
 }

@@ -223,3 +223,17 @@ export function clear({ session, announced = false }: { session?: string; announ
     removeState(settled(axis, session));
   }
 }
+
+export function forget(session?: string): string {
+  if (!session) throw new Refusal("forget needs the conversation to forget: mode forget --session <id or key>", 2);
+  const prefix = basename(require(statePath(session, "")));
+  let names: string[];
+  try {
+    names = readdirSync(stateHome());
+  } catch {
+    names = [];
+  }
+  const gone = names.filter((name) => name === prefix || name.startsWith(`${prefix}.`));
+  for (const name of gone) removeState(join(stateHome(), name));
+  return `forgot ${gone.length} state ${gone.length === 1 ? "file" : "files"}`;
+}

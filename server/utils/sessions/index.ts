@@ -1,12 +1,11 @@
+import { readdirSync } from "node:fs";
 import type { LiveSession } from "../../../shared/types/session.ts";
 import { sessionOrder } from "../../../shared/utils/sessions.ts";
-import { pipelineFor } from "../../../lib/mode/pipeline.ts";
-import { sessions as modeSessions, slotOf } from "../../../lib/mode/sessions.ts";
 import { agentsOf } from "./agents.ts";
 import { artifactsOf, keysWithArtifacts } from "./artifact-lists.ts";
 import { sessionColor } from "./identity.ts";
 import { jobs, type JobEntry } from "./jobs.ts";
-import { keyOf } from "./paths.ts";
+import { conversationsHome, isKey, keyOf } from "./paths.ts";
 import { liveEntries, type RegistryEntry } from "./registry.ts";
 import { cwdFromSlug } from "./slug.ts";
 import { identityOf, transcriptIndex, type TranscriptIdentity, type TranscriptRef } from "./transcripts.ts";
@@ -18,6 +17,14 @@ function realName(candidate: string | undefined, key: string, id: string): strin
   if (!trimmed || trimmed === key || trimmed === id || /^[0-9a-f]{8}$/.test(trimmed)) return undefined;
   return trimmed;
 }
+
+const seenKeys = (): string[] => {
+  try {
+    return readdirSync(conversationsHome()).filter(isKey);
+  } catch {
+    return [];
+  }
+};
 
 interface Sources {
   entry?: RegistryEntry;
@@ -39,8 +46,6 @@ function build(key: string, { entry, job, ref }: Sources): LiveSession | undefin
     cwd,
     live: !!entry || !!job?.pid,
     color: sessionColor(key),
-    slots: { mode: slotOf("mode", key), style: slotOf("style", key) },
-    pipeline: pipelineFor(key),
     artifacts: artifactsOf(key),
     agents: ref ? agentsOf(ref) : undefined,
     status: job?.status || entry?.status,
@@ -65,8 +70,7 @@ export function liveSessions({ scope = "all", key }: SessionsQuery = {}): LiveSe
   const transcripts = transcriptIndex();
   const keys = new Set<string>([...running.keys(), ...entries.keys()]);
   if (key) keys.add(key);
-  if (scope === "all")
-    for (const one of [...keysWithArtifacts(), ...modeSessions().map((session) => session.id)]) keys.add(one);
+  if (scope === "all") for (const one of [...keysWithArtifacts(), ...seenKeys()]) keys.add(one);
   const out: LiveSession[] = [];
   for (const one of keys) {
     const session = build(one, { entry: entries.get(one), job: running.get(one), ref: transcripts.get(one) });

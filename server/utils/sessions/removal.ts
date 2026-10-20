@@ -1,10 +1,9 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { readTextSafe } from "../../../lib/files.ts";
-import { stateHome } from "../../../lib/mode/paths.ts";
 import { Sidecar, configRoot } from "../../../lib/sidecar/paths.ts";
-import { artifactListsHome, canvasHome, isKey, jobsHome, keyOf, teamsHome } from "./paths.ts";
+import { artifactListsHome, canvasHome, conversationsHome, isKey, jobsHome, keyOf, teamsHome } from "./paths.ts";
 import { Links } from "./links.ts";
 import { isAlive, liveEntries } from "./registry.ts";
 import { refreshJobs } from "./jobs.ts";
@@ -80,16 +79,6 @@ async function kill(pid: number): Promise<boolean> {
 }
 
 function targets(key: string): string[] {
-  const state = stateHome();
-  const modeFiles = (() => {
-    try {
-      return readdirSync(state)
-        .filter((name) => name === `session-${key}` || name.startsWith(`session-${key}.`))
-        .map((name) => join(state, name));
-    } catch {
-      return [];
-    }
-  })();
   return [
     join(jobsHome(), key),
     join(artifactListsHome(), `session-${key}`),
@@ -97,10 +86,20 @@ function targets(key: string): string[] {
     join(configRoot(), "tasks", `session-${key}`),
     join(teamsHome(), `session-${key}`),
     join(Sidecar.home(), "versions", key),
+    join(conversationsHome(), key),
     Links.ledger(key),
-    ...modeFiles,
   ];
 }
+
+const forgetMode = (key: string): void => {
+  const root = readTextSafe(join(configRoot(), "mode", "plugin-root"))?.trim();
+  if (!root) return;
+  try {
+    execFileSync(join(root, "bin", "mode"), ["--session", key, "forget"], { stdio: "ignore", timeout: 5000 });
+  } catch (error) {
+    console.warn(`sidecar: mode forget ${key} failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
 
 export async function removeSession(key: string): Promise<Removal> {
   if (!isKey(key)) return { key, removed: [], refused: "not a session key" };
@@ -145,5 +144,6 @@ export async function removeSession(key: string): Promise<Removal> {
       return { key, removed, killed, refused: `could not remove ${target}` };
     }
   }
+  forgetMode(key);
   return { key, removed, killed };
 }

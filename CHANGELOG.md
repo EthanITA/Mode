@@ -11,6 +11,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **`mode forget --session <id>`** deletes every state file mode holds for a conversation that is gone,
+  which is what the sidecar runs when you remove one.
 - **Two surfaces, chosen in `sidecar setup`.** `sidecar setup` asks whether to run the sidecar as a desktop
   app or as a webapp in Chrome and remembers the choice, prompting on first run (or `sidecar setup desktop|web`).
   Desktop builds and packages a small Electron app around the same sidecar and opens it, where a Web artifact
@@ -322,6 +324,12 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **The sidecar keeps its own list of conversations.** It used to find past conversations by reading
+  mode's session state, so the list now comes from `~/.claude/sidecar/conversations/`, where the sidecar's
+  Claude Code mod leaves one empty file per conversation as it takes a turn. Removing a conversation in
+  the sidecar runs `mode forget` for mode's share of it, and `/api/sessions` no longer carries each
+  session's mode, style and pipeline, which nothing read. Conversations listed before this are carried
+  over once from mode's state.
 - **Comment mode lights the paragraph under the pointer, not its whole wrapper.** A pick is the
   innermost block that owns the words, holding ⌥ takes the box around it such as a whole card, and
   crossing the gap between two paragraphs keeps the last one lit. Blocks inside an artifact's or a Web
