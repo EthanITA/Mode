@@ -518,6 +518,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   the ones below it jumped. The lane stays mounted while empty, so the first toast is announced too.
 - **A saved note lands beside its line, and the notes column snaps open.** The column used to tween its
   width, which re-wrapped the page and moved every mark on every frame.
+- **The sidecar's controls come from `@cela/design`.** Buttons, badges, initials marks, warning banners,
+  approve and reject, the zoom stepper and the Files scopes are the design system's own components, so
+  they press, squash and tint the way Cela's do, the main action is the gradient pill, and every tooltip
+  is a design tip. The dark editor bars remap the palette to One Dark, so the same components sit on them.
 
 ### Removed
 
