@@ -19,7 +19,6 @@ export interface TranscriptRef {
 
 export type TranscriptGrowth = Pick<TranscriptRef, "key" | "path">;
 
-// Fed by the one watcher in server/plugins/transcripts.ts, so a reader subscribes instead of watching files itself.
 export const transcripts = new EventEmitter<{ grew: [TranscriptGrowth] }>();
 
 export interface TranscriptIdentity {

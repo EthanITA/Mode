@@ -8,7 +8,6 @@ export default defineNitroPlugin((nitro) => {
     const watcher = watch(projectsHome(), { recursive: true }, (_, name) => {
       const [slug, file = "", ...deeper] = String(name ?? "").split(sep);
       const id = file.slice(0, -".jsonl".length);
-      // A subagent's transcript sits a folder deeper and is not the conversation's own.
       if (!slug || deeper.length || !file.endsWith(".jsonl") || !isSessionId(id)) return;
       transcripts.emit("grew", { key: keyOf(id), path: join(projectsHome(), slug, file) });
     });

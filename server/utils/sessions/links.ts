@@ -23,7 +23,6 @@ export interface LinkAdoption {
   /** Said just now, so it is announced the way a new page is; a catch-up on older turns lands quietly. */
   isLive?: boolean;
   path: string;
-  /** Where a catch-up stops, so what was said after it is still announced. */
   upTo?: number;
 }
 
@@ -205,7 +204,6 @@ function adopt({ key, isLive = false, path, upTo = Number.POSITIVE_INFINITY }: L
 }
 
 export const Links = {
-  // Never throws, since it runs inside the transcript watcher, where a throw would take the server down.
   adopt(options: LinkAdoption): void {
     try {
       adopt(options);
