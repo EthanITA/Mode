@@ -14,28 +14,24 @@ function goAway(): void {
 </script>
 
 <template>
-  <button
+  <UiButton
     v-if="away"
-    v-press
-    class="elsewhere focusable"
-    type="button"
+    class="elsewhere"
     data-tip="Go to the page the thread was left on"
+    size="xs"
+    variant="outline"
     @click="goAway"
   >
     {{ plural(away.count, "thread") }} on {{ away.label }}
-  </button>
+  </UiButton>
 </template>
 
 <style scoped>
 .elsewhere {
-  @apply mr-1 inline-flex h-6.5 flex-none cursor-pointer items-center gap-1.5 rounded-full border border-border bg-sunken px-2.5 typo-caption-strong whitespace-nowrap text-muted;
+  @apply mr-1;
 }
 
 .elsewhere::before {
   @apply size-1.5 rounded-full bg-primary content-[''];
-}
-
-.elsewhere:hover {
-  @apply text-fg;
 }
 </style>
