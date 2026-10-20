@@ -1,7 +1,8 @@
 import { execFileSync, spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, openSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { homedir, userInfo } from "node:os";
+import { existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import { createInterface } from "node:readline/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -9,7 +10,7 @@ import { sidecarHome } from "../lib/mode/paths.ts";
 import * as Events from "../lib/sidecar/events.ts";
 import type { Topics } from "../shared/types/events.ts";
 
-type Command = "open" | "publish" | "status" | "start" | "stop" | "restart" | "install" | "uninstall" | "desktop" | "help";
+type Command = "open" | "publish" | "status" | "start" | "stop" | "restart" | "setup" | "uninstall" | "import" | "help";
 type Proc = { pid: number; ppid: number; args: string };
 type Point = { key?: string; slug?: string };
 
@@ -17,11 +18,10 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const ADDRESS = (process.env.SIDECAR_URL ?? "http://sidecar.localhost:4747").replace(/\/$/, "");
 const PORT = new URL(ADDRESS).port || "80";
 const NUXT = join(ROOT, "node_modules", "nuxt", "bin", "nuxt.mjs");
+const SERVER = join(ROOT, ".output", "server", "index.mjs");
+// The bundle rewrites import.meta.url, so it cannot find the plugin root itself; localhost keeps it off the network.
+const SERVER_ENV = { MODE_PLUGIN_ROOT: ROOT, NITRO_HOST: "localhost", NITRO_PORT: PORT };
 const LOG = join(sidecarHome(), "server.log");
-const LABEL = "local.mode.sidecar";
-const AGENT = join(homedir(), "Library", "LaunchAgents", `${LABEL}.plist`);
-const DOMAIN = `gui/${userInfo().uid}`;
-const SERVICE = `${DOMAIN}/${LABEL}`;
 // The manifest's name is what tells the sidecar apart from anything else that took the port.
 const NAME = "Claude Code Sidecar";
 // Absolute, because a bin/open earlier on PATH shadows the system one inside a Notes-style tree.
@@ -29,26 +29,45 @@ const OPEN = "/usr/bin/open";
 const DESKTOP = join(ROOT, "desktop");
 const DESKTOP_APP = join(homedir(), "Applications", `${NAME}.app`);
 const isDesktopInstalled = (): boolean => existsSync(DESKTOP_APP);
+// The Electron userData, named after the app, holds the imported cookies and the import marker.
+const APP_DATA = join(homedir(), "Library", "Application Support", NAME);
+const CONFIG = join(sidecarHome(), "config.json");
+
+type Surface = "desktop" | "web";
+
+function readSurface(): Surface | undefined {
+  try {
+    const { surface } = JSON.parse(readFileSync(CONFIG, "utf8")) as { surface?: Surface };
+    return surface === "desktop" || surface === "web" ? surface : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeSurface(surface: Surface): void {
+  mkdirSync(sidecarHome(), { recursive: true });
+  writeFileSync(CONFIG, `${JSON.stringify({ surface }, null, 2)}\n`);
+}
 
 const USAGE = `usage: sidecar [command]     /sidecar [command] in a Claude Code session runs the same
 
   open [key]  the default: start it when down, point it at the conversation, and bring an open
-              sidecar window to the front, else open the installed app, else a Chrome app window.
+              sidecar to the front, else open it as the surface you chose in setup.
               The conversation is the key given, else the Claude Code session this runs in, and
               --artifact <slug> opens that page there, in Artifacts
+  setup [desktop|web]
+              choose how the sidecar runs and set it up. desktop builds and installs the Electron
+              app, so Web artifacts render as real pages signed in with Chrome's cookies; web runs
+              it as a tab in Chrome through the proxy. Prompts when run without an argument
   publish <topic> <json>
               append an event to the log every open sidecar streams, for this conversation.
               Topics: ${Events.TOPICS.join(", ")}
-  status      whether it is up, where, and whether it starts at login
-  start       start it in the background and wait until it answers
-  stop        stop it, wherever it was started from
-  restart     stop it, then start it
-  install     start it now and at every login, through launchd
-  uninstall   stop it and take it off login
-  desktop <install|uninstall|import>
-              install builds and packages the Electron app, copies it to ~/Applications and opens it,
-              so Web artifacts render as real pages signed in with Chrome's cookies; import re-reads
-              those cookies (close the app first); uninstall removes the app and falls back to Chrome
+  status      whether it is up and where
+  start       build it, then start it in the background and wait until it answers
+  stop        stop it, wherever it was started from, a terminal's pnpm dev included
+  restart     stop it, then build and start it, which is how a change to the sidecar goes live
+  import      re-read Chrome's cookies into the desktop app (close the app first)
+  uninstall   remove the desktop app and all its data, back to a clean slate
 
 It serves ${ADDRESS} (SIDECAR_URL overrides it) and logs to ${LOG}.`;
 
@@ -78,7 +97,7 @@ function processes(): Proc[] {
     .split("\n")
     .flatMap((line) => {
       const m = /^\s*(\d+)\s+(\d+)\s+(.*)$/.exec(line);
-      return m ? [{ pid: Number(m[1]), ppid: Number(m[2]), args: m[3] }] : [];
+      return m ? [{ pid: Number(m[1]), ppid: Number(m[2]), args: m[3] ?? "" }] : [];
     });
 }
 
@@ -121,32 +140,31 @@ function holderOf(pid: number): string {
   return spawnSync("ps", ["-o", "args=", "-p", String(pid)], { encoding: "utf8" }).stdout.trim();
 }
 
-const isInstalled = (): boolean => existsSync(AGENT);
-const isLoaded = (): boolean => spawnSync("launchctl", ["print", SERVICE], { stdio: "ignore" }).status === 0;
-
-function launchctl(...args: string[]): boolean {
-  return spawnSync("launchctl", args, { stdio: "inherit" }).status === 0;
-}
-
 async function status(): Promise<number> {
-  const login = isInstalled() ? ", and it starts at login" : "";
   const [pid] = listeners();
   if (pid && (await isSidecar())) {
-    console.log(`up at ${ADDRESS}, pid ${pid}${login}`);
+    console.log(`up at ${ADDRESS}, pid ${pid}`);
     return 0;
   }
   if (pid) console.log(`down, and port ${PORT} is held by pid ${pid}, which is not the sidecar: ${holderOf(pid)}`);
-  else console.log(`down${login}. sidecar start brings it up at ${ADDRESS}`);
+  else console.log(`down. sidecar start brings it up at ${ADDRESS}`);
   return 1;
 }
 
-function spawnServer(): () => boolean {
+function build(): boolean {
   mkdirSync(sidecarHome(), { recursive: true });
   const log = openSync(LOG, "w");
+  console.log("building the sidecar");
+  return spawnSync(process.execPath, [NUXT, "build"], { cwd: ROOT, stdio: ["ignore", log, log] }).status === 0;
+}
+
+function spawnServer(): () => boolean {
+  const log = openSync(LOG, "a");
   // Detached into its own session, so it outlives this command and the terminal that ran it.
-  const child = spawn(process.execPath, [NUXT, "dev", "--port", PORT], {
+  const child = spawn(process.execPath, [SERVER], {
     cwd: ROOT,
     detached: true,
+    env: { ...process.env, ...SERVER_ENV },
     stdio: ["ignore", log, log],
   });
   child.unref();
@@ -169,9 +187,11 @@ async function start(): Promise<number> {
     console.error(`nuxt is not installed in ${ROOT}; run pnpm install there first`);
     return 1;
   }
-  if (isInstalled() && !(isLoaded() ? launchctl("kickstart", SERVICE) : launchctl("bootstrap", DOMAIN, AGENT)))
+  if (!build()) {
+    console.error(`the build failed; the log is ${LOG}`);
     return 1;
-  const hasDied = isInstalled() ? () => false : spawnServer();
+  }
+  const hasDied = spawnServer();
   if (await waitUntilUp(hasDied)) {
     console.log(`up at ${ADDRESS}`);
     return 0;
@@ -195,61 +215,6 @@ async function stop(): Promise<number> {
   for (const end = Date.now() + 10_000; listeners().length && Date.now() < end;) await sleep(200);
   signal(tree, "SIGKILL");
   console.log("stopped");
-  return 0;
-}
-
-function plist(): string {
-  const escape = (text: string): string => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const string = (text: string): string => `<string>${escape(text)}</string>`;
-  const env = Object.entries({ PATH: process.env.PATH, CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR }).flatMap(
-    ([key, value]) => (value ? [`<key>${key}</key>${string(value)}`] : []),
-  );
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>${string(LABEL)}
-  <key>ProgramArguments</key>
-  <array>${[process.execPath, NUXT, "dev", "--port", PORT].map(string).join("")}</array>
-  <key>WorkingDirectory</key>${string(ROOT)}
-  <key>EnvironmentVariables</key>
-  <dict>${env.join("")}</dict>
-  <key>RunAtLoad</key><true/>
-  <key>StandardOutPath</key>${string(LOG)}
-  <key>StandardErrorPath</key>${string(LOG)}
-</dict>
-</plist>
-`;
-}
-
-async function install(): Promise<number> {
-  if (!existsSync(NUXT)) {
-    console.error(`nuxt is not installed in ${ROOT}; run pnpm install there first`);
-    return 1;
-  }
-  if (isLoaded()) launchctl("bootout", SERVICE);
-  // A sidecar started by hand holds the port the login one needs.
-  if (listeners().length && (await stop()) !== 0) return 1;
-  mkdirSync(dirname(AGENT), { recursive: true });
-  mkdirSync(sidecarHome(), { recursive: true });
-  writeFileSync(AGENT, plist());
-  if (!launchctl("bootstrap", DOMAIN, AGENT)) return 1;
-  if (!(await waitUntilUp())) {
-    console.error(`installed, but it did not come up; the log is ${LOG}`);
-    return 1;
-  }
-  console.log(`installed: up at ${ADDRESS}, and it starts at every login (${AGENT})`);
-  return 0;
-}
-
-function uninstall(): number {
-  if (!isInstalled()) {
-    console.log("not installed");
-    return 0;
-  }
-  if (isLoaded()) launchctl("bootout", SERVICE);
-  rmSync(AGENT);
-  console.log("uninstalled: stopped, and it no longer starts at login");
   return 0;
 }
 
@@ -304,24 +269,46 @@ end run`;
 const raiseOpenWindow = (): boolean =>
   spawnSync("osascript", ["-e", RAISE, `${ADDRESS}/`], { encoding: "utf8" }).stdout.trim() === "raised";
 
+async function chooseSurface(): Promise<Surface | undefined> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    console.log("How do you want to run the sidecar?");
+    console.log("  1) Desktop app   real pages, signed in with your Chrome cookies, a separate Chromium (heavier)");
+    console.log("  2) Webapp        a tab in Chrome, light, Web artifacts through the proxy");
+    const answer = (await rl.question("> ")).trim();
+    return answer === "1" ? "desktop" : answer === "2" ? "web" : undefined;
+  } finally {
+    rl.close();
+  }
+}
+
 async function open({ key = process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8), slug }: Point): Promise<number> {
   if (slug && !key) {
     console.error(`no conversation to open ${slug} in: run it inside Claude Code, or give the key`);
     return 2;
   }
   if (!(await isSidecar()) && (await start()) !== 0) return 1;
-  const listeners = key ? await listenersAfterPointing({ key, slug }) : 0;
+  let surface = readSurface();
+  // First run with a terminal attached picks the surface now; inside Claude Code there is no TTY, so it falls back.
+  if (!surface && process.stdin.isTTY) {
+    surface = await chooseSurface();
+    if (surface) {
+      writeSurface(surface);
+      if (surface === "desktop" && !isDesktopInstalled() && (await installDesktop()) !== 0) return 1;
+    }
+  }
+  const listening = key ? await listenersAfterPointing({ key, slug }) : 0;
   const what = slug ? `${slug} in conversation ${key}` : `conversation ${key}`;
   if (raiseOpenWindow()) {
     console.log(`brought the open sidecar to the front${key ? ` on ${what}` : ""}`);
     return 0;
   }
-  // The desktop app, when installed, is the real-page shell and wins over a Chrome window; the point just made follows it.
-  if (isDesktopInstalled() && spawnSync(OPEN, [DESKTOP_APP]).status === 0) {
+  // Desktop surface opens the real-page shell and wins over Chrome; webapp never does, so it skips to a Chrome window.
+  if (surface !== "web" && isDesktopInstalled() && spawnSync(OPEN, [DESKTOP_APP]).status === 0) {
     console.log(`opened the desktop app${key ? ` on ${what}` : ""}`);
     return 0;
   }
-  if (listeners) {
+  if (listening) {
     console.log(`moved the open sidecar to ${what}`);
     return 0;
   }
@@ -366,7 +353,7 @@ function buildDesktop(): boolean {
   return spawnSync(process.execPath, [join(DESKTOP, "build.ts"), "--package"], { cwd: DESKTOP, stdio: "inherit" }).status === 0;
 }
 
-async function desktopInstall(): Promise<number> {
+async function installDesktop(): Promise<number> {
   if (!existsSync(join(DESKTOP, "node_modules", "electron"))) {
     console.error(`electron is not installed in ${DESKTOP}; run pnpm install there first`);
     return 1;
@@ -388,36 +375,46 @@ async function desktopInstall(): Promise<number> {
   }
   if (!(await isSidecar()) && (await start()) !== 0) return 1;
   spawnSync(OPEN, [DESKTOP_APP]);
-  console.log(`installed the desktop app at ${DESKTOP_APP}, and opened it`);
+  console.log(`set up the desktop app at ${DESKTOP_APP}, and opened it`);
   return 0;
 }
 
-function desktopUninstall(): number {
-  if (!isDesktopInstalled()) {
-    console.log("the desktop app is not installed");
-    return 0;
+async function setup(): Promise<number> {
+  const arg = process.argv[3];
+  let surface: Surface | undefined = arg === "desktop" || arg === "web" ? arg : undefined;
+  if (!surface) {
+    if (!process.stdin.isTTY) {
+      console.error("run sidecar setup in a terminal, or sidecar setup desktop|web");
+      return 2;
+    }
+    surface = await chooseSurface();
+    if (!surface) {
+      console.log("no choice made, nothing changed");
+      return 1;
+    }
   }
-  rmSync(DESKTOP_APP, { force: true, recursive: true });
-  console.log(`removed ${DESKTOP_APP}`);
+  writeSurface(surface);
+  if (surface === "desktop") return installDesktop();
+  if (!(await isSidecar()) && (await start()) !== 0) return 1;
+  console.log("set up to run as a webapp in Chrome; sidecar open opens it");
   return 0;
 }
 
 // Close the app first: a running one holds the cookie store, so a separate import process cannot open it.
-function desktopImport(): number {
+function importCookies(): number {
   if (!isDesktopInstalled()) {
-    console.error("install the desktop app first: sidecar desktop install");
+    console.error("no desktop app to import into; run sidecar setup and choose desktop first");
     return 1;
   }
   return spawnSync(join(DESKTOP_APP, "Contents", "MacOS", NAME), ["--import"], { stdio: "inherit" }).status === 0 ? 0 : 1;
 }
 
-async function desktop(): Promise<number> {
-  const sub = process.argv[3];
-  if (sub === "install") return desktopInstall();
-  if (sub === "uninstall") return desktopUninstall();
-  if (sub === "import") return desktopImport();
-  console.error("sidecar desktop: say install, uninstall or import");
-  return 2;
+// The app bundle, the Electron userData that holds the imported cookies, and the surface choice, so a fresh setup starts clean.
+function uninstall(): number {
+  const had = isDesktopInstalled();
+  for (const path of [DESKTOP_APP, APP_DATA, CONFIG]) rmSync(path, { force: true, recursive: true });
+  console.log(had ? "removed the desktop app and all its data" : "removed the sidecar's data");
+  return 0;
 }
 
 const COMMANDS = {
@@ -434,9 +431,9 @@ const COMMANDS = {
   start,
   stop,
   restart: async () => ((await stop()) === 0 ? start() : 1),
-  install,
+  setup,
   uninstall: async () => uninstall(),
-  desktop,
+  import: async () => importCookies(),
   help: async () => (console.log(USAGE), 0),
 } satisfies Record<Command, () => Promise<number>>;
 

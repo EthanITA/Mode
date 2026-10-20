@@ -22,6 +22,7 @@
     "bin/_install.ts",
     "bin/_mode.ts",
     "bin/_artifact.ts",
+    "bin/_sidecar.ts",
     "hooks/**/*.ts",
     "lib/**/*.ts",
     "scripts/*.ts",
