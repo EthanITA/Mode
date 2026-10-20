@@ -120,7 +120,7 @@ code {
 }
 
 .last {
-  @apply flex items-center gap-3.5 p-4;
+  @apply -mx-1.5 my-0 flex items-center gap-3.5 p-4;
 }
 
 .last-text {
