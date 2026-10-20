@@ -6,6 +6,7 @@ const { initial: sideInitial, width: side } = usePaneWidth();
 const sc = useSidecar();
 const chrome = useChrome();
 const follow = $follow();
+const artifact = $artifact();
 const selected = useConversationPick("ar:picks");
 
 const shown = useFaceShown();
@@ -16,10 +17,16 @@ watch(shown, (on) => {
 });
 
 const session = computed(() => sc.sessions.value.find((s) => s.key === sc.sessionKey.value));
+// Never opened falls back to `updated`, so a fresh page lands on top instead of under older opened ones.
+const lastTouched = ({ slug, updated }: ArtifactMeta): number =>
+  artifact.openedAt[slug] ?? (updated ? Date.parse(updated) || 0 : 0);
+
 // A scratch .md the conversation wrote is a document, so it stays in Files with the rest of its files.
 const entries = computed(() => {
   const mine = new Set(session.value?.artifacts ?? []);
-  return sc.catalogue.value.filter((meta) => mine.has(meta.slug) && meta.kind !== "document");
+  return sc.catalogue.value
+    .filter((meta) => mine.has(meta.slug) && meta.kind !== "document")
+    .sort((a, b) => lastTouched(b) - lastTouched(a));
 });
 // Any page the catalogue holds opens here, since Claude Code can point at one this conversation never made.
 const picked = computed(() => sc.catalogue.value.find((meta) => meta.slug === selected.value));
@@ -31,6 +38,10 @@ watch(
   },
   { immediate: true },
 );
+
+watch(selected, (slug) => {
+  if (slug) artifact.markOpened(slug);
+});
 
 // A link or Claude asked for the artifact already open, maybe on another page, which its record now names.
 async function showAgain(slug: string): Promise<void> {
@@ -58,7 +69,6 @@ watch(
 );
 
 const web = $web();
-const artifact = $artifact();
 const address = ref("");
 const refused = ref<string>();
 const isFocused = ref(false);
@@ -331,7 +341,7 @@ async function openUrl(): Promise<void> {
 }
 
 .age {
-  @apply text-subtle normal-case;
+  @apply min-w-0 truncate text-subtle normal-case;
 }
 
 .name {
