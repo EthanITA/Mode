@@ -29,6 +29,28 @@ function setPlist(xml: string, key: string, value: string): string {
   return re.test(xml) ? xml.replace(re, `$1${value}$2`) : xml.replace("</dict>", `\t<key>${key}</key>\n\t<string>${value}</string>\n</dict>`);
 }
 
+// The plugin subtrees the running server reads through MODE_PLUGIN_ROOT, including the closure of the versions.ts it spawns.
+const PLUGIN_DIRS = [".claude-plugin", "bin", "commands", "lib", "server", "shared", "skills"];
+
+// The production server and the plugin files it reads are bundled in, so the app runs everything itself.
+function bundleServer(app: string): void {
+  const repo = join(root, "..");
+  execFileSync(process.execPath, [join(repo, "node_modules", "nuxt", "bin", "nuxt.mjs"), "build"], {
+    cwd: repo,
+    env: { ...process.env, MODE_PLUGIN_ROOT: repo },
+    stdio: "inherit",
+  });
+  const resources = join(app, "Contents", "Resources");
+  cpSync(join(repo, ".output"), join(resources, "output"), { recursive: true, verbatimSymlinks: true });
+  // Copied per subdir rather than whole-repo, since the plugin dest lives under the repo's own out/ and cpSync rejects copying a tree into itself.
+  const plugin = join(resources, "plugin");
+  for (const dir of PLUGIN_DIRS)
+    cpSync(join(repo, dir), join(plugin, dir), {
+      filter: (src) => !/(^|\/)(node_modules|__fixtures__|__tests__)(\/|$)/.test(src) && !/\.test\.[cm]?tsx?$/.test(src),
+      recursive: true,
+    });
+}
+
 // Packaged by hand rather than @electron/packager, whose dependency walker cannot resolve its own modules under pnpm.
 function packageApp(): void {
   const source = join(root, "node_modules", "electron", "dist", "Electron.app");
@@ -59,6 +81,8 @@ function packageApp(): void {
     join(payload, "package.json"),
     `${JSON.stringify({ main: "dist/main.cjs", name: "claude-code-sidecar-desktop", productName: NAME, version: VERSION }, null, 2)}\n`,
   );
+
+  bundleServer(app);
 
   // Renaming the executable breaks the dist's ad-hoc signature, so the bundle is re-signed in place.
   execFileSync("codesign", ["--force", "--deep", "--sign", "-", app], { stdio: "inherit" });

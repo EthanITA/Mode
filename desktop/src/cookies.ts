@@ -15,13 +15,13 @@ const EPOCH_OFFSET = 11_644_473_600;
 
 interface CookieRow {
   encrypted_value: Uint8Array;
-  expires_utc: number;
+  expires_utc: bigint;
   host_key: string;
-  is_httponly: number;
-  is_secure: number;
+  is_httponly: bigint;
+  is_secure: bigint;
   name: string;
   path: string;
-  samesite: number;
+  samesite: bigint;
 }
 
 export interface CookieImport {
@@ -75,8 +75,9 @@ function urlOf(row: CookieRow): string {
 }
 
 function expiryOf(row: CookieRow): number | undefined {
-  if (!row.expires_utc) return undefined;
-  const seconds = row.expires_utc / 1_000_000 - EPOCH_OFFSET;
+  const micro = Number(row.expires_utc);
+  if (!micro) return undefined;
+  const seconds = micro / 1_000_000 - EPOCH_OFFSET;
   return seconds > Date.now() / 1000 ? seconds : undefined;
 }
 
@@ -88,9 +89,12 @@ export async function importChromeCookies(session: Session, { profile = "Default
   const copy = join(mkdtempSync(join(tmpdir(), "sidecar-cookies-")), "Cookies");
   copyFileSync(db, copy);
   const handle = new DatabaseSync(copy, { readOnly: true });
-  const rows = handle
-    .prepare("SELECT host_key, name, encrypted_value, path, is_secure, is_httponly, expires_utc, samesite FROM cookies")
-    .all() as unknown as CookieRow[];
+  const statement = handle.prepare(
+    "SELECT host_key, name, encrypted_value, path, is_secure, is_httponly, expires_utc, samesite FROM cookies",
+  );
+  // expires_utc counts microseconds since 1601, past the safe-integer range, so integers come back as BigInt.
+  statement.setReadBigInts(true);
+  const rows = statement.all() as unknown as CookieRow[];
   handle.close();
 
   const out: CookieImport = { failed: 0, set: 0, skipped: 0 };
@@ -107,7 +111,7 @@ export async function importChromeCookies(session: Session, { profile = "Default
         httpOnly: !!row.is_httponly,
         name: row.name,
         path: row.path,
-        sameSite: SAME_SITE[row.samesite] ?? "unspecified",
+        sameSite: SAME_SITE[Number(row.samesite)] ?? "unspecified",
         secure: !!row.is_secure,
         url: urlOf(row),
         value: got.value,
