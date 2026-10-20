@@ -5,7 +5,7 @@ import { lines, strip } from "../text.ts";
 import { isWebRecord, listRecords, recordPath } from "../web/records.ts";
 import { documentSlug } from "./comments.ts";
 import { ArtifactLists } from "./lists.ts";
-import { Sidecar, configRoot, expandHome } from "./paths.ts";
+import { Sidecar, expandHome } from "./paths.ts";
 import { Refusal } from "./refusal.ts";
 import { Tracked } from "./tracked.ts";
 
@@ -22,8 +22,8 @@ const pages = (): string[] => {
 };
 
 const recordedDocuments = (): Map<string, string> => {
-  const dir = join(configRoot(), "artifacts");
-  const lists = isDir(dir) ? readdirSync(dir).filter((name) => name.startsWith("session-")) : [];
+  const dir = ArtifactLists.home();
+  const lists = isDir(dir) ? readdirSync(dir).filter((name) => ArtifactLists.keyOf(name)) : [];
   const entries = lists.sort().flatMap((name) => lines(readTextSafe(join(dir, name)) ?? "").map(strip));
   const documents = entries.filter((entry) => entry.startsWith("/") && entry.endsWith(".md") && isFile(entry));
   return new Map(documents.map((entry) => [documentSlug(entry), entry]));

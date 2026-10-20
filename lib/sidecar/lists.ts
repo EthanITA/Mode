@@ -4,8 +4,14 @@ import { readTextSafe } from "../files.ts";
 import { lines, strip } from "../text.ts";
 import { configRoot } from "./paths.ts";
 
+const PREFIX = "session-";
+
+const home = (): string => join(configRoot(), "artifacts");
+
 const fileOf = (sid = process.env.CLAUDE_CODE_SESSION_ID || ""): string =>
-  sid ? join(configRoot(), "artifacts", `session-${sid.slice(0, 8)}`) : "";
+  sid ? join(home(), `${PREFIX}${sid.slice(0, 8)}`) : "";
+
+const keyOf = (name: string): string => (name.startsWith(PREFIX) ? name.slice(PREFIX.length) : "");
 
 const entries = (sid?: string): string[] => {
   const seen = new Set<string>();
@@ -20,4 +26,4 @@ const record = (entry: string, sid?: string): void => {
   if (!entries(sid).includes(entry)) appendFileSync(file, `${entry}\n`);
 };
 
-export const ArtifactLists = { entries, record };
+export const ArtifactLists = { entries, home, keyOf, record };

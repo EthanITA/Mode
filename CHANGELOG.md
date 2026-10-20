@@ -324,6 +324,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Changed
 
+- **The sidecar announces a new page itself.** It watches the conversation lists in `~/.claude/artifacts/`
+  and toasts a page the first time a conversation records one it was not already showing, so
+  `artifact new` and the observe hook no longer publish `artifact.created`. The observe hook now records
+  every page Write or Edit touches in the artifacts folder against the conversation, where before only
+  `artifact stamp` did. A page made while the sidecar is stopped lists when it starts, without a toast.
 - **Comments and opening a page moved to the sidecar CLI.** `artifact comments <slug>` is now
   `sidecar comments <slug>`, with the same `--reply`, `--resolve`, `--json` and `--ingest`, and
   `artifact open <slug|url>` is now `sidecar open --artifact <slug|url>`. The `user` key that names who

@@ -48,21 +48,13 @@ function observed(data: Payload): string {
 }
 
 // lib/artifact is the one writer of a conversation's list, as lib/mode is of its slots.
-function recordDocument(data: Payload): void {
+function recordArtifact(data: Payload): void {
   const path = str(record(data.tool_input).file_path);
   const session = str(data.session_id);
   if (data.hook_event_name !== "PostToolUse" || !["Write", "Edit"].includes(str(data.tool_name))) return;
-  if (!path.endsWith(".md") || !session) return;
-  try {
-    Artifacts.record(Artifacts.entryOf(Artifacts.resolve(path, session)), session);
-  } catch {}
-}
-
-// Write reports `create` only for a file that did not exist, so a rewrite of a page is never announced twice.
-function announceCreated(data: Payload): void {
-  if (data.hook_event_name !== "PostToolUse" || str(data.tool_name) !== "Write") return;
-  if (str(record(data.tool_response).type) !== "create") return;
-  Artifacts.announce(str(record(data.tool_input).file_path), str(data.session_id));
+  if (!path || !session) return;
+  const entry = Artifacts.entryOf(path);
+  if (path.endsWith(".md") || entry !== path) Artifacts.record(entry, session);
 }
 
 try {
@@ -70,8 +62,7 @@ try {
   const session = str(data.session_id) || undefined;
   const token = observed(data);
   if (token) await quietly(() => done({ axis: "mode", session, reason: token }));
-  recordDocument(data);
-  await quietly(() => announceCreated(data));
+  await quietly(() => recordArtifact(data));
 
   // Only on the success event: a failed call already owes the model an error, not a board aside.
   if (data.hook_event_name === "PostToolUse") {

@@ -460,9 +460,11 @@ describe("the PostToolUse hooks", () => {
     assert.equal(readFileSync(join(PLUGIN, "skills", "mode", "MANUAL.md"), "utf8"), real);
   });
 
-  test("observe records a .md the conversation wrote, and nothing else", () => {
+  test("observe records a .md the conversation wrote and a page in the artifacts folder by its slug, and nothing else", () => {
     const doc = write(join(tmp, "notes", "plan.md"), "# Plan\n");
     const code = write(join(tmp, "notes", "plan.ts"), "export const a = 1\n");
+    const page = write(join(config, "sidecar", "artifacts", "fresh.html"), "<!doctype html>\n<title>Fresh</title>\n");
+    const stray = write(join(tmp, "notes", "stray.html"), "<title>Stray</title>\n");
     const listed = join(config, "artifacts", "session-d0c5e55a");
     const wrote = (file: string) =>
       fire(
@@ -477,36 +479,8 @@ describe("the PostToolUse hooks", () => {
         vars,
       );
     assert.equal(wrote(doc).status, 0);
-    wrote(code);
-    const recorded = readFileSync(listed, "utf8");
-    assert.ok(recorded.split("\n").includes(doc) && !recorded.includes("plan.ts"), recorded);
-  });
-
-  test("observe announces a page Write created in the artifacts folder, and not one it rewrote", () => {
-    const page = write(join(config, "sidecar", "artifacts", "fresh.html"), "<!doctype html>\n<title>Fresh</title>\n");
-    const wrote = (type: string) =>
-      fire(
-        "observe",
-        {
-          session_id: "e7e4a11c-hook",
-          hook_event_name: "PostToolUse",
-          tool_name: "Write",
-          cwd: tmp,
-          tool_input: { file_path: page },
-          tool_response: { type },
-        },
-        vars,
-      );
-    wrote("create");
-    wrote("update");
-    const announced = readFileSync(join(config, "sidecar", "events.jsonl"), "utf8")
-      .trim()
-      .split("\n")
-      .map((line) => JSON.parse(line) as { topic: string; key: string; data: { slug: string; title: string } });
-    assert.deepEqual(
-      announced.map(({ topic, key, data }) => [topic, key, data.slug, data.title]),
-      [["artifact.created", "e7e4a11c", "fresh", "Fresh"]],
-    );
+    for (const file of [code, page, stray]) wrote(file);
+    assert.deepEqual(readFileSync(listed, "utf8").trim().split("\n"), [doc, "fresh"]);
   });
 
   test("observe records the step a call satisfied, and a failing suite as test-fail", () => {

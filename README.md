@@ -303,9 +303,9 @@ published while the sidecar is down still arrives once it starts. The topics and
 `Topics` in `shared/types/events.ts`, and a topic only exists once it has a parser in
 `lib/sidecar/events.ts`, which refuses a payload that does not fit it.
 
-| Topic              | Payload                 | Published by                                                         | What the sidecar does                       |
-| ------------------ | ----------------------- | -------------------------------------------------------------------- | ------------------------------------------- |
-| `artifact.created` | `slug`, `title`, `path` | `artifact new`, and the observe hook when Write creates a page there | Lists the page, and a notification opens it |
+| Topic              | Payload                 | Published by                                                                    | What the sidecar does                       |
+| ------------------ | ----------------------- | ------------------------------------------------------------------------------- | ------------------------------------------- |
+| `artifact.created` | `slug`, `title`, `path` | the sidecar, when a conversation's list first records a page it was not showing | Lists the page, and a notification opens it |
 
 A producer in this repo calls `publish({ topic, data })` from `lib/sidecar/events.ts`, and anything
 else runs `sidecar publish artifact.created '{"slug":"…","path":"…"}'`. A component consumes with
