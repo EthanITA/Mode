@@ -1,4 +1,4 @@
-import { record, sessionEntries } from "~~/lib/artifact/store";
+import { ArtifactLists } from "~~/lib/sidecar/lists";
 import { openRecord } from "~~/lib/web/records";
 import { addressOf } from "~~/lib/web/target";
 import { isKey } from "~~/server/utils/sessions/paths";
@@ -17,10 +17,10 @@ export default defineEventHandler(async (event): Promise<WebOpenReply> => {
   const session = fieldOf(body, "session").toLowerCase();
   const isOurs = isKey(session);
   const { isNew, record: entry } = openRecord({
-    reuse: body.reuse === true && isOurs ? sessionEntries(session) : [],
+    reuse: body.reuse === true && isOurs ? ArtifactLists.entries(session) : [],
     title: fieldOf(body, "title") || undefined,
     url,
   });
-  if (isOurs) record(entry.slug, session);
+  if (isOurs) ArtifactLists.record(entry.slug, session);
   return { isNew, slug: entry.slug, url: entry.url };
 });

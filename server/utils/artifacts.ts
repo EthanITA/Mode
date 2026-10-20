@@ -9,8 +9,7 @@ import type {
   ThreadAnchor,
   ThreadReply,
 } from "../../shared/types/artifact";
-import { artifactsDir } from "../../lib/artifact/files.ts";
-import { plansHome } from "../../lib/sidecar/paths.ts";
+import { Sidecar, plansHome } from "../../lib/sidecar/paths.ts";
 import {
   commentsFile,
   hasLegacyBlock,
@@ -66,7 +65,7 @@ interface ParseMetaInput {
 
 function kindOf(path: string): ArtifactKind {
   const folder = dirname(path);
-  if (folder === artifactsDir()) return "page";
+  if (folder === Sidecar.artifacts()) return "page";
   return folder === plansHome() ? "plan" : "document";
 }
 
@@ -304,7 +303,7 @@ function outsidePaths(): Map<string, string> {
 }
 
 export async function listArtifacts(): Promise<ArtifactMeta[]> {
-  const dir = artifactsDir();
+  const dir = Sidecar.artifacts();
   const tracked = Tracked.paths();
   const outside = [...outsidePaths()].map(([slug, path]) => ({ file: documentFile({ path, slug }), path }));
   const sources = [...(await artifactFiles(dir)).map((file) => ({ file, path: join(dir, file.name) })), ...outside];
@@ -326,7 +325,7 @@ export async function listArtifacts(): Promise<ArtifactMeta[]> {
 
 async function artifactFile(slug: string): Promise<(ArtifactFile & { path: string }) | undefined> {
   if (!SAFE_SLUG.test(slug)) return undefined;
-  const dir = artifactsDir();
+  const dir = Sidecar.artifacts();
   for (const format of FORMATS) {
     const file = fileOf(`${slug}.${format}`);
     const path = file ? join(dir, file.name) : undefined;
@@ -801,7 +800,7 @@ export function applyWebReview(input: Omit<ThreadChangeInput, "threads"> & { slu
 }
 
 export function isStoredArtifact(path: string): boolean {
-  return isStoredDocument(path, artifactsDir());
+  return isStoredDocument(path, Sidecar.artifacts());
 }
 
 export function resolveArtifactEdit(input: {

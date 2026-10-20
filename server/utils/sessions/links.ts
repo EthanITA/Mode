@@ -1,6 +1,6 @@
 import { closeSync, fstatSync, mkdirSync, openSync, readSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { record, sessionEntries } from "../../../lib/artifact/store.ts";
+import { ArtifactLists } from "../../../lib/sidecar/lists.ts";
 import { readTextSafe } from "../../../lib/files.ts";
 import { Sidecar } from "../../../lib/sidecar/paths.ts";
 import * as Events from "../../../lib/sidecar/events.ts";
@@ -157,7 +157,7 @@ function place({ held, href, isLive, key }: Placing): void {
   const url = new URL(href);
   if (findRecord({ among: held, url })) return;
   const { record: made } = openRecord({ url });
-  record(made.slug, key);
+  ArtifactLists.record(made.slug, key);
   held.push(made.slug);
   if (isLive)
     Events.publish({
@@ -178,7 +178,7 @@ function adopt({ key, isLive = false, path, upTo = Number.POSITIVE_INFINITY }: L
   const links = new Set(ledger.links);
   const fetched = new Set(ledger.fetched);
   const pending = new Set(ledger.pending);
-  const held = sessionEntries(key);
+  const held = ArtifactLists.entries(key);
   const take = (href: string): void => {
     if (links.has(href)) return;
     links.add(href);

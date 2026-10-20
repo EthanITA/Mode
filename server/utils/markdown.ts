@@ -117,7 +117,7 @@ async function nodesOf(markdown: string): Promise<MdNode[]> {
 
 function readStyle(name: string): string {
   try {
-    return readFileSync(join(Sidecar.root(), "skills", "create-artifact", "assets", name), "utf8");
+    return readFileSync(join(Sidecar.root(), "lib", "sidecar", "assets", name), "utf8");
   } catch {
     return ""; // an unstyled page still reads, which beats failing the route over a stylesheet
   }

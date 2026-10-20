@@ -3,7 +3,7 @@ import { appendFileSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, before, test } from "node:test";
-import { sessionEntries } from "../../../lib/artifact/store.ts";
+import { ArtifactLists } from "../../../lib/sidecar/lists.ts";
 import * as Events from "../../../lib/sidecar/events.ts";
 import { readRecord, removeRecord } from "../../../lib/web/records.ts";
 import { Links } from "./links.ts";
@@ -41,7 +41,7 @@ const answered = (s: number, id: string, content: string) => ({
 });
 const lines = (...entries: Record<string, unknown>[]): string =>
   entries.map((one) => `${JSON.stringify(one)}\n`).join("");
-const urls = (key: string): string[] => sessionEntries(key).map((slug) => readRecord(slug)?.url ?? "");
+const urls = (key: string): string[] => ArtifactLists.entries(key).map((slug) => readRecord(slug)?.url ?? "");
 
 test("reads every address in prose, trimming what the sentence or markdown wrapped around it, and none in code", () => {
   const text = [
@@ -107,7 +107,7 @@ test("adopts what the user or Claude links once, never what WebFetch or WebSearc
   ]);
   assert.equal(Events.read(events).events.length, 0);
 
-  const [first = ""] = sessionEntries(key);
+  const [first = ""] = ArtifactLists.entries(key);
   removeRecord(first);
   appendFileSync(
     path,

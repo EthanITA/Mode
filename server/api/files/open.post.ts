@@ -1,9 +1,8 @@
 import { realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, extname, resolve } from "node:path";
-import { artifactsDir, expandHome } from "~~/lib/artifact/files";
-import { record } from "~~/lib/artifact/store";
-import { plansHome } from "~~/lib/sidecar/paths";
+import { ArtifactLists } from "~~/lib/sidecar/lists";
+import { Sidecar, expandHome, plansHome } from "~~/lib/sidecar/paths";
 import { documentSlug } from "~~/lib/sidecar/comments";
 import { Tracked } from "~~/lib/sidecar/tracked";
 import { isKey } from "~~/server/utils/sessions/paths";
@@ -25,17 +24,17 @@ function isIn(path: string, folder: string): boolean {
 
 // A page or plan already has its entry, so only a file from anywhere else is tracked under a slug of its own.
 function slugOf(path: string, session: string): string {
-  if (isIn(path, artifactsDir())) {
+  if (isIn(path, Sidecar.artifacts())) {
     const slug = basename(path, extname(path));
-    if (session) record(slug, session);
+    if (session) ArtifactLists.record(slug, session);
     return slug;
   }
   if (isIn(path, plansHome())) {
-    if (session) record(path, session);
+    if (session) ArtifactLists.record(path, session);
     return documentSlug(path);
   }
   const slug = Tracked.track(path);
-  if (session) record(slug, session);
+  if (session) ArtifactLists.record(slug, session);
   return slug;
 }
 

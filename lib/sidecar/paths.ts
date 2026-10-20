@@ -7,6 +7,9 @@ export const configRoot = (): string => process.env.CLAUDE_CONFIG_DIR || join(ho
 
 export const plansHome = (): string => join(configRoot(), "plans");
 
+export const expandHome = (path: string): string =>
+  path === "~" || path.startsWith("~/") ? homedir() + path.slice(1) : path;
+
 const resolveRoot = (start: string): string => {
   for (let dir = start; ; dir = dirname(dir)) {
     if (existsSync(join(dir, "nuxt.config.ts"))) return dir;
@@ -16,6 +19,8 @@ const resolveRoot = (start: string): string => {
 };
 
 export const Sidecar = {
+  artifacts: (): string =>
+    process.env.NOTES_ARTIFACTS ? expandHome(process.env.NOTES_ARTIFACTS) : join(configRoot(), "sidecar", "artifacts"),
   home: (): string => join(configRoot(), "sidecar"),
   resolveRoot,
   root: (): string => process.env.SIDECAR_ROOT || resolveRoot(dirname(fileURLToPath(import.meta.url))),
