@@ -1,6 +1,3 @@
 node_modules
-.nuxt
-.output
-.data
 *.log
 .DS_Store
