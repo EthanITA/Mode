@@ -2,7 +2,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { ReviewFile, ReviewSnapshot } from "../../../shared/types/review.ts";
 import { readTextSafe } from "../../../lib/files.ts";
-import { configRoot, sidecarHome } from "../../../lib/mode/paths.ts";
+import { Sidecar, configRoot } from "../../../lib/sidecar/paths.ts";
 import { Lines } from "../../../shared/utils/lines.ts";
 import { hashOf } from "../sessions/files.ts";
 
@@ -28,7 +28,7 @@ interface Ledger {
 }
 
 export function reviewHome(): string {
-  return join(sidecarHome(), "review");
+  return join(Sidecar.home(), "review");
 }
 
 // A session whose mod loaded before the move keeps writing here until it restarts.

@@ -5,7 +5,7 @@ import { basename, dirname, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { sidecarHome } from "../lib/mode/paths.ts";
+import { Sidecar } from "../lib/sidecar/paths.ts";
 import * as Events from "../lib/sidecar/events.ts";
 import type { Topics } from "../shared/types/events.ts";
 
@@ -18,9 +18,8 @@ const ADDRESS = (process.env.SIDECAR_URL ?? "http://sidecar.localhost:4747").rep
 const PORT = new URL(ADDRESS).port || "80";
 const NUXT = join(ROOT, "node_modules", "nuxt", "bin", "nuxt.mjs");
 const SERVER = join(ROOT, ".output", "server", "index.mjs");
-// The bundle rewrites import.meta.url, so it cannot find the plugin root itself; localhost keeps it off the network.
-const SERVER_ENV = { MODE_PLUGIN_ROOT: ROOT, NITRO_HOST: "localhost", NITRO_PORT: PORT };
-const LOG = join(sidecarHome(), "server.log");
+const SERVER_ENV = { NITRO_HOST: "localhost", NITRO_PORT: PORT, SIDECAR_ROOT: ROOT };
+const LOG = join(Sidecar.home(), "server.log");
 // The manifest's name is what tells the sidecar apart from anything else that took the port.
 const NAME = "Claude Code Sidecar";
 // Absolute, because a bin/open earlier on PATH shadows the system one inside a Notes-style tree.
@@ -30,7 +29,7 @@ const DESKTOP_APP = join(homedir(), "Applications", `${NAME}.app`);
 const isDesktopInstalled = (): boolean => existsSync(DESKTOP_APP);
 // The Electron userData, named after the app, holds the imported cookies and the import marker.
 const APP_DATA = join(homedir(), "Library", "Application Support", NAME);
-const CONFIG = join(sidecarHome(), "config.json");
+const CONFIG = join(Sidecar.home(), "config.json");
 
 type Surface = "desktop" | "web";
 
@@ -44,7 +43,7 @@ function readSurface(): Surface | undefined {
 }
 
 function writeSurface(surface: Surface): void {
-  mkdirSync(sidecarHome(), { recursive: true });
+  mkdirSync(Sidecar.home(), { recursive: true });
   writeFileSync(CONFIG, `${JSON.stringify({ surface }, null, 2)}\n`);
 }
 
@@ -151,7 +150,7 @@ async function status(): Promise<number> {
 }
 
 function build(): boolean {
-  mkdirSync(sidecarHome(), { recursive: true });
+  mkdirSync(Sidecar.home(), { recursive: true });
   const log = openSync(LOG, "w");
   console.log("building the sidecar");
   return spawnSync(process.execPath, [NUXT, "build"], { cwd: ROOT, stdio: ["ignore", log, log] }).status === 0;

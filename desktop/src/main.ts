@@ -11,7 +11,7 @@ const WEBVIEW_PRELOAD = join(__dirname, "preload-webview.cjs");
 const UI_PRELOAD = join(__dirname, "preload-ui.cjs");
 const REPO = join(__dirname, "..", "..");
 const SERVER_ENTRY = app.isPackaged ? join(process.resourcesPath, "output", "server", "index.mjs") : join(REPO, ".output", "server", "index.mjs");
-const PLUGIN_ROOT = app.isPackaged ? join(process.resourcesPath, "plugin") : REPO;
+const SIDECAR_ROOT = app.isPackaged ? join(process.resourcesPath, "plugin") : REPO;
 
 let server: ChildProcess | undefined;
 
@@ -33,9 +33,9 @@ async function startServer(): Promise<void> {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: "1",
-      MODE_PLUGIN_ROOT: PLUGIN_ROOT,
       NITRO_HOST: "localhost",
       NITRO_PORT: new URL(SIDECAR_URL).port || "80",
+      SIDECAR_ROOT,
     },
     stdio: "ignore",
   });

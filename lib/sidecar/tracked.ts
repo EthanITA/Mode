@@ -1,12 +1,12 @@
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, extname, join } from "node:path";
 import { readTextSafe } from "../files.ts";
-import { sidecarHome } from "../mode/paths.ts";
+import { Sidecar } from "./paths.ts";
 import { documentSlug } from "./comments.ts";
 
 const FORMATS = [".html", ".md"];
 
-const listPath = (): string => join(sidecarHome(), "tracked.json");
+const listPath = (): string => join(Sidecar.home(), "tracked.json");
 
 function read(): Record<string, string> {
   try {

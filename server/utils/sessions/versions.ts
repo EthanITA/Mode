@@ -11,7 +11,7 @@ import type {
   VersionPair,
 } from "../../../shared/types/versions.ts";
 import { Lines } from "../../../shared/utils/lines.ts";
-import { pluginRoot } from "../../../lib/mode/paths.ts";
+import { Sidecar } from "../../../lib/sidecar/paths.ts";
 
 const run = promisify(execFile);
 const BUDGET_MS = 120_000;
@@ -21,7 +21,7 @@ async function call<T>(args: string[]): Promise<T | undefined> {
   try {
     const { stdout } = await run(
       process.execPath,
-      ["--experimental-strip-types", join(pluginRoot(), "bin", "versions.ts"), ...args],
+      ["--experimental-strip-types", join(Sidecar.root(), "bin", "versions.ts"), ...args],
       {
         encoding: "utf8",
         maxBuffer: 256 * 1024 * 1024,

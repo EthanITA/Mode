@@ -4,7 +4,7 @@ import { renderMermaidSVGAsync } from "beautiful-mermaid";
 import { createMarkdownParser } from "comark";
 import type { MarkdownDocument } from "comark";
 import { Syntax } from "../../shared/utils/highlight.ts";
-import { pluginRoot } from "../../lib/mode/paths.ts";
+import { Sidecar } from "../../lib/sidecar/paths.ts";
 
 type MdNode = MarkdownDocument["nodes"][number];
 
@@ -117,7 +117,7 @@ async function nodesOf(markdown: string): Promise<MdNode[]> {
 
 function readStyle(name: string): string {
   try {
-    return readFileSync(join(pluginRoot(), "skills", "create-artifact", "assets", name), "utf8");
+    return readFileSync(join(Sidecar.root(), "skills", "create-artifact", "assets", name), "utf8");
   } catch {
     return ""; // an unstyled page still reads, which beats failing the route over a stylesheet
   }

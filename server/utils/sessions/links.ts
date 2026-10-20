@@ -2,7 +2,7 @@ import { closeSync, fstatSync, mkdirSync, openSync, readSync, writeFileSync } fr
 import { dirname, join } from "node:path";
 import { record, sessionEntries } from "../../../lib/artifact/store.ts";
 import { readTextSafe } from "../../../lib/files.ts";
-import { sidecarHome } from "../../../lib/mode/paths.ts";
+import { Sidecar } from "../../../lib/sidecar/paths.ts";
 import * as Events from "../../../lib/sidecar/events.ts";
 import { findRecord, openRecord, recordPath } from "../../../lib/web/records.ts";
 import { isKey } from "./paths.ts";
@@ -136,7 +136,7 @@ function readFrom(path: string, offset: number, upTo: number): { entries: Entry[
 }
 
 function ledgerPath(key: string): string {
-  return join(sidecarHome(), "links", `${key}.json`);
+  return join(Sidecar.home(), "links", `${key}.json`);
 }
 
 function ledgerOf(file: string): Ledger {

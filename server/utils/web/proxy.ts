@@ -16,7 +16,7 @@ import {
 } from "h3";
 import { proxyFetch, proxyUpgrade } from "httpxy";
 import { getDomain } from "tldts";
-import { pluginRoot } from "../../../lib/mode/paths.ts";
+import { Sidecar } from "../../../lib/sidecar/paths.ts";
 import { type ProxyPlace, WebHost } from "../../../lib/web/host.ts";
 import { CHANNEL } from "../../../lib/web/page/protocol.ts";
 import { siteAgents } from "../../../lib/web/records.ts";
@@ -335,7 +335,9 @@ function noticePage({ held, status }: { held: Running; status: number }): Respon
 }
 
 async function pageFile(name: string): Promise<Response> {
-  const source = await readFile(join(pluginRoot(), "lib", "web", "page", `${name}.ts`), "utf8").catch(() => undefined);
+  const source = await readFile(join(Sidecar.root(), "lib", "web", "page", `${name}.ts`), "utf8").catch(
+    () => undefined,
+  );
   if (!source) return new Response("", { status: 404 });
   return new Response(stripTypeScriptTypes(source), {
     headers: { "cache-control": "no-store", "content-type": "text/javascript; charset=utf-8" },

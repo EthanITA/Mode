@@ -1,8 +1,7 @@
 import { appendFileSync, closeSync, mkdirSync, openSync, readSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { SidecarEvent, Topic, Topics } from "../../shared/types/events.ts";
-import { sidecarHome } from "../mode/paths.ts";
-import { Refusal } from "../mode/refusal.ts";
+import { Sidecar } from "./paths.ts";
 
 type Fields = Record<string, unknown>;
 
@@ -34,7 +33,7 @@ const PARSE: { [T in Topic]: (data: Fields) => Topics[T] | undefined } = {
 export const TOPICS = Object.keys(PARSE) as Topic[];
 
 export function logFile(): string {
-  return join(sidecarHome(), "events.jsonl");
+  return join(Sidecar.home(), "events.jsonl");
 }
 
 export function isTopic(name: string): name is Topic {
@@ -51,7 +50,7 @@ export function publish<T extends Topic>({
   key = process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8),
 }: Publish<T>): void {
   const clean = parse(topic, data);
-  if (!clean) throw new Refusal(`not a valid ${topic} event: ${JSON.stringify(data)}`, 2);
+  if (!clean) throw new Error(`not a valid ${topic} event: ${JSON.stringify(data)}`);
   mkdirSync(dirname(logFile()), { recursive: true });
   // One write per line under O_APPEND, so producers in separate processes never interleave.
   appendFileSync(logFile(), `${JSON.stringify({ topic, key, at: new Date().toISOString(), data: clean })}\n`);

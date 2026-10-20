@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { basename, dirname, extname, resolve } from "node:path";
 import { artifactsDir, expandHome } from "~~/lib/artifact/files";
 import { record } from "~~/lib/artifact/store";
-import { plansHome } from "~~/lib/mode/paths";
+import { plansHome } from "~~/lib/sidecar/paths";
 import { documentSlug } from "~~/lib/sidecar/comments";
 import { Tracked } from "~~/lib/sidecar/tracked";
 import { isKey } from "~~/server/utils/sessions/paths";

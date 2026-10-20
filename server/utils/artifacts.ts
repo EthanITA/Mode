@@ -10,7 +10,7 @@ import type {
   ThreadReply,
 } from "../../shared/types/artifact";
 import { artifactsDir } from "../../lib/artifact/files.ts";
-import { plansHome } from "../../lib/mode/paths.ts";
+import { plansHome } from "../../lib/sidecar/paths.ts";
 import {
   commentsFile,
   hasLegacyBlock,

@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { configRoot } from "../../../lib/mode/paths.ts";
+import { configRoot } from "../../../lib/sidecar/paths.ts";
 
 export const KEY_LENGTH = 8;
 

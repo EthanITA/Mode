@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import type { SessionLane, SessionStatus } from "../../../shared/types/session.ts";
 import { readTextSafe } from "../../../lib/files.ts";
-import { configRoot } from "../../../lib/mode/paths.ts";
+import { configRoot } from "../../../lib/sidecar/paths.ts";
 import { isAlive, statusOf } from "./registry.ts";
 import { isKey, isSessionId, jobsHome, keyOf, registryHome } from "./paths.ts";
 

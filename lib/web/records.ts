@@ -7,7 +7,7 @@ import { getDomainWithoutSuffix } from "tldts";
 import type { WebTrail } from "../../shared/types/web.ts";
 import { Trail } from "../../shared/utils/trail.ts";
 import { readTextSafe } from "../files.ts";
-import { sidecarHome } from "../mode/paths.ts";
+import { Sidecar } from "../sidecar/paths.ts";
 
 /** One web artifact, a tab of its own, whose file is that entry's "path" for the server and the CLI alike. */
 export interface WebRecord {
@@ -32,7 +32,7 @@ export interface OpenedRecord {
 export const PROXY_PORT = 47481;
 const NAME_MAX = 24;
 export function webHome(): string {
-  return join(sidecarHome(), "web");
+  return join(Sidecar.home(), "web");
 }
 
 export function recordPath(slug: string): string {

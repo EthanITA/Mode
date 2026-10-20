@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join } from "node:path";
 import { readTextSafe } from "../files.ts";
-import { sidecarHome } from "../mode/paths.ts";
+import { Sidecar } from "./paths.ts";
 
 export type CommentsDoc = Record<string, unknown> & { threads: unknown[] };
 
@@ -30,7 +30,7 @@ export function isStoredDocument(path: string, artifactsDir: string): boolean {
 }
 
 export function commentsFile(path: string): string {
-  return join(sidecarHome(), "comments", `${documentSlug(path)}.json`);
+  return join(Sidecar.home(), "comments", `${documentSlug(path)}.json`);
 }
 
 function parse(text: string | undefined): CommentsDoc | undefined {
