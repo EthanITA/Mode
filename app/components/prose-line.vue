@@ -15,7 +15,7 @@ const reveal = inject(revealLines, undefined);
   <button
     class="line-ref focusable"
     type="button"
-    :title="`Show ${from === to ? `line ${from}` : `lines ${from}-${to}`}`"
+    :data-tip="`Show ${from === to ? `line ${from}` : `lines ${from}-${to}`}`"
     @click="reveal?.([from, to])"
   >
     <slot />

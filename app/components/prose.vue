@@ -108,7 +108,7 @@ watch(
 }
 
 .prose :deep(code) {
-  @apply rounded-selector border border-border bg-raised px-1 py-px font-mono text-[0.88em];
+  @apply rounded-selector border border-border bg-raised px-1 py-px font-mono typo-caption;
 }
 
 /* The bubble is width-capped, so a long line has to scroll here or it drags the layout wider. */

@@ -311,18 +311,24 @@ onScopeDispose(() => clearTimeout(timer));
 }
 
 /* Opens at 350ms, watched for 500ms, stepped through at 850ms, shut from 1750ms. */
+.beam-leave-active,
+.beam-enter-active {
+  --beam-out-at: 850ms;
+  --beam-in-at: 900ms;
+}
+
 .beam-leave-active {
   transition:
-    opacity 300ms ease-in 850ms,
-    scale 400ms ease-in 850ms,
-    translate 400ms ease-in 850ms;
+    opacity var(--duration-base) var(--ease-launch) var(--beam-out-at),
+    scale var(--duration-slow) var(--ease-launch) var(--beam-out-at),
+    translate var(--duration-slow) var(--ease-launch) var(--beam-out-at);
 }
 
 .beam-enter-active {
   transition:
-    opacity 300ms var(--ease-out, ease-out) 900ms,
-    scale 400ms var(--ease-out, ease-out) 900ms,
-    translate 400ms var(--ease-out, ease-out) 900ms;
+    opacity var(--duration-base) var(--ease-out) var(--beam-in-at),
+    scale var(--duration-slow) var(--ease-out) var(--beam-in-at),
+    translate var(--duration-slow) var(--ease-out) var(--beam-in-at);
 }
 
 /* It looks the portal over before committing, then leans in. */
@@ -461,7 +467,7 @@ onScopeDispose(() => clearTimeout(timer));
 .rig-desk,
 .alert,
 .snooze {
-  @apply pointer-events-none opacity-0 transition-opacity duration-190 ease-out;
+  @apply pointer-events-none opacity-0 transition-opacity duration-(--duration-fast) ease-out;
 }
 
 /* Held back past the outgoing fade, so the old props clear before the new ones arrive. */
@@ -474,7 +480,7 @@ onScopeDispose(() => clearTimeout(timer));
 .mascot[data-state="running"] .prompt,
 .mascot[data-state="waiting"] .alert,
 .mascot[data-state="asleep"] .snooze {
-  @apply opacity-100 delay-150;
+  @apply opacity-100 delay-(--duration-settle);
 }
 
 /* Dropping an animation mid-cycle reverts the transform at once; this eases that revert instead. */
@@ -488,7 +494,7 @@ onScopeDispose(() => clearTimeout(timer));
 .code,
 .key,
 .caret {
-  @apply transition-transform duration-260 ease-out;
+  @apply transition-transform duration-(--duration-burst) ease-out;
 }
 
 .mascot[data-state="coding"] .rig {

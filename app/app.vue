@@ -5,11 +5,10 @@ const sc = useSidecar();
 const inlineArmed = useState<boolean>("sc:inline-armed", () => false);
 const inlineAsk = useState<boolean>("sc:inline-ask", () => false);
 
-// The installed app's title bar takes this colour, so it follows the theme toggle rather than the OS.
-const TITLE_BAR = { dark: "#111113", light: "#f9f8f5" } as const;
-const titleBar = ref<string>(TITLE_BAR.light);
+// The installed app's title bar takes the canvas, so it follows the theme toggle rather than the OS.
+const titleBar = ref<string>();
 const readTheme = (): void => {
-  titleBar.value = document.documentElement.getAttribute("data-theme") === "dark" ? TITLE_BAR.dark : TITLE_BAR.light;
+  titleBar.value = getComputedStyle(document.documentElement).getPropertyValue("--canvas").trim();
 };
 const themes = new MutationObserver(readTheme);
 onMounted(() => {

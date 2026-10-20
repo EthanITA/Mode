@@ -68,7 +68,7 @@ onScopeDispose(onUp);
     :aria-valuemin="min"
     :aria-valuenow="width"
     :data-dragging="isDragging"
-    title="Drag to resize, double-click to reset"
+    data-tip="Drag to resize, double-click to reset"
     @dblclick="width = bound(initial)"
     @keydown="onKey"
     @lostpointercapture="onUp"
