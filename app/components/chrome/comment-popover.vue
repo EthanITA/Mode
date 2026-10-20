@@ -101,7 +101,7 @@ function onEdit(): void {
 
 <style scoped>
 .scrim {
-  @apply fixed inset-0 z-35 bg-secondary/18;
+  @apply scrim z-35;
 }
 
 /* Padding is the surface's own, so nothing here can race the package's per-variant default. */

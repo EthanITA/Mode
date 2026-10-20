@@ -187,7 +187,7 @@ header {
 }
 
 .quote {
-  @apply m-0 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 typo-body text-muted italic;
+  @apply quote;
 }
 
 .warn {

@@ -63,7 +63,6 @@
 
 /* The sidecar's own palette as Tailwind colours, so `text-tint` and `bg-ed-bar` resolve like `text-muted`. */
 @theme inline {
-  --color-primary-deep: var(--primary-deep);
   --color-tint: var(--tint);
   --color-tint-violet: var(--tint-violet);
   --color-tint-amber: var(--tint-amber);
@@ -151,6 +150,47 @@ body {
 
 @utility dot {
   @apply size-(--dot-size) flex-none rounded-full;
+}
+
+@utility island-row {
+  @apply flex h-(--island-row-h) flex-none items-center;
+}
+
+@utility quote {
+  @apply m-0 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 typo-body text-muted italic;
+}
+
+/* Laid over a row's right end on its --row-bg, so the name runs under the actions and never rewraps. */
+@utility row-actions {
+  @apply pointer-events-none absolute inset-y-0 right-0 flex items-center rounded-l-none bg-linear-to-r from-transparent to-(--row-bg) to-[--spacing(4.5)] py-0 pl-4.5 opacity-0 transition-opacity duration-(--duration-fast) ease-out;
+}
+
+@utility scrim {
+  @apply fixed inset-0 bg-fg/12;
+}
+
+/* The editor bars are One Dark in either theme, so the palette is remapped and the builtins on them follow. */
+@utility editor-tokens {
+  --ink: var(--ed-ink);
+  --muted: var(--ed-muted);
+  --subtle: var(--ed-muted);
+  --raised: var(--ed-bar);
+  --sunken: var(--ed-button);
+  --canvas: var(--ed-bg);
+  --border: var(--ed-button);
+  --border-strong: var(--ed-muted);
+  --primary: var(--ed-accent);
+  --accent: var(--ed-accent);
+  --primary-content: var(--ed-bg);
+  --primary-soft: color-mix(in oklch, var(--ed-accent) 18%, var(--ed-bar));
+  --secondary: var(--ed-ink);
+  --on-secondary: var(--ed-bg);
+  --error: var(--ed-remove-ink);
+  --error-soft: color-mix(in oklch, var(--ed-remove-ink) 14%, var(--ed-bar));
+  --success: var(--ed-add-ink);
+  --success-soft: color-mix(in oklch, var(--ed-add-ink) 14%, var(--ed-bar));
+  --warning: var(--ed-warn);
+  --warning-soft: color-mix(in oklch, var(--ed-warn) 14%, var(--ed-bg));
 }
 
 @utility focusable {

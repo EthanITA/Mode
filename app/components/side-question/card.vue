@@ -269,9 +269,8 @@ onMounted(() => {
   @apply flex-none text-subtle;
 }
 
-/* The shipped comment card's quote, so the two read as one family in the margin. */
 .quote {
-  @apply m-0 line-clamp-3 rounded-l-none rounded-r-md border-l-2 border-l-primary bg-sunken px-2.5 py-1.5 typo-body text-muted italic;
+  @apply quote line-clamp-3;
 }
 
 .sent {

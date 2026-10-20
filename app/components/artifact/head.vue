@@ -25,7 +25,7 @@ const { title } = defineProps<{ title: string }>();
 }
 
 .pill {
-  @apply flex h-(--island-row-h) flex-none items-center gap-2.5 px-3.5 py-0;
+  @apply island-row gap-2.5 px-3.5;
 }
 
 .what {

@@ -136,7 +136,7 @@ function onKey(event: KeyboardEvent): void {
 
 <style scoped>
 .scrim {
-  @apply fixed inset-0 z-39 bg-fg/12;
+  @apply scrim z-39;
 }
 
 /* The centring transform lives out here, because v-island-pop writes its own onto the element. */

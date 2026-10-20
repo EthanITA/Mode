@@ -162,9 +162,8 @@ watchEffect(() => {
   @apply bg-primary-soft;
 }
 
-/* Laid over the row's right end, so the slot takes no room at rest and the name runs under it. */
 .actions {
-  @apply pointer-events-none absolute top-0 right-0 bottom-0 flex items-center rounded-l-none rounded-r-md bg-linear-to-r from-transparent to-(--row-bg) to-[18px] py-0 pr-1 pl-4.5 opacity-0 transition-opacity duration-(--duration-fast) ease-out;
+  @apply row-actions rounded-r-md pr-1;
 }
 
 .item:hover > .actions,

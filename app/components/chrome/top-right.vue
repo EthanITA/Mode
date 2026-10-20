@@ -58,7 +58,7 @@ function closePage(): void {
 }
 
 .pill {
-  @apply flex h-(--island-row-h) flex-none items-center px-1.5 py-0;
+  @apply island-row px-1.5;
 }
 
 /* The pill is the surface, so the segmented must not draw a second one. */
