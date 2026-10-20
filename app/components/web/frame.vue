@@ -381,7 +381,7 @@ webview[data-state="starting"] {
 
 .progress[data-busy="true"] {
   @apply opacity-100 transition-none;
-  animation: creep 12s cubic-bezier(0.1, 0.65, 0.2, 1) forwards;
+  animation: creep 12s var(--ease-out) forwards;
 }
 
 @keyframes creep {

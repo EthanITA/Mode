@@ -173,21 +173,20 @@ onScopeDispose(() => {
       <div v-if="isDown" class="down" role="status">
         <p class="why">{{ downLine }}</p>
         <div class="actions">
-          <button v-press class="retry focusable" type="button" data-tip="Reload · {cmd R}" @click="web.reload()">
-            <UiIcon :icon="RotateCw" size="xs" />
+          <UiButton data-tip="Reload · {cmd R}" :icon="RotateCw" size="xs" variant="outline" @click="web.reload()">
             Reload
-          </button>
-          <button
-            v-press
-            class="remove focusable"
-            type="button"
+          </UiButton>
+          <UiButton
             data-region="remove-entry"
             data-tip="Remove from Artifacts. The app isn't touched"
+            :icon="Trash2"
+            size="xs"
+            tone="destructive"
+            variant="ghost"
             @click="removeEntry"
           >
-            <UiIcon :icon="Trash2" size="xs" />
             Remove entry
-          </button>
+          </UiButton>
         </div>
       </div>
 
@@ -227,7 +226,7 @@ onScopeDispose(() => {
               width: `${mark.width + 12}px`,
             }"
           >
-            <span class="tag mono-meta">Changed</span>
+            <UiBadge class="tag" size="xs" tone="success">Changed</UiBadge>
           </span>
         </div>
       </CommentLayer>
@@ -249,7 +248,7 @@ onScopeDispose(() => {
 }
 
 .tag {
-  @apply absolute -top-4.25 right-3 rounded-full bg-success-soft px-2 py-0.75 whitespace-nowrap text-success;
+  @apply absolute -top-4.25 right-3;
 }
 
 .down,
@@ -259,22 +258,6 @@ onScopeDispose(() => {
 
 .why {
   @apply m-0 max-w-90 typo-body text-pretty text-muted;
-}
-
-.retry {
-  @apply inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full border border-border-strong bg-raised px-3 py-0 typo-caption-strong text-fg;
-}
-
-.retry:hover {
-  @apply border-fg;
-}
-
-.remove {
-  @apply inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full border-0 bg-transparent px-3 py-0 typo-caption-strong text-muted transition-colors duration-(--duration-fast) ease-out;
-}
-
-.remove:hover {
-  @apply bg-error-soft text-error;
 }
 
 .actions {
