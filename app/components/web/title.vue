@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { SurfaceVariant } from "@cela/design";
-import { ChevronLeft, ChevronRight, ExternalLink } from "@lucide/vue";
+import { ChevronLeft, ChevronRight, ExternalLink, RotateCw } from "@lucide/vue";
 
 const { slug, variant } = defineProps<{ slug: string; variant: SurfaceVariant }>();
 
@@ -52,6 +52,13 @@ function track(): void {
       shape="inset"
       tip="Forward · {cmd ]}"
       @click="web.step(1)"
+    />
+    <ChromeAction
+      data-region="web-reload"
+      :icon="RotateCw"
+      shape="inset"
+      tip="Reload · {cmd R}"
+      @click="web.reload()"
     />
     <span class="rule" />
     <form v-if="isEditing" class="edit" data-region="web-address" @submit.prevent="commit">
