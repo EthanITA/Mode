@@ -82,6 +82,7 @@ function repliesOf(receipts: TurnReceipt[], snapshot: Snapshot): Map<number, str
 
 export function useHistory(): History {
   const sc = useSidecar();
+  const isShown = useFaceShown();
   const choice = useConversationPick("hi:picks");
 
   const error = ref<string>();
@@ -302,7 +303,9 @@ export function useHistory(): History {
       () => picked.value?.turn,
       () => (notices.value = {}),
     );
-    const timer = window.setInterval(() => sc.sessionKey.value && void refresh(sc.sessionKey.value), REFRESH_MS);
+    const tick = (): void => void (isShown.value && sc.sessionKey.value && refresh(sc.sessionKey.value));
+    watch(isShown, tick);
+    const timer = window.setInterval(tick, REFRESH_MS);
     onScopeDispose(() => {
       window.clearInterval(timer);
       ticket += 1;

@@ -6,6 +6,7 @@ const REFRESH_MS = 5000;
 
 export function useFiles(key: MaybeRefOrGetter<string | undefined>): Maybe<SessionFiles> {
   const files = ref<SessionFiles>();
+  const isShown = useFaceShown();
 
   async function pull(): Promise<void> {
     const value = toValue(key);
@@ -19,9 +20,11 @@ export function useFiles(key: MaybeRefOrGetter<string | undefined>): Maybe<Sessi
 
   onMounted(() => {
     void pull();
-    const timer = window.setInterval(() => void pull(), REFRESH_MS);
+    const timer = window.setInterval(() => isShown.value && void pull(), REFRESH_MS);
     onScopeDispose(() => window.clearInterval(timer));
   });
+
+  watch(isShown, (now) => now && void pull());
 
   watch(
     () => toValue(key),
