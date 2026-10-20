@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { Trash2, X } from "@lucide/vue";
+import { Trash2, Undo2, X } from "@lucide/vue";
 import type { AskClaudeState, AskClaudeTurn } from "~/utils/ask-claude";
 
 const open = defineModel<boolean>("open", { required: true });
@@ -73,6 +73,7 @@ function clear(): void {
   if (!gone.length) return;
   chrome.notify({
     action: "Undo",
+    icon: Undo2,
     open: () => askClaude.restore(key, gone),
     text: `Cleared ${plural(gone.length, "side question")}`,
   });

@@ -1,5 +1,5 @@
 import type { CanvasFitOptions } from "@cela/design";
-import type { ComputedRef, Ref } from "vue";
+import type { Component, ComputedRef, Ref } from "vue";
 import type { Maybe, MaybeComputed } from "~/composables/useSidecar";
 import type { FrameHit, ViewBox } from "~/types/frame";
 import type { SideAnchor } from "~/utils/ask-claude";
@@ -12,6 +12,7 @@ export type ToastTone = "destructive" | "neutral" | "success" | "warning";
 
 export interface Toast {
   action?: string;
+  icon?: Component;
   id: number;
   open?: () => void;
   text: string;

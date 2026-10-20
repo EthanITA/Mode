@@ -1,3 +1,4 @@
+import { Undo2 } from "@lucide/vue";
 import { useEventListener } from "@vueuse/core";
 import type { WebPage } from "~~/lib/web/page/protocol";
 import type { ArtifactMeta } from "~~/shared/types/artifact";
@@ -129,6 +130,7 @@ export const $web = defineStore(() => {
       sc.catalogue.value = sc.catalogue.value.filter((one) => one.slug !== meta.slug);
       const toast = chrome.notify({
         action: "Undo",
+        icon: Undo2,
         open: () => void putBack(),
         text: `Removed ${name} from Artifacts`,
         tip: "Put it back with its threads · {cmd Z}",

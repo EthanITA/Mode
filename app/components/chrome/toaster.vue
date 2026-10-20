@@ -86,7 +86,10 @@ function pin(el: Element): void {
       <UiToast :variant="row.tone">
         <span class="body">
           <span class="text">{{ row.text }}</span>
-          <span v-if="row.open" class="open">{{ row.action ?? "Open" }}</span>
+          <span v-if="row.open" class="open">
+            <UiIcon v-if="row.icon" :icon="row.icon" size="sm" />
+            <template v-else>{{ row.action ?? "Open" }}</template>
+          </span>
         </span>
       </UiToast>
     </button>
@@ -120,7 +123,7 @@ function pin(el: Element): void {
 }
 
 .open {
-  @apply flex-none font-semibold opacity-72;
+  @apply inline-flex flex-none items-center font-semibold opacity-72;
 }
 
 .queued {
