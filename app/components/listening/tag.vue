@@ -19,8 +19,7 @@ const { state = "listening" } = defineProps<{ state?: ListeningState }>();
 }
 
 .dot {
-  @apply breathe bg-success;
-  --dot-size: 10px;
+  @apply breathe size-2.5 bg-success;
 }
 
 .label {

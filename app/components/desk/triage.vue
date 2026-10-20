@@ -186,8 +186,7 @@ useShortcuts(
 }
 
 .dot {
-  @apply bg-tint opacity-40;
-  --dot-size: 8px;
+  @apply size-2 bg-tint opacity-40;
 }
 
 .dot[data-live="true"] {

@@ -73,7 +73,7 @@ follow.listen();
         No conversation is running under <code>{{ key }}</code
         >.
       </p>
-      <NuxtLink class="gone-back focusable" to="/">Listen for the next one</NuxtLink>
+      <UiButton to="/" variant="link">Listen for the next one</UiButton>
     </UiSurface>
 
     <main v-else class="stage" data-region="conversation-stage" :data-face="chrome.view.current.value">
@@ -108,9 +108,5 @@ follow.listen();
 
 .gone-line code {
   @apply font-mono text-fg;
-}
-
-.gone-back {
-  @apply rounded-full typo-body-strong whitespace-nowrap text-primary-deep;
 }
 </style>
