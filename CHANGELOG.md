@@ -23,6 +23,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   `sidecar uninstall` removes the desktop app and all its data. The shell is `desktop/`, its own pnpm package,
   so Electron is downloaded only when you build the app. A fresh Google sign-in and passkeys are still refused
   inside any embedded browser, with Open in Chrome in the View menu as the way out.
+- **Sign-in opens as a sheet in the window.** On the desktop surface a site's own OAuth popup, Continue with
+  Google and the like, opens as a card centred over the page with the rest dimmed rather than a separate OS
+  window, and it stays a real child window underneath so the opener survives and the sign-in still completes.
+  Close it with its own button or by clicking away. Google may still refuse a from-scratch sign-in inside an
+  embedded browser, where Open in Chrome remains the way out.
 - **Every link in the chat opens as a Web artifact.** A web address you or Claude write in a conversation,
   outside code, lands in its Artifacts once, the same entry clicking it in the sidecar makes, as it is said
   and with the New artifact toast, whichever conversation is on screen. One said while the sidecar was

@@ -13,7 +13,12 @@ const REPO = join(__dirname, "..", "..");
 const SERVER_ENTRY = app.isPackaged ? join(process.resourcesPath, "output", "server", "index.mjs") : join(REPO, ".output", "server", "index.mjs");
 const SIDECAR_ROOT = app.isPackaged ? join(process.resourcesPath, "plugin") : REPO;
 
+type Rect = { height: number; width: number; x: number; y: number };
+
 let server: ChildProcess | undefined;
+let mainWindow: BrowserWindow | undefined;
+// Each OAuth popup is a real child window, not a DOM node, because only a true auxiliary window keeps window.opener alive.
+const popups = new Map<number, { rect?: Rect; win: BrowserWindow }>();
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -81,13 +86,52 @@ function openExternal(_event: IpcMainInvokeEvent, url: unknown): void {
 function guardWebview(contents: WebContents): void {
   contents.setWindowOpenHandler((details) => {
     if (!/^https?:\/\//i.test(details.url)) return { action: "deny" };
-    // A popup opens as a child window so its opener survives for OAuth; a _blank link stays in the webview.
     if (details.disposition === "new-window") {
-      return { action: "allow", overrideBrowserWindowOptions: { webPreferences: { contextIsolation: true, nodeIntegration: false, partition: PARTITION } } };
+      return {
+        action: "allow",
+        overrideBrowserWindowOptions: {
+          backgroundColor: "#ffffff",
+          frame: false,
+          parent: mainWindow,
+          resizable: false,
+          roundedCorners: true,
+          show: false,
+          webPreferences: { contextIsolation: true, nodeIntegration: false, partition: PARTITION },
+        },
+      };
     }
     void contents.loadURL(details.url);
     return { action: "deny" };
   });
+  contents.on("did-create-window", (child, { url }) => openPopup(child, url, contents.getTitle()));
+}
+
+function screenBounds(rect: Rect): Electron.Rectangle {
+  const area = mainWindow?.getContentBounds();
+  return {
+    height: Math.round(rect.height),
+    width: Math.round(rect.width),
+    x: Math.round((area?.x ?? 0) + rect.x),
+    y: Math.round((area?.y ?? 0) + rect.y),
+  };
+}
+
+function placePopup(id: number, rect: Rect): void {
+  const popup = popups.get(id);
+  if (!popup) return;
+  popup.rect = rect;
+  popup.win.setBounds(screenBounds(rect));
+  if (!popup.win.isVisible()) popup.win.show();
+}
+
+function openPopup(child: BrowserWindow, url: string, opener: string): void {
+  const id = child.webContents.id;
+  popups.set(id, { win: child });
+  child.once("closed", () => {
+    popups.delete(id);
+    mainWindow?.webContents.send("popup:closed", id);
+  });
+  mainWindow?.webContents.send("popup:open", { id, opener, origin: new URL(url).host });
 }
 
 function createWindow(): void {
@@ -100,6 +144,12 @@ function createWindow(): void {
     width: 1280,
   });
   win.once("ready-to-show", () => win.show());
+  const reglue = (): void => {
+    for (const [id, { rect }] of popups) if (rect) placePopup(id, rect);
+  };
+  win.on("move", reglue);
+  win.on("resize", reglue);
+  mainWindow = win;
   void win.loadURL(`${SIDECAR_URL}/`);
 }
 
@@ -167,6 +217,8 @@ if (process.argv.includes("--import")) {
     });
     ipcMain.handle("shell:open-external", openExternal);
     ipcMain.handle("shell:import-cookies", () => importCookies());
+    ipcMain.on("popup:place", (_event, { id, rect }: { id: number; rect: Rect }) => placePopup(id, rect));
+    ipcMain.on("popup:close", (_event, id: number) => popups.get(id)?.win.close());
 
     Menu.setApplicationMenu(menu());
 

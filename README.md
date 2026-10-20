@@ -290,8 +290,11 @@ and the comment layer, the pins and Ask Claude draw over it as before. On first 
 your Chrome cookies into its own session, decrypting them with a key it reads from the login Keychain once
 (the one macOS prompt you will see), so you arrive signed in to the same accounts as in Chrome.
 `sidecar import` re-reads them later, with the app closed. The cookies are a copy rather than shared live,
-so a session that expires is refreshed by importing again, and a fresh Google sign-in from scratch is
-refused inside any embedded browser, with an Open in Chrome item in the View menu as the escape hatch. On
+so a session that expires is refreshed by importing again. A site's own sign-in popup, Continue with Google
+and the like, opens as a sheet centred over the page with the rest dimmed rather than a separate window,
+staying a real child window underneath so the sign-in still completes, though a fresh Google sign-in from
+scratch may still be refused inside any embedded browser, with an Open in Chrome item in the View menu as
+the escape hatch. On
 the desktop surface `sidecar open` opens the app rather than a Chrome window; `sidecar uninstall` removes
 it and all its data, back to a clean slate. The shell is `desktop/`, its own pnpm package, so the Electron
 binary is downloaded only when you build the app and never by the light setup.

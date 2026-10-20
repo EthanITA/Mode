@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useEventListener } from "@vueuse/core";
-import type { FrameAnchor, FrameHit, FrameMark, ViewBox } from "~/types/frame";
+import type { FrameAnchor, FrameHit, FrameMark, ViewBox, ViewRect } from "~/types/frame";
 import type { ProxyPlace } from "~~/lib/web/host";
 import { isTyping } from "~~/lib/web/page/blocks";
 import { isAddressKey, stepOf } from "~~/lib/web/page/keys";
@@ -51,9 +51,18 @@ const SANDBOX = [
   "allow-top-navigation-to-custom-protocols",
 ].join(" ");
 
+interface PopupOpen {
+  id: number;
+  opener: string;
+  origin: string;
+}
 interface SidecarShell {
+  closePopup(id: number): void;
+  onPopupClosed(cb: (id: number) => void): () => void;
+  onPopupOpen(cb: (open: PopupOpen) => void): () => void;
   openInChrome(url: string): void;
   partition: string;
+  placePopup(id: number, rect: ViewRect): void;
   present: true;
 }
 interface WebviewTag extends HTMLElement {
@@ -75,7 +84,26 @@ const place = ref<ProxyPlace>();
 // The frame moves between the artifact's hosts as it goes from site to site, and a message only reaches the one it is on.
 const on = ref<string>();
 const src = ref<string>();
+const popup = ref<PopupOpen>();
 let started = 0;
+
+if (shellApi) {
+  const offOpen = shellApi.onPopupOpen((open) => (popup.value = open));
+  const offClosed = shellApi.onPopupClosed((id) => {
+    if (popup.value?.id === id) popup.value = undefined;
+  });
+  onUnmounted(() => {
+    offOpen();
+    offClosed();
+  });
+}
+
+function placePopup(rect: ViewRect): void {
+  if (popup.value && shellApi) shellApi.placePopup(popup.value.id, rect);
+}
+function closePopup(): void {
+  if (popup.value && shellApi) shellApi.closePopup(popup.value.id);
+}
 
 const rect = (): DOMRect | undefined => (frame.value ?? view.value)?.getBoundingClientRect();
 
@@ -345,6 +373,7 @@ watch(
     <UiStateMessage v-if="web.state === 'starting'" align="center" class="pending" kind="loading">
       Opening the page…
     </UiStateMessage>
+    <WebPopupSheet v-if="popup" :opener="popup.opener" :origin="popup.origin" @close="closePopup" @place="placePopup" />
   </div>
 </template>
 

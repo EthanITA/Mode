@@ -4,6 +4,13 @@ export type { FrameAnchor, FrameBlock, FrameMark, FramePending } from "~~/lib/we
 
 export type NotesPlace = "dock" | "float" | "over";
 
+export interface ViewRect {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
 /** The part of the window the frame is actually seen through, after every clipping ancestor. */
 export interface ViewBox {
   bottom: number;
