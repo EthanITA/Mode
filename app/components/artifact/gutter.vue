@@ -58,14 +58,20 @@ function markOf(item: Pick<TrayItem, "block" | "mark" | "quote">): FrameMark | u
   );
 }
 
+const resolvedIds = computed(
+  () => new Set(threads.filter((thread) => thread.status === "resolved").map((thread) => thread.id)),
+);
+
 const placedNotes = computed(() => {
   const pins = placed.value.pins;
-  return tray.items.value.filter(isGutterNote).map((item) => {
-    const mark = markOf(item);
-    const raw = mark?.top ?? item.top ?? 0;
-    const clash = pins.some((pin) => Math.abs(pin.top - raw) < 20);
-    return { item, mark, top: clash ? raw + 28 : raw };
-  });
+  return tray.items.value
+    .filter((item) => isGutterNote(item) && !resolvedIds.value.has(item.thread ?? ""))
+    .map((item) => {
+      const mark = markOf(item);
+      const raw = mark?.top ?? item.top ?? 0;
+      const clash = pins.some((pin) => Math.abs(pin.top - raw) < 20);
+      return { item, mark, top: clash ? raw + 28 : raw };
+    });
 });
 
 const linked = computed(() => new Set(placedNotes.value.map((row) => row.item.thread).filter(Boolean)));
@@ -108,12 +114,12 @@ function perchOf({ mark, top }: { mark?: FrameMark; top: number }): Record<strin
 
 // Threads the rewrite left behind still have to be reachable, so they collect under one chip.
 const adrift = computed<Pin | undefined>(() => {
-  const loose = placed.value.orphans;
+  const loose = placed.value.orphans.filter((thread) => thread.status !== "resolved");
   if (!loose.length) return undefined;
   return {
     key: "adrift",
     label: "",
-    resolved: loose.every((thread) => thread.status === "resolved"),
+    resolved: false,
     state: "label",
     threads: loose,
     top: 0,
