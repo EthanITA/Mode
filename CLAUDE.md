@@ -2,7 +2,7 @@
 
 **Purpose:** conventions for working in this repo, which ships two things, the modes-and-styles system and the sidecar, and where the line between them sits.
 **Loads:** when you touch any file under `projects/Cela/mode`.
-**Never put here:** global behaviour goes to `~/.claude/CLAUDE.md` · code and TS style go to `~/.claude/rules/code-style.md` · how to build an artifact goes to the `create-artifact` skill · the Cela product domain goes to `projects/Cela/CLAUDE.md`.
+**Never put here:** global behaviour goes to `~/.claude/CLAUDE.md` · code and TS style go to `~/.claude/on-demand/code-style.md` · how to build an artifact goes to the `create-artifact` skill · the Cela product domain goes to `projects/Cela/CLAUDE.md`.
 
 GitHub `EthanITA/Mode`, worked on branch `sidecar-v6`.
 

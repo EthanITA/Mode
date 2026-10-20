@@ -561,6 +561,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Removed
 
+- **`rules/code-style.md`, and the installer step that linked it.** A code standard is personal, so it now lives in
+  each user's own `~/.claude` rather than shipping with the plugin. The comment, null and namespace guards carry
+  their rule text themselves and enforce exactly as before.
 - **The board island.** Hidden on the conversation and artifact pages, the only ones that showed it, so its
   components, the `/api/sessions/:key/board` routes, the board helpers behind them and the `board-island`
   render-check region are gone.
