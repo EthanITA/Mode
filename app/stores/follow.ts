@@ -58,8 +58,6 @@ export const $follow = defineStore(() => {
     const route = router.currentRoute.value;
     if (next.key && next.key !== route.params.key) void switchTo(() => show(next));
     else if (next.key) show(next);
-    else if (next.source === "terminal" && route.path !== "/")
-      void switchTo(() => void navigateTo("/", { replace: true }));
   }
 
   // Otherwise the first read is a baseline, so a conversation opened by hand stays put until Claude Code points elsewhere.
