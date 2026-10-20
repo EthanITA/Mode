@@ -48,7 +48,7 @@ const tell = computed(() => {
         type="button"
         :data-kind="file.kind"
         :data-in-view="file.path === inView"
-        :title="homePath(file.path)"
+        :data-tip="homePath(file.path)"
         @click="emit('file', file.path)"
       >
         <UiIcon class="icon" :icon="FileIcon" size="xs" />

@@ -22,7 +22,7 @@ const hasChurn = computed(() => turn.files.some((one) => !!one.churn));
     </template>
     <span v-else-if="turn.state === 'done'">no changes</span>
     <template v-if="hasAgents">
-      <span v-for="agent in turn.agents" :key="agent" class="agent">{{ authorOf(agent) }}</span>
+      <UiBadge v-for="agent in turn.agents" :key="agent" size="xs" tone="primary">{{ authorOf(agent) }}</UiBadge>
     </template>
   </span>
 </template>
@@ -33,8 +33,7 @@ const hasChurn = computed(() => turn.files.some((one) => !!one.churn));
 }
 
 .pulse {
-  @apply breathe bg-primary;
-  --dot-size: 6px;
+  @apply breathe size-1.5 bg-primary;
 }
 
 [data-tone="live"] {
@@ -51,9 +50,5 @@ const hasChurn = computed(() => turn.files.some((one) => !!one.churn));
 
 [data-tone="remove"] {
   @apply text-error;
-}
-
-.agent {
-  @apply rounded-full bg-primary-soft px-1.75 py-px text-primary-deep;
 }
 </style>

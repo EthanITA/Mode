@@ -137,9 +137,9 @@ useShortcuts(
         <span class="spacer" />
         <UiChip
           v-if="history.turns.value.length"
+          :data-tip="isChangesOnly ? 'Show every turn' : 'Hide turns that changed nothing'"
           :selected="isChangesOnly"
           size="xs"
-          :title="isChangesOnly ? 'Show every turn' : 'Hide turns that changed nothing'"
           @click="toggleChanges"
         >
           changes only
@@ -154,9 +154,9 @@ useShortcuts(
         <UiStateMessage v-else-if="history.error.value" class="empty" kind="error">
           Couldn't read this conversation's turns.
           <template #action>
-            <button v-press class="again focusable" type="button" :title="history.error.value" @click="history.retry()">
+            <UiButton :data-tip="history.error.value" size="xs" variant="outline" @click="history.retry()">
               Try again
-            </button>
+            </UiButton>
           </template>
         </UiStateMessage>
         <UiStateMessage v-else-if="!history.turns.value.length" class="empty">
@@ -185,7 +185,7 @@ useShortcuts(
         <header class="bar" data-layout="stacked">
           <div class="line">
             <span class="eyebrow mono-meta">{{ eyebrow }}</span>
-            <span v-for="agent in turn.agents" :key="agent" class="agent mono-meta">{{ authorOf(agent) }}</span>
+            <UiBadge v-for="agent in turn.agents" :key="agent" size="xs" tone="primary">{{ authorOf(agent) }}</UiBadge>
             <span class="spacer" />
             <ChromeAction
               class="step"
@@ -215,7 +215,7 @@ useShortcuts(
           </button>
           <p v-else class="ask" data-open="true">Agents kept working after turn {{ turn.turn - 1 }}</p>
           <div v-if="turn.reply" class="say">
-            <span class="mark" aria-hidden="true">C</span>
+            <UiAvatar aria-hidden="true" class="mark" initials="C" size="xs" variant="soft" />
             <button
               class="reply plain-button"
               type="button"
@@ -247,10 +247,10 @@ useShortcuts(
           </div>
         </header>
 
-        <p v-if="history.capped.value" class="notice" role="status">
+        <UiSurface v-if="history.capped.value" class="notice" pad="xs" role="status" tone="warning" variant="banner">
           The version store hit its size budget for this conversation, so some files were never kept. Anything missing
           below is missing from the store, not from the conversation.
-        </p>
+        </UiSurface>
 
         <template v-if="turn.files.length">
           <div class="heads mono-meta" :style="OneDarkVivid.cssVars">
@@ -331,10 +331,6 @@ useShortcuts(
   @apply text-subtle;
 }
 
-.agent {
-  @apply rounded-full bg-primary-soft px-1.75 py-px text-primary-deep normal-case;
-}
-
 .step:disabled {
   @apply cursor-default opacity-35;
 }
@@ -364,7 +360,7 @@ p.ask {
 }
 
 .mark {
-  @apply mt-px flex size-4.5 flex-none items-center justify-center rounded-full bg-primary-soft typo-mono-micro font-semibold text-primary-deep;
+  @apply mt-px flex-none;
 }
 
 .reply {
@@ -393,12 +389,8 @@ p.ask {
   @apply p-0.5;
 }
 
-.again {
-  @apply mt-2 cursor-pointer rounded-full border border-border-strong bg-raised px-2.75 py-1 typo-caption-strong text-fg;
-}
-
 .notice {
-  @apply m-0 flex-none bg-warning-soft px-3.5 py-2.25 typo-body text-warning;
+  @apply m-2 flex-none typo-body;
 }
 
 .heads {
@@ -418,8 +410,7 @@ p.ask {
 }
 
 .pulse {
-  @apply breathe bg-primary;
-  --dot-size: 8px;
+  @apply breathe size-2 bg-primary;
 }
 
 /* Waiting on a person is not work in progress, so it holds still. */

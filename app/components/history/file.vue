@@ -73,53 +73,58 @@ const tell = computed(() => {
       :data-cmt-excerpt="homePath(file.path)"
     >
       <UiIcon class="icon" :icon="FileIcon" size="xs" />
-      <span class="path" :title="homePath(file.path)">{{ shown }}</span>
+      <span class="path" :data-tip="homePath(file.path)">{{ shown }}</span>
       <span v-if="file.churn" class="churn mono-meta">
         <span data-tone="add">+{{ file.churn.added }}</span>
         <span data-tone="remove">−{{ file.churn.removed }}</span>
       </span>
-      <span v-if="file.kind === 'created' || file.kind === 'deleted'" class="chip mono-meta">
+      <UiBadge v-if="file.kind === 'created' || file.kind === 'deleted'" size="xs" :tone="file.kind === 'deleted' ? 'error' : 'neutral'">
         {{ file.kind === "created" ? "new" : "deleted" }} in {{ turn.isOpen ? "this work" : "this turn" }}
-      </span>
+      </UiBadge>
       <span class="spacer" />
-      <button
-        v-press
-        class="restore focusable"
-        type="button"
+      <UiButton
         :aria-disabled="!plan.isEnabled"
         :data-tip="plan.tip"
         :disabled="isRestoring"
+        size="xs"
+        variant="outline"
         @click="plan.isEnabled && emit('restore', false)"
       >
         {{ isRestoring ? "Restoring…" : "Restore" }}
-      </button>
+      </UiButton>
     </header>
 
-    <div v-if="notice" class="notice" :data-kind="notice.kind" role="status">
+    <UiSurface
+      v-if="notice"
+      class="notice"
+      pad="xs"
+      role="status"
+      :tone="notice.kind === 'restored' || notice.kind === 'undone' ? 'success' : 'warning'"
+      variant="banner"
+    >
       <span>{{ said }}</span>
-      <button
+      <UiButton
         v-if="notice.kind === 'restored' && typeof notice.was === 'number'"
-        v-press
-        class="act focusable"
-        type="button"
+        class="act"
         :disabled="isRestoring"
+        size="xs"
+        variant="outline"
         @click="emit('undo')"
       >
         Undo
-      </button>
+      </UiButton>
       <!-- Overwriting work we never wrote is a second, deliberate act, never a retry of the first. -->
-      <button
+      <UiButton
         v-else-if="notice.kind === 'conflict'"
-        v-press
-        class="act focusable"
-        type="button"
-        data-tone="warn"
+        class="act"
         :disabled="isRestoring"
+        size="xs"
+        variant="destructive"
         @click="emit('restore', true)"
       >
         Overwrite anyway
-      </button>
-    </div>
+      </UiButton>
+    </UiSurface>
 
     <DiffSideBySide
       v-if="paired"
@@ -134,11 +139,18 @@ const tell = computed(() => {
     <p v-else-if="body.kind === 'pending'" class="note">
       Not in the version store yet. It shows up once the store catches up.
     </p>
-    <p v-else-if="note" class="note" :data-tone="note.tone">{{ note.text }}</p>
+    <UiSurface v-else-if="note?.tone === 'loud'" class="notice" pad="xs" tone="warning" variant="banner">
+      {{ note.text }}
+    </UiSurface>
+    <p v-else-if="note" class="note">{{ note.text }}</p>
   </section>
 </template>
 
 <style scoped>
+.file {
+  @apply editor-tokens;
+}
+
 .head {
   @apply sticky top-0 z-2 flex items-center gap-2 border-t border-b border-t-ed-border border-b-ed-border bg-ed-bar py-1.5 pr-2.5 pl-3.5 text-ed-muted;
 }
@@ -163,57 +175,16 @@ const tell = computed(() => {
   @apply text-ed-remove-ink;
 }
 
-.chip {
-  @apply flex-none rounded-full border border-ed-button px-1.5 py-0 text-ed-muted normal-case;
-}
-
-.file[data-kind="deleted"] .chip {
-  @apply text-ed-remove-ink;
-}
-
 .spacer {
   @apply flex-1;
 }
 
-.restore,
-.act {
-  @apply flex-none cursor-pointer rounded-full border border-ed-button bg-ed-button px-2.5 py-0.75 typo-meta-semibold text-ed-ink transition-colors duration-(--duration-fast) ease-out;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .restore:not([aria-disabled="true"]):hover,
-  .act:hover {
-    @apply border-ed-muted;
-  }
-}
-
-/* Still focusable and still tipped, so the reason it is off stays one hover away. */
-.restore[aria-disabled="true"] {
-  @apply cursor-not-allowed opacity-45;
-}
-
-.restore:disabled,
-.act:disabled {
-  @apply cursor-progress;
-}
-
 .notice {
-  @apply flex items-center gap-2.5 px-3.5 py-2 font-sans typo-body text-ed-warn;
-  background: color-mix(in oklch, var(--ed-warn) 14%, var(--ed-bg));
-}
-
-.notice[data-kind="restored"],
-.notice[data-kind="undone"] {
-  @apply text-ed-add-ink;
-  background: color-mix(in oklch, var(--ed-add-ink) 12%, var(--ed-bg));
+  @apply m-2 font-sans typo-body;
 }
 
 .act {
   @apply ml-auto;
-}
-
-.act[data-tone="warn"] {
-  @apply border-ed-warn bg-ed-warn text-ed-bg;
 }
 
 .note {
@@ -226,10 +197,5 @@ const tell = computed(() => {
 
 .diff[data-waited="true"] {
   @apply settle;
-}
-
-/* A gap we could not fill never renders as a quiet nothing. */
-.note[data-tone="loud"] {
-  @apply border-l-3 border-l-ed-warn font-sans typo-body text-ed-warn;
 }
 </style>
