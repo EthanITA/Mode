@@ -83,7 +83,7 @@ test("adopts what the user or Claude links once, never what WebFetch or WebSearc
   );
   const events = Events.end();
 
-  Links.adopt({ key });
+  Links.adopt({ key, path });
   appendFileSync(
     path,
     lines(
@@ -98,7 +98,7 @@ test("adopts what the user or Claude links once, never what WebFetch or WebSearc
       ),
     ),
   );
-  Links.adopt({ key });
+  Links.adopt({ key, path });
   assert.deepEqual(urls(key), [
     "https://github.com/a/b",
     "https://fetched.dev/page",
@@ -113,7 +113,7 @@ test("adopts what the user or Claude links once, never what WebFetch or WebSearc
     path,
     lines(said(8, "again https://github.com/a/b, new https://new.dev"), user(9, "https://inside.dev/x")),
   );
-  Links.adopt({ key, isLive: true });
+  Links.adopt({ key, path, isLive: true });
 
   assert.deepEqual(urls(key), [
     "",

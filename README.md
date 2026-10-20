@@ -312,6 +312,10 @@ component's scope. Outside the app, `/api/events/stream` is plain server-sent ev
 named after its topic and its id is the offset to resume from, `?topic=` narrows it, and `?since=` or a
 `Last-Event-ID` header replays from an offset where a new connection starts at the end.
 
+Inside the server a write to any transcript reaches `transcripts.on("grew", ({ key, path }) => …)` from
+`server/utils/sessions/transcripts.ts`, fed by the one watcher in `server/plugins/transcripts.ts`, so the
+mascot's turn stream and link adoption subscribe to it instead of watching files of their own.
+
 Ask Claude is `/btw` from the sidecar: the mascot beside the notes slides its field out on hover, and ⌥↵
 or a click puts the cursor in it, folding back once the pointer and focus have left, asks a side question with the whole conversation as context, and nothing
 reaches the transcript or interrupts the turn. Its exchanges stack in one scrolling thread, which Clear

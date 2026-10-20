@@ -1,3 +1,4 @@
+import { statSync } from "node:fs";
 import { plain } from "./relay.ts";
 import { argOf, readOut } from "./speaker.ts";
 import { readWindow, transcriptIndex, usableLines } from "./transcripts.ts";
@@ -32,13 +33,24 @@ export type ConversationSlice = {
 
 export type ConversationQuery = {
   key: string;
+  /** The transcript a caller already found, which spares a read of every transcript on disk. */
+  path?: string;
   since?: number;
 };
 
 const QUEUE_ECHO_MS = 60_000;
 
-export function conversationOf({ key, since = 0 }: ConversationQuery): ConversationSlice {
-  const ref = transcriptIndex().get(key);
+function located({ key, path }: Pick<ConversationQuery, "key" | "path">): { path: string; size: number } | undefined {
+  if (!path) return transcriptIndex().get(key);
+  try {
+    return { path, size: statSync(path).size };
+  } catch {
+    return undefined;
+  }
+}
+
+export function conversationOf({ key, path, since = 0 }: ConversationQuery): ConversationSlice {
+  const ref = located({ key, path });
   if (!ref) return { turns: [], offset: 0 };
   const start = since > 0 ? since : 0;
   if (start >= ref.size) return { turns: [], offset: ref.size };

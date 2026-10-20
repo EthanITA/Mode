@@ -1,3 +1,4 @@
+import { EventEmitter } from "node:events";
 import { closeSync, fstatSync, openSync, readSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { splitLines } from "../../../lib/text.ts";
@@ -15,6 +16,11 @@ export interface TranscriptRef {
   mtimeMs: number;
   size: number;
 }
+
+export type TranscriptGrowth = Pick<TranscriptRef, "key" | "path">;
+
+// Fed by the one watcher in server/plugins/transcripts.ts, so a reader subscribes instead of watching files itself.
+export const transcripts = new EventEmitter<{ grew: [TranscriptGrowth] }>();
 
 export interface TranscriptIdentity {
   cwd?: string;

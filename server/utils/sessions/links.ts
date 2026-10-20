@@ -8,7 +8,6 @@ import { findRecord, openRecord, recordPath } from "../../../lib/web/records.ts"
 import { isKey } from "./paths.ts";
 import { plain } from "./relay.ts";
 import { readOut } from "./speaker.ts";
-import { transcriptIndex } from "./transcripts.ts";
 
 const CODE = /```[\s\S]*?(?:```|$)|`[^`\n]*`/g;
 const WEB = /https?:\/\/[^\s<>"'`\]]+/gi;
@@ -23,8 +22,7 @@ export interface LinkAdoption {
   key: string;
   /** Said just now, so it is announced the way a new page is; a catch-up on older turns lands quietly. */
   isLive?: boolean;
-  /** Known already, which spares a scan of every project folder on each write. */
-  path?: string;
+  path: string;
   /** Where a catch-up stops, so what was said after it is still announced. */
   upTo?: number;
 }
@@ -173,12 +171,10 @@ function place({ held, href, isLive, key }: Placing): void {
 // Each address once per conversation, so a link artifact someone removed stays gone however often it is said again.
 function adopt({ key, isLive = false, path, upTo = Number.POSITIVE_INFINITY }: LinkAdoption): void {
   if (!isKey(key)) return;
-  const transcript = path ?? transcriptIndex().get(key)?.path;
-  if (!transcript) return;
   const file = ledgerPath(key);
   const ledger = ledgerOf(file);
   if (upTo <= ledger.offset) return;
-  const read = readFrom(transcript, ledger.offset, upTo);
+  const read = readFrom(path, ledger.offset, upTo);
   if (read.offset === ledger.offset) return;
   const links = new Set(ledger.links);
   const fetched = new Set(ledger.fetched);
@@ -209,7 +205,7 @@ function adopt({ key, isLive = false, path, upTo = Number.POSITIVE_INFINITY }: L
 }
 
 export const Links = {
-  // Never throws, since it runs inside the stream's file watcher, where a throw would take the server down.
+  // Never throws, since it runs inside the transcript watcher, where a throw would take the server down.
   adopt(options: LinkAdoption): void {
     try {
       adopt(options);
