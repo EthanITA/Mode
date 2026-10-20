@@ -2,7 +2,6 @@ import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join } from "node:path";
-import { createInterface } from "node:readline/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -269,18 +268,66 @@ end run`;
 const raiseOpenWindow = (): boolean =>
   spawnSync("osascript", ["-e", RAISE, `${ADDRESS}/`], { encoding: "utf8" }).stdout.trim() === "raised";
 
-async function chooseSurface(): Promise<Surface | undefined> {
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    console.log("How do you want to run the sidecar?");
-    console.log("  1) Desktop app   real pages, signed in with your Chrome cookies, a separate Chromium (heavier)");
-    console.log("  2) Webapp        a tab in Chrome, light, Web artifacts through the proxy");
-    const answer = (await rl.question("> ")).trim();
-    return answer === "1" ? "desktop" : answer === "2" ? "web" : undefined;
-  } finally {
-    rl.close();
-  }
+type Option<T> = { value: T; label: string; hint: string };
+
+// Cela's brand violet, from @cela/design via the cela pack in the create-artifact skill.
+const CELA = { selection: "#6d28d9", onSelection: "#fafafa", hint: "#9b96ab" } as const;
+const channels = (hex: string): string => {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return `${(n >> 16) & 255};${(n >> 8) & 255};${n & 255}`;
+};
+const dim = (s: string): string => `\x1b[38;2;${channels(CELA.hint)}m${s}\x1b[39m`;
+const selected = (s: string): string =>
+  `\x1b[48;2;${channels(CELA.selection)}m\x1b[38;2;${channels(CELA.onSelection)}m${s}\x1b[0m`;
+
+function promptSelect<T>(title: string, options: readonly Option<T>[]): Promise<T | undefined> {
+  const { stdin, stdout } = process;
+  if (!stdin.isTTY) return Promise.resolve(undefined);
+  const width = Math.max(...options.map((o) => o.label.length));
+  const row = (o: Option<T>, here: boolean): string => {
+    const body = ` ${here ? "›" : " "} ${o.label.padEnd(width)}  `;
+    return here ? selected(`${body}${o.hint} `) : `${body}${dim(o.hint)}`;
+  };
+  const footer = dim("   ↑↓ move   enter pick   esc cancel");
+
+  return new Promise((resolve) => {
+    let cursor = 0;
+    const draw = (first: boolean): void => {
+      if (!first) stdout.write(`\x1b[${options.length + 1}A`);
+      stdout.write(`\x1b[0J${options.map((o, i) => row(o, i === cursor)).join("\n")}\n${footer}\n`);
+    };
+    const finish = (value?: T): void => {
+      stdin.off("data", onData);
+      stdin.setRawMode(false);
+      stdin.pause();
+      stdout.write("\x1b[?25h");
+      resolve(value);
+    };
+    const onData = (data: string): void => {
+      if (data === "\x1b[A" || data === "k") cursor = (cursor + options.length - 1) % options.length;
+      else if (data === "\x1b[B" || data === "j") cursor = (cursor + 1) % options.length;
+      else if (data === "\r" || data === "\n") return finish(options[cursor]?.value);
+      else if (data === "\x1b" || data === "q" || data === "\x03") return finish(undefined);
+      else return;
+      draw(false);
+    };
+
+    stdout.write(`${title}\n\x1b[?25l`);
+    draw(true);
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdin.setEncoding("utf8");
+    stdin.on("data", onData);
+  });
 }
+
+const SURFACES: readonly Option<Surface>[] = [
+  { value: "desktop", label: "Desktop app", hint: "real pages, signed in with your Chrome cookies, a separate Chromium (heavier)" },
+  { value: "web", label: "Webapp", hint: "a tab in Chrome, light, Web artifacts through the proxy" },
+];
+
+const chooseSurface = (): Promise<Surface | undefined> =>
+  promptSelect("How do you want to run the sidecar?", SURFACES);
 
 async function open({ key = process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8), slug }: Point): Promise<number> {
   if (slug && !key) {
