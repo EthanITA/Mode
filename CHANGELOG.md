@@ -11,16 +11,16 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
-- **A desktop shell where Web artifacts are real pages.** `sidecar desktop install` builds and packages a
-  small Electron app around the same sidecar and opens it. In the app a Web artifact is a real top-level
-  Chromium page rather than a framed one, so Gmail, Reddit and anything that refuses framing work, with the
-  comment layer, pins and Ask Claude drawing over it as before. On first launch it copies your Chrome
-  cookies into its own session, decrypting them with a key read once from the login Keychain, so you arrive
-  signed in to the same accounts, and `sidecar desktop import` re-reads them later. With the app installed
-  `sidecar open` opens it rather than a Chrome window, and `sidecar desktop uninstall` removes it and the
-  sidecar falls back to the proxy, which stays the light option for plain Chrome. The shell is `desktop/`,
-  its own pnpm package, so Electron is downloaded only when you build the app. A fresh Google sign-in and
-  passkeys are still refused inside any embedded browser, with Open in Chrome in the View menu as the way out.
+- **Two surfaces, chosen in `sidecar setup`.** `sidecar setup` asks whether to run the sidecar as a desktop
+  app or as a webapp in Chrome and remembers the choice, prompting on first run (or `sidecar setup desktop|web`).
+  Desktop builds and packages a small Electron app around the same sidecar and opens it, where a Web artifact
+  is a real top-level Chromium page rather than a framed one, so Gmail, Reddit and anything that refuses framing
+  work, with the comment layer, pins and Ask Claude drawing over it as before. On first launch it copies your
+  Chrome cookies into its own session, decrypting them with a key read once from the login Keychain, so you
+  arrive signed in, and `sidecar import` re-reads them later. `sidecar open` honours the chosen surface, and
+  `sidecar uninstall` removes the desktop app and all its data. The shell is `desktop/`, its own pnpm package,
+  so Electron is downloaded only when you build the app. A fresh Google sign-in and passkeys are still refused
+  inside any embedded browser, with Open in Chrome in the View menu as the way out.
 - **Every link in the chat opens as a Web artifact.** A web address you or Claude write in a conversation,
   outside code, lands in its Artifacts once, the same entry clicking it in the sidecar makes, as it is said
   and with the New artifact toast, whichever conversation is on screen. One said while the sidecar was
@@ -50,9 +50,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   itself, and a page reaches no host closer to this machine than its own, as Chrome's Private Network
   Access draws it, so a remote site can't call localhost, the local network or the sidecar's API. Back and
   forward arrows, ⌘[ and ⌘], step through the artifact's own history across every site and never the
-  sidecar's, each artifact keeps that history in its record so it survives a switch or a reload, and ⌘L
-  edits the address. A reCAPTCHA checkbox and its picture challenge work inside a Web artifact, so the
-  "unusual traffic" check Google gives a browser it doesn't know can be passed there.
+  sidecar's, each artifact keeps that history in its record so it survives a switch or a reload, a reload
+  button after the arrows does what ⌘R does, and ⌘L edits the address. A reCAPTCHA checkbox and its
+  picture challenge work inside a Web artifact, so the "unusual traffic" check Google gives a browser it doesn't know can be passed there.
 
 - **Fullscreen is three islands over the page.** F, from the sidecar or inside a live site, grows any artifact to the whole window
   under a strip of islands: the list button on the left, which lays Artifacts or Files over the left edge
@@ -316,6 +316,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   end of the selection, and clicking it or pressing ⌘K opens the comment popover quoting exactly those
   words. Where the surface has nowhere to show an answer the chip reads Note for Claude and adds to the
   tray. In comment mode a drag selects and a click still picks the block.
+- **Review can list the files under `.claude/jobs`.** A jobs chip in the To review header, like History's
+  changes only, adds what Claude writes in its job folders, which Review leaves out with the rest of
+  `.claude`. It is off by default.
 
 ### Changed
 
@@ -517,8 +520,13 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   Both come from `@cela/design` and go still under reduced motion.
 - **Toasts leave upward and the lane closes up behind them.** A toast used to vanish in one frame and
   the ones below it jumped. The lane stays mounted while empty, so the first toast is announced too.
+- **A toast's Undo is an icon.** Clearing side questions and removing a Web entry offer Undo as an arrow
+  where the word used to be.
 - **A saved note lands beside its line, and the notes column snaps open.** The column used to tween its
   width, which re-wrapped the page and moved every mark on every frame.
+- **Moving between Terminal tabs no longer sends the sidecar to Listening.** A front tab with no
+  conversation in it leaves the page where it is, and the sidecar switches only when a conversation is
+  detected, in front or pointed at by `/sidecar`.
 - **The sidecar's controls come from `@cela/design`.** Buttons, badges, initials marks, warning banners,
   approve and reject, the zoom stepper and the Files scopes are the design system's own components, so
   they press, squash and tint the way Cela's do, the main action is the gradient pill, and every tooltip
@@ -550,6 +558,10 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 - **The python hooks.** `hooks/*.py`, `hooks/guards/*.py` and `hooks/sync.sh` are gone, since every
   hook runs from its `.ts` beside them. A session opened before 0.17.0 still calls the python files
   and has every guarded tool call blocked once they are missing, so restart it after updating.
+- **Starting at login through launchd.** `sidecar install`/`uninstall` and the `~/Library/LaunchAgents`
+  plist are gone; the sidecar starts when you run `sidecar`, `/sidecar` or `open`, which brings it up when
+  it is down. `sidecar uninstall` now removes the desktop app and all its data instead, and `sidecar desktop
+  install|import|uninstall` became `sidecar setup`, `sidecar import` and `sidecar uninstall`.
 
 ### Fixed
 
@@ -563,6 +575,8 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   the site's origin and answered Error 400, and its answer could not have reached the page anyway. A
   page's own address in a request now reaches the site as the site's real one, and the popup and the page
   that opened it hear each other at the addresses they expect.
+- **A Web entry's domain stays on one line in the Artifacts list.** A long one wrapped under its icon and
+  now truncates.
 - **The sidecar stops flooding `/api/why`.** Every five-second poll asked for the why of every listed
   conversation, close to 300 requests a tick, for a tab rail nothing renders anymore, so the poll and
   the screen's gate and ground rule counts it fed are gone.
