@@ -1,6 +1,6 @@
 import { rmSync } from "node:fs";
 import { join } from "node:path";
-import type { Axis } from "../../shared/types/mode.ts";
+import type { Axis } from "./types.ts";
 import { readTextSafe, writeText } from "../files.ts";
 import { lines, strip } from "../text.ts";
 import { FALSEY, GREEN, RED } from "./constants.ts";

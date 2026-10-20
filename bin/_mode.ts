@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { Axis } from "../shared/types/mode.ts";
+import type { Axis } from "../lib/mode/types.ts";
 import { announce } from "../lib/mode/announce.ts";
 import { list, show, version } from "../lib/mode/catalogue.ts";
 import { AXES } from "../lib/mode/constants.ts";

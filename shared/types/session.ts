@@ -1,4 +1,4 @@
-import type { Pipeline, Slot } from "./mode.ts";
+import type { Pipeline, Slot } from "../../lib/mode/types.ts";
 
 export type SessionAgent = { name: string; color: string };
 

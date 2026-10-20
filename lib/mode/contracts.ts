@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { Axis, ContractLoop, PipelineStep } from "../../shared/types/mode.ts";
+import type { Axis, ContractLoop, PipelineStep } from "./types.ts";
 import { isFile, listMd, readTextSafe } from "../files.ts";
 import { strip, WORD } from "../text.ts";
 import { AUTO, FALSEY, FOLDER } from "./constants.ts";

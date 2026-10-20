@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { Axis } from "../../shared/types/mode.ts";
+import type { Axis } from "./types.ts";
 import { readTextSafe } from "../files.ts";
 import { AUTO, AXES, FOLDER } from "./constants.ts";
 import { available, names, readContract, summary } from "./contracts.ts";

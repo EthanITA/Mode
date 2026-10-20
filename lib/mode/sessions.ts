@@ -1,5 +1,5 @@
 import { readdirSync } from "node:fs";
-import type { Axis, Pipeline, Slot } from "../../shared/types/mode.ts";
+import type { Axis, Pipeline, Slot } from "./types.ts";
 import { AUTO } from "./constants.ts";
 import { metaOf } from "./contracts.ts";
 import { stateHome } from "./paths.ts";

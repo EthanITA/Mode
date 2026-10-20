@@ -18,7 +18,7 @@ import {
 } from "../lib/mode/slots.ts";
 import { whyReport } from "../lib/mode/why.ts";
 import { lines, strip, words } from "../lib/text.ts";
-import type { Axis } from "../shared/types/mode.ts";
+import type { Axis } from "../lib/mode/types.ts";
 
 const ended = (name: string, axis: string, reason: string): string =>
   `The '${name}' ${axis} ended: ${reason}. Its rules no longer apply. Say that it ended and why, then work the normal way until another one is set.`;

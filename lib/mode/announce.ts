@@ -1,4 +1,4 @@
-import type { Axis } from "../../shared/types/mode.ts";
+import type { Axis } from "./types.ts";
 import { readTextSafe } from "../files.ts";
 import { strip } from "../text.ts";
 import { AUTO, AXES, HOOK_CAP } from "./constants.ts";

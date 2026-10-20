@@ -1,6 +1,6 @@
 import { appendFileSync, mkdirSync, readdirSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import type { Axis } from "../../shared/types/mode.ts";
+import type { Axis } from "./types.ts";
 import { isFile } from "../files.ts";
 import { strip } from "../text.ts";
 import { AUTO, AXES, CHIP_ICON, COLORS, MARK, OFF, RED, RESET, STANDING_LINES } from "./constants.ts";

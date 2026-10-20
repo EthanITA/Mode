@@ -1,4 +1,4 @@
-import type { Gate, Why } from "../../shared/types/mode.ts";
+import type { Gate, Why } from "./types.ts";
 import { AUTO, AXES, GATES, OFF, STANDING_LINES } from "./constants.ts";
 import { alternatives, metaOf, names, neverAuto, readContract, substitute, summary, truthy } from "./contracts.ts";
 import { standingBlock } from "./frontmatter.ts";

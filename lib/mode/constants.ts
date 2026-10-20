@@ -1,4 +1,4 @@
-import type { Axis } from "../../shared/types/mode.ts";
+import type { Axis } from "./types.ts";
 
 export const AXES = ["mode", "style"] as const satisfies readonly Axis[];
 export const AUTO = "auto";

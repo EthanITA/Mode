@@ -1,4 +1,4 @@
-import type { Axis, Pipeline, PipelineStep } from "../../shared/types/mode.ts";
+import type { Axis, Pipeline, PipelineStep } from "./types.ts";
 import { AUTO } from "./constants.ts";
 import { Flow } from "./contracts.ts";
 import { declared, held } from "./state.ts";
