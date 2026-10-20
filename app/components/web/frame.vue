@@ -51,20 +51,40 @@ const SANDBOX = [
   "allow-top-navigation-to-custom-protocols",
 ].join(" ");
 
+interface SidecarShell {
+  openInChrome(url: string): void;
+  partition: string;
+  present: true;
+}
+interface WebviewTag extends HTMLElement {
+  send(channel: string, ...args: unknown[]): void;
+}
+
 const chrome = useChrome();
 const web = $web();
 const artifact = $artifact();
 const shown = useFaceShown();
 const look = useTheme();
+const shellApi = (window as unknown as { sidecarShell?: SidecarShell }).sidecarShell;
+// The desktop shell renders the artifact as a real top-level page in a webview; without it the proxy frame is the light option.
+const shell = !!shellApi;
+const IPC = "sidecar";
 const frame = ref<HTMLIFrameElement>();
+const view = ref<WebviewTag>();
 const place = ref<ProxyPlace>();
 // The frame moves between the artifact's hosts as it goes from site to site, and a message only reaches the one it is on.
 const on = ref<string>();
 const src = ref<string>();
 let started = 0;
 
+const rect = (): DOMRect | undefined => (frame.value ?? view.value)?.getBoundingClientRect();
+
 async function start(): Promise<void> {
   const run = ++started;
+  if (shell) {
+    src.value = web.page?.url ?? url;
+    return;
+  }
   place.value = undefined;
   try {
     const got = await $fetch<WebServeReply>(`/api/web/${slug}/serve`, { method: "POST" });
@@ -89,11 +109,9 @@ function isOurs(origin: string): boolean {
 }
 
 function post(message: SidecarMessage): void {
-  if (on.value)
-    frame.value?.contentWindow?.postMessage(
-      { ...message, channel: CHANNEL } satisfies Envelope<SidecarMessage>,
-      on.value,
-    );
+  const envelope = { ...message, channel: CHANNEL } satisfies Envelope<SidecarMessage>;
+  if (shell) view.value?.send(IPC, envelope);
+  else if (on.value) frame.value?.contentWindow?.postMessage(envelope, on.value);
 }
 
 // The page scrolls itself, so the frame's own box is all of it that can be on screen; grown, nothing floats over it.
@@ -107,7 +125,7 @@ function clipOf(box: DOMRect): ViewBox {
 }
 
 function hitOf(hit: WebHit): FrameHit | undefined {
-  const box = frame.value?.getBoundingClientRect();
+  const box = rect();
   if (!box) return undefined;
   return {
     ...hit,
@@ -121,7 +139,7 @@ function hitOf(hit: WebHit): FrameHit | undefined {
 let offered: CommentOffer | undefined;
 
 function onSelect(selection?: WebSelection): void {
-  const box = frame.value?.getBoundingClientRect();
+  const box = rect();
   const hit = selection && hitOf(selection.hit);
   const clip = box && clipOf(box);
   const end = selection &&
@@ -154,6 +172,22 @@ function onLoad(): void {
   emit("load");
 }
 
+function onReady(): void {
+  if (web.state === "starting") web.state = "live";
+}
+
+function onStop(): void {
+  web.isBusy = false;
+  emit("load");
+}
+
+// -3 is an aborted load, which a site's own redirect or a cancelled subresource raises and the page recovers from.
+function onFail(event: { errorCode: number; isMainFrame: boolean }): void {
+  if (!event.isMainFrame || event.errorCode === -3) return;
+  web.state = "down";
+  web.isBusy = false;
+}
+
 function onKey(key: string): void {
   if (key === "comment") {
     if (chrome.comment.openOffer()) return;
@@ -184,11 +218,12 @@ function onLayout(message: Extract<AgentMessage, { type: "layout" }>): void {
   else if (!picked) chrome.comment.light(undefined);
 }
 
-useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentMessage>> | undefined>) => {
-  if (!isOurs(event.origin) || event.source !== frame.value?.contentWindow) return;
-  if (event.data?.channel !== CHANNEL) return;
-  on.value = event.origin;
-  const message = event.data as Envelope<AgentMessage>;
+function realUrl(raw: string): string | undefined {
+  if (shell) return raw;
+  return (place.value && Web.upstream(raw, place.value.base))?.href;
+}
+
+function receive(message: Envelope<AgentMessage>): void {
   switch (message.type) {
     case "busy":
       web.isBusy = message.busy;
@@ -204,9 +239,9 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
       onLayout(message);
       return;
     case "page": {
-      const address = place.value && Web.upstream(message.page.url, place.value.base);
+      const address = realUrl(message.page.url);
       if (!address) return;
-      web.page = { icon: message.page.icon, title: message.page.title, url: address.href };
+      web.page = { icon: message.page.icon, title: message.page.title, url: address };
       emit("page", message.how);
       return;
     }
@@ -222,6 +257,20 @@ useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentM
     case "select":
       onSelect(message.selection);
   }
+}
+
+// The webview carries the agent's messages over its host channel, since a real page cannot postMessage the sidecar window.
+function onIpc(event: { args: unknown[]; channel: string }): void {
+  if (event.channel !== IPC) return;
+  const message = event.args[0] as Envelope<AgentMessage>;
+  if (message?.channel === CHANNEL) receive(message);
+}
+
+useEventListener(window, "message", (event: MessageEvent<Partial<Envelope<AgentMessage>> | undefined>) => {
+  if (shell || !isOurs(event.origin) || event.source !== frame.value?.contentWindow) return;
+  if (event.data?.channel !== CHANNEL) return;
+  on.value = event.origin;
+  receive(event.data as Envelope<AgentMessage>);
 });
 
 // With the sidecar focused, ⌘R, ⌘[ and ⌘L would act on the sidecar itself rather than the page in it.
@@ -244,8 +293,9 @@ watch(chrome.comment.pick, (hit) => {
 watch(
   () => web.stepping,
   (asked) => {
-    const to = asked && place.value && Web.proxied(asked.to, place.value);
-    if (!asked || !to) return;
+    if (!asked) return;
+    const to = shell ? asked.to : place.value && Web.proxied(asked.to, place.value);
+    if (!to) return;
     web.stepping = undefined;
     post({ type: "step", by: asked.by, to });
   },
@@ -265,7 +315,7 @@ watch(
   <div class="web" data-region="web-frame" :style="{ paddingInlineEnd: inset ? `${inset}px` : undefined }">
     <span class="progress" aria-hidden="true" data-region="web-progress" :data-busy="web.isBusy" />
     <iframe
-      v-if="src && place"
+      v-if="!shell && src && place"
       ref="frame"
       :key="`${slug}:${web.edition}`"
       allow="clipboard-read; clipboard-write; fullscreen"
@@ -275,6 +325,21 @@ watch(
       :style="{ colorScheme: look.theme.value }"
       :title="`Live page ${slug}`"
       @load="onLoad"
+    />
+    <webview
+      v-if="shell && src"
+      ref="view"
+      :key="`${slug}:${web.edition}`"
+      :data-state="web.state"
+      :partition="shellApi?.partition"
+      :src="src"
+      :style="{ colorScheme: look.theme.value }"
+      :title="`Live page ${slug}`"
+      @did-fail-load="onFail"
+      @did-start-loading="web.isBusy = true"
+      @did-stop-loading="onStop"
+      @dom-ready="onReady"
+      @ipc-message="onIpc"
     />
     <UiStateMessage v-if="web.state === 'starting'" align="center" class="pending" kind="loading">
       Opening the page…
@@ -287,12 +352,14 @@ watch(
   @apply relative min-h-0 min-w-0 flex-1 overflow-hidden bg-raised;
 }
 
-iframe {
+iframe,
+webview {
   @apply block size-full border-0 transition-opacity duration-(--duration-fast) ease-out;
 }
 
 /* Held back until the agent is up, so a half-parsed page never shows under the loading line. */
-iframe[data-state="starting"] {
+iframe[data-state="starting"],
+webview[data-state="starting"] {
   @apply opacity-0;
 }
 

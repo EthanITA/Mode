@@ -11,6 +11,16 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Added
 
+- **A desktop shell where Web artifacts are real pages.** `sidecar desktop install` builds and packages a
+  small Electron app around the same sidecar and opens it. In the app a Web artifact is a real top-level
+  Chromium page rather than a framed one, so Gmail, Reddit and anything that refuses framing work, with the
+  comment layer, pins and Ask Claude drawing over it as before. On first launch it copies your Chrome
+  cookies into its own session, decrypting them with a key read once from the login Keychain, so you arrive
+  signed in to the same accounts, and `sidecar desktop import` re-reads them later. With the app installed
+  `sidecar open` opens it rather than a Chrome window, and `sidecar desktop uninstall` removes it and the
+  sidecar falls back to the proxy, which stays the light option for plain Chrome. The shell is `desktop/`,
+  its own pnpm package, so Electron is downloaded only when you build the app. A fresh Google sign-in and
+  passkeys are still refused inside any embedded browser, with Open in Chrome in the View menu as the way out.
 - **Every link in the chat opens as a Web artifact.** A web address you or Claude write in a conversation,
   outside code, lands in its Artifacts once, the same entry clicking it in the sidecar makes, and one said
   while the sidecar shows that conversation gets the New artifact toast. A link you remove stays removed

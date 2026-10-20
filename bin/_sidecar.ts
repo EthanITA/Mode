@@ -9,7 +9,7 @@ import { sidecarHome } from "../lib/mode/paths.ts";
 import * as Events from "../lib/sidecar/events.ts";
 import type { Topics } from "../shared/types/events.ts";
 
-type Command = "open" | "publish" | "status" | "start" | "stop" | "restart" | "install" | "uninstall" | "help";
+type Command = "open" | "publish" | "status" | "start" | "stop" | "restart" | "install" | "uninstall" | "desktop" | "help";
 type Proc = { pid: number; ppid: number; args: string };
 type Point = { key?: string; slug?: string };
 
@@ -26,6 +26,9 @@ const SERVICE = `${DOMAIN}/${LABEL}`;
 const NAME = "Claude Code Sidecar";
 // Absolute, because a bin/open earlier on PATH shadows the system one inside a Notes-style tree.
 const OPEN = "/usr/bin/open";
+const DESKTOP = join(ROOT, "desktop");
+const DESKTOP_APP = join(homedir(), "Applications", `${NAME}.app`);
+const isDesktopInstalled = (): boolean => existsSync(DESKTOP_APP);
 
 const USAGE = `usage: sidecar [command]     /sidecar [command] in a Claude Code session runs the same
 
@@ -42,6 +45,10 @@ const USAGE = `usage: sidecar [command]     /sidecar [command] in a Claude Code 
   restart     stop it, then start it
   install     start it now and at every login, through launchd
   uninstall   stop it and take it off login
+  desktop <install|uninstall|import>
+              install builds and packages the Electron app, copies it to ~/Applications and opens it,
+              so Web artifacts render as real pages signed in with Chrome's cookies; import re-reads
+              those cookies (close the app first); uninstall removes the app and falls back to Chrome
 
 It serves ${ADDRESS} (SIDECAR_URL overrides it) and logs to ${LOG}.`;
 
@@ -309,6 +316,11 @@ async function open({ key = process.env.CLAUDE_CODE_SESSION_ID?.slice(0, 8), slu
     console.log(`brought the open sidecar to the front${key ? ` on ${what}` : ""}`);
     return 0;
   }
+  // The desktop app, when installed, is the real-page shell and wins over a Chrome window; the point just made follows it.
+  if (isDesktopInstalled() && spawnSync(OPEN, [DESKTOP_APP]).status === 0) {
+    console.log(`opened the desktop app${key ? ` on ${what}` : ""}`);
+    return 0;
+  }
   if (listeners) {
     console.log(`moved the open sidecar to ${what}`);
     return 0;
@@ -350,6 +362,64 @@ function publish(): number {
   return 0;
 }
 
+function buildDesktop(): boolean {
+  return spawnSync(process.execPath, [join(DESKTOP, "build.ts"), "--package"], { cwd: DESKTOP, stdio: "inherit" }).status === 0;
+}
+
+async function desktopInstall(): Promise<number> {
+  if (!existsSync(join(DESKTOP, "node_modules", "electron"))) {
+    console.error(`electron is not installed in ${DESKTOP}; run pnpm install there first`);
+    return 1;
+  }
+  if (!buildDesktop()) {
+    console.error("the desktop build failed");
+    return 1;
+  }
+  const built = join(DESKTOP, "out", `${NAME}-darwin-${process.arch}`, `${NAME}.app`);
+  if (!existsSync(built)) {
+    console.error(`the packaged app is not at ${built}`);
+    return 1;
+  }
+  mkdirSync(dirname(DESKTOP_APP), { recursive: true });
+  rmSync(DESKTOP_APP, { force: true, recursive: true });
+  if (spawnSync("cp", ["-R", built, DESKTOP_APP]).status !== 0) {
+    console.error(`could not copy the app to ${DESKTOP_APP}`);
+    return 1;
+  }
+  if (!(await isSidecar()) && (await start()) !== 0) return 1;
+  spawnSync(OPEN, [DESKTOP_APP]);
+  console.log(`installed the desktop app at ${DESKTOP_APP}, and opened it`);
+  return 0;
+}
+
+function desktopUninstall(): number {
+  if (!isDesktopInstalled()) {
+    console.log("the desktop app is not installed");
+    return 0;
+  }
+  rmSync(DESKTOP_APP, { force: true, recursive: true });
+  console.log(`removed ${DESKTOP_APP}`);
+  return 0;
+}
+
+// Close the app first: a running one holds the cookie store, so a separate import process cannot open it.
+function desktopImport(): number {
+  if (!isDesktopInstalled()) {
+    console.error("install the desktop app first: sidecar desktop install");
+    return 1;
+  }
+  return spawnSync(join(DESKTOP_APP, "Contents", "MacOS", NAME), ["--import"], { stdio: "inherit" }).status === 0 ? 0 : 1;
+}
+
+async function desktop(): Promise<number> {
+  const sub = process.argv[3];
+  if (sub === "install") return desktopInstall();
+  if (sub === "uninstall") return desktopUninstall();
+  if (sub === "import") return desktopImport();
+  console.error("sidecar desktop: say install, uninstall or import");
+  return 2;
+}
+
 const COMMANDS = {
   open: async () => {
     const { positionals, values } = parseArgs({
@@ -366,6 +436,7 @@ const COMMANDS = {
   restart: async () => ((await stop()) === 0 ? start() : 1),
   install,
   uninstall: async () => uninstall(),
+  desktop,
   help: async () => (console.log(USAGE), 0),
 } satisfies Record<Command, () => Promise<number>>;
 

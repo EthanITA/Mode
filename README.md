@@ -265,6 +265,9 @@ sidecar stop        # wherever it was started from, a terminal's pnpm dev includ
 sidecar restart
 sidecar install     # start it now and at every login, through launchd
 sidecar uninstall
+sidecar desktop install    # build and package the Electron app and open it: Web artifacts become real pages
+sidecar desktop import     # re-read Chrome's cookies into the app, with the app closed
+sidecar desktop uninstall  # remove the app; the sidecar falls back to the proxy in Chrome
 ```
 
 The conversation `open` points at is the key given, else the Claude Code session it runs in, read
@@ -273,6 +276,22 @@ from `CLAUDE_CODE_SESSION_ID`; from a plain terminal it just opens the app. It s
 `~/.claude/sidecar/server.log`. Stop only signals a server that answers as the sidecar, so another app
 on the port is left alone. `install` writes `~/Library/LaunchAgents/local.mode.sidecar.plist` with
 the node and `PATH` of the shell that ran it, so run it again after switching node versions.
+
+A Web artifact has two setups, and which one you get is simply whether the desktop app is installed. The
+light option, the default, is the proxy above: a Web artifact is a framed page, and most sites, a sign-in
+asked once inside the sidecar and a reCAPTCHA work, while a few sites refuse to be framed and passkeys do
+not. `sidecar desktop install` builds a small Electron shell around the same sidecar, packages it to
+`~/Applications/Claude Code Sidecar.app` and opens it. Inside the shell a Web artifact is a real top-level
+page on Chromium rather than a framed one, so Gmail, Reddit and anything that refused framing all work,
+and the comment layer, the pins and Ask Claude draw over it as before. On first launch the shell copies
+your Chrome cookies into its own session, decrypting them with a key it reads from the login Keychain once
+(the one macOS prompt you will see), so you arrive signed in to the same accounts as in Chrome.
+`sidecar desktop import` re-reads them later, with the app closed. The cookies are a copy rather than
+shared live, so a session that expires is refreshed by importing again, and a fresh Google sign-in from
+scratch is refused inside any embedded browser, with an Open in Chrome item in the View menu as the escape
+hatch. With the app installed, `sidecar open` opens it rather than a Chrome window; `sidecar desktop
+uninstall` removes it and the sidecar goes back to the proxy. The shell is `desktop/`, its own pnpm
+package, so the Electron binary is downloaded only when you build the app and never by the light setup.
 
 Claude talks to the sidecar through events, the way a Kafka producer talks to its consumers. Each
 event is one line appended to `~/.claude/sidecar/events.jsonl` under a topic, with the conversation's

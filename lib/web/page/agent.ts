@@ -33,6 +33,9 @@ interface ChildState {
 }
 
 const parents = new Set((new URL(import.meta.url).searchParams.get("parent") ?? "").split(",").filter(Boolean));
+// Set on the window by the desktop shell's webview preload right before this script, so the page is a real top-level one.
+const shell = Reflect.get(window, "__sidecarShell") === true;
+if (shell) Reflect.deleteProperty(window, "__sidecarShell");
 // The site's own frames run this agent too, and answer to the page around them, which relays them to the sidecar.
 const nested = window.parent !== window.top;
 // A same-origin frame running its own agent is that agent's to read, or every block in it would answer twice.
@@ -59,7 +62,10 @@ const bound = new WeakSet<Document>();
 const children = new Map<HTMLIFrameElement, ChildState>();
 
 function post(message: AgentMessage): void {
-  if (parent) window.parent.postMessage({ ...message, channel: CHANNEL } satisfies Envelope<AgentMessage>, parent);
+  const envelope = { ...message, channel: CHANNEL } satisfies Envelope<AgentMessage>;
+  // In the shell the page talks to its own window, where the webview preload is listening to carry it to the sidecar.
+  if (shell) window.postMessage({ data: envelope, sidecar: "up" }, "*");
+  else if (parent) window.parent.postMessage(envelope, parent);
 }
 
 function tell(message: SidecarMessage, to: HTMLIFrameElement, origin = "*"): void {
@@ -365,22 +371,13 @@ new MutationObserver(() => schedule(true)).observe(document.documentElement, {
   subtree: true,
 });
 
-window.addEventListener("message", (event: MessageEvent<Partial<Envelope<AgentMessage | SidecarMessage>>>) => {
-  if (event.data?.channel !== CHANNEL) return;
-  const from = frames().find((one) => one.contentWindow === event.source);
-  if (from) {
-    fromChild(from, event.origin, event.data as Envelope<AgentMessage>);
-    return;
-  }
-  if (event.source !== window.parent || (!nested && !parents.has(event.origin))) return;
-  const message = event.data as Envelope<SidecarMessage>;
-  if (message.type === "hello") {
-    parent = event.origin;
-    shown = "";
-    schedule(true);
-    return;
-  }
-  if (event.origin !== parent) return;
+function greeted(origin: string): void {
+  parent = origin;
+  shown = "";
+  schedule(true);
+}
+
+function applySidecar(message: Envelope<SidecarMessage>): void {
   if (message.type === "arm") {
     armed = message.armed;
     hot = armed && resting ? blockAt(resting, { wide }) : undefined;
@@ -402,13 +399,41 @@ window.addEventListener("message", (event: MessageEvent<Partial<Envelope<AgentMe
     document.documentElement.setAttribute("data-theme", message.theme);
     for (const one of frames()) tell(message, one);
   }
+}
+
+window.addEventListener("message", (event: MessageEvent<Partial<Envelope<AgentMessage | SidecarMessage>>>) => {
+  if (shell) {
+    const relay = event.data as { data?: Envelope<SidecarMessage>; sidecar?: string };
+    if (relay?.sidecar !== "down") return;
+    const message = relay.data;
+    if (message?.channel !== CHANNEL) return;
+    if (message.type === "hello") greeted("shell");
+    else applySidecar(message);
+    return;
+  }
+  if (event.data?.channel !== CHANNEL) return;
+  const from = frames().find((one) => one.contentWindow === event.source);
+  if (from) {
+    fromChild(from, event.origin, event.data as Envelope<AgentMessage>);
+    return;
+  }
+  if (event.source !== window.parent || (!nested && !parents.has(event.origin))) return;
+  const message = event.data as Envelope<SidecarMessage>;
+  if (message.type === "hello") {
+    greeted(event.origin);
+    return;
+  }
+  if (event.origin !== parent) return;
+  applySidecar(message);
 });
 
 // A frame whose agent ran before this one said ready to nobody, so it is greeted now; a later one says ready itself.
 for (const one of frames()) tell({ type: "hello" }, one);
 
 // Said once the document is parsed, so the sidecar shows the page without waiting on every subresource and nested frame.
-if (window.parent !== window) {
+if (shell) {
+  post({ type: "ready" });
+} else if (window.parent !== window) {
   const ready = { type: "ready", channel: CHANNEL } satisfies Envelope<AgentMessage>;
   if (nested) window.parent.postMessage(ready, "*");
   else for (const to of parents) window.parent.postMessage(ready, to);
