@@ -90,7 +90,27 @@ export function useTray(): Tray {
     return (key && held.value[key]) || [];
   });
 
-  const waiting = computed(() => items.value.filter((item) => !item.isSent));
+  // A refresh empties the chips, but the open threads they stood for are still in the page's review file.
+  const onPage = computed<TrayItem[]>(() => {
+    const page = sc.artifact.value;
+    const mine = sc.sessions.value.find((one) => one.key === sc.sessionKey.value)?.artifacts;
+    if (!page || !mine?.includes(page.slug)) return [];
+    const linked = new Set(items.value.map((row) => row.thread));
+    return page.threads
+      .filter((thread) => thread.status === "open" && thread.by !== "claude" && !linked.has(thread.id))
+      .map((thread): TrayItem => ({
+        id: `thread:${thread.id}`,
+        kind: "comment",
+        path: thread.anchor?.sel,
+        quote: thread.anchor?.quote || thread.anchor?.text,
+        replies: thread.replies.map(({ at, body, by, id }) => ({ at, by, id, text: body })),
+        source: page.slug,
+        text: thread.body,
+        thread: thread.id,
+      }));
+  });
+
+  const waiting = computed(() => [...items.value.filter((item) => !item.isSent), ...onPage.value]);
   const count = computed(() => waiting.value.length);
 
   function write(key: string, bucket: TrayItem[]): void {
@@ -130,18 +150,23 @@ export function useTray(): Tray {
     const key = sc.sessionKey.value;
     const going = id ? waiting.value.filter((row) => row.id === id) : waiting.value;
     const sent = new Set(going.map((row) => row.id));
+    const fromPage = new Set(onPage.value.map((row) => row.id));
     const text = [prompt.trim(), ...going.map(line)].filter(Boolean).join("\n");
 
     // Settles only what this turn carried: a chip dropped while the post was in flight rides the next one.
     function settle(): void {
       if (!key) return;
-      write(
-        key,
-        (held.value[key] ?? []).flatMap((row) => {
+      // Bare markers, with no mark or quote for the gutter to draw, that only keep their thread from counting again.
+      const marked = going
+        .filter((row) => fromPage.has(row.id))
+        .map((row): TrayItem => ({ id: row.id, isSent: true, kind: row.kind, text: row.text, thread: row.thread }));
+      write(key, [
+        ...(held.value[key] ?? []).flatMap((row) => {
           if (!sent.has(row.id)) return [row];
           return row.kind === "comment" ? [{ ...row, isSent: true }] : [];
         }),
-      );
+        ...marked,
+      ]);
     }
 
     return { settle, text };

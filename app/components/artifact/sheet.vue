@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { SurfaceVariant } from "@cela/design";
 import { EASE_CSS, MOTION_DURATION, prefersReducedMotion } from "@cela/design/utils/motion";
-import { Maximize2, Minimize2, PanelLeft } from "@lucide/vue";
+import { Maximize2, Minimize2, PanelLeft, Send } from "@lucide/vue";
 import { useEventListener } from "@vueuse/core";
 import type { ComponentPublicInstance } from "vue";
 import { isTyping } from "~~/lib/web/page/blocks";
@@ -24,6 +24,8 @@ const LIST: Partial<Record<Face, string>> = { artifacts: "Artifacts", files: "Fi
 const sc = useSidecar();
 const chrome = useChrome();
 const artifact = $artifact();
+const notes = $notes();
+const tray = useTray();
 const shown = useFaceShown();
 const isExpanded = ref(false);
 // Where the sheet is headed, set as either motion starts, while isExpanded holds the fixed layout until a shrink lands.
@@ -202,6 +204,16 @@ onBeforeUnmount(() => {
             </span>
           </span>
           <UiSurface class="island grown" pad="none" shape="pill" variant="glass-liquid">
+            <ChromeAction
+              v-if="tray.count.value"
+              data-region="artifact-send"
+              :icon="Send"
+              :is-disabled="notes.isSending"
+              :label="notes.isSending ? 'Sending…' : `Send ${tray.count.value}`"
+              shape="inset"
+              tip="Send to Claude · {cmd enter}"
+              @click="notes.send"
+            />
             <ChromeCommentToggle v-if="hasBar" shape="inset" />
             <ChromeThemeToggle shape="inset" />
             <ChromeAction
