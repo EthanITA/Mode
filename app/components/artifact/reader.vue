@@ -287,17 +287,12 @@ onScopeDispose(() => {
         <UiStateMessage v-if="stage === 'reading'" align="center" kind="loading">
           Reading turn {{ versions.at.value }}…
         </UiStateMessage>
-        <template v-else>
-          <p class="title">This version could not be read back.</p>
-          <p class="why">{{ gap }}.</p>
-          <p class="why">
-            Nothing is drawn here rather than a blank page, which would read as though t{{ versions.at.value }} of
-            <b>{{ slug }}</b> changed nothing.
-          </p>
-          <button v-press class="back focusable" type="button" @click="versions.at.value = undefined">
-            Back to latest
-          </button>
-        </template>
+        <UiStateMessage v-else align="center" kind="error">
+          This version could not be read back. {{ gap }}.
+          <template #action>
+            <UiButton size="xs" variant="outline" @click="versions.at.value = undefined">Back to latest</UiButton>
+          </template>
+        </UiStateMessage>
       </div>
 
       <ArtifactInline
@@ -355,31 +350,6 @@ onScopeDispose(() => {
 
 .opening {
   @apply py-10;
-}
-
-.gap p,
-.blank p {
-  @apply m-0;
-}
-
-.gap p + p {
-  @apply mt-2;
-}
-
-.title {
-  @apply font-semibold text-fg;
-}
-
-.why {
-  @apply text-pretty;
-}
-
-.back {
-  @apply mt-3.5 inline-flex cursor-pointer items-center rounded-full border border-border bg-raised px-3 py-1.5 typo-caption-strong text-fg no-underline;
-}
-
-.back:hover {
-  @apply border-fg;
 }
 
 .settle {

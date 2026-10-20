@@ -63,7 +63,10 @@ onBeforeUnmount(withdraw);
       </p>
     </div>
 
-    <p v-if="note" class="note" :data-tone="note.tone">{{ note.text }}</p>
+    <UiSurface v-if="note?.tone === 'loud'" class="loud" pad="xs" tone="warning" variant="banner">
+      {{ note.text }}
+    </UiSurface>
+    <p v-else-if="note" class="note">{{ note.text }}</p>
   </div>
 </template>
 
@@ -124,11 +127,11 @@ onBeforeUnmount(withdraw);
   @apply typo-meta text-subtle;
 }
 
-.note[data-tone="loud"] {
-  @apply m-0 border-l-3 border-l-warning bg-warning-soft px-3 py-2.5 typo-body-medium text-warning;
+.loud {
+  @apply m-2 typo-body-medium;
 }
 
-.note[data-tone="quiet"] {
+.note {
   @apply m-0 px-3 py-2.5 typo-mono-meta leading-normal text-muted;
 }
 </style>

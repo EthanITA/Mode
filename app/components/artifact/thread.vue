@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { ChevronLeft, ChevronRight } from "@lucide/vue";
 import type { ReviewThread, ThreadReply } from "~~/shared/types/artifact";
 import type { Pin } from "~/utils/anchors";
 
@@ -79,37 +80,25 @@ function onKey(event: KeyboardEvent): void {
       <span class="meta mono-meta">note {{ thread.n }} · {{ relativeAge(thread.at) }} · {{ thread.status }}</span>
       <span class="spacer" />
       <span v-if="pin.threads.length > 1" class="pager">
-        <button
-          v-press
-          class="plain-button mono-meta focusable"
-          type="button"
-          aria-label="Previous note"
-          @click="step(-1)"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 9 12l6-6" /></svg>
-        </button>
+        <UiIconButton :icon="ChevronLeft" icon-size="xs" label="Previous note" size="xs" @click="step(-1)" />
         <span class="mono-meta">{{ at + 1 }}/{{ pin.threads.length }}</span>
-        <button v-press class="plain-button mono-meta focusable" type="button" aria-label="Next note" @click="step(1)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
-        </button>
+        <UiIconButton :icon="ChevronRight" icon-size="xs" label="Next note" size="xs" @click="step(1)" />
       </span>
-      <button
-        v-if="thread.status === 'open'"
-        v-press
-        class="resolve focusable"
-        type="button"
-        :data-queued="resolveQueued ? '' : undefined"
-        @click="resolve"
-      >
+      <UiButton v-if="thread.status === 'open'" size="xs" variant="outline" @click="resolve">
         {{ resolveQueued ? "Resolve requested" : "Ask Claude to resolve" }}
-      </button>
+      </UiButton>
     </header>
 
     <blockquote v-if="thread.anchor?.quote" class="quote">{{ thread.anchor.quote }}</blockquote>
     <p v-if="pin.weak" class="warn mono-meta">this quote appears more than once — the pill sits on the first</p>
 
     <div v-for="message in messages" :key="message.id" class="message">
-      <span class="who" :data-you="authorOf(message.by) === 'you' ? '' : undefined">{{ initialOf(message.by) }}</span>
+      <UiAvatar
+        class="who"
+        :initials="initialOf(message.by)"
+        size="xs"
+        :variant="authorOf(message.by) === 'you' ? 'neutral' : 'soft'"
+      />
       <div class="said">
         <Prose class="body" :value="message.body" />
         <span class="meta mono-meta">{{ authorOf(message.by) }} · {{ relativeAge(message.at) }}</span>
@@ -121,19 +110,16 @@ function onKey(event: KeyboardEvent): void {
     <UiTextarea v-model="draft" auto-fit placeholder="Reply to Claude…" :rows="2" @keydown="onKey" />
 
     <footer>
-      <button v-press class="ghost focusable" type="button" data-tip="Close · {esc}" @click="emit('close')">
-        Close
-      </button>
-      <button
-        v-press
-        class="solid focusable"
-        type="button"
+      <UiButton data-tip="Close · {esc}" size="xs" variant="ghost" @click="emit('close')">Close</UiButton>
+      <UiButton
         data-tip="Add to the tray · {enter}"
         :disabled="!draft.trim()"
+        size="xs"
+        variant="secondary"
         @click="reply"
       >
         Reply
-      </button>
+      </UiButton>
     </footer>
   </div>
 </template>
@@ -164,26 +150,7 @@ header {
 }
 
 .pager {
-  @apply inline-flex items-center gap-1.5 text-muted;
-}
-
-.pager svg {
-  @apply size-3 fill-none stroke-current stroke-2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.resolve {
-  @apply cursor-pointer rounded-selector border border-border bg-raised px-2.5 py-1 typo-caption-strong whitespace-nowrap text-success transition-colors duration-(--duration-fast) ease-out;
-}
-
-.resolve:hover {
-  @apply border-success;
-}
-
-/* Queued is not resolved: it reads as pending until the turn that writes it lands. */
-.resolve[data-queued] {
-  @apply border-dashed text-primary;
+  @apply inline-flex items-center gap-0.5 text-muted;
 }
 
 .quote {
@@ -199,11 +166,7 @@ header {
 }
 
 .who {
-  @apply mt-0.5 grid size-4.5 flex-none place-items-center rounded-selector bg-primary-soft typo-mono-micro font-semibold text-primary;
-}
-
-.who[data-you] {
-  @apply bg-warning-soft text-warning;
+  @apply mt-0.5 flex-none;
 }
 
 .said {
@@ -219,29 +182,6 @@ header {
 }
 
 footer {
-  @apply flex items-center justify-end gap-2.5;
-}
-
-.ghost,
-.solid {
-  @apply cursor-pointer rounded-field px-3 py-1.5 typo-caption-strong;
-}
-
-.ghost {
-  @apply border border-border bg-transparent text-muted;
-}
-
-.solid {
-  @apply border-0 bg-fg text-canvas;
-}
-
-.solid:disabled {
-  @apply cursor-not-allowed opacity-50;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .resolve {
-    @apply transition-none;
-  }
+  @apply flex items-center justify-end gap-1.5;
 }
 </style>

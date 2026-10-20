@@ -30,7 +30,7 @@ watchEffect(() => {
       <WebReader v-if="isWeb" :conversation="key" :slug="slug" />
       <ArtifactReader v-else :conversation="key" :slug="slug">
         <template #blank>
-          <NuxtLink class="back focusable" :to="`/c/${key}`">Back to the conversation</NuxtLink>
+          <UiButton class="back" size="xs" :to="`/c/${key}`" variant="outline">Back to the conversation</UiButton>
         </template>
       </ArtifactReader>
     </main>
@@ -49,10 +49,6 @@ watchEffect(() => {
 }
 
 .back {
-  @apply mt-3.5 inline-flex items-center rounded-full border border-border bg-raised px-3 py-1.5 typo-caption-strong text-fg no-underline;
-}
-
-.back:hover {
-  @apply border-fg;
+  @apply mt-3.5;
 }
 </style>

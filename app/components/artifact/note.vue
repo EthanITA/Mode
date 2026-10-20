@@ -163,7 +163,7 @@ async function resolve(): Promise<void> {
       <Prose class="body" :value="row.text" />
     </div>
 
-    <p v-if="notice" class="notice" role="status">{{ notice }}</p>
+    <UiFieldMessage v-if="notice" tone="success">{{ notice }}</UiFieldMessage>
 
     <ArtifactCompose v-model="draft" :disabled="!!busy" placeholder="Reply…" @save="onReply" />
 
@@ -206,14 +206,6 @@ async function resolve(): Promise<void> {
 
 .who {
   @apply text-subtle;
-}
-
-.notice {
-  @apply m-0 flex items-center gap-1.75 rounded-field bg-success-soft px-2.5 py-1.75 typo-caption-strong;
-}
-
-.notice::before {
-  @apply size-1.75 flex-none rounded-full bg-success content-[''];
 }
 
 footer {

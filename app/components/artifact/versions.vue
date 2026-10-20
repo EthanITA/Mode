@@ -73,8 +73,8 @@ function tellOf(version: FileVersion, index: number): string {
         data-cmt="version"
         :data-cmt-label="`v${index + 1}`"
         :data-cmt-tell="tellOf(version, index)"
+        :data-tip="titleOf(version, index)"
         :selected="version.turn === (at ?? head?.turn)"
-        :title="titleOf(version, index)"
         @click="pick(version)"
       >
         v{{ index + 1 }}
@@ -85,16 +85,16 @@ function tellOf(version: FileVersion, index: number): string {
       <span v-if="unreachable" class="note mono-meta" data-tone="loud">the version store could not be read</span>
       <span v-else-if="skipped" class="note mono-meta">not versioned — {{ skipped }}</span>
       <span v-else-if="!list.length && listed" class="note mono-meta">no turn has written this file yet</span>
-      <span v-else-if="short" class="note mono-meta" :data-tone="note?.tone" :title="note?.text">{{ short }}</span>
+      <span v-else-if="short" class="note mono-meta" :data-tip="note?.text" :data-tone="note?.tone">{{ short }}</span>
     </div>
 
     <span class="spacer" />
 
     <span v-if="reading" class="note reading mono-meta">reading…</span>
-    <span v-if="list.length" class="version mono-meta" data-region="version-badge" :data-head="onHead ? '' : undefined">
+    <UiBadge v-if="list.length" data-region="version-badge" size="xs" :tone="onHead ? 'primary' : 'ink'">
       {{ tag }}
-    </span>
-    <button v-if="!onHead" v-press class="latest focusable" type="button" @click="at = undefined">Latest</button>
+    </UiBadge>
+    <UiButton v-if="!onHead" size="xs" variant="outline" @click="at = undefined">Latest</UiButton>
   </div>
 </template>
 
@@ -131,28 +131,5 @@ function tellOf(version: FileVersion, index: number): string {
 
 .reading {
   @apply shimmer;
-}
-
-.version {
-  @apply flex-none rounded-selector bg-fg px-2.5 py-1.25 text-canvas;
-}
-
-.version[data-head] {
-  @apply bg-primary text-primary-content;
-}
-
-.latest {
-  @apply flex-none cursor-pointer rounded-selector border border-border bg-raised px-2.75 py-1.25 typo-caption-strong text-fg transition-colors duration-(--duration-fast) ease-out;
-}
-
-.latest:hover {
-  @apply border-fg;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tab,
-  .latest {
-    @apply transition-none;
-  }
 }
 </style>
