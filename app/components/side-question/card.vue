@@ -15,7 +15,7 @@ const chrome = useChrome();
 const { sessionState } = useScreen();
 const scroller = useTemplateRef<HTMLElement>("scroller");
 const field = useTemplateRef<HTMLElement>("field");
-const undoButton = useTemplateRef<HTMLButtonElement>("undoButton");
+const undoButton = useTemplateRef<{ $el: HTMLElement }>("undoButton");
 
 provide(revealLines, (lines) => reveal?.(lines));
 
@@ -57,7 +57,7 @@ function ask(): void {
 async function resolve(): Promise<void> {
   sides.resolve(thread.id);
   await nextTick();
-  undoButton.value?.focus({ preventScroll: true });
+  undoButton.value?.$el.focus({ preventScroll: true });
 }
 
 async function undo(): Promise<void> {
@@ -137,9 +137,7 @@ onMounted(() => {
     <UiIcon class="tick" :icon="Check" size="xs" />
     <span class="folded-title">Resolved</span>
     <span class="folded-question">{{ thread.turns[0]?.question ?? thread.draft }}</span>
-    <button ref="undoButton" v-press class="undo focusable" type="button" data-tip="Undo · {cmd Z}" @click="undo">
-      Undo
-    </button>
+    <UiButton ref="undoButton" data-tip="Undo · {cmd Z}" size="xs" variant="ghost" @click="undo">Undo</UiButton>
   </div>
 
   <UiSurface
@@ -165,10 +163,10 @@ onMounted(() => {
 
     <blockquote v-if="source === 'prose' && thread.anchor.quote" class="quote">{{ thread.anchor.quote }}</blockquote>
 
-    <div v-if="state === 'sent'" class="sent" role="status">
-      <span class="sent-title"><span class="dot" />Sent to the conversation</span>
+    <UiSurface v-if="state === 'sent'" class="sent" pad="xs" role="status" tone="success" variant="banner">
+      <span class="sent-title">Sent to the conversation</span>
       <span class="sent-line">Claude acts on it next. {{ went }}</span>
-    </div>
+    </UiSurface>
 
     <template v-else>
       <div v-if="thread.turns.length" ref="scroller" class="thread" data-region="side-question-thread" @wheel.stop>
@@ -178,9 +176,9 @@ onMounted(() => {
             <span class="asked-text">{{ turn.question }}</span>
           </div>
           <Prose v-if="turn.answer" class="answer" :line-refs-of="file" :value="turn.answer" />
-          <p v-else-if="turn.failure" class="failure" role="alert">{{ turn.failure }}</p>
+          <UiStateMessage v-else-if="turn.failure" class="failure" kind="error">{{ turn.failure }}</UiStateMessage>
           <template v-else>
-            <p class="thinking shimmer">Reading the file<span class="dots" /></p>
+            <p class="thinking shimmer">Reading the file…</p>
             <span v-if="thread.turns.length === 1" class="bones" aria-hidden="true"><span /><span /><span /></span>
           </template>
         </template>
@@ -190,8 +188,7 @@ onMounted(() => {
         <UiTextarea
           v-model="draft"
           auto-fit
-          class="field-box"
-          variant="bare"
+          :max-rows="4"
           :rows="1"
           :placeholder="isBusy ? 'Claude is answering' : thread.turns.length ? 'Ask a follow-up' : 'Ask about this'"
           aria-label="Ask a follow-up"
@@ -200,52 +197,44 @@ onMounted(() => {
       </div>
 
       <footer class="actions">
-        <button
+        <UiButton
           v-if="isBusy"
-          v-press
-          class="act focusable"
-          type="button"
           data-tip="Stop · {esc}"
+          :icon="Square"
+          size="xs"
+          variant="ghost"
           @click="sides.stop(thread.id)"
         >
-          <UiIcon :icon="Square" size="xs" />Stop
-        </button>
+          Stop
+        </UiButton>
         <template v-else>
-          <button
+          <UiButton
             v-if="state === 'failed'"
-            v-press
-            class="act focusable"
-            type="button"
-            data-tone="primary"
+            :icon="RotateCcw"
+            size="xs"
+            variant="ghost"
             @click="sides.retry(thread.id)"
           >
-            <UiIcon :icon="RotateCcw" size="xs" />Ask again
-          </button>
-          <button
-            v-press
-            class="act focusable"
-            type="button"
-            data-tip="Done with it · {cmd backspace}"
-            @click="resolve"
-          >
-            <UiIcon :icon="Check" size="xs" />Resolve
-          </button>
-          <button
+            Ask again
+          </UiButton>
+          <UiButton data-tip="Done with it · {cmd backspace}" :icon="Check" size="xs" variant="ghost" @click="resolve">
+            Resolve
+          </UiButton>
+          <UiButton
             v-if="answered"
-            v-press
-            class="act focusable"
-            type="button"
-            data-tone="primary"
-            :disabled="!canSend"
+            :aria-disabled="!canSend"
             :data-tip="
               sessionState === 'gone'
                 ? 'The session is gone, so nothing can be sent to it'
                 : 'Send the thread to the session so Claude acts on it · {cmd enter}'
             "
+            :icon="Send"
+            size="xs"
+            variant="ghost"
             @click="send"
           >
-            <UiIcon :icon="Send" size="xs" />Send to conversation
-          </button>
+            Send to conversation
+          </UiButton>
         </template>
       </footer>
     </template>
@@ -274,15 +263,11 @@ onMounted(() => {
 }
 
 .sent {
-  @apply flex flex-col gap-0.75 rounded-field bg-success-soft px-2.5 py-2;
+  @apply flex-col items-start gap-0.75;
 }
 
 .sent-title {
-  @apply flex items-center gap-1.75 typo-body-strong;
-}
-
-.dot {
-  @apply size-1.75 flex-none rounded-full bg-success;
+  @apply typo-body-strong;
 }
 
 .sent-line {
@@ -310,31 +295,11 @@ onMounted(() => {
 }
 
 .failure {
-  @apply m-0 flex-none typo-body text-error;
+  @apply flex-none;
 }
 
 .thinking {
   @apply m-0 flex-none typo-body;
-}
-
-.dots::after {
-  @apply content-[''];
-  animation: side-dots 1.4s steps(1, end) infinite;
-}
-
-@keyframes side-dots {
-  0% {
-    content: "";
-  }
-  25% {
-    content: ".";
-  }
-  50% {
-    content: "..";
-  }
-  75% {
-    content: "...";
-  }
 }
 
 .bones {
@@ -353,46 +318,12 @@ onMounted(() => {
   @apply w-7/12;
 }
 
-.field {
-  @apply flex min-h-8 items-center gap-2 rounded-2xl border border-border bg-sunken px-3 py-1;
-}
-
 .field[data-busy="true"] {
   @apply opacity-50;
 }
 
-.field-box {
-  @apply min-w-0 flex-1 typo-body;
-}
-
-.field :deep(.textarea[data-auto-fit="true"]) {
-  @apply max-h-24 overflow-y-auto;
-}
-
 .actions {
   @apply -mt-1 mr-0 -mb-1.5 -ml-1.5 flex flex-wrap gap-1;
-}
-
-.act {
-  @apply inline-flex cursor-pointer items-center gap-1.5 rounded-lg border-0 bg-transparent p-1.5 typo-caption-strong text-muted;
-}
-
-.act[data-tone="primary"] {
-  @apply text-primary-deep;
-}
-
-.act:disabled {
-  @apply cursor-default opacity-45;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .act:hover:not(:disabled) {
-    @apply bg-sunken text-fg;
-  }
-
-  .act[data-tone="primary"]:hover:not(:disabled) {
-    @apply bg-primary-soft text-primary-deep;
-  }
 }
 
 .folded {
@@ -409,21 +340,5 @@ onMounted(() => {
 
 .folded-question {
   @apply min-w-0 flex-1 truncate typo-caption text-muted;
-}
-
-.undo {
-  @apply flex-none cursor-pointer rounded-lg border-0 bg-transparent p-1.5 typo-caption-strong text-primary-deep;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .undo:hover {
-    @apply bg-sunken;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dots::after {
-    @apply animate-none content-['…'];
-  }
 }
 </style>
