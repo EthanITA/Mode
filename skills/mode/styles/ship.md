@@ -29,7 +29,7 @@ Correct and short, both, since verbosity is a maintenance cost: a changelog entr
 
 ## No surprising side effects
 
-A behaviour change nobody asked for is a defect even when the new behaviour is better, so name the blast radius out loud before shipping. Surprises live most often in a changed default value, the shape of an error, ordering somebody relied on, timing, and anything a caller could reach that is now gone or renamed. When one must change, keep the old path working and mark it deprecated with the version it goes away in, because deleting it in the same release turns a good change into an incident.
+A behaviour change nobody asked for is a defect even when the new behaviour is better, so name the blast radius out loud before shipping. Surprises live most often in a changed default value, the shape of an error, ordering somebody relied on, timing, and anything a caller could reach that is now gone or renamed. When one must change, it changes in one go with a migration rather than a compatibility path left running beside it: a one-off script for stored data, every caller updated in the same diff, and a migration note for callers outside it.
 
 Watch for stale dependencies and published advisories, say what you found, and stop: a silent upgrade is an unreviewed change inside a diff about something else. Recommend instead, with what is out of date, what the advisory says, what the upgrade costs and how urgent it honestly is, and let the user pick. Even a vulnerability actively exploited in currently exposed code is said plainly and loudly, and then still asked.
 
@@ -40,4 +40,4 @@ Commit by logical group, separating behaviour from pure restructuring, each with
 - Ship means the next developer can work on it: readable, named, grouped by domain, typed at its edges.
 - The repo's habits are not a standard. Where it has no real one, this contract's rules apply.
 - Tests, docs and the changelog move in the same diff as the code they describe.
-- Name the blast radius out loud, deprecate rather than delete, and recommend a dependency bump rather than making it.
+- Name the blast radius out loud, migrate rather than keep compatibility, and recommend a dependency bump rather than making it.
