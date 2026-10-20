@@ -36,7 +36,7 @@ function closePage(): void {
       shape="pill"
       variant="glass-liquid"
     >
-      <UiSegmented v-model="face" data-region="view-switcher" :options="faces" />
+      <UiSegmented v-model="face" data-region="view-switcher" :options="faces" variant="bare" />
     </UiSurface>
 
     <ChromeCommentToggle v-if="onArtifact" shape="island" />
@@ -59,10 +59,5 @@ function closePage(): void {
 
 .pill {
   @apply island-row px-1.5;
-}
-
-/* The pill is the surface, so the segmented must not draw a second one. */
-.pill :deep(.segmented) {
-  @apply border-0 bg-transparent bg-none;
 }
 </style>

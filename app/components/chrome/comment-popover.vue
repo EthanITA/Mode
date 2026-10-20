@@ -54,7 +54,7 @@ function onEdit(): void {
     :style="{ left: `${spot.x}px`, top: `${spot.y}px` }"
   >
     <p class="who">
-      <span class="kind mono-meta">{{ spot.kind }}</span>
+      <UiBadge size="xs" tone="primary">{{ spot.kind }}</UiBadge>
       <span class="label">{{ spot.label }}</span>
     </p>
 
@@ -69,32 +69,28 @@ function onEdit(): void {
     </div>
 
     <p class="foot">
-      <button v-if="spot.canEdit" v-press class="cancel focusable" type="button" @click="onEdit">Edit</button>
-      <button v-press class="cancel focusable" type="button" data-tip="Cancel · {esc}" @click="chrome.comment.close()">
-        Cancel
-      </button>
-      <button
+      <UiButton v-if="spot.canEdit" size="xs" variant="ghost" @click="onEdit">Edit</UiButton>
+      <UiButton data-tip="Cancel · {esc}" size="xs" variant="ghost" @click="chrome.comment.close()">Cancel</UiButton>
+      <UiButton
         v-if="spot.ask"
-        v-press
-        class="ask focusable"
-        type="button"
         data-region="comment-ask"
         data-tip="Ask on the side, the session isn't told · {cmd enter}"
         :disabled="!draft.trim()"
+        size="xs"
+        variant="outline"
         @click="chrome.comment.ask(draft)"
       >
         Ask
-      </button>
-      <button
-        v-press
-        class="save focusable"
-        type="button"
+      </UiButton>
+      <UiButton
         data-tip="Add to the tray · {enter}"
         :disabled="!draft.trim()"
+        size="xs"
+        variant="secondary"
         @click="chrome.comment.save(draft)"
       >
         Add to tray
-      </button>
+      </UiButton>
     </p>
   </UiSurface>
 </template>
@@ -111,10 +107,6 @@ function onEdit(): void {
 
 .who {
   @apply m-0 flex min-w-0 items-center gap-2;
-}
-
-.kind {
-  @apply flex-none rounded-full bg-primary-soft px-2 py-1 text-primary-deep;
 }
 
 .label {
@@ -139,37 +131,6 @@ function onEdit(): void {
 }
 
 .foot {
-  @apply m-0 flex items-center justify-end gap-2.5;
-}
-
-.cancel,
-.ask,
-.save {
-  @apply h-7 flex-none cursor-pointer rounded-full font-sans typo-caption-strong;
-}
-
-.cancel {
-  @apply border border-border bg-raised px-2.5 py-0 text-muted;
-}
-
-.cancel:hover {
-  @apply border-fg text-fg;
-}
-
-.save {
-  @apply border-0 bg-fg px-3 py-0 text-canvas;
-}
-
-.ask {
-  @apply inline-flex items-center gap-2 border border-border-strong bg-raised px-3 py-0 text-fg;
-}
-
-.ask:hover:not(:disabled) {
-  @apply border-fg;
-}
-
-.ask:disabled,
-.save:disabled {
-  @apply cursor-not-allowed opacity-45;
+  @apply m-0 flex items-center justify-end gap-1.5;
 }
 </style>

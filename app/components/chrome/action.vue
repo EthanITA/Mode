@@ -5,14 +5,13 @@ import type { Component } from "vue";
 // An inset one sits with others inside a single island instead of being an island of its own.
 export type ActionShape = "inset" | "island" | "pill";
 
-const { icon, isDisabled, isOn, isPressed, isQuiet, label, shape, tip } = defineProps<{
+const { icon, isDisabled, isOn, isPressed, label, shape, tip } = defineProps<{
   icon: Component;
   isDisabled?: boolean;
   /** A mode it arms, drawn in the primary colour. */
   isOn?: boolean;
-  /** A panel it opens, drawn raised. */
+  /** A panel it opens, drawn held down. */
   isPressed?: boolean;
-  isQuiet?: boolean;
   label?: string;
   shape: ActionShape;
   tip: string;
@@ -22,109 +21,63 @@ const emit = defineEmits<{ click: [event: MouseEvent] }>();
 </script>
 
 <template>
+  <UiChip
+    v-if="shape === 'pill'"
+    class="pill"
+    :aria-label="label ? undefined : tipText(tip)"
+    :data-tip="tip"
+    :disabled="isDisabled"
+    :selected="isOn"
+    size="xs"
+    @click="emit('click', $event)"
+  >
+    <UiIcon :icon="icon" size="xs" />
+    <template v-if="label">{{ label }}</template>
+  </UiChip>
+
   <UiSurface
-    v-if="shape === 'island'"
+    v-else-if="shape === 'island'"
     v-island-pop="'top right'"
     class="island"
     pad="none"
     shape="pill"
     variant="glass-liquid"
   >
-    <button
-      v-press
-      class="action focusable"
-      type="button"
+    <UiIconButton
       :aria-label="label ? undefined : tipText(tip)"
-      :aria-pressed="isOn"
-      :data-labelled="!!label"
-      :data-on="isOn"
+      :aria-pressed="isOn || isPressed"
       :data-tip="tip"
+      :disabled="isDisabled"
+      :icon="icon"
+      size="md"
+      :tone="isOn ? 'primary' : 'neutral'"
       @click="emit('click', $event)"
     >
-      <UiIcon :icon="icon" size="sm" />
-      <template v-if="label">{{ label }}</template>
-    </button>
+      <template v-if="label" #default>{{ label }}</template>
+    </UiIconButton>
   </UiSurface>
 
-  <button
+  <UiIconButton
     v-else
-    v-press
-    class="action focusable"
-    type="button"
     :aria-label="label ? undefined : tipText(tip)"
-    :aria-pressed="isOn ?? isPressed"
-    :class="shape"
-    :data-labelled="!!label"
-    :data-on="isOn"
-    :data-pressed="isPressed"
-    :data-quiet="isQuiet"
+    :aria-pressed="isOn || isPressed"
     :data-tip="tip"
     :disabled="isDisabled"
+    :icon="icon"
+    size="md"
+    :tone="isOn ? 'primary' : 'neutral'"
     @click="emit('click', $event)"
   >
-    <UiIcon :icon="icon" :size="shape === 'inset' ? 'md' : 'xs'" />
-    <template v-if="label">{{ label }}</template>
-  </button>
+    <template v-if="label" #default>{{ label }}</template>
+  </UiIconButton>
 </template>
 
 <style scoped>
 .island {
-  @apply flex h-(--island-row-h) flex-none;
+  @apply island-row px-1;
 }
 
-.action {
-  @apply inline-flex h-full flex-none cursor-pointer items-center justify-center gap-2 rounded-full border-0 bg-transparent px-3.5 py-0 typo-body-strong text-fg transition-colors duration-(--duration-press) ease-out;
-}
-
-.action[data-labelled="false"] {
-  @apply w-(--island-row-h) p-0;
-}
-
-/* A bar that is not the app's own, such as the dark editor's, retints the pill through these two. */
 .pill {
-  @apply h-6.5 gap-1.5 border border-action-line px-2.75 py-0 typo-caption text-action-ink;
-}
-
-.pill[data-labelled="false"] {
-  @apply w-6.5;
-}
-
-.inset {
-  @apply h-8;
-}
-
-.inset[data-labelled="false"] {
-  @apply w-8;
-}
-
-.inset[data-quiet="true"] {
-  @apply text-muted;
-}
-
-.inset[data-pressed="true"] {
-  @apply bg-raised shadow-sm;
-}
-
-.inset:disabled {
-  @apply cursor-default text-subtle;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .pill:hover {
-    @apply border-action-ink;
-  }
-
-  .island .action:hover {
-    @apply text-primary;
-  }
-
-  .inset:not(:disabled, [data-on="true"], [data-pressed="true"]):hover {
-    @apply bg-canvas text-fg;
-  }
-}
-
-.action[data-on="true"],
-.island .action[data-on="true"]:hover {
-  @apply border-primary bg-primary text-primary-content;
+  @apply gap-1;
 }
 </style>

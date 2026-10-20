@@ -19,25 +19,25 @@ const place = computed(() => ({
 
 <template>
   <!-- mousedown would collapse a selection in the app's own document before the click lands. -->
-  <button
+  <UiButton
     v-island-pop="isBelow ? 'top right' : 'bottom right'"
-    v-press
-    class="chip focusable"
-    type="button"
+    class="chip"
     data-region="select-ask"
     :data-below="isBelow"
     :data-tip="offer.spot.ask ? 'Ask on the side · {cmd k}' : 'Note it for the session · {cmd k}'"
+    size="xs"
     :style="place"
+    variant="secondary"
     @mousedown.prevent
     @click="chrome.comment.openOffer()"
   >
     {{ offer.spot.ask ? "Ask Claude" : "Note for Claude" }}
-  </button>
+  </UiButton>
 </template>
 
 <style scoped>
 .chip {
-  @apply pointer-events-auto fixed z-35 -mt-1.5 inline-flex h-7 -translate-x-full -translate-y-full cursor-pointer items-center rounded-full border-0 bg-fg px-3 py-0 font-sans typo-caption-strong whitespace-nowrap text-canvas shadow-md;
+  @apply pointer-events-auto fixed z-35 -mt-1.5 -translate-x-full -translate-y-full shadow-md;
 }
 
 .chip[data-below="true"] {
