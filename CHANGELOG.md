@@ -22,10 +22,11 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
   its own pnpm package, so Electron is downloaded only when you build the app. A fresh Google sign-in and
   passkeys are still refused inside any embedded browser, with Open in Chrome in the View menu as the way out.
 - **Every link in the chat opens as a Web artifact.** A web address you or Claude write in a conversation,
-  outside code, lands in its Artifacts once, the same entry clicking it in the sidecar makes, and one said
-  while the sidecar shows that conversation gets the New artifact toast. A link you remove stays removed
-  however often it is said again, and a page a WebFetch or WebSearch brought back stays out even when
-  Claude cites it, unless you write it yourself.
+  outside code, lands in its Artifacts once, the same entry clicking it in the sidecar makes, as it is said
+  and with the New artifact toast, whichever conversation is on screen. One said while the sidecar was
+  stopped lands quietly once it is back. A link you remove stays removed however often it is said again, and
+  a page a WebFetch or WebSearch brought back stays out even when Claude cites it, unless you write it
+  yourself.
 - **Hand-rolled styling is flagged as it is written.** `token-guard` reads what a Write or Edit adds to a
   `.vue` or `.css` file and names each raw colour, duration, `cubic-bezier` curve, arbitrary Tailwind
   bracket holding a px, rem, ms or hex value, and raw type, radius or spacing size, pointing at the token

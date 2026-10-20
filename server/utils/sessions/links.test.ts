@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { appendFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, before, test } from "node:test";
@@ -129,5 +129,25 @@ test("adopts what the user or Claude links once, never what WebFetch or WebSearc
       [key, "new.dev"],
       [key, "inside.dev"],
     ],
+  );
+});
+
+test("a catch-up up to a byte lands quietly, and only what was said after it is announced", () => {
+  const key = "fedcba98";
+  const path = join(root, "projects", "-tmp-links", `${key}-1111-2222-3333-444444444444.jsonl`);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, lines(said(1, "before https://old.dev")));
+  const upTo = statSync(path).size;
+  appendFileSync(path, lines(said(2, "now https://now.dev")));
+  const events = Events.end();
+
+  Links.adopt({ key, path, upTo });
+  Links.adopt({ key, path, upTo });
+  Links.adopt({ key, path, isLive: true });
+
+  assert.deepEqual(urls(key), ["https://old.dev/", "https://now.dev/"]);
+  assert.deepEqual(
+    Events.read(events).events.map((event) => event.data.title),
+    ["now.dev"],
   );
 });

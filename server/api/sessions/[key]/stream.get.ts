@@ -17,7 +17,6 @@ export default defineEventHandler((event): Promise<void> => {
     for (const turn of slice.turns) {
       void stream.push({ event: "turn", data: JSON.stringify(turn) });
     }
-    Links.adopt({ key, isLive: true });
   };
 
   Links.adopt({ key });

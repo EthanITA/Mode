@@ -233,9 +233,10 @@ own back and forward history in its record, so ⌘[ and ⌘] step through it aft
 `.md` or `.html` as a File entry, which `~/.claude/sidecar/tracked.json` remembers until you remove it, so
 the sidecar serves only files someone opened. A web address you or Claude write in the chat, outside
 code, becomes a Web entry of that conversation too, once per address and read off the transcript, so a
-link you remove stays removed, and one said while the sidecar shows the conversation gets the toast a new
-page gets. A page a WebFetch or WebSearch brought back never does, even when Claude cites it in its
-sources, unless you write it yourself. Three lookups are worth knowing:
+link you remove stays removed. It lands as it is said, whichever conversation is on screen, with the toast a
+new page gets, and one said while the sidecar was stopped lands quietly once it is back. A page a WebFetch
+or WebSearch brought back never does, even when Claude cites it in its sources, unless you write it
+yourself. Three lookups are worth knowing:
 
 | It resolves           | In this order                                                                                                   |
 | --------------------- | --------------------------------------------------------------------------------------------------------------- |

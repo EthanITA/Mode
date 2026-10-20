@@ -23,6 +23,10 @@ export interface LinkAdoption {
   key: string;
   /** Said just now, so it is announced the way a new page is; a catch-up on older turns lands quietly. */
   isLive?: boolean;
+  /** Known already, which spares a scan of every project folder on each write. */
+  path?: string;
+  /** Where a catch-up stops, so what was said after it is still announced. */
+  upTo?: number;
 }
 
 interface Ledger {
@@ -108,10 +112,10 @@ function userSaid(entry: Entry): string[] {
 }
 
 // Through the last whole line, so a record still being written is read on the next pass rather than cut in half.
-function readFrom(path: string, offset: number): { entries: Entry[]; offset: number } {
+function readFrom(path: string, offset: number, upTo: number): { entries: Entry[]; offset: number } {
   const fd = openSync(path, "r");
   try {
-    const size = fstatSync(fd).size;
+    const size = Math.min(fstatSync(fd).size, upTo);
     if (size <= offset) return { entries: [], offset: size };
     const buffer = Buffer.alloc(size - offset);
     readSync(fd, buffer, 0, buffer.length, offset);
@@ -167,13 +171,14 @@ function place({ held, href, isLive, key }: Placing): void {
 }
 
 // Each address once per conversation, so a link artifact someone removed stays gone however often it is said again.
-function adopt({ key, isLive = false }: LinkAdoption): void {
+function adopt({ key, isLive = false, path, upTo = Number.POSITIVE_INFINITY }: LinkAdoption): void {
   if (!isKey(key)) return;
-  const path = transcriptIndex().get(key)?.path;
-  if (!path) return;
+  const transcript = path ?? transcriptIndex().get(key)?.path;
+  if (!transcript) return;
   const file = ledgerPath(key);
   const ledger = ledgerOf(file);
-  const read = readFrom(path, ledger.offset);
+  if (upTo <= ledger.offset) return;
+  const read = readFrom(transcript, ledger.offset, upTo);
   if (read.offset === ledger.offset) return;
   const links = new Set(ledger.links);
   const fetched = new Set(ledger.fetched);
