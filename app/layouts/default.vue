@@ -91,6 +91,7 @@ useResizeObserver(boardEl, ([entry]) => {
   @apply pointer-events-none absolute right-(--gutter) bottom-(--gutter) left-(--gutter) z-20 flex items-end gap-2 transition-[opacity,visibility] duration-(--duration-fast) ease-out;
 }
 
+/* Unlike the board it stays click-through, since it stretches its slot full width and only what the slot draws should take a click. */
 .foot-dock {
   @apply flex min-w-0 flex-1 flex-col gap-2;
 }
@@ -104,7 +105,6 @@ useResizeObserver(boardEl, ([entry]) => {
 }
 
 .row > :deep(*),
-.foot-dock > :deep(*),
 .foot-board > :deep(*) {
   @apply pointer-events-auto;
 }

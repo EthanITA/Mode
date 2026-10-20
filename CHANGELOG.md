@@ -552,6 +552,9 @@ carries fixes. Nothing here is stable enough to promise otherwise yet.
 
 ### Fixed
 
+- **A folded Ask Claude takes clicks only on itself.** The empty strip beside it, the whole width of the
+  dock, swallowed every click meant for the page underneath, so the bottom of a Web artifact could not be
+  clicked. Only the island, the Send pill and the tray chips take a click now.
 - **A claude.ai artifact loads in a Web artifact.** Its sandbox frame reached claude.ai as a top-level page,
   so claude.ai sent it back to itself and showed Couldn't load artifact. A frame a site makes inside its
   page now reaches the site as a frame, while the Web artifact's own page still reads as a browser tab.
