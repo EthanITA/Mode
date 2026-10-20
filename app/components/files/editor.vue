@@ -256,7 +256,7 @@ onBeforeUnmount(() => {
     <header class="bar">
       <span class="path">{{ file }}</span>
       <template v-if="!isPreviewing">
-        <span v-if="isStale" class="state warn mono-meta" title="A turn changed this file while you were editing">
+        <span v-if="isStale" class="state warn mono-meta" data-tip="A turn changed this file while you were editing">
           changed on disk
         </span>
         <span v-else-if="isDirty" class="state mono-meta">unsaved</span>
@@ -280,19 +280,10 @@ onBeforeUnmount(() => {
         @click="noteFile"
       />
       <template v-if="!isPreviewing">
-        <button v-if="isDirty || isStale" v-press class="ghost focusable" type="button" @click="discard">
-          Discard
-        </button>
-        <button
-          v-press
-          class="save focusable"
-          type="button"
-          data-tip="Save · {cmd S}"
-          :disabled="!isDirty || isSaving"
-          @click="save"
-        >
+        <UiButton v-if="isDirty || isStale" size="xs" variant="ghost" @click="discard">Discard</UiButton>
+        <UiButton data-tip="Save · {cmd S}" :disabled="!isDirty || isSaving" size="xs" @click="save">
           {{ isSaving ? "Saving…" : "Save" }}
-        </button>
+        </UiButton>
       </template>
     </header>
     <div class="body">
@@ -334,9 +325,7 @@ onBeforeUnmount(() => {
 
 /* Stacked over the editor below, so a pill's tooltip is not painted under Monaco. */
 .bar {
-  @apply relative z-1 flex flex-none items-center gap-2 border-b border-b-ed-border bg-ed-bar px-3 py-2;
-  --action-ink: var(--ed-ink);
-  --action-line: var(--ed-button);
+  @apply editor-tokens relative z-1 flex flex-none items-center gap-2 border-b border-b-ed-border bg-ed-bar px-3 py-2;
 }
 
 .path {
@@ -351,29 +340,6 @@ onBeforeUnmount(() => {
   @apply text-ed-warn;
 }
 
-.ghost,
-.save {
-  @apply inline-flex h-6.5 flex-none cursor-pointer items-center gap-1.25 rounded-full px-2.75 py-0 font-sans typo-caption-strong transition-colors duration-(--duration-press) ease-out;
-}
-
-.ghost {
-  @apply border border-ed-button bg-transparent text-ed-muted;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .ghost:hover {
-    @apply bg-ed-button text-ed-ink;
-  }
-}
-
-.save {
-  @apply border-0 bg-ed-accent text-ed-bg;
-}
-
-.save:disabled {
-  @apply cursor-default bg-ed-button text-ed-muted;
-}
-
 .body {
   @apply relative flex min-h-0 flex-1;
 }
@@ -382,11 +348,7 @@ onBeforeUnmount(() => {
   @apply size-full min-h-0;
 }
 
-/* The body is always One Dark, so the state line reads the editor's palette instead of the theme's. */
 .empty {
-  @apply flex-1 p-4;
-  --ink: var(--ed-ink);
-  --muted: var(--ed-muted);
-  --subtle: var(--ed-muted);
+  @apply editor-tokens flex-1 p-4;
 }
 </style>

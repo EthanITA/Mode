@@ -95,7 +95,7 @@ watchEffect(() => {
         type="button"
         :style="{ '--depth': row.depth }"
         :data-ignored="!!row.entry.ignored"
-        :title="homePath(row.entry.path)"
+        :data-tip="homePath(row.entry.path)"
         @click="toggle(row.entry.path)"
       >
         <UiIcon class="chevron" :icon="row.isOpen ? ChevronDown : ChevronRight" size="xs" />
@@ -111,7 +111,7 @@ watchEffect(() => {
         :data-ignored="!!row.entry.ignored"
         :data-selected="row.entry.path === selected"
         :data-tone="toneOf?.(row.entry) ?? 'plain'"
-        :title="homePath(row.entry.path)"
+        :data-tip="homePath(row.entry.path)"
         @click="$emit('select', row.entry.path)"
       >
         <span class="chevron" />

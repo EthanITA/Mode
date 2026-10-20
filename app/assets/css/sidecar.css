@@ -102,8 +102,6 @@
   --color-ed-remove: var(--ed-remove);
   --color-ed-remove-ink: var(--ed-remove-ink);
   --color-ed-warn: var(--ed-warn);
-  --color-action-ink: var(--action-ink, var(--ink));
-  --color-action-line: var(--action-line, var(--border-strong));
   /* Inline, so --side-w resolves on each face rather than once at the root. */
   --grid-template-columns-pane: min(var(--side-w), 50%) 0 minmax(0, 1fr);
 }

@@ -62,11 +62,11 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
       pad="none"
       variant="raised"
     >
-      <header class="bar scopes">
-        <UiSegmented v-model="scope" :options="SCOPES" />
+      <header class="bar">
+        <UiSegmented v-model="scope" fill :options="SCOPES" />
       </header>
       <div v-if="session && scope === 'all'" class="root">
-        <span class="where mono-meta" :title="session.cwd">{{ homePath(session.cwd) }}</span>
+        <span class="where mono-meta" :data-tip="session.cwd">{{ homePath(session.cwd) }}</span>
         <UiChip :selected="showIgnored" size="xs" @click="showIgnored = !showIgnored">Ignored</UiChip>
       </div>
       <div v-fade="scope === 'all' || !!files" class="scroll">
@@ -91,7 +91,7 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
               class="dot"
               :data-group="markOf(entry)?.group"
               :data-latest="markOf(entry)?.lastTurn === latest"
-              :title="`${markOf(entry)?.group === 'produced' ? 'Created' : 'Read or changed'} in this conversation, last ${markOf(entry)?.lastAction} in turn ${markOf(entry)?.lastTurn}`"
+              :data-tip="`${markOf(entry)?.group === 'produced' ? 'Created' : 'Read or changed'} in this conversation, last ${markOf(entry)?.lastAction} in turn ${markOf(entry)?.lastTurn}`"
             />
           </template>
         </FileTree>
@@ -129,37 +129,6 @@ function markOf(entry: TreeEntry): SessionFile | undefined {
 
 .bar {
   @apply flex flex-none items-center gap-2 border-b border-b-border px-3 py-2;
-}
-
-/* The scopes fill the row while their labels fit, and fall back to icons with the label as a tooltip below that. */
-.scopes {
-  @apply @container;
-}
-
-.scopes :deep(.segmented) {
-  @apply flex w-full;
-}
-
-.scopes :deep(.segmented-option) {
-  @apply flex-auto justify-center px-2.5;
-}
-
-.scopes :deep(.segmented-option svg) {
-  @apply hidden;
-}
-
-@container (width < 280px) {
-  .scopes :deep(.segmented-option) {
-    @apply gap-0;
-  }
-
-  .scopes :deep(.segmented-label) {
-    @apply hidden;
-  }
-
-  .scopes :deep(.segmented-option svg) {
-    @apply block;
-  }
 }
 
 .root {
