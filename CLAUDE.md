@@ -1,22 +1,17 @@
 # Mode plugin repo
 
-**Purpose:** conventions for working in this repo, which ships two things, the modes-and-styles system and the sidecar, and where the line between them sits.
+**Purpose:** conventions for working in this repo, the modes-and-styles system with its skills, and the contracts it keeps with the sidecar.
 **Loads:** when you touch any file under `projects/Cela/mode`.
-**Never put here:** global behaviour goes to `~/.claude/CLAUDE.md` · code and TS style go to `~/.claude/on-demand/code-style.md` · how to build an artifact goes to the `create-artifact` skill · the Cela product domain goes to `projects/Cela/CLAUDE.md`.
+**Never put here:** global behaviour goes to `~/.claude/CLAUDE.md` · code and TS style go to `~/.claude/on-demand/code-style.md` · how to build an artifact goes to the `create-artifact` skill · the sidecar's own conventions go to `projects/Cela/sidecar/CLAUDE.md` · the Cela product domain goes to `projects/Cela/CLAUDE.md`.
 
-GitHub `EthanITA/Mode`, worked on branch `sidecar-v6`.
+GitHub `EthanITA/Mode`, worked on `main`.
 
 ---
 
-## Naming · fires: on every user-facing string and new sidecar code
+## Contracts with the sidecar · fires: when touching `mode forget`, the review layer or the per-conversation lists
 
-The product and its CLI are **the sidecar**, never "Mode". The plugin is still named `mode` internally (its id in `.claude-plugin/plugin.json`, `MODE_PLUGIN_ROOT`, `lib/mode`, `skills/mode`) because that identity is the modes-and-styles system, not the sidecar, and splitting the two is its own epic. So user-facing surfaces, the `bin/_sidecar.ts` CLI, its config and its output read as sidecar and carry no "Mode"; the internal plumbing keeps the `mode` name until the split lands.
+The sidecar is its own plugin in `cela-sage/sidecar` and reaches this repo only through files and one CLI verb, so a change to any of these breaks it without a single failing test here:
 
-## The two surfaces · fires: when the sidecar's desktop-versus-web behaviour matters
-
-A Web artifact renders one of two ways, and which one is the surface chosen in `sidecar setup`, stored in `~/.claude/sidecar/config.json` as `{ surface: "desktop" | "web" }`:
-
-- **desktop** is the Electron shell in `desktop/`, where a Web artifact is a real top-level Chromium page signed in with imported Chrome cookies, heavier because it is a separate Chromium but with no framing refusals.
-- **web** is a tab in Chrome against the sidecar, where a Web artifact is framed through the rewriting proxy, light but broken on framing-hostile sites.
-
-The running app knows which it is through `window.sidecarShell`, injected by the desktop shell's preload and absent in a plain browser. The user agent cannot be used, because the shell strips its Electron token on purpose so framed pages see plain Chrome.
+- `bin/mode --session <key> forget`, which the sidecar runs when a conversation is removed, found through `~/.claude/mode/plugin-root`.
+- `skills/create-artifact/assets/review-layer.html`, whose `rv-seed` block and `/api/sessions/message` post the sidecar reads and answers, and the trailing `<!-- rv:seed -->` block `artifact review` adds to a `.md`.
+- `~/.claude/artifacts/session-<key>`, written by `artifact stamp`, `touch` and the observe hook, which the sidecar watches to list and announce a conversation's pages.

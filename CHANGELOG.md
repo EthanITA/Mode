@@ -7,6 +7,17 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.18.0
+
+### Removed
+
+- **The sidecar moved to its own repository, [cela-sage/sidecar](https://github.com/cela-sage/sidecar).** The
+  Nuxt app, its CLI, the Electron shell and their tests left this repo, so installing mode no longer pulls
+  in Nuxt, Electron or the 24 direct dependencies around them, and `pnpm install` here fetches TypeScript, `@types/node` and Prettier
+  alone. The sidecar installs as a plugin of its own and still runs `mode forget` on a removed conversation.
+  `tsconfig.plugin.json` is now the only config and is named `tsconfig.json`, and `pnpm typecheck` and
+  `pnpm test` cover what `typecheck:plugin` and `test:plugin` did.
+
 ## 0.17.0
 
 ### Added
