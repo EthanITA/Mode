@@ -7,6 +7,14 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.18.1
+
+### Removed
+
+- **`hooks/relay.ts`**, which told Claude a sidecar delivery was Marco's when the sidecar's mod was not
+  loaded. The mod now ships in the same plugin as the sidecar that sends those deliveries, and strips the
+  marker itself, so the hook never had anything left to read.
+
 ## 0.18.0
 
 ### Removed
