@@ -9,7 +9,6 @@ import { strip } from "../../lib/text.ts";
 
 const WRITE_TOOLS = new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 
-// Discarding work is delete-guard's; this one stops a branch switch carrying someone else's edits along.
 const risky = ({ sub, rest }: GitCall): boolean => sub === "switch" || (sub === "checkout" && !rest.includes("--"));
 
 function git(repo: string, ...args: string[]): string | undefined {
