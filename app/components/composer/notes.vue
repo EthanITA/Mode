@@ -113,7 +113,6 @@ onMounted(() => {
   @apply flex w-full items-end justify-end gap-2;
 }
 
-/* The dock is click-through, so a folded island takes clicks on itself and the strip beside it stays the page's. */
 .pills > * {
   @apply pointer-events-auto;
 }
