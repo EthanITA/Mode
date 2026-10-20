@@ -29,7 +29,7 @@ function setPlist(xml: string, key: string, value: string): string {
   return re.test(xml) ? xml.replace(re, `$1${value}$2`) : xml.replace("</dict>", `\t<key>${key}</key>\n\t<string>${value}</string>\n</dict>`);
 }
 
-const PLUGIN_DIRS = [".claude-plugin", "bin", "commands", "lib", "server", "shared", "skills"];
+const PLUGIN_DIRS = [".claude-plugin", "bin", "lib", "server", "shared"];
 
 // The production server and the plugin files it reads are bundled in, so the app runs everything itself.
 function bundleServer(app: string): void {
