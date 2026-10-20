@@ -6,7 +6,7 @@ import { configRoot, sidecarHome, stateHome } from "../../../lib/mode/paths.ts";
 import { artifactListsHome, canvasHome, isKey, jobsHome, keyOf, teamsHome } from "./paths.ts";
 import { Links } from "./links.ts";
 import { isAlive, liveEntries } from "./registry.ts";
-import { jobs } from "./jobs.ts";
+import { refreshJobs } from "./jobs.ts";
 
 export interface Removal {
   key: string;
@@ -119,7 +119,7 @@ export async function removeSession(key: string): Promise<Removal> {
     };
   }
 
-  const job = jobs().find((one) => one.key === key);
+  const job = (await refreshJobs()).find((one) => one.key === key);
   const dir = join(jobsHome(), key);
   let killed: boolean | undefined;
   if (job?.pid && isAlive(job.pid)) {

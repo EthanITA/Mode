@@ -1,7 +1,8 @@
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import type { SessionLane, SessionStatus } from "../../../shared/types/session.ts";
 import { readTextSafe } from "../../../lib/files.ts";
 import { configRoot } from "../../../lib/mode/paths.ts";
@@ -21,12 +22,14 @@ export interface JobEntry {
 }
 
 const LANES = ["review", "blocked", "working", "done"] as const;
-const CACHE_MS = 4000;
+// Longer than the sidecar's 5s poll, so one CLI run serves several polls.
+const CACHE_MS = 15_000;
 const CLI_TIMEOUT_MS = 10000;
 
-let cached: JobEntry[] | undefined;
-let cachedAt = 0;
-let cachedRoot = "";
+const run = promisify(execFile);
+
+let cache: { at: number; root: string; jobs: JobEntry[] } | undefined;
+let reading: Promise<JobEntry[]> | undefined;
 
 function text(value: unknown): string | undefined {
   return typeof value === "string" && !!value.trim() ? value.trim() : undefined;
@@ -65,10 +68,13 @@ export function claudeBinary(): string {
   return existsSync(installed) ? installed : "claude";
 }
 
-function fromCli(): JobEntry[] | undefined {
+async function fromCli(): Promise<JobEntry[] | undefined> {
   let raw: string;
   try {
-    raw = execFileSync(claudeBinary(), ["agents", "--json", "--all"], { encoding: "utf8", timeout: CLI_TIMEOUT_MS });
+    ({ stdout: raw } = await run(claudeBinary(), ["agents", "--json", "--all"], {
+      encoding: "utf8",
+      timeout: CLI_TIMEOUT_MS,
+    }));
   } catch {
     return undefined;
   }
@@ -161,12 +167,22 @@ function fromDisk(): JobEntry[] {
   return out;
 }
 
-export function jobs(): JobEntry[] {
-  const now = Date.now();
+export function refreshJobs(): Promise<JobEntry[]> {
   const root = configRoot();
-  if (cached && root === cachedRoot && now - cachedAt < CACHE_MS) return cached;
-  cached = fromCli() ?? fromDisk();
-  cachedAt = now;
-  cachedRoot = root;
-  return cached;
+  reading ??= fromCli()
+    .then((found) => {
+      const list = found ?? fromDisk();
+      cache = { at: Date.now(), root, jobs: list };
+      return list;
+    })
+    .finally(() => (reading = undefined));
+  return reading;
+}
+
+// The CLI is a node process per run, so a poll gets the last read at once and a stale one refreshes behind it.
+export function jobs(): JobEntry[] {
+  const root = configRoot();
+  if (cache?.root !== root) cache = { at: 0, root, jobs: fromDisk() };
+  if (Date.now() - cache.at >= CACHE_MS) void refreshJobs();
+  return cache.jobs;
 }
