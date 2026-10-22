@@ -7,6 +7,15 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.21.0
+
+### Changed
+
+- **comment-guard challenges a new comment once, before it lands, instead of refusing every one.** The first
+  Write or Edit that adds a short comment is denied with the test a comment has to pass, and sending the same
+  edit again unchanged in the same conversation lets it through, so a comment that earns its place still gets
+  written. A file header and a comment past two lines or 28 words are refused however often they are sent.
+
 ## 0.20.0
 
 ### Changed
