@@ -7,6 +7,16 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.19.0
+
+### Changed
+
+- **The `pair` director decides and judges the whole, and never runs the checks.** It is the second pair of
+  eyes, reading the diff and the code to validate the work as a whole, while every detail and its verification
+  stay the lead's, who sends it the real output of what was run. `director-guard` now also denies the director
+  any test, build, typecheck, lint or server command, read off each simple command so searching for one still
+  passes, and any background run. Package-manager queries such as `pnpm why` and `pnpm list` stay open to it.
+
 ## 0.18.1
 
 ### Removed
