@@ -7,6 +7,15 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.20.0
+
+### Changed
+
+- **comment-guard refuses a new comment before the edit lands.** It now runs before Write and Edit and denies
+  any change that adds a comment line to a code file, quoting the line and asking for the same edit again
+  without it, so the comment is never written in the first place. Comments the file already has can be carried
+  or moved, directives still pass, and the session is no longer asked to name the comments it cut.
+
 ## 0.19.0
 
 ### Changed
