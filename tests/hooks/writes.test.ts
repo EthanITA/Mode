@@ -27,7 +27,7 @@ function wrote(
 
 describe("comment-guard", () => {
   const lines = (...rows: string[]): string => rows.join("\n") + "\n";
-  const refused = (name: string, input: { [key: string]: string }, onDisk?: string): string => {
+  const sent = (name: string, input: { [key: string]: string }, onDisk?: string): string => {
     const path = join(tmp, name);
     if (onDisk) write(path, onDisk);
     const done = fire(
@@ -43,45 +43,44 @@ describe("comment-guard", () => {
     return denial(done) ?? "";
   };
 
-  test("refuses a Write or an Edit that adds a comment before it lands, quoting the comment", () => {
-    const header = refused("header.ts", { content: lines("// Utilities for orders.", "export const a = 1") });
-    assert.match(header, /'\/\/ Utilities for orders\.'/);
-    assert.match(header, /same edit again without those comment lines/);
-    assert.match(
-      refused(
-        "short.py",
-        { old_string: "a = 1\n", new_string: lines("a = 1", "# the cap the API enforces") },
-        "a = 1\n",
-      ),
-      /the cap the API enforces/,
-    );
-    assert.match(
-      refused("rewrite.ts", { content: lines("const a = 1", "// one note", "const b = 2") }, lines("const a = 1")),
-      /one note/,
-    );
+  test("refuses a file header and a comment past two lines or 28 words however often the edit is sent", () => {
+    const header = { content: lines("// Utilities for orders.", "export const a = 1") };
+    assert.match(sent("header.ts", header), /file-header comment/);
+    assert.match(sent("header.ts", header), /file-header comment/);
+    const long = { old_string: "", new_string: lines("// one", "// two", "// three", "const b = 2") };
+    assert.match(sent("long.ts", long), /3-line comment/);
+    const wordy = { old_string: "", new_string: lines(`// ${"word ".repeat(30).trim()}`, "const a = 1") };
+    assert.match(sent("wordy.ts", wordy), /30-word comment/);
   });
 
-  test("lets through directives, comment markers inside strings, prose files and comments the file already has", () => {
+  test("challenges a new comment once before it lands, and the same edit sent again goes through", () => {
+    const edit = { old_string: "a = 1\n", new_string: lines("# the cap the API enforces", "a = 1") };
+    assert.match(sent("short.py", edit, "a = 1\n"), /send the same edit again unchanged/);
+    assert.equal(sent("short.py", edit, "a = 1\n"), "");
+    assert.match(sent("created.ts", { content: lines("const a = 1", "// the cap the API enforces") }), /New comment/);
+  });
+
+  test("leaves directives, comment markers inside strings, prose files and comments the file already has alone", () => {
     const capped = lines("// the cap the API enforces", "const a = 1", "const b = 2");
     const quiet = [
-      refused("directives.ts", {
+      sent("directives.ts", {
         old_string: "",
         new_string: lines("// eslint-disable-next-line", "const a = 1", "// @ts-expect-error", "// biome-ignore lint"),
       }),
-      refused("strings.ts", {
+      sent("strings.ts", {
         old_string: "",
         new_string: lines('const url = "https://example.com/a // b"', "const c = '// not a comment'"),
       }),
-      refused("notes.md", { content: lines("// whatever", "// it is markdown") }),
-      refused(
+      sent("notes.md", { content: lines("// whatever", "// it is markdown", "// three") }),
+      sent(
         "carried.ts",
         {
           old_string: lines("// the cap the API enforces", "const a = 1"),
-          new_string: "// the cap the API enforces\n",
+          new_string: lines("// the cap the API enforces", "const a = 2"),
         },
         capped,
       ),
-      refused("moved.ts", { content: lines("const b = 2", "// the cap the API enforces", "const a = 1") }, capped),
+      sent("moved.ts", { content: lines("const b = 2", "// the cap the API enforces", "const a = 1") }, capped),
     ];
     assert.deepEqual(quiet, ["", "", "", "", ""]);
   });
