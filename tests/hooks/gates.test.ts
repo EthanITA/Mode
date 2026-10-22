@@ -334,9 +334,22 @@ describe("director-guard, which keeps the director's hands off the work", () => 
     );
   });
 
+  test("a test, build, typecheck or background run is denied, while searching for one and asking pnpm pass", () => {
+    for (const command of [
+      "pnpm test",
+      "cd /repo && FORCE_COLOR=1 npx tsc --noEmit",
+      "node --experimental-strip-types --test tests/x.test.ts",
+      "cargo build --release",
+    ])
+      assert.match(denial(acted("Bash", { command }, director)) ?? "", /running it is the lead's/, command);
+    assert.ok(denial(acted("Bash", { command: "git log -3", run_in_background: true }, director)));
+    assert.ok(silent(acted("Bash", { command: "rg -n 'pnpm test' . && pnpm why typescript" }, director)));
+  });
+
   test("another named agent and the lead itself are untouched", () => {
     assert.ok(silent(acted("Write", { file_path: "/repo/src/thing.ts" }, "a9b14b6d84d00b2ba")));
     assert.ok(silent(acted("TaskCreate", { subject: "[AI] build it" })));
+    assert.ok(silent(acted("Bash", { command: "pnpm test" })));
   });
 });
 
