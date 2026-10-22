@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import { describe, test } from "node:test";
-import { contextOf, env, fire, PLUGIN, scratch, silent, write } from "../support.ts";
+import { contextOf, denial, env, fire, PLUGIN, scratch, silent, write } from "../support.ts";
 
 const tmp = scratch("mode-writes-");
 const vars = env({ CLAUDE_PLUGIN_ROOT: PLUGIN, CLAUDE_CONFIG_DIR: join(tmp, "config") });
@@ -11,26 +11,15 @@ function wrote(
   guard: string,
   name: string,
   text: string,
-  {
-    tool = "Write",
-    file = text,
-    before = "",
-    isCreated = false,
-  }: { tool?: string; file?: string; before?: string; isCreated?: boolean } = {},
+  { tool = "Write", file = text }: { tool?: string; file?: string } = {},
 ): string {
   const path = write(join(tmp, name), file);
   const input =
-    tool === "Write" ? { file_path: path, content: text } : { file_path: path, old_string: before, new_string: text };
+    tool === "Write" ? { file_path: path, content: text } : { file_path: path, old_string: "", new_string: text };
   return contextOf(
     fire(
       `guards/${guard}`,
-      {
-        session_id: "w0000001",
-        hook_event_name: "PostToolUse",
-        tool_name: tool,
-        tool_input: input,
-        tool_response: { type: isCreated ? "create" : "update" },
-      },
+      { session_id: "w0000001", hook_event_name: "PostToolUse", tool_name: tool, tool_input: input },
       vars,
     ),
   );
@@ -38,61 +27,61 @@ function wrote(
 
 describe("comment-guard", () => {
   const lines = (...rows: string[]): string => rows.join("\n") + "\n";
+  const refused = (name: string, input: { [key: string]: string }, onDisk?: string): string => {
+    const path = join(tmp, name);
+    if (onDisk) write(path, onDisk);
+    const done = fire(
+      "guards/comment-guard",
+      {
+        session_id: "w0000001",
+        hook_event_name: "PreToolUse",
+        tool_name: "content" in input ? "Write" : "Edit",
+        tool_input: { file_path: path, ...input },
+      },
+      vars,
+    );
+    return denial(done) ?? "";
+  };
 
-  test("flags a file header, a comment past two lines or 28 words, and any comment an edit or a new file adds", () => {
+  test("refuses a Write or an Edit that adds a comment before it lands, quoting the comment", () => {
+    const header = refused("header.ts", { content: lines("// Utilities for orders.", "export const a = 1") });
+    assert.match(header, /'\/\/ Utilities for orders\.'/);
+    assert.match(header, /same edit again without those comment lines/);
     assert.match(
-      wrote("comment-guard", "header.ts", lines("// Utilities for orders.", "export const a = 1")),
-      /file-header comment/,
+      refused(
+        "short.py",
+        { old_string: "a = 1\n", new_string: lines("a = 1", "# the cap the API enforces") },
+        "a = 1\n",
+      ),
+      /the cap the API enforces/,
     );
     assert.match(
-      wrote("comment-guard", "long.ts", lines("const a = 1", "// one", "// two", "// three", "const b = 2"), {
-        tool: "Edit",
-      }),
-      /3-line comment/,
-    );
-    const wordy = `// ${"word ".repeat(30).trim()}`;
-    assert.match(wrote("comment-guard", "wordy.ts", lines("const a = 1", wordy), { tool: "Edit" }), /30-word comment/);
-    assert.match(
-      wrote("comment-guard", "short.py", lines("a = 1", "# the cap the API enforces"), { tool: "Edit" }),
-      /new comment/,
-    );
-    assert.match(
-      wrote("comment-guard", "created.ts", lines("const a = 1", "// the cap the API enforces"), { isCreated: true }),
-      /new comment/,
+      refused("rewrite.ts", { content: lines("const a = 1", "// one note", "const b = 2") }, lines("const a = 1")),
+      /one note/,
     );
   });
 
-  test("leaves directives, comment markers inside strings, prose files, carried comments and a Write's notes alone", () => {
+  test("lets through directives, comment markers inside strings, prose files and comments the file already has", () => {
+    const capped = lines("// the cap the API enforces", "const a = 1", "const b = 2");
     const quiet = [
-      wrote(
-        "comment-guard",
-        "directives.ts",
-        lines(
-          "// eslint-disable-next-line",
-          "const a = 1",
-          "// @ts-expect-error",
-          "const b = 2",
-          "// biome-ignore lint",
-          "const c = 3",
-        ),
-        { tool: "Edit" },
-      ),
-      wrote(
-        "comment-guard",
-        "strings.ts",
-        lines('const url = "https://example.com/a // b"', "const c = '// not a comment'"),
-        { tool: "Edit" },
-      ),
-      wrote("comment-guard", "notes.md", lines("// whatever", "// it is markdown", "// three")),
-      wrote("comment-guard", "carried.ts", lines("// the cap the API enforces", "const a = 2"), {
-        before: lines("// the cap the API enforces", "const a = 1"),
-        tool: "Edit",
+      refused("directives.ts", {
+        old_string: "",
+        new_string: lines("// eslint-disable-next-line", "const a = 1", "// @ts-expect-error", "// biome-ignore lint"),
       }),
-      wrote(
-        "comment-guard",
-        "whole.ts",
-        lines("const a = 1", "// one note", "const b = 2", "// two notes", "const c = 3", "// three notes"),
+      refused("strings.ts", {
+        old_string: "",
+        new_string: lines('const url = "https://example.com/a // b"', "const c = '// not a comment'"),
+      }),
+      refused("notes.md", { content: lines("// whatever", "// it is markdown") }),
+      refused(
+        "carried.ts",
+        {
+          old_string: lines("// the cap the API enforces", "const a = 1"),
+          new_string: "// the cap the API enforces\n",
+        },
+        capped,
       ),
+      refused("moved.ts", { content: lines("const b = 2", "// the cap the API enforces", "const a = 1") }, capped),
     ];
     assert.deepEqual(quiet, ["", "", "", "", ""]);
   });
@@ -231,13 +220,13 @@ describe("memory-guard, on a durable rule file", () => {
 });
 
 test("the write guards answer as PostToolUse context, so the note stays visible in the transcript", () => {
-  const path = write(join(tmp, "shape.ts"), "// Header.\nexport const a = 1\n");
+  const path = write(join(tmp, "shape.ts"), "function load(): string | null {}\n");
   const done = fire(
-    "guards/comment-guard",
+    "guards/null-guard",
     {
       hook_event_name: "PostToolUse",
       tool_name: "Write",
-      tool_input: { file_path: path, content: "// Header.\nexport const a = 1\n" },
+      tool_input: { file_path: path, content: "function load(): string | null {}\n" },
     },
     vars,
   );
