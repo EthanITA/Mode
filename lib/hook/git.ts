@@ -1,11 +1,7 @@
 import { homedir } from "node:os";
-import { shellWords } from "../shell.ts";
+import { commands } from "../shell.ts";
 
 export type GitCall = { repo: string; sub: string; rest: string[] };
-
-const SEGMENTS = /\n|;|&&|\|\||\|/;
-const ASSIGNMENT = /^[\p{L}\p{N}_]+=/u;
-const WRAPPERS = new Set(["sudo", "command", "nohup", "time", "exec", "env"]);
 
 const expandHome = (path: string): string => (path === "~" || path.startsWith("~/") ? homedir() + path.slice(1) : path);
 
@@ -19,13 +15,7 @@ export function joinPath(base: string, part: string): string {
 export function gitCalls(command: string, base: string): GitCall[] {
   let where = base;
   const calls: GitCall[] = [];
-  for (const segment of command.split(SEGMENTS)) {
-    let tokens = shellWords(segment);
-    if (!tokens) continue;
-    while (tokens.length && (WRAPPERS.has(tokens[0] ?? "") || ASSIGNMENT.test(tokens[0] ?? "")))
-      tokens = tokens.slice(1);
-    const [head = "", ...args] = tokens;
-    if (!head) continue;
+  for (const [head = "", ...args] of commands(command)) {
     if (head === "cd" && args.length) {
       where = joinPath(where, expandHome(args[0] ?? ""));
       continue;

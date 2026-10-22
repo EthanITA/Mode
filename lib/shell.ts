@@ -1,3 +1,14 @@
+const SEGMENTS = /\n|;|&&|\|\||\|/;
+const ASSIGNMENT = /^[\p{L}\p{N}_]+=/u;
+const WRAPPERS = new Set(["sudo", "command", "nohup", "time", "exec", "env"]);
+
+export const commands = (line: string): string[][] =>
+  line.split(SEGMENTS).flatMap((segment) => {
+    let words = shellWords(segment) ?? [];
+    while (words.length && (WRAPPERS.has(words[0] ?? "") || ASSIGNMENT.test(words[0] ?? ""))) words = words.slice(1);
+    return words.length ? [words] : [];
+  });
+
 export function shellWords(line: string): string[] | undefined {
   const words: string[] = [];
   let word = "";
