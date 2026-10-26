@@ -22,6 +22,7 @@ const seeded = (text: string): Payload => {
 
 // Inject or refresh the layer in place, carrying whatever threads the page already holds.
 export const install = (path: string, sidecar = ""): string => {
+  if (path.endsWith(".ipynb")) return "not needed";
   const text = readPage(path);
   if (path.endsWith(".md")) {
     if (dirname(path) !== artifactsDir() || MD_SEED.test(text)) return "already present";

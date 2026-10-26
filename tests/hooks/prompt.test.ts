@@ -411,7 +411,7 @@ describe("the PostToolUse hooks", () => {
     assert.equal(readFileSync(join(PLUGIN, "skills", "mode", "MANUAL.md"), "utf8"), real);
   });
 
-  test("observe records a .md the conversation wrote and a page in the artifacts folder by its slug, and nothing else", () => {
+  test("observe records a .md the conversation wrote and a page or a notebook in the artifacts folder by its slug, and nothing else", () => {
     const doc = write(join(tmp, "notes", "plan.md"), "# Plan\n");
     const code = write(join(tmp, "notes", "plan.ts"), "export const a = 1\n");
     const page = write(join(config, "sidecar", "artifacts", "fresh.html"), "<!doctype html>\n<title>Fresh</title>\n");
@@ -429,9 +429,21 @@ describe("the PostToolUse hooks", () => {
         },
         vars,
       );
+    const book = write(join(config, "sidecar", "artifacts", "book.ipynb"), '{"cells":[]}\n');
     assert.equal(wrote(doc).status, 0);
     for (const file of [code, page, stray]) wrote(file);
-    assert.deepEqual(readFileSync(listed, "utf8").trim().split("\n"), [doc, "fresh"]);
+    fire(
+      "observe",
+      {
+        session_id: "d0c5e55a-hook",
+        hook_event_name: "PostToolUse",
+        tool_name: "NotebookEdit",
+        cwd: tmp,
+        tool_input: { notebook_path: book },
+      },
+      vars,
+    );
+    assert.deepEqual(readFileSync(listed, "utf8").trim().split("\n"), [doc, "fresh", "book"]);
   });
 
   test("observe records the step a call satisfied, and a failing suite as test-fail", () => {

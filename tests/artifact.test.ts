@@ -117,6 +117,26 @@ describe("new and kit", () => {
   });
 });
 
+describe("a notebook", () => {
+  test("lists under its first heading over its .md brief, stamps its title into its metadata and needs no layer", () => {
+    const cells = [{ cell_type: "markdown", id: "a", metadata: {}, source: ["# Churn by cohort\n"] }];
+    const path = write(join(arts, "churn.ipynb"), JSON.stringify({ cells, metadata: {}, nbformat: 4, nbformat_minor: 5 }));
+    write(join(arts, "churn.md"), "# The brief\n");
+    const mine = env({ ...vars, CLAUDE_CODE_SESSION_ID: "0b0b0b0b-cli" });
+    assert.ok(artifact("list", "--tsv").stdout.includes(`churn\t${path}`));
+    assert.match(artifact("list").stdout, /churn\s+Churn by cohort\s+local only/);
+
+    assert.equal(run(ARTIFACT, ["stamp", "churn", "--title", "Churn"], { env: mine }).status, 0);
+    const stamped = JSON.parse(read(path)) as { cells: unknown[]; metadata: { title?: string } };
+    assert.deepEqual([stamped.metadata.title, stamped.cells.length], ["Churn", 1]);
+    assert.match(run(ARTIFACT, ["list", "--session", "--tsv"], { env: mine }).stdout, /^churn\t/);
+
+    const before = read(path);
+    assert.match(artifact("review", "churn").stdout, /not needed/);
+    assert.equal(read(path), before);
+  });
+});
+
 describe("a .md outside the folder", () => {
   test("is recorded by its path under a document slug, listed by the conversation and resolved from any other", () => {
     const doc = write(

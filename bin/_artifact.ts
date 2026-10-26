@@ -145,7 +145,7 @@ const VERBS: Record<string, Spec> = {
     positionals: 1,
     run: ({ positionals: [slug = ""] }) => {
       const path = resolve(slug);
-      if (path.endsWith(".md"))
+      if (path.endsWith(".md") || path.endsWith(".ipynb"))
         throw new Refusal(`${basename(path)} is rendered by the sidecar, so it has no page to carry the kit`, 2);
       print(`kit ${installKit(path)} in ${basename(path)}`);
     },

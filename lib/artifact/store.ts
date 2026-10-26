@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import { basename, dirname, extname, join, resolve as resolvePath } from "node:path";
 import { isDir, isFile, readTextSafe } from "../files.ts";
+import { isRecord, type Payload } from "../hook/io.ts";
 import { configRoot, modeHome } from "../mode/paths.ts";
 import { Refusal } from "../mode/refusal.ts";
 import { head, lines, lstrip, pad, strip, words } from "../text.ts";
@@ -86,15 +87,20 @@ function recordedDocuments(): Map<string, string> {
   return documents(lists.flatMap((name) => lines(readTextSafe(join(dir, name)) ?? "").map(strip)));
 }
 
+// The sidecar's own precedence on a slug clash: a page, then a notebook, and a .md beside either is its brief.
+const ORDER = [".html", ".ipynb", ".md"];
+
 export function artifactFiles(): string[] {
   const dir = artifactsDir();
   if (!isDir(dir)) return [];
-  const names = readdirSync(dir);
-  const pages = names.filter((name) => name.endsWith(".html") && !name.endsWith(".src.html"));
-  const taken = new Set(pages.map((name) => name.slice(0, -5)));
-  // A .md beside a same-named page is that page's brief, never a second artifact under one slug.
-  const notes = names.filter((name) => name.endsWith(".md") && !taken.has(name.slice(0, -3)));
-  return [...pages, ...notes].sort().map((name) => join(dir, name));
+  const best = new Map<string, string>();
+  for (const name of readdirSync(dir)) {
+    const rank = ORDER.indexOf(extname(name));
+    if (rank < 0 || name.endsWith(".src.html")) continue;
+    const held = best.get(stem(name));
+    if (!held || rank < ORDER.indexOf(extname(held))) best.set(stem(name), name);
+  }
+  return [...best.values()].sort().map((name) => join(dir, name));
 }
 
 export function entryOf(path: string): string {
@@ -137,7 +143,29 @@ function unescapeHtml(text: string): string {
   });
 }
 
+function notebookOf(path: string): Payload {
+  try {
+    const raw: unknown = JSON.parse(readPage(path));
+    return isRecord(raw) ? raw : {};
+  } catch {
+    return {};
+  }
+}
+
+// A notebook is JSON with no room for a comment, so its title is the one Jupyter keeps, else its first heading.
+function notebookTitle(path: string): string {
+  const notebook = notebookOf(path);
+  const own = isRecord(notebook.metadata) ? notebook.metadata.title : undefined;
+  if (typeof own === "string" && own) return own;
+  const cells = Array.isArray(notebook.cells) ? notebook.cells : [];
+  const first = cells.find((cell) => isRecord(cell) && cell.cell_type === "markdown");
+  const source = isRecord(first) ? first.source : undefined;
+  const text = Array.isArray(source) ? source.join("") : typeof source === "string" ? source : "";
+  return H1.exec(text)?.[1] ?? stem(path);
+}
+
 export function readMeta(path: string): Meta {
+  if (path.endsWith(".ipynb")) return { path, slug: stem(path), target: "s", title: notebookTitle(path) };
   const top = head(readPage(path), 4000);
   const meta: Meta = { slug: stem(path), path };
   for (const line of lines(BLOCK.exec(top)?.[1] ?? "")) {
@@ -162,7 +190,7 @@ export function readMeta(path: string): Meta {
 export function resolve(given: string, sid?: string): string {
   if (given.includes("/") && given.endsWith(".md") && isFile(expandHome(given))) return resolvePath(expandHome(given));
   const files = artifactFiles();
-  const token = given.replace(/\.(html|md)$/, "");
+  const token = given.replace(/\.(html|ipynb|md)$/, "");
   const document = recordedDocuments().get(token);
   if (document) return document;
   if (!files.length) throw new Refusal(`no artifacts in ${artifactsDir()}`);
@@ -296,6 +324,7 @@ export function stamp(
   path: string,
   fields: Partial<Record<"url" | "ds" | "target" | "title" | "updated", string>>,
 ): void {
+  if (path.endsWith(".ipynb")) return stampNotebook(path, fields.title);
   let text = readPage(path);
   const meta = readMeta(path);
   for (const field of ["url", "ds", "target", "title"] as const) if (fields[field]) meta[field] = fields[field] ?? "";
@@ -320,6 +349,17 @@ export function stamp(
     text = `${text.slice(0, end)}\n${block}${text.slice(end)}`;
   }
   writeFileSync(path, text);
+  record(entryOf(path));
+}
+
+// Jupyter's own indent and trailing newline, so a stamp leaves a diff of the one key it set.
+function stampNotebook(path: string, title?: string): void {
+  if (title) {
+    const notebook = notebookOf(path);
+    if (!Array.isArray(notebook.cells)) throw new Refusal(`${basename(path)} is not a notebook the sidecar can read`);
+    const metadata = isRecord(notebook.metadata) ? notebook.metadata : {};
+    writeFileSync(path, `${JSON.stringify({ ...notebook, metadata: { ...metadata, title } }, undefined, 1)}\n`);
+  }
   record(entryOf(path));
 }
 

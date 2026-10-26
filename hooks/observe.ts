@@ -13,7 +13,10 @@ const UNLOADED =
 const COMMIT = /\bgit\s+(?:-[Cc]\s+\S+\s+|--?[\w-]+(?:=\S+)?\s+)*(commit|cherry-pick)\b/;
 const NOT_COMMITTED = /nothing (?:added )?to commit|no changes added to commit/;
 // Only at the top of the folder: a .md one level down is a page's build brief, not an artifact.
-const ARTIFACT_MD = /\/artifacts\/[^/]+\.md$/;
+const ARTIFACT_DOC = /\/artifacts\/[^/]+\.(ipynb|md)$/;
+
+// NotebookEdit names its file notebook_path where Write and Edit say file_path.
+const pathOf = (args: Payload): string => str(args.file_path) || str(args.notebook_path);
 
 // Each step stands alone, the way it did when each was its own process: one failing never stops the next.
 async function quietly(step: () => unknown): Promise<void> {
@@ -31,8 +34,8 @@ function observed(data: Payload): string {
   if (tool === "Agent") return failed ? "" : "agent";
   if (tool === "Artifact") return failed ? "" : "artifact";
   if (["Write", "Edit", "NotebookEdit"].includes(tool)) {
-    const path = str(args.file_path);
-    const made = path.includes("/artifacts/") && (path.endsWith(".html") || ARTIFACT_MD.test(path));
+    const path = pathOf(args);
+    const made = path.includes("/artifacts/") && (path.endsWith(".html") || ARTIFACT_DOC.test(path));
     return !failed && made ? "artifact" : "";
   }
   if (tool !== "Bash") return "";
@@ -49,9 +52,9 @@ function observed(data: Payload): string {
 
 // lib/artifact is the one writer of a conversation's list, as lib/mode is of its slots.
 function recordArtifact(data: Payload): void {
-  const path = str(record(data.tool_input).file_path);
+  const path = pathOf(record(data.tool_input));
   const session = str(data.session_id);
-  if (data.hook_event_name !== "PostToolUse" || !["Write", "Edit"].includes(str(data.tool_name))) return;
+  if (data.hook_event_name !== "PostToolUse" || !["Write", "Edit", "NotebookEdit"].includes(str(data.tool_name))) return;
   if (!path || !session) return;
   const entry = Artifacts.entryOf(path);
   if (path.endsWith(".md") || entry !== path) Artifacts.record(entry, session);
