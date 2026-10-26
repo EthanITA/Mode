@@ -54,7 +54,8 @@ function observed(data: Payload): string {
 function recordArtifact(data: Payload): void {
   const path = pathOf(record(data.tool_input));
   const session = str(data.session_id);
-  if (data.hook_event_name !== "PostToolUse" || !["Write", "Edit", "NotebookEdit"].includes(str(data.tool_name))) return;
+  if (data.hook_event_name !== "PostToolUse" || !["Write", "Edit", "NotebookEdit"].includes(str(data.tool_name)))
+    return;
   if (!path || !session) return;
   const entry = Artifacts.entryOf(path);
   if (path.endsWith(".md") || entry !== path) Artifacts.record(entry, session);

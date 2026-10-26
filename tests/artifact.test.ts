@@ -120,7 +120,10 @@ describe("new and kit", () => {
 describe("a notebook", () => {
   test("lists under its first heading over its .md brief, stamps its title into its metadata and needs no layer", () => {
     const cells = [{ cell_type: "markdown", id: "a", metadata: {}, source: ["# Churn by cohort\n"] }];
-    const path = write(join(arts, "churn.ipynb"), JSON.stringify({ cells, metadata: {}, nbformat: 4, nbformat_minor: 5 }));
+    const path = write(
+      join(arts, "churn.ipynb"),
+      JSON.stringify({ cells, metadata: {}, nbformat: 4, nbformat_minor: 5 }),
+    );
     write(join(arts, "churn.md"), "# The brief\n");
     const mine = env({ ...vars, CLAUDE_CODE_SESSION_ID: "0b0b0b0b-cli" });
     assert.ok(artifact("list", "--tsv").stdout.includes(`churn\t${path}`));
