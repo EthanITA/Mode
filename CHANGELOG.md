@@ -7,6 +7,16 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.22.0
+
+### Added
+
+- **A Jupyter notebook is an artifact like a page or a `.md`.** A `<slug>.ipynb` in the artifacts folder lists,
+  resolves and goes on the conversation's list when Write, Edit or NotebookEdit makes it, so the sidecar shows it
+  among the conversation's Artifacts. On a slug clash a page wins, then the notebook, and a `.md` beside either is
+  its brief. `artifact stamp --title` sets the notebook's own `metadata.title` rather than a comment its JSON
+  cannot hold, and `artifact review` leaves it alone, since the sidecar keeps a notebook's threads in its store.
+
 ## 0.21.0
 
 ### Changed
