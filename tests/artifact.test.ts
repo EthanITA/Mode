@@ -52,6 +52,38 @@ describe("stamp and list", () => {
   });
 });
 
+describe("a task", () => {
+  const block = (path: string): string => /<!-- artifact\n([\s\S]*?)\n-->/.exec(read(path))?.[1] ?? "";
+
+  test("is a .md whose stamp holds a state, unassigned while it has no project and assigned once it has one", () => {
+    const path = write(join(arts, "board.md"), "# Task board\n\n## Problem\n");
+    assert.equal(artifact("stamp", "board", "--state", "unassigned").status, 0);
+    assert.match(block(path), /state: {3}unassigned/);
+    assert.doesNotMatch(block(path), /project:/);
+    assert.equal(artifact("stamp", "board", "--project", "cela", "--lead", "[Cela] TL board editor").status, 0);
+    assert.match(block(path), /project: cela\nstate: {3}assigned\nlead: {4}\[Cela\] TL board editor/);
+    assert.equal(artifact("stamp", "board", "--state", "running").status, 0);
+    assert.match(block(path), /state: {3}running/);
+    assert.equal(artifact("stamp", "board", "--state", "unassigned").status, 0);
+    assert.match(block(path), /state: {3}unassigned/);
+    assert.doesNotMatch(block(path), /project:/);
+  });
+
+  test("refuses a state outside the seven, a state its missing project contradicts, and a page", () => {
+    write(join(arts, "loose.md"), "# Loose\n");
+    for (const args of [
+      ["--state", "parked"],
+      ["--state", "running"],
+      ["--project", "cela", "--state", "unassigned"],
+    ]) {
+      const refused = artifact("stamp", "loose", ...args);
+      assert.equal(refused.status, 2, args.join(" "));
+    }
+    write(join(arts, "page.html"), "<!doctype html>\n<title>Page</title>\n");
+    assert.equal(artifact("stamp", "page", "--project", "cela").status, 2);
+  });
+});
+
 describe("new and kit", () => {
   const packs = join(config, "mode", "design-systems");
   write(

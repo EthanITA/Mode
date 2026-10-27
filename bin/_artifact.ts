@@ -151,9 +151,18 @@ const VERBS: Record<string, Spec> = {
     },
   },
   stamp: {
-    help: "write or update the metadata block",
+    help: "write or update the metadata block; --project, --state and --lead make a .md a task",
     positionals: 1,
-    options: { url: "value", ds: "value", target: "value", title: "value", updated: "value" },
+    options: {
+      url: "value",
+      ds: "value",
+      target: "value",
+      title: "value",
+      updated: "value",
+      project: "value",
+      state: "value",
+      lead: "value",
+    },
     run: ({ positionals: [slug = ""], values }) => {
       const path = resolve(slug);
       stamp(path, values);

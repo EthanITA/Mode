@@ -29,8 +29,14 @@ const FRONTMATTER = /^---\n[\s\S]*?\n---\n/;
 const KIT = /<!-- cx:start -->[\s\S]*?<!-- cx:end -->\n?/;
 const FONT_LINK = /<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com\/[^"]+">/;
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
-const FIELDS = ["slug", "title", "url", "target", "ds", "updated"];
+const FIELDS = ["slug", "title", "url", "target", "ds", "updated", "project", "state", "lead"];
+const TASK_FIELDS = ["project", "state", "lead"] as const;
+export const TASK_STATES = ["unassigned", "assigned", "assessed", "running", "blocked", "waiting", "done"];
 export const TEMPLATES = ["interactive", "showpiece"];
+
+export type StampFields = Partial<
+  Record<"url" | "ds" | "target" | "title" | "updated" | (typeof TASK_FIELDS)[number], string>
+>;
 
 const stem = (path: string): string => basename(path, extname(path));
 
@@ -320,13 +326,27 @@ const localDate = (ms: number): string => {
   return `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, "0")}-${String(at.getDate()).padStart(2, "0")}`;
 };
 
-export function stamp(
-  path: string,
-  fields: Partial<Record<"url" | "ds" | "target" | "title" | "updated", string>>,
-): void {
+function stampTask(path: string, meta: Meta, fields: StampFields): void {
+  if (!path.endsWith(".md")) throw new Refusal(`${basename(path)} is not a .md, and only a .md is a task`, 2);
+  if (fields.state && !TASK_STATES.includes(fields.state))
+    throw new Refusal(`'${fields.state}' is not a task state. One of: ${TASK_STATES.join(", ")}`, 2);
+  const unassigning = fields.state === "unassigned";
+  if (unassigning && fields.project)
+    throw new Refusal("a task on a project is not unassigned. Drop --project, or --state", 2);
+  const project = unassigning ? "" : (fields.project ?? meta.project ?? "");
+  const state = fields.state ?? meta.state ?? "";
+  if (!project && state && state !== "unassigned")
+    throw new Refusal(`a task with no project is unassigned, so it cannot be ${state}. Give it --project first`, 2);
+  meta.project = project;
+  meta.state = !project ? "unassigned" : state && state !== "unassigned" ? state : "assigned";
+  meta.lead = fields.lead ?? meta.lead ?? "";
+}
+
+export function stamp(path: string, fields: StampFields): void {
+  const meta = readMeta(path);
+  if (TASK_FIELDS.some((field) => field in fields)) stampTask(path, meta, fields);
   if (path.endsWith(".ipynb")) return stampNotebook(path, fields.title);
   let text = readPage(path);
-  const meta = readMeta(path);
   for (const field of ["url", "ds", "target", "title"] as const) if (fields[field]) meta[field] = fields[field] ?? "";
   meta.slug = stem(path);
   // Defaults to the file's own mtime, so the date cannot drift from the build.
