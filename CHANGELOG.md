@@ -7,6 +7,15 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.25.1
+
+### Fixed
+
+- **The `artifact` ground rule lands on an html ask only.** Its `when:` fired on the word artifact, so every brief, plan
+  and task paid for 52 lines about light and dark and CDN pins it will never use. It now waits for a page, report,
+  explainer, dossier, showpiece, mockup or a `.html` by name, and a report, a showpiece or a `.html` that it used to
+  miss now loads it. A brief that names none of those loads 92 lines and nothing else.
+
 ## 0.25.0
 
 ### Changed

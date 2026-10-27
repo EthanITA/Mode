@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 import { HOOK_CAP } from "../lib/mode/constants.ts";
+import { rulesDue } from "../lib/mode/rules.ts";
 import { choose, setSlot } from "../lib/mode/slots.ts";
 import { PLUGIN, scratch } from "./support.ts";
 
@@ -233,6 +234,36 @@ describe("ground rules", () => {
 
   test("prose outranks every mode, style and skill", () => {
     assert.ok(rules.find(({ stem }) => stem === "prose")?.meta.outranks);
+  });
+
+  test("artifact lands on an html ask and never on a brief, plan, task, .md or the bare word", () => {
+    const html = [
+      "build me a report on the incident",
+      "make an explainer for the bus",
+      "a dossier on the migration",
+      "a showpiece for the launch",
+      "a mockup of the settings screen",
+      "write it up as a page",
+      "save it as incident.html",
+    ];
+    const notHtml = [
+      "write a brief for the migration",
+      "a one-pager plan",
+      "make the task an artifact",
+      "stamp the .md artifact",
+      "create an artifact",
+      "visualize the flow",
+    ];
+    let count = 0;
+    const lands = (message: string): boolean => {
+      const session = `s${String(++count).padStart(7, "0")}`;
+      return !!rulesDue({ session, message })?.includes("### It is operated, not read");
+    };
+    assert.deepEqual(
+      html.filter((message) => !lands(message)),
+      [],
+    );
+    assert.deepEqual(notHtml.filter(lands), []);
   });
 });
 
