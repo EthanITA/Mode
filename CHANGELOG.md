@@ -7,6 +7,15 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.26.0
+
+### Changed
+
+- **The observe hook no longer lists what a conversation writes.** A `.md` edited anywhere, a page or a notebook in
+  the artifacts folder used to go on the conversation's list on Write or Edit, which listed rule files, READMEs and
+  changelogs nobody pointed at. The sidecar now lists what the reply that ends a turn names, and `artifact stamp`
+  and `touch` still record a page. The hook keeps recording pipeline steps and the board line.
+
 ## 0.25.2
 
 ### Fixed
