@@ -69,6 +69,18 @@ describe("a task", () => {
     assert.doesNotMatch(block(path), /project:/);
   });
 
+  test("stamps by its exact slug while the conversation has its brief and plan recorded", () => {
+    const mine = env({ ...vars, CLAUDE_CODE_SESSION_ID: "7a5c0b0a-cli" });
+    for (const name of ["deck-brief", "deck-plan"]) {
+      write(join(arts, `${name}.md`), `# ${name}\n`);
+      assert.equal(run(ARTIFACT, ["stamp", name], { env: mine }).status, 0);
+    }
+    const path = write(join(arts, "deck.md"), "# Deck\n");
+    const stamped = run(ARTIFACT, ["stamp", "deck", "--project", "cela"], { env: mine });
+    assert.equal(stamped.status, 0, stamped.stderr);
+    assert.match(block(path), /state: {3}assigned/);
+  });
+
   test("refuses a state outside the seven, a state its missing project contradicts, and a page", () => {
     write(join(arts, "loose.md"), "# Loose\n");
     for (const args of [

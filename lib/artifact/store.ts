@@ -193,6 +193,7 @@ export function readMeta(path: string): Meta {
   return meta;
 }
 
+// A stem is unique in the folder, so an exact one wins over a prefix the conversation recorded, as a task over its brief.
 export function resolve(given: string, sid?: string): string {
   if (given.includes("/") && given.endsWith(".md") && isFile(expandHome(given))) return resolvePath(expandHome(given));
   const files = artifactFiles();
@@ -200,18 +201,16 @@ export function resolve(given: string, sid?: string): string {
   const document = recordedDocuments().get(token);
   if (document) return document;
   if (!files.length) throw new Refusal(`no artifacts in ${artifactsDir()}`);
+  const exact = files.find((path) => stem(path) === token);
+  if (exact) return exact;
   const recorded = new Set(sessionEntries(sid));
   const pools = recorded.size ? [files.filter((path) => recorded.has(stem(path))), files] : [files];
   for (const pool of pools) {
-    for (const [stage, pick] of [
-      ["exact", (path: string) => stem(path) === token],
-      ["prefix", (path: string) => stem(path).startsWith(token)],
-      ["substring", (path: string) => stem(path).includes(token)],
-    ] as const) {
+    for (const pick of [(path: string) => stem(path).startsWith(token), (path: string) => stem(path).includes(token)]) {
       const hits = pool.filter(pick);
       if (hits.length === 1) return hits[0] ?? "";
       // Exit 2, not 1: the shell wrapper shows this one and stays quiet about a plain miss.
-      if (hits.length > 1 && stage !== "exact")
+      if (hits.length > 1)
         throw new Refusal(`'${token}' matches ${hits.length} artifacts:\n  ${hits.map(stem).join("\n  ")}`, 2);
     }
   }
