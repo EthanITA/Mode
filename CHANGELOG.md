@@ -7,6 +7,14 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.23.0
+
+### Changed
+
+- **A plan or brief draws its structure instead of describing it.** `information-design.md` says a plan is first an
+  alignment check, so its diagram replaces the paragraphs about roles, structure and flows, and the form table
+  gains an org chart row: a mermaid flowchart with one node per role and one edge per relationship.
+
 ## 0.22.0
 
 ### Added
