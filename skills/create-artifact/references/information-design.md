@@ -8,7 +8,7 @@ A generated document narrates everything in prose. A human author shows first an
 | ----------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Process, flow, lifecycle, handshake             | Flowchart or sequence diagram | Mermaid, native in published artifacts; many diagrams or local viewing means pre-rendered SVG per SKILL §7 |
 | System structure, topology, boundaries          | Block diagram                 | Mermaid, or hand SVG with the `artifact-diagramming` skill                                                 |
-| Roles, ownership, who reports or talks to whom  | Org chart                     | Mermaid flowchart, one node per role carrying its tenure, model and duties, one edge per relationship      |
+| Roles, ownership, who reports or talks to whom  | Org chart                     | Mermaid flowchart, one node per role carrying what it owns, one edge per relationship                      |
 | Few items compared on few axes                  | Table                         | The pack's `.table-wrap` classes                                                                           |
 | Trend, distribution, share, magnitude over time | Chart                         | Inline SVG per the `dataviz` skill, loaded before the first chart line                                     |
 | Formula, relationship, cost model               | Typeset math                  | KaTeX pre-rendered at build time (its CDN is CSP-blocked, SKILL §7); never ASCII math in a sentence        |
