@@ -7,6 +7,17 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.25.0
+
+### Changed
+
+- **A brief is a one-screen `.md` with its diagram first.** create-artifact's SKILL.md is now the profile table and
+  three rules. A plan, brief, task, digest or one-pager reads `references/brief.md` alone and comes out as a `.md` in
+  the artifacts folder, its mermaid diagram first, stamped and given its comment layer, so it loads 92 lines where it
+  loaded 1,118. The old html brief, a stat row over panels, is gone. The report, explainer, dossier, showpiece and
+  mockup profiles read `references/html.md`, which loads the other references at the step that needs them, and the
+  `artifact` ground rule now says a plan, brief or task is not an html page.
+
 ## 0.24.1
 
 ### Fixed
