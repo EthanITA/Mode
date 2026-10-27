@@ -7,6 +7,15 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.24.0
+
+### Added
+
+- **A `.md` can be a task.** `artifact stamp` takes `--project`, `--state` and `--lead` and writes them into the
+  stamp block, which the sidecar reads to list the `.md` on its task board. The state is one of unassigned,
+  assigned, assessed, running, blocked, waiting and done, a task with no project is always unassigned, giving
+  an unassigned task a project assigns it, and `--state unassigned` clears the project.
+
 ## 0.23.0
 
 ### Changed
