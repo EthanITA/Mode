@@ -14,5 +14,5 @@ The sidecar is its own plugin in `cela-sage/sidecar` and reaches this repo only 
 
 - `bin/mode --session <key> forget`, which the sidecar runs when a conversation is removed, found through `~/.claude/mode/plugin-root`.
 - `skills/create-artifact/assets/review-layer.html`, whose `rv-seed` block and `/api/sessions/message` post the sidecar reads and answers, and the trailing `<!-- rv:seed -->` block `artifact review` adds to a `.md`.
-- `~/.claude/artifacts/session-<key>`, written by `artifact stamp`, `touch` and the observe hook, which the sidecar watches to list and announce a conversation's pages.
+- `~/.claude/artifacts/session-<key>`, written by `artifact stamp` and `touch`, which the sidecar watches to list and announce a conversation's pages.
 - The stamp block's `project`, `state` and `lead` lines, which make a `.md` a task on the sidecar's board. `TASK_STATES` in `lib/artifact/store.ts` and the sidecar's `shared/types/task.ts` list the same seven states.

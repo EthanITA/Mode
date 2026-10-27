@@ -411,39 +411,25 @@ describe("the PostToolUse hooks", () => {
     assert.equal(readFileSync(join(PLUGIN, "skills", "mode", "MANUAL.md"), "utf8"), real);
   });
 
-  test("observe records a .md the conversation wrote and a page or a notebook in the artifacts folder by its slug, and nothing else", () => {
+  test("observe lists nothing a conversation writes, since the sidecar lists what its reply hands over", () => {
     const doc = write(join(tmp, "notes", "plan.md"), "# Plan\n");
-    const code = write(join(tmp, "notes", "plan.ts"), "export const a = 1\n");
     const page = write(join(config, "sidecar", "artifacts", "fresh.html"), "<!doctype html>\n<title>Fresh</title>\n");
-    const stray = write(join(tmp, "notes", "stray.html"), "<title>Stray</title>\n");
-    const listed = join(config, "artifacts", "session-d0c5e55a");
-    const wrote = (file: string) =>
-      fire(
-        "observe",
-        {
-          session_id: "d0c5e55a-hook",
-          hook_event_name: "PostToolUse",
-          tool_name: "Write",
-          cwd: tmp,
-          tool_input: { file_path: file },
-        },
-        vars,
+    for (const file of [doc, page])
+      assert.equal(
+        fire(
+          "observe",
+          {
+            session_id: "d0c5e55a-hook",
+            hook_event_name: "PostToolUse",
+            tool_name: "Write",
+            cwd: tmp,
+            tool_input: { file_path: file },
+          },
+          vars,
+        ).status,
+        0,
       );
-    const book = write(join(config, "sidecar", "artifacts", "book.ipynb"), '{"cells":[]}\n');
-    assert.equal(wrote(doc).status, 0);
-    for (const file of [code, page, stray]) wrote(file);
-    fire(
-      "observe",
-      {
-        session_id: "d0c5e55a-hook",
-        hook_event_name: "PostToolUse",
-        tool_name: "NotebookEdit",
-        cwd: tmp,
-        tool_input: { notebook_path: book },
-      },
-      vars,
-    );
-    assert.deepEqual(readFileSync(listed, "utf8").trim().split("\n"), [doc, "fresh", "book"]);
+    assert.equal(existsSync(join(config, "artifacts", "session-d0c5e55a")), false);
   });
 
   test("observe records the step a call satisfied, and a failing suite as test-fail", () => {

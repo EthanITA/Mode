@@ -1,4 +1,3 @@
-import * as Artifacts from "../lib/artifact/store.ts";
 import { newsLine } from "../lib/hook/board.ts";
 import { context, payload, record, str, type Payload } from "../lib/hook/io.ts";
 import { done } from "../lib/mode/slots.ts";
@@ -50,23 +49,11 @@ function observed(data: Payload): string {
   return "test";
 }
 
-// lib/artifact is the one writer of a conversation's list, as lib/mode is of its slots.
-function recordArtifact(data: Payload): void {
-  const path = pathOf(record(data.tool_input));
-  const session = str(data.session_id);
-  if (data.hook_event_name !== "PostToolUse" || !["Write", "Edit", "NotebookEdit"].includes(str(data.tool_name)))
-    return;
-  if (!path || !session) return;
-  const entry = Artifacts.entryOf(path);
-  if (path.endsWith(".md") || entry !== path) Artifacts.record(entry, session);
-}
-
 try {
   const data = payload() ?? {};
   const session = str(data.session_id) || undefined;
   const token = observed(data);
   if (token) await quietly(() => done({ axis: "mode", session, reason: token }));
-  await quietly(() => recordArtifact(data));
 
   // Only on the success event: a failed call already owes the model an error, not a board aside.
   if (data.hook_event_name === "PostToolUse") {
