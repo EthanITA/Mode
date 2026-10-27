@@ -1,7 +1,7 @@
 ---
 name: artifact
 summary: An artifact is a local interactive HTML the reader operates, sourced by clickable links.
-when: html page|web page|landing page|a page|report|explainer|dossier|showpiece|mockup|.html
+when: html page|web page|landing page|a page|design lab|report|explainer|dossier|showpiece|visuali|mockup|.html
 ---
 
 ## Artifacts

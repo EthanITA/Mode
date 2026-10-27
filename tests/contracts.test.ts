@@ -245,6 +245,8 @@ describe("ground rules", () => {
       "a mockup of the settings screen",
       "write it up as a page",
       "save it as incident.html",
+      "visualise this",
+      "a design lab for the bus",
     ];
     const notHtml = [
       "write a brief for the migration",
@@ -252,7 +254,6 @@ describe("ground rules", () => {
       "make the task an artifact",
       "stamp the .md artifact",
       "create an artifact",
-      "visualize the flow",
     ];
     let count = 0;
     const lands = (message: string): boolean => {

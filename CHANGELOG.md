@@ -7,6 +7,13 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.25.2
+
+### Fixed
+
+- **The `artifact` ground rule lands on "visualise this" and a design lab again.** 0.25.1 dropped both phrases, but
+  the showpiece profile is asked for with "visualise this" and a design lab is the in-repo html target.
+
 ## 0.25.1
 
 ### Fixed
