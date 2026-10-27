@@ -40,7 +40,7 @@ Your own design systems live in `~/.claude/mode/design-systems/` (under `CLAUDE_
 
 ## How to use a pack
 
-1. Resolve the key (see the skill's §3).
+1. Resolve the key (see the skill's `references/html.md` §4).
 2. Read the pack file `artifact ds <key>` points at, and nothing else from these folders.
 3. Inline the stylesheets that pack names, in order.
 4. Add the Google Fonts link the pack gives, when it gives one: that host is the only external one the published-artifact CSP allows.

@@ -4,17 +4,17 @@ A generated document narrates everything in prose. A human author shows first an
 
 ## Choose the form by the shape of the information
 
-| Information shape                               | Form                          | How in this stack                                                                                          |
-| ----------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Process, flow, lifecycle, handshake             | Flowchart or sequence diagram | Mermaid, native in published artifacts; many diagrams or local viewing means pre-rendered SVG per SKILL §7 |
-| System structure, topology, boundaries          | Block diagram                 | Mermaid, or hand SVG with the `artifact-diagramming` skill                                                 |
-| Roles, ownership, who reports or talks to whom  | Org chart                     | Mermaid flowchart, one node per role carrying what it owns, one edge per relationship                      |
-| Few items compared on few axes                  | Table                         | The pack's `.table-wrap` classes                                                                           |
-| Trend, distribution, share, magnitude over time | Chart                         | Inline SVG per the `dataviz` skill, loaded before the first chart line                                     |
-| Formula, relationship, cost model               | Typeset math                  | KaTeX pre-rendered at build time (its CDN is CSP-blocked, SKILL §7); never ASCII math in a sentence        |
-| Decision logic, branching rules                 | Decision table                | Input columns, one row per rule, an outcome column; never nested prose conditionals                        |
-| KPI, headline magnitude                         | Stat tiles                    | `.stats .stat` per `dataviz`                                                                               |
-| Chronology, plan, phases                        | Timeline                      | Mermaid timeline or gantt                                                                                  |
+| Information shape                               | Form                          | How in this stack                                                                                               |
+| ----------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Process, flow, lifecycle, handshake             | Flowchart or sequence diagram | Mermaid, native in published artifacts; many diagrams or local viewing means pre-rendered SVG per `html.md` §11 |
+| System structure, topology, boundaries          | Block diagram                 | Mermaid, or hand SVG with the `artifact-diagramming` skill                                                      |
+| Roles, ownership, who reports or talks to whom  | Org chart                     | Mermaid flowchart, one node per role carrying what it owns, one edge per relationship                           |
+| Few items compared on few axes                  | Table                         | The pack's `.table-wrap` classes                                                                                |
+| Trend, distribution, share, magnitude over time | Chart                         | Inline SVG per the `dataviz` skill, loaded before the first chart line                                          |
+| Formula, relationship, cost model               | Typeset math                  | KaTeX pre-rendered at build time (its CDN is CSP-blocked, `html.md` §11); never ASCII math in a sentence        |
+| Decision logic, branching rules                 | Decision table                | Input columns, one row per rule, an outcome column; never nested prose conditionals                             |
+| KPI, headline magnitude                         | Stat tiles                    | `.stats .stat` per `dataviz`                                                                                    |
+| Chronology, plan, phases                        | Timeline                      | Mermaid timeline or gantt                                                                                       |
 
 ## Rules
 

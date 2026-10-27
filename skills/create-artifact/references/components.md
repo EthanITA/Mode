@@ -83,7 +83,7 @@ Bars carry no status colours, because a status needs a label beside it and the s
 
 A value that reads as a number becomes a number. Names must be JavaScript identifiers.
 
-A seg group swaps one figure's state, so its panes hold a variant of the figure and never chapters of prose. That is §2's "no tab bars" kept by construction.
+A seg group swaps one figure's state, so its panes hold a variant of the figure and never chapters of prose. That is the "no tab bars" of `html.md` §3 kept by construction.
 
 | Hook                   | Does                                                                                                                                   |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |

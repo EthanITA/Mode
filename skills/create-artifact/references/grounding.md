@@ -4,7 +4,7 @@ An artifact that invents a fact is worse than no artifact. It looks authoritativ
 
 So the order is: **find out, then render.** Never render, then hope.
 
-This is the _content_ half of grounding. The _design_ half — reading a pack's source of truth so the look is real — is SKILL §3. They are separate steps and both are required.
+This is the _content_ half of grounding. The _design_ half — reading a pack's source of truth so the look is real — is `html.md` §5. They are separate steps and both are required.
 
 ## The worth-it gate
 
@@ -53,7 +53,7 @@ Several subsystems at once: dispatch one subagent per subsystem, in parallel, ea
 
 ## Write the findings down
 
-Put them in `notes.md` in the session's build folder (SKILL.md §6) as a structured list, one line per fact, each carrying its source. The authoring phase then reads structured facts instead of chat memory, which is where invention creeps in.
+Put them in `notes.md` in the session's build folder (`html.md` §7) as a structured list, one line per fact, each carrying its source. The authoring phase then reads structured facts instead of chat memory, which is where invention creeps in.
 
 The build folder goes with the session, so a later session refreshing the artifact starts from the page's own Sources section and re-reads what it cites.
 
