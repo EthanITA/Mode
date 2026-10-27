@@ -7,6 +7,13 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.24.1
+
+### Fixed
+
+- **An exact slug resolves first.** `artifact stamp board` used to refuse with "matches 2 artifacts" when the
+  conversation had `board-brief` and `board-plan` on its list, so a task could not be stamped beside its own brief.
+
 ## 0.24.0
 
 ### Added
