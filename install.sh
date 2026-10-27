@@ -585,7 +585,7 @@ else
   write_alias style
   write_alias approve
   write_alias why
-  write_skill_alias create-artifact "Build a visual artifact in a named design system."
+  write_skill_alias create-artifact "Write a one-screen .md brief, or build a visual artifact in a named design system."
   write_skill_alias edge-induction "Generate an edge-case checklist by inducting on the problem's structure."
   write_skill_alias design "Guidance on UI polish, component design and animation decisions."
   write_skill_alias showpiece-prompt "Author a one-shot generative prompt using the six-slot anatomy."

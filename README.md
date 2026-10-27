@@ -195,12 +195,12 @@ Most combinations just work. Three are worth knowing:
 Beyond the two slots, the plugin carries the skills the contracts reach for, so a mode that says
 "build an artifact" is naming something that is actually installed.
 
-| Skill              | What it does                                                                           |
-| ------------------ | -------------------------------------------------------------------------------------- |
-| `create-artifact`  | Builds one self-contained HTML page in a named design system and hands over its path   |
-| `edge-induction`   | Turns a problem's structure into an edge-case checklist rather than a list from memory |
-| `design`           | Interface craft: polish, component design, animation decisions                         |
-| `showpiece-prompt` | Writes a one-shot generative prompt using the six-slot anatomy                         |
+| Skill              | What it does                                                                                                                                   |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create-artifact`  | Writes a one-screen `.md` brief with its diagram first, or builds a self-contained HTML page in a named design system, and hands over its path |
+| `edge-induction`   | Turns a problem's structure into an edge-case checklist rather than a list from memory                                                         |
+| `design`           | Interface craft: polish, component design, animation decisions                                                                                 |
+| `showpiece-prompt` | Writes a one-shot generative prompt using the six-slot anatomy                                                                                 |
 
 They are namespaced `mode:<name>`, and the installer writes a bare `/<name>` command for each.
 

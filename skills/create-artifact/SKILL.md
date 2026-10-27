@@ -1,6 +1,6 @@
 ---
 name: create-artifact
-description: Produce a visual artifact (report, review, RFC/design doc, one-pager, study guide, explainer, or app-UI mockup) in a chosen design system. Ships a neutral house style and the public brand systems (GitHub Primer, Material 3, IBM Carbon, Linear, Vercel Geist, Stripe, Notion, Apple HIG, SpaceX), and resolves any design system installed in ~/.claude/mode/design-systems/. Builds to a showpiece register, grounds its claims in real sources, and carries the receipts into the page. Delivers a local self-contained .html with full 3D, motion, React and interactivity, handed over as a path and never opened for the user; publishing happens only when they ask for a link by name. Use whenever the user asks to create/produce/build/redesign an artifact, visual doc, report or mockup, and whenever they invoke /create-artifact. Responds in the edu style.
+description: Produce an artifact. A brief, plan, task, one-pager or catch-up is a one-screen .md with its mermaid diagram first, built in minutes for the sidecar to render and comment on. A report, review, RFC/design doc, study guide, explainer, dossier, showpiece or app-UI mockup is a local self-contained .html in a chosen design system, with full 3D, motion, React and interactivity; it ships a neutral house style and the public brand systems (GitHub Primer, Material 3, IBM Carbon, Linear, Vercel Geist, Stripe, Notion, Apple HIG, SpaceX), resolves any design system installed in ~/.claude/mode/design-systems/, and responds in the edu style. Either way it grounds its claims in real sources, carries the receipts into the artifact, and hands it over as a path never opened for the user; publishing happens only when they ask for a link by name. Use whenever the user asks to create/produce/build/redesign an artifact, brief, plan, visual doc, report or mockup, and whenever they invoke /create-artifact.
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -15,16 +15,16 @@ Produce an artifact that says only true things, in the shape one profile fixes. 
 
 ## Pick the profile
 
-Name it in one line and move on. When two fit, the tie-break is what the reader does with it: something read start to finish is a **report**, something navigated and returned to is a **dossier**.
+Name it in one line and move on. When two fit, the tie-break is what the reader does with it: something scanned to agree or correct is a **brief**, something read start to finish is a **report**, something navigated and returned to is a **dossier**.
 
-| Profile       | The ask sounds like                                                                                                                                    | Delivers                    | Read                 |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- | -------------------- |
-| **brief**     | a digest, a one-pager, catch me up                                                                                                                     | a local `<slug>.html`       | `references/html.md` |
-| **report**    | a report, a review, a synthesis, an RFC                                                                                                                | a local `<slug>.html`       | `references/html.md` |
-| **explainer** | explain X, teach me, a study guide                                                                                                                     | a local `<slug>.html`       | `references/html.md` |
-| **dossier**   | analyse X, is it worth it, the full picture with data, **make it interactive**, **navigable, something I come back to**, **a document with structure** | a local `<slug>.html`       | `references/html.md` |
-| **showpiece** | make it impressive, a demo, visualise this                                                                                                             | a local `<slug>.html`       | `references/html.md` |
-| **mockup**    | a mockup of the settings screen                                                                                                                        | a screen in the target repo | `references/html.md` |
+| Profile       | The ask sounds like                                                                                                                                    | Delivers                                | Read                  |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- | --------------------- |
+| **brief**     | a plan, a brief, a task, a digest, a one-pager, catch me up                                                                                            | a one-screen `<slug>.md`, diagram first | `references/brief.md` |
+| **report**    | a report, a review, a synthesis, an RFC                                                                                                                | a local `<slug>.html`                   | `references/html.md`  |
+| **explainer** | explain X, teach me, a study guide                                                                                                                     | a local `<slug>.html`                   | `references/html.md`  |
+| **dossier**   | analyse X, is it worth it, the full picture with data, **make it interactive**, **navigable, something I come back to**, **a document with structure** | a local `<slug>.html`                   | `references/html.md`  |
+| **showpiece** | make it impressive, a demo, visualise this                                                                                                             | a local `<slug>.html`                   | `references/html.md`  |
+| **mockup**    | a mockup of the settings screen                                                                                                                        | a screen in the target repo             | `references/html.md`  |
 
 Read nothing else up front. The file a row names loads every other reference at the step that needs it, so a path never pays for another path's references.
 

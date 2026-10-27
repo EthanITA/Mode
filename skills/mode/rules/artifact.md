@@ -6,7 +6,7 @@ when: artifact|mockup|html page|landing page|one-pager|one pager|dossier|design 
 
 ## Artifacts
 
-An artifact is one self-contained `.html` file written to disk and opened locally. Never an inline reply, never a published page unless a shareable link is asked for by name. Local means no content-security policy, which is the whole reason to build there: pinned CDN libraries, WebGL, real interactivity.
+An artifact is one self-contained `.html` file written to disk and opened locally. Never an inline reply, never a published page unless a shareable link is asked for by name. Local means no content-security policy, which is the whole reason to build there: pinned CDN libraries, WebGL, real interactivity. A plan, brief or task is the exception: a one-screen `.md` with its diagram first, built by the `create-artifact` skill's brief profile, and nothing below applies to it.
 
 ### It is operated, not read
 
