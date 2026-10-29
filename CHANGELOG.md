@@ -7,6 +7,13 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.26.1
+
+### Fixed
+
+- **`artifact stamp --state finished` is accepted,** the state the sidecar's lane files since its 0.50.0 when a
+  lead finishes a task and it waits on Marco's mark for Done.
+
 ## 0.26.0
 
 ### Changed
