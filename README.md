@@ -208,8 +208,8 @@ They are namespaced `mode:<name>`, and the installer writes a bare `/<name>` com
 stamps its metadata and installs the review layer. `artifact new <slug> --ds <key>` writes a page with the
 pack's stylesheets and the component kit already in it, so Claude writes markup rather than CSS and
 JavaScript, and `artifact kit <slug>` refreshes the kit in an older page. A `.md` stamped with
-`--project`, `--state` or `--lead` is a task the sidecar lists on its task board: its state is one of
-unassigned, assigned, assessed, running, blocked, waiting and done, and it is unassigned exactly while its
+`--project`, `--state` or `--lead` is a workstream the sidecar lists in its tree: its state is one of
+unassigned, assigned, assessed, running, blocked, waiting, finished and archived, and it is unassigned exactly while its
 project is empty, so `artifact stamp <slug> --project cela` assigns it. Reading a page, commenting on
 it and having Claude answer the threads is the [sidecar](https://github.com/cela-sage/sidecar)'s job, a
 separate plugin. Two lookups are worth knowing:

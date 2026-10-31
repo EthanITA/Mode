@@ -31,7 +31,16 @@ const FONT_LINK = /<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 const FIELDS = ["slug", "title", "url", "target", "ds", "updated", "project", "state", "lead"];
 const TASK_FIELDS = ["project", "state", "lead"] as const;
-export const TASK_STATES = ["unassigned", "assigned", "assessed", "running", "blocked", "waiting", "finished", "done"];
+export const TASK_STATES = [
+  "unassigned",
+  "assigned",
+  "assessed",
+  "running",
+  "blocked",
+  "waiting",
+  "finished",
+  "archived",
+];
 export const TEMPLATES = ["interactive", "showpiece"];
 
 export type StampFields = Partial<

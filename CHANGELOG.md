@@ -7,6 +7,14 @@ somewhere new rather than on top of the old copy.
 This project is pre-1.0, so a minor bump carries new contracts and behaviour, and a patch bump
 carries fixes. Nothing here is stable enough to promise otherwise yet.
 
+## 0.27.0
+
+### Changed
+
+- **`artifact stamp --state archived` replaces `--state done`,** following the sidecar's 0.71.0, where Done became
+  Archived, Marco's mark that closes a workstream. `--state done` is refused with the list of states. Stamps written
+  before carry `state: done` until the sidecar's one-off sweep rewrites them.
+
 ## 0.26.1
 
 ### Fixed
